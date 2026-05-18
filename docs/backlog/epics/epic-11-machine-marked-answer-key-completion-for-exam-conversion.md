@@ -142,19 +142,16 @@ manual-key consumer work. It exposes the source-neutral
 `ExamAuthoringMatchingManualAnswerKey` DTO through Sir Convert's generated
 OpenAPI surface while keeping DigiExam ingestion overlays choice/gap-only and
 forbidding consumer-local matching-pair inference.
-Task 324 is the producer-owned route/application follow-up for the same
-matching path. It makes the source-neutral matching DTO callable through
-request-body semantics and returns producer-owned effective state/readiness so
-Skriptoteket can keep local matching edits non-authoritative until Sir Convert
-returns the corrected bundle.
-ADR-0011 is the proposed decision for the cleaner source-neutral
-correction/apply direction. Task 327 is the linked producer contract slice: it
-reframes Task 324 as bridge work caused by historical route asymmetry and
-defines one source-neutral correction/apply contract for item text, point
-corrections, manual choice keys, manual gap/open-cloze accepted values, manual
-matching keys, review decisions, and candidate suppression. Future
-HuleEdu/Skriptoteket work should build around that unified contract after the
-decision is accepted instead of adding more item-specific Gateway routes.
+Task 324 made the source-neutral matching DTO callable while matching lacked the
+unified correction route; that route is now superseded and abandoned as a
+product path. ADR-0011 is the accepted source-neutral correction/apply decision.
+Task 327 defines one source-neutral correction/apply contract for item text,
+point corrections, manual choice keys, manual gap/open-cloze accepted values,
+manual matching keys, review decisions, and candidate suppression. Task 330
+adds the unified runtime route, moves matching into `manual_matching_answer_key`,
+and removes the Task 324 route rather than preserving it as a transitional route or
+compatibility layer. Future HuleEdu/Skriptoteket work should build around that
+unified contract instead of adding more item-specific Gateway routes.
 Task 328 is the separate proposed-decision audit slice. It keeps ADR-0002 and
 ADR-0009 status cleanup out of ADR-0011 and preserves the rule that ADR-0009
 requires its explicit Gateway acceptance path before acceptance.

@@ -45,15 +45,14 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
   `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
   the public artifact/retention contract and Task 273 now carries numeric
   promotion/resource thresholds.
-- Tasks 322-324 completed the `PR-0332` producer prerequisites: point
-  corrections, source-neutral matching DTO, and
-  `POST /v2/exam-authoring/matching/manual-answer-key/apply` are exposed with
-  source-fingerprint binding, effective state/readiness, OpenAPI, and
-  Skriptoteket generated-type/preflight proof.
-- Task 327 completed the draft unified contract at
-  `docs/converters/exam-authoring-corrections-apply-contract.md`:
-  `POST /v2/exam-authoring/corrections/apply`, typed correction entries, and a
-  future hard cut away from Task 324 with no adapter/shim/alias/wrapper.
+- Tasks 322/323 completed the `PR-0332` point and matching DTO producer
+  prerequisites. Task 324's matching-specific route is superseded/abandoned.
+- Task 327 completed the unified contract at
+  `docs/converters/exam-authoring-corrections-apply-contract.md`; Task 330
+  completed the runtime/OpenAPI hard cut for
+  `POST /v2/exam-authoring/corrections/apply`, including initial
+  `manual_matching_answer_key` support and removal of the Task 324 route with
+  no adapter/shim/alias/wrapper/compatibility layer.
 - ADR-0011 is accepted after Review 23 approved the remediated PR-0332
   continuation gate.
 - Task 328 completed the proposed-ADR audit. Task 329 completed the ADR-0002
@@ -97,9 +96,11 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321-323
   built provider, advisory, overlay/effective-IR, unkeyed-manual QTI, Qwen3.6,
   target-key preservation, point correction, and the matching DTO.
-  ADR-0011/Task 327 are proposed for the unified source-neutral
-  correction/apply contract before adding more item-specific Gateway/service
-  routes. Qwen3.6 remains guarded; ADR-0010 is accepted. Task 325 is in
+  ADR-0011 is accepted, Task 327 defines the unified source-neutral
+  correction/apply contract, and Task 330 implements the first runtime/OpenAPI
+  slice for `manual_matching_answer_key`. Downstream PR-0332 work now targets
+  that unified route rather than any item-specific matching route. Qwen3.6
+  remains guarded; ADR-0010 is accepted. Task 325 is in
   progress for OpenAI hot settings; Task 325-B now pins provider/settings
   lineage at admission and report level. Task 326 is in progress as the eval
   gate; after teacher adjudication of the mini failure rows, the fresh
@@ -141,12 +142,16 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. Create the unified-route implementation task: add
-   `/v2/exam-authoring/corrections/apply` and remove Task 324's matching
-   route/dead code atomically, with no adapter/shim/alias/wrapper.
+1. Create or continue the governed downstream PR-0332 implementation slice:
+   HuleEdu Gateway should expose/proxy the unified
+   `/v2/exam-authoring/corrections/apply` path, and Skriptoteket teacher
+   overlay should submit `manual_matching_answer_key` entries against that
+   route. The removed Task 324 matching route must remain absent and must not be
+   reintroduced as an adapter, shim, alias, wrapper, compatibility layer, or
+   transitional route.
 1. Continue PR-0331 from the completed Sir Convert Task 321 cleanup: the next
    answer-key UI/consumer slice must preserve reviewed gap/open-cloze keys in
-   QTI and PDF artifacts, must not offer QTI packages when adapter follow-up
+   QTI and PDF artifacts, must not offer QTI packages when conversion follow-up
    means an item was omitted, and must keep remaining degraded output as
    explicit accepted-current-state behavior. Local tests are not live-dev proof;
    live proof needs the auth edge, Sir Convert service, and tunneled LLM
@@ -168,28 +173,14 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 ## Validation
 
 - Older validation evidence lives in governed tasks, references, reviews, and long-term memory.
-- 2026-05-16 Task 309/319: Qwen3.6-27B-Q6_K final baseline is 41 correct, 3
-  wrong-but-valid, 0 manual-follow-up out of 44; Review 18 proved 317/317
-  Hemma corpus coverage plus green live provider-status/choice/gap/vision
-  microprobes.
-- 2026-05-18 Task 326: OpenAI evals ran through `.env`-loaded `OPENAI_API_KEY`;
-  the local coverage gap and evaluator report-root drift were fixed. Mini is
-  now the temporary accepted/default dev and prod provider after teacher
-  adjudication: 43 correct, 1 wrong-but-valid, 0 manual-follow-up out of 44.
-  Qwen3.6 remains a guarded local rollback profile and its production container
-  may be stopped to save GPU VRAM while mini is default.
-- 2026-05-17 Task 320 in progress: structured answer-key HTTP admission is
-  separated from PDF/OCR GPU execution, dependency-image identity writes under
-  ignored `build/verification/service-deps/`, and live Hemma proof still needs
-  deploy/recreate plus authenticated MCQ candidate verification.
-- 2026-05-17 Task 321 completed: reviewed/source/teacher gap/open-cloze keys
-  now reach QTI/PDF artifacts, QTI blocks omitted-item or missing-gap-key
-  packages, and internal fallback text is absent from user-facing PDFs. Local
-  validation passed per Task 321 evidence. Live dev-container proof was not
-  run; it requires auth edge, Sir Convert, and tunneled LLM together.
-- 2026-05-18 Task 324 local closeout passed OpenAPI export, format/lint/type
-  gates, focused matching/OpenAPI pytest, coverage-gate, and Skriptoteket
-  generated-type/preflight proof.
+- Task 309/319/326 provider evidence remains governed by those tasks: mini is
+  the temporary accepted/default dev/prod provider; Qwen3.6 is guarded rollback.
+- Task 321 local validation passed; live dev-container proof still requires
+  auth edge, Sir Convert service, and tunneled LLM together.
+- Task 330 validation passed: OpenAPI export, format/lint/type, focused
+  corrections/OpenAPI/matching pytest (15 tests), coverage-gate (1382 passed, 6
+  skipped, 95.56%), docs-sync/docs-validate/skills-validate/handoff-validate,
+  and `git diff --check`.
 - 2026-05-18 Review 22 completed as `approved`: Task 329 is completed, and the
   review scopes already-published Task 325-B runtime/OpenAPI provider-lineage
   changes out of Task 329 approval.

@@ -649,33 +649,31 @@ from `.dxe`. That source fact must not define generic target support. Task
 slice so matching-capable source adapters can use `source_id`/`target_id`
 directed pairs without accepting retired `left_id`/`right_id` aliases.
 
-Task 323 exposes that source-neutral matching manual-answer-key producer DTO
-through the generated v2 OpenAPI contract without adding a DigiExam matching
-overlay. Task 324 exposes that DTO as accepted request-body JSON on
-`POST /v2/exam-authoring/matching/manual-answer-key/apply` for
-matching-capable source-neutral flows, with source-item fingerprint binding
-validated before target readiness. Skriptoteket must consume the generated
-`ExamAuthoringMatchingManualAnswerKey` type through that route for
-matching-capable source flows and must continue treating DigiExam
-`manual_answer_key` overlays as choice/gap-only.
+Task 323 exposes the reusable source-neutral matching manual-answer-key
+producer DTO without adding a DigiExam matching overlay. Task 324's
+matching-specific route is superseded by Task 330. Matching-capable source
+flows now use the unified
+`POST /v2/exam-authoring/corrections/apply` route with a
+`manual_matching_answer_key` correction entry, source-item fingerprint binding,
+effective state, and target readiness. Skriptoteket must continue treating
+DigiExam `manual_answer_key` overlays as choice/gap-only.
 
 Task 324 exists because matching had no callable neutral producer route while
 choice/gap, point correction, review decisions, and item patching already had
 reviewed overlay/application paths. That asymmetry is historical, not the
-accepted ADR-0011 product architecture. Task 327 defines the next
+accepted ADR-0011 product architecture. Task 327 defines the
 source-neutral correction/apply contract so future teacher correction work,
-including PR-0332 work beyond already-built historical bridge behavior, can
-converge on one producer-owned route instead of adding more item-specific,
-source-adapter, Gateway, or service routes. The unified-route implementation
-must hard-cut from the Task 324 matching route; it must not preserve
-`POST /v2/exam-authoring/matching/manual-answer-key/apply` as an adapter, shim,
-alias, wrapper, or compatibility layer.
+including PR-0332 work, converges on one producer-owned route instead of adding
+more item-specific, source-adapter, Gateway, or service routes. Task 330
+hard-cuts from the Task 324 matching route and does not preserve it as an
+adapter, shim, alias, wrapper, transitional route, or compatibility layer.
 
-Task 327 publishes the draft unified correction/apply contract in
-`docs/converters/exam-authoring-corrections-apply-contract.md`. That contract
-maps `effective_item_patch`, `point_correction`, choice/gap manual keys,
-reviewed completion keys, review decisions, and Task 324 matching semantics into
-typed source-neutral correction entries. The mapping is semantic and
+Task 327 publishes the unified correction/apply contract in
+`docs/converters/exam-authoring-corrections-apply-contract.md`, and Task 330
+adds the initial runtime/OpenAPI implementation for matching. That contract maps
+`effective_item_patch`, `point_correction`, choice/gap manual keys, reviewed
+completion keys, review decisions, and Task 324 matching semantics into typed
+source-neutral correction entries. The mapping is semantic and
 implementation-directing; it does not preserve DigiExam overlay field names as
 the long-term teacher-correction API.
 

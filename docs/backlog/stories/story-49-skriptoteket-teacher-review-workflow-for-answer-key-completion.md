@@ -60,7 +60,7 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   DigiExam overlays.
 - Treat the Task 324 matching route as superseded and abandoned. It must not be
   proxied, consumed, or preserved as an adapter, shim, alias, wrapper, temporary
-  bridge, or compatibility layer.
+  transitional route, or compatibility layer.
 - ADR-0011 accepts the next Sir Convert producer direction as one
   source-neutral correction/apply contract, expected at
   `POST /v2/exam-authoring/corrections/apply`, with typed entries for item
@@ -103,7 +103,7 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   state.
 - [ ] The durable teacher-correction API direction is source-neutral and
   producer-owned; the matching-specific transport is superseded and abandoned
-  rather than treated as a route-per-item-type architecture, temporary bridge,
+  rather than treated as a route-per-item-type architecture, transitional route,
   or compatibility layer. PR-0332 waits for the Sir Convert runtime hard cut
   and its own governed implementation slice.
 - [ ] Public Exam Converter jobs remain remote-provider-forbidden unless a

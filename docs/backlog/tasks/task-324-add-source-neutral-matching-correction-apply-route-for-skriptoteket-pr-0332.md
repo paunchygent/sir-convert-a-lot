@@ -25,14 +25,12 @@ labels:
 Producer-owned route/application prerequisite before Skriptoteket implements
 the `PR-0332` source-neutral matching correction UI.
 
-Architecture note: this matching-specific route is historical bridge work for
-the missing producer route that existed during `PR-0332`. It must not set
-product direction toward one exam-authoring correction route per item type, and
-it must not survive the unified correction route implementation as an adapter,
-shim, alias, wrapper, or compatibility layer. Task 327 owns the cleaner next
-source-neutral correction/apply contract that can cover item text, points,
-manual answer keys, review decisions, and matching through one producer-owned
-API.
+Architecture note: this matching-specific route is now superseded and abandoned
+as a product path. It must not set product direction toward one exam-authoring
+correction route per item type, and it must not survive as an adapter, shim,
+alias, wrapper, transitional route, or compatibility layer. Task 327 defines the
+source-neutral correction/apply contract, and Task 330 removes this route while
+moving matching semantics into `manual_matching_answer_key`.
 
 ## Objective
 
@@ -128,8 +126,8 @@ browser-local matching drafts.
 
 ## Implementation Evidence
 
-Task 324 implements the dedicated source-neutral apply route instead of adding a
-matching field to DigiExam multipart overlays:
+Task 324 originally implemented the dedicated source-neutral apply route instead
+of adding a matching field to DigiExam multipart overlays:
 
 - `POST /v2/exam-authoring/matching/manual-answer-key/apply` accepts
   `ExamAuthoringMatchingManualAnswerKeyApplyRequest` as JSON request body.
@@ -155,8 +153,11 @@ matching field to DigiExam multipart overlays:
 
 Runtime/code authority:
 
-- `scripts/sir_convert_a_lot/application/exam_authoring_matching_apply_contracts.py`
-- `scripts/sir_convert_a_lot/interfaces/http_routes_exam_authoring_matching_v2.py`
+- Superseded by
+  `scripts/sir_convert_a_lot/application/exam_authoring_corrections_apply_contracts.py`
+  and
+  `scripts/sir_convert_a_lot/interfaces/http_routes_exam_authoring_corrections_v2.py`
+  in Task 330.
 - `scripts/sir_convert_a_lot/interfaces/http_api.py`
 
 Durable contract authority:

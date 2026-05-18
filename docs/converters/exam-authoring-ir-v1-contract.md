@@ -120,17 +120,19 @@ Runtime value objects and validators live in:
 - `scripts/sir_convert_a_lot/domain/exam_authoring_matching_manual_answer_key.py`
   owns the Task 323 producer-ready matching manual-answer-key submission DTO
   and application boundary.
-- `scripts/sir_convert_a_lot/application/exam_authoring_matching_apply_contracts.py`
-  owns the Task 324 source-neutral request/response contract and readiness
-  projection for the matching apply route.
-- `scripts/sir_convert_a_lot/interfaces/http_routes_exam_authoring_matching_v2.py`
-  exposes the Task 324 v2 HTTP route.
+- `scripts/sir_convert_a_lot/application/exam_authoring_corrections_apply_models.py`
+  owns the unified correction/apply request and response DTOs.
+- `scripts/sir_convert_a_lot/application/exam_authoring_corrections_apply_contracts.py`
+  applies the initial `manual_matching_answer_key` correction entry and
+  projects effective state/readiness.
+- `scripts/sir_convert_a_lot/interfaces/http_routes_exam_authoring_corrections_v2.py`
+  exposes the unified v2 correction route.
 
 Focused proof lives in:
 
 - `tests/sir_convert_a_lot/test_exam_authoring_matching_contracts.py`.
 - `tests/sir_convert_a_lot/test_exam_authoring_matching_manual_answer_key.py`.
-- `tests/sir_convert_a_lot/test_exam_authoring_matching_apply_route.py`.
+- `tests/sir_convert_a_lot/test_exam_authoring_corrections_apply_route.py`.
 
 The DigiExam parser and `DigiExamIntermediateExam` contracts intentionally do
 not contain matching structures or matching answer pairs after this slice.
@@ -175,39 +177,42 @@ the neutral matching validation rules before returning an updated
 `ExamAuthoringIR v1` interaction. It does not mutate parser-owned source IR or
 source/parser provenance.
 
-## Matching Manual Answer-Key Apply Route
+## Unified Correction Apply Route For Matching
 
-Task 324 exposes the producer-owned source-neutral route that accepts the DTO as
-OpenAPI request-body JSON:
+Task 330 exposes the producer-owned source-neutral route that accepts matching
+keys as a typed correction entry:
 
 ```text
-POST /v2/exam-authoring/matching/manual-answer-key/apply
+POST /v2/exam-authoring/corrections/apply
 ```
 
 The request body contains:
 
-- `source_interaction`: the producer-returned `ExamAuthoringIR v1` matching
-  interaction state, including `source_item_fingerprint` when the source state
-  carries one;
-- `exam_authoring_matching_manual_answer_key`: the Task 323 DTO exactly;
+- `source_authoring_state`: the producer-returned source-neutral authoring
+  state, including matching interactions and `source_item_fingerprint` when the
+  source state carries one;
+- `manual_matching_answer_key`: the typed correction entry that carries
+  `interaction_id`, `source_id`/`target_id` directed pairs, and submission
+  origin;
 - `requested_targets`: optional target readiness keys, currently `examnet_pdf`
   and `qti_package`.
 
-The route applies the submitted key to the supplied source-neutral interaction
-and returns `exam_authoring_matching_apply_result_v1` with:
+The route applies the submitted key to the supplied source-neutral authoring
+state and returns `exam_authoring_corrections_apply_result_v1` with:
 
-- `effective_interaction`: the corrected producer-owned matching state;
-- `target_readiness`: target rows with export enablement, reason code, and
-  message key;
+- `effective_state`: the corrected producer-owned authoring state;
+- `correction_report`: accepted/rejected correction entries;
+- `target_readiness`: target rows with export enablement, reason code, message
+  key, and item binding;
 - `artifact_availability`: artifact availability keyed by requested target.
 
 Source binding is fail-closed. When the producer interaction carries
 `source_item_fingerprint`, a missing or mismatched
-`source_item_fingerprint` in the submitted manual key fails before target
+`source_item_fingerprint` in the submitted correction fails before target
 readiness is projected. Consumers must submit the binding from returned producer
 state, not infer it from local browser drafts.
 
-The route rejects stale schema version, stale interaction ID, retired
+The route rejects stale schema version, stale item binding, stale interaction ID, retired
 `left_id`/`right_id` aliases, unknown source/target IDs, duplicate pairs,
 association-bound failures, non-empty pairs with `absent` provenance, and
 aggregate `mixed` provenance before any target is reported ready.
@@ -218,29 +223,20 @@ profile. `qti_package` remains unavailable with
 proof exists. DigiExam ingestion overlays remain choice/gap-fill only and do
 not accept matching keys through `digiexam_ingestion_overlay`.
 
-This route is historical bridge work for the first missing matching producer
-path. It is not the target path for new `PR-0332` teacher-correction work and it
-must not survive the unified correction route implementation as an adapter,
-shim, alias, wrapper, or compatibility layer. The accepted ADR-0011 target
-teacher-correction architecture is not one `/exam-authoring/.../apply` route per
-item type or source adapter. Task 327 owns the contract for one source-neutral
-correction/apply route:
+Task 324's matching-specific route is superseded and abandoned. It is not the
+target path for new `PR-0332` teacher-correction work and it does not survive as
+an adapter, shim, alias, wrapper, transitional route, or compatibility layer. The
+accepted ADR-0011 target teacher-correction architecture is not one
+`/exam-authoring/.../apply` route per item type or source adapter.
 
-```text
-POST /v2/exam-authoring/corrections/apply
-```
-
-That future contract must use typed correction entries for visible item text,
+The unified contract uses typed correction entries for visible item text,
 points, manual choice keys, manual gap/open-cloze accepted values, manual
 matching keys, review decisions, and candidate suppression while keeping source
 adapters as ingestion details. Consumers should not need to know whether the
 original item came from DigiExam, Exam.net, CSV, DOCX, Markdown, or another
-source in order to submit teacher corrections. When that unified route is
-implemented, the matching manual-answer-key semantics above must move into a
-typed matching correction entry and the matching-specific route must be removed
-in the same governed implementation slice.
+source in order to submit teacher corrections.
 
-The draft unified correction/apply contract lives in
+The unified correction/apply contract lives in
 `docs/converters/exam-authoring-corrections-apply-contract.md`. It defines
 `manual_matching_answer_key` as the target correction entry for the matching
 semantics above and keeps this IR contract focused on source-neutral authoring

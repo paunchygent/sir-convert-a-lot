@@ -32,18 +32,17 @@ Define one source-neutral Sir Convert correction/apply contract for teacher exam
 authoring so downstream products do not accumulate one route per original
 source family or one route per item type.
 
-The current Task 324 matching route is historical bridge work for the producer
-route that exists today. It must not become the target architecture or a
-long-lived compatibility surface. Task 324 exists because matching lacked a
-neutral producer route while choice, gap/open-cloze, review decisions,
-item-content repair, and point correction still had legacy DigiExam-overlay
-producer paths that Skriptoteket could already submit through the reviewed
-overlay/application flow. That is historical implementation asymmetry, not a
-product boundary.
+The Task 324 matching route is superseded historical route work. It must not
+become the target architecture or a long-lived compatibility surface. Task 324
+existed because matching lacked a neutral producer route while choice,
+gap/open-cloze, review decisions, item-content repair, and point correction
+still had legacy DigiExam-overlay producer paths that Skriptoteket could already
+submit through the reviewed overlay/application flow. That is historical
+implementation asymmetry, not a product boundary.
 
 This task is the producer-owned prerequisite for the real Skriptoteket
 `PR-0332` teacher overlay implementation beyond the already-built Task 324
-historical bridge. It must give Skriptoteket one contract for the correction
+matching route. It must give Skriptoteket one contract for the correction
 fields promised by `PR-0332` without coupling teacher authoring to DigiExam
 overlay names, source-adapter labels, or the Task 324 matching-specific route.
 New PR-0332 producer/consumer work must not be steered back into the abandoned
@@ -107,7 +106,7 @@ adapter or route-per-item pattern.
   - prove the hard cut without preserving the old route as an adapter, shim,
     alias, wrapper, or compatibility layer.
 - Tighten the PR-0332 sequencing contract:
-  - Task 324 remains historical bridge evidence only;
+  - Task 324 remains superseded historical evidence only;
   - the unified route implementation must remove or replace
     `POST /v2/exam-authoring/matching/manual-answer-key/apply` in the same
     governed implementation slice;
@@ -167,7 +166,7 @@ matching-specific route and dead code in the same governed change.
 - [x] Effective-state/readiness/report response contract, including how
   accepted corrections appear in effective IR and how rejected or blocked
   corrections appear in reports without unlocking files.
-- [x] Hard-cut migration plan that names Task 324 as historical bridge work,
+- [x] Hard-cut migration plan that names Task 324 as superseded historical work,
   maps matching semantics into the unified entry type, and prevents route
   proliferation for future item families without a wrapper, alias, shim,
   adapter, or compatibility layer.
@@ -215,7 +214,7 @@ matching-specific route and dead code in the same governed change.
 - [x] Existing Task 322/323/324 behavior is mapped into unified correction-entry
   semantics, not erased or misrepresented as the final architecture.
 - [x] PR-0332 sequencing is tightened: already-built Task 324 matching behavior
-  is historical bridge evidence only, and new teacher-correction
+  is superseded historical evidence only, and new teacher-correction
   producer/consumer work can target the unified contract only after ADR-0011 is
   accepted and the work is attached to its own governed implementation slice,
   rather than the old adapter path or matching-specific route.

@@ -9,7 +9,7 @@ Relationships:
     - Exercises `interfaces.http_routes_exam_authoring_corrections_v2`.
     - Reuses the Task 323 matching DTO/domain validation through the unified
       `manual_matching_answer_key` entry.
-    - Protects ADR-0011's no-adapter/no-bridge hard cut.
+    - Protects ADR-0011's no-adapter/no-compatibility hard cut.
 """
 
 from __future__ import annotations

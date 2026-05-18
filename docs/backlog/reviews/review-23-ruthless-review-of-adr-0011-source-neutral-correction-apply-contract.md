@@ -42,7 +42,7 @@ Structured review artifact for implementation or readiness checks.
 - Public surfaces affected:
   - Future `POST /v2/exam-authoring/corrections/apply` API direction.
   - Existing Task 324
-    `POST /v2/exam-authoring/matching/manual-answer-key/apply` bridge route.
+    `POST /v2/exam-authoring/matching/manual-answer-key/apply` route.
   - HuleEdu `/sir-convert` proxy shape and Skriptoteket teacher-correction
     consumer sequencing.
 - Compatibility posture:
