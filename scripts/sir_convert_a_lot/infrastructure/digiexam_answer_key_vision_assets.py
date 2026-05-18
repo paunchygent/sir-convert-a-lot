@@ -17,6 +17,7 @@ Relationships:
 
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 
@@ -139,6 +140,46 @@ class DigiExamVisionCandidatePlanner:
         return replace(plan, request=request)
 
 
+@dataclass(frozen=True)
+class DigiExamDataURLVisionCandidatePlanner:
+    """Attach base64 data URLs to requests for remote Responses providers."""
+
+    base_planner: DigiExamAnswerKeyCandidatePlannerProtocol
+    item_assets_by_id: dict[str, DigiExamAnswerKeyVisionItemAssets]
+    media_path: Path
+
+    def plan_candidate(
+        self,
+        *,
+        job_id: str,
+        item: DigiExamIrItem,
+        profile: StructuredLLMProviderProfile | None,
+    ) -> DigiExamCompletionCandidatePlan | None:
+        """Build a candidate plan with provider-readable data URL images."""
+
+        plan = self.base_planner.plan_candidate(job_id=job_id, item=item, profile=profile)
+        if plan is None:
+            return None
+        if not (item.embedded_assets or item.embedded_asset_references):
+            return plan
+        if profile is None or not profile.capabilities.supports_multimodal_vision:
+            return None
+        item_assets = self.item_assets_by_id.get(item.item_id)
+        if item_assets is None:
+            return None
+        image_parts = _data_url_image_parts(media_path=self.media_path, item_assets=item_assets)
+        if not image_parts:
+            return None
+        request = replace(
+            plan.request,
+            user_content_parts=(
+                StructuredLLMTextContentPart(plan.request.user_payload),
+                *image_parts,
+            ),
+        )
+        return replace(plan, request=request)
+
+
 def _vision_item_can_use_assets(
     item: DigiExamIrItem,
     *,
@@ -210,3 +251,20 @@ def _prefixed_relative_path(prefix: str, relative_path: str) -> str:
     if prefix == "":
         return relative_path
     return f"{prefix}/{relative_path}"
+
+
+def _data_url_image_parts(
+    *,
+    media_path: Path,
+    item_assets: DigiExamAnswerKeyVisionItemAssets,
+) -> tuple[StructuredLLMImageURLContentPart, ...]:
+    parts: list[StructuredLLMImageURLContentPart] = []
+    for asset in item_assets.assets:
+        payload = (media_path / asset.relative_path).read_bytes()
+        encoded = base64.b64encode(payload).decode("ascii")
+        parts.append(
+            StructuredLLMImageURLContentPart(
+                url=f"data:{asset.media_type};base64,{encoded}",
+            )
+        )
+    return tuple(parts)

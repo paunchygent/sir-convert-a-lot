@@ -265,6 +265,9 @@ microprobe. Use the status code to choose the next action:
 - `400`: fix request shape. Check strict JSON Schema compatibility,
   `text.format`, image/data URL shape, unsupported field combinations, and
   payload or token limits.
+  - If `error.param` points at `input[0].content[*].image_url`, verify the
+    OpenAI/Responses path sends a fully qualified URL or
+    `data:image/<type>;base64,...`, not a media-root-local `file://...` URL.
 - `401` / `403`: fix Hemma credential, project, or model-access configuration.
 - `404`: the configured model/profile is unavailable for the active
   key/project.

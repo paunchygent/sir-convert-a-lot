@@ -285,6 +285,16 @@ provider exchange. That result proves the item-013 Responses multimodal
 request shape works with the local `OPENAI_API_KEY` credential source; it does
 not by itself prove Hemma's credential/project/model-access lane.
 
+Live Skriptoteket/Hemma proof later contradicted the service-path assumption:
+the provider diagnostic captured `HTTP 400`, `error.code=invalid_value`, and
+`error.param=input[0].content[1].image_url` for item-013. Root cause is that
+the production DigiExam answer-key completion runtime still emitted
+media-root-local `file://...` image URLs for OpenAI Responses, while the Task
+326 OpenAI eval planner emitted base64 `data:image/...;base64,...` URLs. OpenAI
+Responses image inputs require a fully qualified URL or a base64 data URL; the
+service runtime must use data URLs for OpenAI/remote Responses profiles and
+preserve `file://...` only for local providers that can read the media root.
+
 ## Test Requirements
 
 - Unit tests for OpenAI Responses payload construction and response/refusal
@@ -310,6 +320,12 @@ not by itself prove Hemma's credential/project/model-access lane.
   artifact paths are absent from normal production reports/logs.
 - Integration support tests proving Task 326 can select each OpenAI profile
   through provider-profile configuration without model-name branches.
+- Service-runtime vision tests proving OpenAI/Responses advisory completion
+  uses data URL image parts, while local Qwen/llama.cpp vision keeps
+  media-root-local file URLs.
+- Split large DigiExam migration API tests along bounded behavior surfaces
+  instead of adding new answer-key/provider regressions to the 2000-line route
+  test module.
 - Focused docs validation plus any code gates required by touched modules.
 
 ## Stop Conditions

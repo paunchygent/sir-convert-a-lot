@@ -16,7 +16,6 @@ Relationships:
 from __future__ import annotations
 
 import asyncio
-import base64
 import os
 import time
 from collections import Counter
@@ -33,8 +32,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
     build_digiexam_answer_key_completion_report,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
-    DigiExamAnswerKeyCandidatePlannerProtocol,
-    DigiExamCompletionCandidatePlan,
     answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
@@ -46,16 +43,13 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manife
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
-    DigiExamIrItem,
     build_digiexam_intermediate_exam,
 )
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
-    StructuredLLMImageURLContentPart,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
     StructuredLLMRoutePolicy,
-    StructuredLLMTextContentPart,
 )
 from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles import (
     OPENAI_API_KEY_ENV,
@@ -64,7 +58,9 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles i
     build_answer_key_openai_provider_profile,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
-    DigiExamAnswerKeyVisionItemAssets,
+    DigiExamDataURLVisionCandidatePlanner as OpenAIDataURLVisionCandidatePlanner,
+)
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
     export_digiexam_answer_key_vision_assets,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
@@ -290,46 +286,6 @@ def _exam_with_only_item(
     return replace(exam, items=selected_items)
 
 
-@dataclass(frozen=True)
-class OpenAIDataURLVisionCandidatePlanner:
-    """Attach OpenAI-readable image data URLs to vision-capable requests."""
-
-    base_planner: DigiExamAnswerKeyCandidatePlannerProtocol
-    item_assets_by_id: dict[str, DigiExamAnswerKeyVisionItemAssets]
-    media_path: Path
-
-    def plan_candidate(
-        self,
-        *,
-        job_id: str,
-        item: DigiExamIrItem,
-        profile: StructuredLLMProviderProfile | None,
-    ) -> DigiExamCompletionCandidatePlan | None:
-        """Build a candidate plan with OpenAI Responses image inputs."""
-
-        plan = self.base_planner.plan_candidate(job_id=job_id, item=item, profile=profile)
-        if plan is None:
-            return None
-        if not (item.embedded_assets or item.embedded_asset_references):
-            return plan
-        if profile is None or not profile.capabilities.supports_multimodal_vision:
-            return None
-        item_assets = self.item_assets_by_id.get(item.item_id)
-        if item_assets is None:
-            return None
-        image_parts = _data_url_image_parts(media_path=self.media_path, item_assets=item_assets)
-        if not image_parts:
-            return None
-        request = replace(
-            plan.request,
-            user_content_parts=(
-                StructuredLLMTextContentPart(plan.request.user_payload),
-                *image_parts,
-            ),
-        )
-        return replace(plan, request=request)
-
-
 def _blocked_report(
     *,
     corpus_root: Path,
@@ -422,23 +378,6 @@ def _output_mode_policy_payload(profile: StructuredLLMProviderProfile) -> dict[s
         "multiple_response": profile.output_mode.value,
         "gap_fill": profile.output_mode.value,
     }
-
-
-def _data_url_image_parts(
-    *,
-    media_path: Path,
-    item_assets: DigiExamAnswerKeyVisionItemAssets,
-) -> tuple[StructuredLLMImageURLContentPart, ...]:
-    parts: list[StructuredLLMImageURLContentPart] = []
-    for asset in item_assets.assets:
-        payload = (media_path / asset.relative_path).read_bytes()
-        encoded = base64.b64encode(payload).decode("ascii")
-        parts.append(
-            StructuredLLMImageURLContentPart(
-                url=f"data:{asset.media_type};base64,{encoded}",
-            )
-        )
-    return tuple(parts)
 
 
 def _attach_provider_exchanges(

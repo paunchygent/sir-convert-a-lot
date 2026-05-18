@@ -35,8 +35,12 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import DigiExamAnswerKeyCompletio
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
 )
-from scripts.sir_convert_a_lot.domain.structured_llm_contracts import StructuredChatProviderSet
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
+    StructuredChatProviderSet,
+    StructuredLLMEndpointKind,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
+    DigiExamDataURLVisionCandidatePlanner,
     DigiExamVisionCandidatePlanner,
     export_digiexam_answer_key_vision_assets,
 )
@@ -176,7 +180,7 @@ def _vision_candidate_planner(
     exam: DigiExamIntermediateExam,
     structured_config: StructuredLLMRuntimeConfig,
     provider_set: StructuredChatProviderSet | None,
-) -> DigiExamVisionCandidatePlanner | None:
+) -> DigiExamVisionCandidatePlanner | DigiExamDataURLVisionCandidatePlanner | None:
     if provider_set is None:
         return None
     primary = provider_set.primary
@@ -197,6 +201,12 @@ def _vision_candidate_planner(
         media_path=structured_config.vision_media_path,
         relative_path_prefix=job_id,
     )
+    if primary.endpoint_kind == StructuredLLMEndpointKind.RESPONSES or primary.is_remote:
+        return DigiExamDataURLVisionCandidatePlanner(
+            base_planner=base_planner,
+            item_assets_by_id=item_assets,
+            media_path=structured_config.vision_media_path,
+        )
     return DigiExamVisionCandidatePlanner(
         base_planner=base_planner,
         item_assets_by_id=item_assets,
