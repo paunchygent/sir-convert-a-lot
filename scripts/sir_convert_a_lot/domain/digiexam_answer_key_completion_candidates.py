@@ -394,6 +394,8 @@ def _json_schema_profile(
 ) -> StructuredLLMProviderProfile | None:
     if profile is None or profile.output_mode == StructuredLLMOutputMode.JSON_SCHEMA:
         return profile
+    if profile.output_mode == StructuredLLMOutputMode.JSON_OBJECT:
+        return profile
     if profile.output_mode == StructuredLLMOutputMode.VLLM_JSON_SCHEMA:
         return profile
     if profile.endpoint_kind == StructuredLLMEndpointKind.VLLM_CHAT_COMPLETIONS:

@@ -365,6 +365,7 @@ def _provider_run_metadata(
 def _capabilities_payload(capabilities: StructuredLLMProviderCapabilities) -> dict[str, object]:
     return {
         "supports_json_schema": capabilities.supports_json_schema,
+        "supports_json_object": capabilities.supports_json_object,
         "supports_gbnf": capabilities.supports_gbnf,
         "supports_vllm_structured_choice": capabilities.supports_vllm_structured_choice,
         "supports_multimodal_vision": capabilities.supports_multimodal_vision,

@@ -40,7 +40,9 @@ GAP_FILL_ANSWER_KEY_SYSTEM_PROMPT = (
     "surrounding cloze text and any visible word bank or candidate list. "
     "Return the exact value a student is expected to put in the blank. When "
     "a candidate is identified by a short label and longer text, return only "
-    "the label. Do not paraphrase, substitute synonyms, or expand labels."
+    "the label. If the question explicitly says to write a number, letter, "
+    "or other label type, follow that instruction even when both sides are "
+    "labeled. Do not paraphrase, substitute synonyms, or expand labels."
 )
 
 
@@ -134,6 +136,9 @@ def gap_fill_answer_key_model_payload(
                 "bank or list. If candidates are labeled with short labels such "
                 "as A, B, C, D, E, 1, 2, 3, or similar and the longer text "
                 "explains each label, return only the label, not the explanation. "
+                "If the question says to write the correct number, letter, or "
+                "other label type, use that requested label type and do not copy "
+                "the surrounding row label for the blank. "
                 "Use a full precise term only when no word bank, candidate list, "
                 "or candidate label is visible."
             ),

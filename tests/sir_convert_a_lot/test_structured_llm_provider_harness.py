@@ -32,6 +32,7 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMRouteReason,
     StructuredLLMTextContentPart,
     StructuredLLMTextVerbosity,
+    StructuredLLMThinkingMode,
     StructuredOutputSpec,
     build_structured_llm_capture_metadata,
     decide_structured_llm_route,
@@ -77,6 +78,28 @@ def test_chat_completions_payload_uses_response_format_json_schema() -> None:
     assert json_schema["name"] == "choice_decision"
     assert json_schema["strict"] is True
     assert json_schema["schema"] == CHOICE_DECISION_SCHEMA
+
+
+def test_chat_completions_payload_can_use_json_object_without_schema_format() -> None:
+    request = _request(system_prompt="Return JSON only.")
+    profile = _profile(
+        endpoint_kind=StructuredLLMEndpointKind.CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.JSON_OBJECT,
+        is_remote=True,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=False,
+            supports_json_object=True,
+            supports_gbnf=False,
+            supports_vllm_structured_choice=False,
+        ),
+        thinking_mode=StructuredLLMThinkingMode.DISABLED,
+    )
+
+    payload = build_chat_completions_payload(profile=profile, request=request)
+
+    assert payload["response_format"] == {"type": "json_object"}
+    assert payload["thinking"] == {"type": "disabled"}
+    assert "json_schema" not in payload
 
 
 def test_responses_payload_uses_text_format_json_schema() -> None:
@@ -450,6 +473,7 @@ def _profile(
     capabilities: StructuredLLMProviderCapabilities | None = None,
     reasoning_effort: StructuredLLMReasoningEffort | None = None,
     text_verbosity: StructuredLLMTextVerbosity | None = None,
+    thinking_mode: StructuredLLMThinkingMode | None = None,
 ) -> StructuredLLMProviderProfile:
     return StructuredLLMProviderProfile(
         provider_id=provider_id,
@@ -467,6 +491,7 @@ def _profile(
         ),
         reasoning_effort=reasoning_effort,
         text_verbosity=text_verbosity,
+        thinking_mode=thinking_mode,
     )
 
 

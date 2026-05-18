@@ -22,6 +22,10 @@ from enum import StrEnum
 from pathlib import Path
 from urllib.parse import urlparse
 
+from scripts.sir_convert_a_lot.infrastructure.answer_key_deepseek_model_profiles import (
+    AnswerKeyDeepSeekProviderProfileName,
+    answer_key_deepseek_provider_json_for_profile,
+)
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     LLAMA_CPP_PROVIDER_ID,
     QWEN36_LLAMA_CPP_CONTEXT_WINDOW_TOKENS,
@@ -57,7 +61,9 @@ QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_HOST_PATH = Path(
 
 _PROD_FORBIDDEN_PROVIDER_HOSTS = frozenset({"127.0.0.1", "localhost", "host.docker.internal"})
 AnswerKeyRuntimeProviderProfileName = (
-    AnswerKeyProviderProfileName | AnswerKeyOpenAIProviderProfileName
+    AnswerKeyProviderProfileName
+    | AnswerKeyOpenAIProviderProfileName
+    | AnswerKeyDeepSeekProviderProfileName
 )
 
 
@@ -79,9 +85,12 @@ def render_answer_key_provider_environment(
     """Render canonical env keys for one answer-key provider profile."""
 
     providers_json = answer_key_provider_json_for_profile(lane=lane, profile_name=profile_name)
-    is_openai_profile = isinstance(profile_name, AnswerKeyOpenAIProviderProfileName)
-    primary_provider_id = profile_name.value if is_openai_profile else LLAMA_CPP_PROVIDER_ID
-    remote_enabled = "1" if is_openai_profile else "0"
+    is_api_profile = isinstance(
+        profile_name,
+        AnswerKeyOpenAIProviderProfileName | AnswerKeyDeepSeekProviderProfileName,
+    )
+    primary_provider_id = profile_name.value if is_api_profile else LLAMA_CPP_PROVIDER_ID
+    remote_enabled = "1" if is_api_profile else "0"
     return {
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED": "1",
         STRUCTURED_LLM_PROVIDER_PROFILE_ENV: profile_name.value,
@@ -107,6 +116,9 @@ def answer_key_provider_json_for_profile(
 ) -> str:
     """Render compact provider JSON for the selected runtime lane."""
 
+    if isinstance(profile_name, AnswerKeyDeepSeekProviderProfileName):
+        del lane
+        return answer_key_deepseek_provider_json_for_profile(profile_name)
     if isinstance(profile_name, AnswerKeyOpenAIProviderProfileName):
         del lane
         return answer_key_openai_provider_json_for_profile(profile_name)
@@ -185,6 +197,10 @@ def _model_for_profile(profile_name: AnswerKeyProviderProfileName) -> str:
 
 
 def _runtime_profile_name(raw_profile: str) -> AnswerKeyRuntimeProviderProfileName:
+    try:
+        return AnswerKeyDeepSeekProviderProfileName(raw_profile)
+    except ValueError:
+        pass
     try:
         return AnswerKeyOpenAIProviderProfileName(raw_profile)
     except ValueError:

@@ -24,6 +24,7 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
+    StructuredLLMThinkingMode,
 )
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     AnswerKeyProviderDefaults,
@@ -327,18 +328,21 @@ def structured_profile_from_answer_key_provider_run_metadata(
         temperature=_required_metadata_float(metadata.temperature, "temperature"),
         capabilities=StructuredLLMProviderCapabilities(
             supports_json_schema=_bool_capability(metadata, "supports_json_schema"),
+            supports_json_object=_optional_bool_capability(metadata, "supports_json_object"),
             supports_gbnf=_bool_capability(metadata, "supports_gbnf"),
             supports_vllm_structured_choice=_bool_capability(
                 metadata, "supports_vllm_structured_choice"
             ),
             supports_multimodal_vision=_bool_capability(metadata, "supports_multimodal_vision"),
         ),
+        thinking_mode=_optional_thinking_mode(metadata),
     )
 
 
 def _capabilities_payload(capabilities: StructuredLLMProviderCapabilities) -> dict[str, object]:
     return {
         "supports_json_schema": capabilities.supports_json_schema,
+        "supports_json_object": capabilities.supports_json_object,
         "supports_gbnf": capabilities.supports_gbnf,
         "supports_vllm_structured_choice": capabilities.supports_vllm_structured_choice,
         "supports_multimodal_vision": capabilities.supports_multimodal_vision,
@@ -370,6 +374,8 @@ def _request_settings_payload(
     payload["temperature"] = profile.temperature
     payload["max_output_tokens"] = profile.max_output_tokens
     payload["context_window_tokens"] = profile.context_window_tokens
+    if profile.thinking_mode is not None:
+        payload["thinking_mode"] = profile.thinking_mode.value
     return payload
 
 
@@ -486,8 +492,28 @@ def _required_metadata_float(value: float | None, key: str) -> float:
     return value
 
 
+def _optional_thinking_mode(
+    metadata: Task309ProviderRunMetadata,
+) -> StructuredLLMThinkingMode | None:
+    value = metadata.request_settings.get("thinking_mode")
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("Task 309 provider metadata thinking_mode must be a string.")
+    return StructuredLLMThinkingMode(value)
+
+
 def _bool_capability(metadata: Task309ProviderRunMetadata, key: str) -> bool:
     value = metadata.capabilities.get(key)
+    if not isinstance(value, bool):
+        raise ValueError(f"Task 309 provider capability {key} must be a boolean.")
+    return value
+
+
+def _optional_bool_capability(metadata: Task309ProviderRunMetadata, key: str) -> bool:
+    value = metadata.capabilities.get(key)
+    if value is None:
+        return False
     if not isinstance(value, bool):
         raise ValueError(f"Task 309 provider capability {key} must be a boolean.")
     return value

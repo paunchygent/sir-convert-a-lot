@@ -40,6 +40,7 @@ class StructuredLLMOutputMode(StrEnum):
     """Provider-specific constrained-output modes."""
 
     JSON_SCHEMA = "json_schema"
+    JSON_OBJECT = "json_object"
     GBNF = "gbnf"
     VLLM_STRUCTURED_CHOICE = "vllm_structured_choice"
     VLLM_JSON_SCHEMA = "vllm_json_schema"
@@ -62,6 +63,13 @@ class StructuredLLMTextVerbosity(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+
+
+class StructuredLLMThinkingMode(StrEnum):
+    """Provider thinking-mode toggle when supported by the endpoint."""
+
+    ENABLED = "enabled"
+    DISABLED = "disabled"
 
 
 class StructuredLLMRouteReason(StrEnum):
@@ -139,6 +147,7 @@ class StructuredLLMProviderCapabilities:
     supports_json_schema: bool
     supports_gbnf: bool
     supports_vllm_structured_choice: bool
+    supports_json_object: bool = False
     supports_multimodal_vision: bool = False
 
 
@@ -157,6 +166,7 @@ class StructuredLLMProviderProfile:
     temperature: float = 0.0
     reasoning_effort: StructuredLLMReasoningEffort | None = None
     text_verbosity: StructuredLLMTextVerbosity | None = None
+    thinking_mode: StructuredLLMThinkingMode | None = None
 
     def __post_init__(self) -> None:
         if not self.provider_id.strip():
@@ -176,6 +186,9 @@ class StructuredLLMProviderProfile:
         if self.output_mode == StructuredLLMOutputMode.JSON_SCHEMA:
             if not self.capabilities.supports_json_schema:
                 raise ValueError("Provider profile selects JSON Schema without capability.")
+        if self.output_mode == StructuredLLMOutputMode.JSON_OBJECT:
+            if not self.capabilities.supports_json_object:
+                raise ValueError("Provider profile selects JSON object without capability.")
         if self.output_mode == StructuredLLMOutputMode.VLLM_JSON_SCHEMA:
             if not self.capabilities.supports_json_schema:
                 raise ValueError("Provider profile selects vLLM JSON Schema without capability.")

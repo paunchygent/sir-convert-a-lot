@@ -16,6 +16,9 @@ import json
 
 import pytest
 
+from scripts.sir_convert_a_lot.infrastructure.answer_key_deepseek_model_profiles import (
+    AnswerKeyDeepSeekProviderProfileName,
+)
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     LLAMA_CPP_PROVIDER_ID,
     AnswerKeyProviderProfileName,
@@ -167,6 +170,23 @@ def test_openai_profile_ignores_container_lane_url_selection() -> None:
     )
 
     assert provider_payload["base_url"] == "https://api.openai.com"
+
+
+def test_deepseek_profile_ignores_container_lane_url_selection() -> None:
+    provider_json = answer_key_provider_json_for_profile(
+        lane=AnswerKeyProviderRuntimeLane.LOCAL_HOST,
+        profile_name=AnswerKeyDeepSeekProviderProfileName.V4_FLASH_NON_THINKING,
+    )
+
+    provider_payload = _provider_payload(
+        provider_json,
+        provider_id="deepseek-v4-flash-non-thinking",
+    )
+
+    assert provider_payload["base_url"] == "https://api.deepseek.com"
+    assert provider_payload["model"] == "deepseek-v4-flash"
+    assert provider_payload["output_mode"] == "json_object"
+    assert provider_payload["thinking_mode"] == "disabled"
 
 
 def _provider_payload(providers_json: str, *, provider_id: str) -> dict[str, object]:

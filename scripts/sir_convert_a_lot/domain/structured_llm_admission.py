@@ -95,6 +95,8 @@ def structured_llm_provider_family(profile: StructuredLLMProviderProfile) -> str
 
     if profile.provider_id.startswith("openai-"):
         return "openai_responses"
+    if profile.provider_id.startswith("deepseek-"):
+        return "deepseek_json_object"
     if profile.endpoint_kind == StructuredLLMEndpointKind.RESPONSES and profile.is_remote:
         return "api_responses"
     if profile.is_remote:

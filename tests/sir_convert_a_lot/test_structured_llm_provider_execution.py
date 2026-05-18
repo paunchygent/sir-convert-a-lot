@@ -117,6 +117,55 @@ def test_http_provider_executes_chat_completions_and_parses_json_content() -> No
     assert captured_requests[0].headers["X-Test"] == "1"
 
 
+def test_http_provider_executes_json_object_chat_and_validates_content() -> None:
+    captured_payloads: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content.decode("utf-8"))
+        captured_payloads.append(payload)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "selected_choice_ids": ["choice-b"],
+                                    "manual_follow_up_required": False,
+                                }
+                            )
+                        },
+                        "finish_reason": "stop",
+                    }
+                ]
+            },
+        )
+
+    response = asyncio.run(
+        _complete_with_transport(
+            handler=handler,
+            profile=_profile(
+                output_mode=StructuredLLMOutputMode.JSON_OBJECT,
+                is_remote=True,
+                capabilities=StructuredLLMProviderCapabilities(
+                    supports_json_schema=False,
+                    supports_json_object=True,
+                    supports_gbnf=False,
+                    supports_vllm_structured_choice=False,
+                ),
+            ),
+            request=_request(),
+        )
+    )
+
+    assert response.content == {
+        "selected_choice_ids": ["choice-b"],
+        "manual_follow_up_required": False,
+    }
+    assert captured_payloads[0]["response_format"] == {"type": "json_object"}
+
+
 def test_http_provider_executes_responses_endpoint_and_parses_output_object() -> None:
     captured_urls: list[str] = []
 

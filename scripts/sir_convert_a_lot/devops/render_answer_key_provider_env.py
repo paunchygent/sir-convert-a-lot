@@ -15,6 +15,10 @@ from __future__ import annotations
 import argparse
 import sys
 
+from scripts.sir_convert_a_lot.infrastructure.answer_key_deepseek_model_profiles import (
+    AnswerKeyDeepSeekProviderProfileName,
+    answer_key_deepseek_provider_profile_values,
+)
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     AnswerKeyProviderProfileName,
 )
@@ -40,6 +44,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--profile",
         choices=[
             *answer_key_openai_provider_profile_values(),
+            *answer_key_deepseek_provider_profile_values(),
             AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP.value,
             AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP.value,
         ],
@@ -62,6 +67,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _profile_name(value: str) -> AnswerKeyRuntimeProviderProfileName:
+    try:
+        return AnswerKeyDeepSeekProviderProfileName(value)
+    except ValueError:
+        pass
     try:
         return AnswerKeyOpenAIProviderProfileName(value)
     except ValueError:

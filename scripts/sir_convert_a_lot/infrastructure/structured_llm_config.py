@@ -31,6 +31,7 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMReasoningEffort,
     StructuredLLMRoutePolicy,
     StructuredLLMTextVerbosity,
+    StructuredLLMThinkingMode,
 )
 from scripts.sir_convert_a_lot.infrastructure.answer_key_provider_runtime_config import (
     provider_json_from_runtime_profile,
@@ -62,12 +63,14 @@ STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY = "max_output_tokens"
 STRUCTURED_LLM_PROVIDER_TEMPERATURE_KEY = "temperature"
 STRUCTURED_LLM_PROVIDER_REASONING_EFFORT_KEY = "reasoning_effort"
 STRUCTURED_LLM_PROVIDER_TEXT_VERBOSITY_KEY = "text_verbosity"
+STRUCTURED_LLM_PROVIDER_THINKING_MODE_KEY = "thinking_mode"
 STRUCTURED_LLM_PROVIDER_BASE_URL_KEY = "base_url"
 STRUCTURED_LLM_PROVIDER_API_KEY_ENV_KEY = "api_key_env"
 STRUCTURED_LLM_PROVIDER_EXTRA_HEADERS_KEY = "extra_headers"
 STRUCTURED_LLM_PROVIDER_TIMEOUT_SECONDS_KEY = "timeout_seconds"
 STRUCTURED_LLM_PROVIDER_CAPABILITIES_KEY = "capabilities"
 STRUCTURED_LLM_CAPABILITY_JSON_SCHEMA_KEY = "supports_json_schema"
+STRUCTURED_LLM_CAPABILITY_JSON_OBJECT_KEY = "supports_json_object"
 STRUCTURED_LLM_CAPABILITY_GBNF_KEY = "supports_gbnf"
 STRUCTURED_LLM_CAPABILITY_VLLM_CHOICE_KEY = "supports_vllm_structured_choice"
 STRUCTURED_LLM_CAPABILITY_MULTIMODAL_VISION_KEY = "supports_multimodal_vision"
@@ -266,6 +269,7 @@ def _provider_profile_from_payload(
         ),
         reasoning_effort=_optional_reasoning_effort(payload, provider_id=provider_id),
         text_verbosity=_optional_text_verbosity(payload, provider_id=provider_id),
+        thinking_mode=_optional_thinking_mode(payload, provider_id=provider_id),
         capabilities=_capabilities_from_payload(
             _required_mapping(payload, STRUCTURED_LLM_PROVIDER_CAPABILITIES_KEY, provider_id),
             provider_id=provider_id,
@@ -303,6 +307,12 @@ def _capabilities_from_payload(
             payload,
             STRUCTURED_LLM_CAPABILITY_JSON_SCHEMA_KEY,
             provider_id,
+        ),
+        supports_json_object=_optional_bool(
+            payload,
+            STRUCTURED_LLM_CAPABILITY_JSON_OBJECT_KEY,
+            provider_id,
+            default=False,
         ),
         supports_gbnf=_required_bool(payload, STRUCTURED_LLM_CAPABILITY_GBNF_KEY, provider_id),
         supports_vllm_structured_choice=_required_bool(
@@ -426,6 +436,21 @@ def _optional_text_verbosity(
         raise ValueError(
             f"{STRUCTURED_LLM_PROVIDERS_JSON_ENV}[{provider_id}]."
             f"{STRUCTURED_LLM_PROVIDER_TEXT_VERBOSITY_KEY} is unsupported: {raw!r}."
+        ) from exc
+
+
+def _optional_thinking_mode(
+    payload: Mapping[object, object], *, provider_id: str
+) -> StructuredLLMThinkingMode | None:
+    raw = _optional_str(payload, STRUCTURED_LLM_PROVIDER_THINKING_MODE_KEY, provider_id)
+    if raw is None:
+        return None
+    try:
+        return StructuredLLMThinkingMode(raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"{STRUCTURED_LLM_PROVIDERS_JSON_ENV}[{provider_id}]."
+            f"{STRUCTURED_LLM_PROVIDER_THINKING_MODE_KEY} is unsupported: {raw!r}."
         ) from exc
 
 

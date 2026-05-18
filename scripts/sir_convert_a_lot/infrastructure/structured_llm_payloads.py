@@ -52,13 +52,6 @@ def build_chat_completions_payload(
 ) -> StructuredLLMPayload:
     """Build a Chat Completions payload using `response_format.json_schema`."""
 
-    _require_output_mode(
-        profile=profile,
-        allowed=(
-            StructuredLLMOutputMode.JSON_SCHEMA,
-            StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
-        ),
-    )
     _require_text_only(request=request, provider_id=profile.provider_id)
     payload: StructuredLLMPayload = {
         "model": profile.model,
@@ -66,8 +59,19 @@ def build_chat_completions_payload(
         "stream": False,
         "max_tokens": request.max_output_tokens,
         "temperature": profile.temperature,
-        "response_format": build_chat_completions_response_format(request.output_spec),
     }
+    _apply_chat_completions_thinking_mode(payload=payload, profile=profile)
+    if profile.output_mode == StructuredLLMOutputMode.JSON_OBJECT:
+        payload["response_format"] = build_chat_completions_json_object_response_format()
+        return payload
+    _require_output_mode(
+        profile=profile,
+        allowed=(
+            StructuredLLMOutputMode.JSON_SCHEMA,
+            StructuredLLMOutputMode.VLLM_JSON_SCHEMA,
+        ),
+    )
+    payload["response_format"] = build_chat_completions_response_format(request.output_spec)
     return payload
 
 
@@ -151,6 +155,12 @@ def build_vllm_chat_completions_payload(
     return payload
 
 
+def build_chat_completions_json_object_response_format() -> dict[str, JsonValue]:
+    """Build Chat Completions `response_format` for JSON-object mode."""
+
+    return {"type": "json_object"}
+
+
 def build_chat_completions_response_format(spec: StructuredOutputSpec) -> dict[str, JsonValue]:
     """Build OpenAI Chat Completions `response_format` for JSON Schema."""
 
@@ -220,6 +230,16 @@ def _responses_user_content(request: StructuredLLMRequest) -> list[JsonValue]:
         else:
             raise TypeError(f"Unsupported structured LLM content part: {type(part).__name__}")
     return parts
+
+
+def _apply_chat_completions_thinking_mode(
+    *,
+    payload: StructuredLLMPayload,
+    profile: StructuredLLMProviderProfile,
+) -> None:
+    if profile.thinking_mode is None:
+        return
+    payload["thinking"] = {"type": profile.thinking_mode.value}
 
 
 def _require_output_mode(

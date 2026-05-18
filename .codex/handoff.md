@@ -173,7 +173,6 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 
 ## Validation
 
-- Older validation evidence lives in governed tasks, references, reviews, and long-term memory.
 - Task 309/319/326 provider evidence remains governed by those tasks: mini is
   the temporary accepted/default dev/prod provider; Qwen3.6 is guarded rollback.
 - Task 321 local validation passed; live dev-container proof still requires
@@ -188,6 +187,13 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
 - 2026-05-18 Task 325 diagnostics and gap-label policy validation lives in the
   task doc. Focused local gates passed, OpenAI item-013 returned labels only,
   and all current label/number gap-fill eval rows returned expected labels.
+- 2026-05-18 Task 334 added a guarded DeepSeek v4 flash non-thinking JSON
+  Output provider profile. Full eval evidence is retained under
+  `build/verification/task-334-deepseek-v4-flash-full-eval-2026-05-18/`: 42
+  supported text suggestions, 39 correct, 3 wrong-but-valid, 2 image/asset
+  manual follow-up skips. Do not promote DeepSeek yet; the DeepSeek API provider
+  surface for this model rejects OpenAI-style `image_url` payloads with HTTP
+  400.
 
 ## Stop Conditions
 
