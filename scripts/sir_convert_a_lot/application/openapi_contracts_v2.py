@@ -317,6 +317,24 @@ class DigiExamAnswerKeyCompletionReportItemV1(BaseModel):
     backend_failure_code: str | None = None
 
 
+class DigiExamAnswerKeyCompletionProviderLineageV1(BaseModel):
+    """Report-level admitted provider route lineage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider_family: str
+    provider_profile_id: str
+    model: str
+    endpoint_kind: str
+    output_mode: str
+    reasoning_effort: str | None = None
+    text_verbosity: str | None = None
+    settings_version: int = Field(gt=0)
+    route_class: str
+    route_decision: str
+    remote_provider_authorized: bool
+
+
 class DigiExamAnswerKeyCompletionReportV1(BaseModel):
     """Advisory answer-key completion report without source provenance."""
 
@@ -325,6 +343,7 @@ class DigiExamAnswerKeyCompletionReportV1(BaseModel):
     schema_version: AnswerKeyCompletionReportSchemaVersion
     job_id: str
     completion_mode: Literal["local_llm_suggest_missing_machine_marked"]
+    provider_lineage: DigiExamAnswerKeyCompletionProviderLineageV1 | None = None
     items: list[DigiExamAnswerKeyCompletionReportItemV1]
 
 

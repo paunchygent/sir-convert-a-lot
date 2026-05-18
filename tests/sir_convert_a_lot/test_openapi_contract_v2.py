@@ -87,6 +87,25 @@ def test_create_job_openapi_contract_exposes_typed_multipart_json_parts() -> Non
         "job_spec": {"contentType": "application/json"},
         "digiexam_ingestion_overlay": {"contentType": "application/json"},
     }
+    assert "exam_authoring_matching_manual_answer_key" not in properties
+
+
+def test_matching_apply_openapi_contract_exposes_request_body_route() -> None:
+    schema = build_openapi_contract_v2()
+    paths = _mapping(schema["paths"])
+    route = _mapping(_mapping(paths["/v2/exam-authoring/matching/manual-answer-key/apply"])["post"])
+    request_body = _mapping(route["requestBody"])
+    content = _mapping(request_body["content"])
+    json_body = _mapping(content["application/json"])
+
+    assert json_body["schema"] == {
+        "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyApplyRequest"
+    }
+    responses = _mapping(route["responses"])
+    response_200 = _mapping(_mapping(_mapping(responses["200"])["content"])["application/json"])
+    assert response_200["schema"] == {
+        "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyApplyResponse"
+    }
 
 
 def test_digiexam_consumer_components_are_published() -> None:
@@ -104,8 +123,12 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamIngestionOverlayReportV1",
         "DigiExamAnswerKeyCompletionReportV1",
         "ExamAuthoringMatchingManualAnswerKey",
+        "ExamAuthoringMatchingManualAnswerKeyApplyRequest",
+        "ExamAuthoringMatchingManualAnswerKeyApplyResponse",
+        "ExamAuthoringMatchingInteractionV1",
         "ExamAuthoringMatchingManualAnswerKeyPair",
         "ExamAuthoringMatchingManualAnswerKeyPayload",
+        "ExamAuthoringMatchingTargetReadinessRowV1",
         "DigiExamOverlayReviewedCompletionAnswerKey",
         "DigiExamOverlayReviewedCompletionCandidateLineage",
         "DigiExamOverlayPointCorrection",
@@ -141,6 +164,10 @@ def test_digiexam_consumer_components_are_published() -> None:
     completion_properties = _mapping(completion_report["properties"])
     completion_schema_version = _mapping(completion_properties["schema_version"])
     assert completion_schema_version["const"] == ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION
+    assert _mapping(completion_properties["provider_lineage"])["anyOf"] == [
+        {"$ref": "#/components/schemas/DigiExamAnswerKeyCompletionProviderLineageV1"},
+        {"type": "null"},
+    ]
     assert "DigiExamOverlayMatchingPair" not in schemas
     assert "DigiExamOverlayMatchingManualAnswerKey" not in schemas
     assert "DigiExamOverlayMatchingItemPatch" not in schemas

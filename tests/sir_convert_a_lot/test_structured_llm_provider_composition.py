@@ -46,7 +46,9 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     STRUCTURED_LLM_PROVIDER_MAX_OUTPUT_TOKENS_KEY,
     STRUCTURED_LLM_PROVIDER_MODEL_KEY,
     STRUCTURED_LLM_PROVIDER_OUTPUT_MODE_KEY,
+    STRUCTURED_LLM_PROVIDER_REASONING_EFFORT_KEY,
     STRUCTURED_LLM_PROVIDER_TEMPERATURE_KEY,
+    STRUCTURED_LLM_PROVIDER_TEXT_VERBOSITY_KEY,
     STRUCTURED_LLM_PROVIDER_TIMEOUT_SECONDS_KEY,
     STRUCTURED_LLM_PROVIDERS_JSON_ENV,
     STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED_ENV,
@@ -110,6 +112,8 @@ def test_structured_llm_service_config_loads_provider_set_from_constants() -> No
     assert config.provider_set.primary.temperature == 0.15
     assert config.provider_set.fallback is not None
     assert config.provider_set.fallback.is_remote is True
+    assert config.provider_set.fallback.reasoning_effort == "none"
+    assert config.provider_set.fallback.text_verbosity == "low"
     assert config.connections["granite-local"].normalized_base_url == "http://127.0.0.1:8123/v1"
     assert config.connections["remote-openai"].api_key == "remote-secret"
     assert config.connections["remote-openai"].extra_headers == {"X-Provider": "test"}
@@ -277,6 +281,8 @@ def _provider_payload(
     }
     if api_key_env is not None:
         payload[STRUCTURED_LLM_PROVIDER_API_KEY_ENV_KEY] = api_key_env
+        payload[STRUCTURED_LLM_PROVIDER_REASONING_EFFORT_KEY] = "none"
+        payload[STRUCTURED_LLM_PROVIDER_TEXT_VERBOSITY_KEY] = "low"
     if extra_headers is not None:
         payload[STRUCTURED_LLM_PROVIDER_EXTRA_HEADERS_KEY] = extra_headers
     return payload

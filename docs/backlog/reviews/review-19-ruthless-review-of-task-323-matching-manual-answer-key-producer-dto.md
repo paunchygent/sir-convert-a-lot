@@ -68,8 +68,7 @@ None.
 - Task 323 stays aligned with production intent: it exposes a producer-owned,
   source-neutral `ExamAuthoringMatchingManualAnswerKey` DTO and application
   boundary instead of adding a DigiExam matching overlay or consumer-local shape.
-- The DTO publishes `kind: "matching"`, `schema_version:
-  "exam_authoring_ir_v1"`, `interaction_id`, optional
+- The DTO publishes `kind: "matching"`, `schema_version: "exam_authoring_ir_v1"`, `interaction_id`, optional
   `source_item_fingerprint`, and directed `source_id`/`target_id` pairs.
 - Schema validation forbids extra fields, rejects retired `left_id`/`right_id`
   aliases, rejects aggregate `mixed` provenance, and rejects non-empty pairs

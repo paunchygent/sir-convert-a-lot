@@ -17,6 +17,9 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
 
 
 @dataclass
@@ -74,3 +77,4 @@ class StoredJobV2:
     failure_message: str | None = None
     failure_retryable: bool = False
     failure_details: dict[str, object] | None = None
+    structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None

@@ -26,10 +26,12 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
+    StructuredLLMReasoningEffort,
     StructuredLLMRequest,
     StructuredLLMRoutePolicy,
     StructuredLLMRouteReason,
     StructuredLLMTextContentPart,
+    StructuredLLMTextVerbosity,
     StructuredOutputSpec,
     build_structured_llm_capture_metadata,
     decide_structured_llm_route,
@@ -95,6 +97,23 @@ def test_responses_payload_uses_text_format_json_schema() -> None:
         "schema": CHOICE_DECISION_SCHEMA,
     }
     assert "response_format" not in payload
+
+
+def test_responses_payload_emits_manifest_controlled_behavior_settings() -> None:
+    request = _request()
+    profile = _profile(
+        endpoint_kind=StructuredLLMEndpointKind.RESPONSES,
+        is_remote=True,
+        reasoning_effort=StructuredLLMReasoningEffort.NONE,
+        text_verbosity=StructuredLLMTextVerbosity.LOW,
+    )
+
+    payload = build_responses_payload(profile=profile, request=request)
+
+    assert payload["reasoning"] == {"effort": "none"}
+    text = payload["text"]
+    assert isinstance(text, dict)
+    assert text["verbosity"] == "low"
 
 
 def test_llama_cpp_payload_uses_gbnf_when_profile_requires_grammar() -> None:
@@ -429,6 +448,8 @@ def _profile(
     context_window_tokens: int = 4096,
     max_output_tokens: int = 512,
     capabilities: StructuredLLMProviderCapabilities | None = None,
+    reasoning_effort: StructuredLLMReasoningEffort | None = None,
+    text_verbosity: StructuredLLMTextVerbosity | None = None,
 ) -> StructuredLLMProviderProfile:
     return StructuredLLMProviderProfile(
         provider_id=provider_id,
@@ -444,6 +465,8 @@ def _profile(
             supports_gbnf=False,
             supports_vllm_structured_choice=False,
         ),
+        reasoning_effort=reasoning_effort,
+        text_verbosity=text_verbosity,
     )
 
 

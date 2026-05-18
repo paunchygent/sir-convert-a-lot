@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-05-14'
-last_updated: '2026-05-15'
+last_updated: '2026-05-18'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
@@ -20,6 +20,9 @@ related:
   - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
   - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
   - docs/backlog/tasks/task-318-make-task-309-eval-provider-metadata-profile-driven.md
+  - docs/backlog/tasks/task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md
+  - docs/backlog/tasks/task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md
+  - docs/decisions/0010-hot-swappable-structured-answer-key-provider-routing.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
 labels:
@@ -55,6 +58,9 @@ budgeting, Dishka wiring, and remote fallback policy where appropriate.
   minus safety margin, with conservative fallback for unknown/local tokenizers.
 - Implement route policy where remote provider fallback is forbidden by default
   and explicit false is terminal.
+- Implement provider routing so the active provider profile for new advisory
+  requests can be changed through running service settings, not only through
+  startup environment variables or container recreation.
 - Keep production capture metadata-only unless a separate governed evaluation
   mode is added.
 
@@ -100,6 +106,27 @@ from the selected provider/default object so model changes inject runtime,
 sampling, output-mode, capability, and vision media-path settings without
 model-name branches in the evaluator.
 
+ADR-0010 is the accepted provider-routing decision for the next API-provider
+slice. Review 20 is approved. It selects direct Sir Convert API providers first,
+starting with OpenAI, and requires hot service settings so CLI/API traffic can
+route new advisory requests between configured local and API providers without
+service restart or container recreation. Production local-provider routing
+depends on Task 320, now done with Docker DNS and HuleEdu-signed service-report
+proof. Authenticated/public-edge mirror readiness remains gated by Task 311.
+ADR-0010 keeps provider route selection operator-internal unless a later
+contract task adds a public `provider_route_class` field with OpenAPI and
+consumer-impact proof.
+
+Task 325 is the OpenAI-first implementation slice. It must add the direct
+OpenAI Responses provider and hot running-service routing while preserving
+operator/internal-identity mutation authority, atomic settings versions,
+admission-time lineage, no public provider route field, and fail-closed
+public/grant remote-provider policy. Its initial OpenAI model manifest is pinned
+to `gpt-5.4-mini-2026-03-17` and `gpt-5.4-nano-2026-03-17`. Task 326 owns the
+separate eval-harness proof and blocks Task 325 done-state plus any OpenAI
+production-default promotion until both snapshots are compared against the
+current Qwen3.6 baseline.
+
 ## Acceptance Criteria
 
 - [x] Provider code is generic structured output, not edit-op-specific.
@@ -116,6 +143,12 @@ model-name branches in the evaluator.
   failure codes.
 - [x] Remote fallback is attempted only when authenticated/signed policy allows
   it and the request explicitly opts in.
+- [ ] Provider routing tests cover running-service settings changes that affect
+  new requests while preserving already-admitted job lineage.
+- [ ] Hot provider settings tests prove mutation is operator/internal-identity
+  gated, invalid or stale settings fail closed, public/grant callers cannot
+  mutate routing, and advisory lineage records the resolved provider profile
+  plus settings version.
 
 ## Test Requirements
 

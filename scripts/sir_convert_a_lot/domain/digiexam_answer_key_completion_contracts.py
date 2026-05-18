@@ -23,6 +23,10 @@ from pydantic import JsonValue
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+    admitted_route_snapshot_to_json,
+)
 
 CHOICE_PROMPT_TEMPLATE_VERSION = "digiexam_choice_answer_key_prompt_v1"
 GAP_FILL_PROMPT_TEMPLATE_VERSION = "digiexam_gap_fill_answer_key_prompt_v1"
@@ -87,12 +91,30 @@ class DigiExamAnswerKeyCompletionReportItem:
 
 
 @dataclass(frozen=True)
+class DigiExamAnswerKeyCompletionProviderLineage:
+    """Report-level admitted provider route lineage."""
+
+    provider_family: str
+    provider_profile_id: str
+    model: str
+    endpoint_kind: str
+    output_mode: str
+    reasoning_effort: str | None
+    text_verbosity: str | None
+    settings_version: int
+    route_class: str
+    route_decision: str
+    remote_provider_authorized: bool
+
+
+@dataclass(frozen=True)
 class DigiExamAnswerKeyCompletionReport:
     """Advisory completion report without raw prompts or provider responses."""
 
     schema_version: str
     job_id: str
     completion_mode: str
+    provider_lineage: DigiExamAnswerKeyCompletionProviderLineage | None
     items: tuple[DigiExamAnswerKeyCompletionReportItem, ...]
 
 
@@ -101,6 +123,7 @@ def completion_report(
     job_id: str,
     completion_mode: str,
     items: tuple[DigiExamAnswerKeyCompletionReportItem, ...],
+    provider_lineage: StructuredLLMAdmittedRouteSnapshot | None = None,
 ) -> DigiExamAnswerKeyCompletionReport:
     """Build a versioned advisory completion report."""
 
@@ -108,6 +131,7 @@ def completion_report(
         schema_version=ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
         job_id=job_id,
         completion_mode=completion_mode,
+        provider_lineage=_provider_lineage(provider_lineage),
         items=items,
     )
 
@@ -122,6 +146,43 @@ def answer_key_candidate_payload_digest(payload: dict[str, JsonValue]) -> str:
     """Return the canonical digest for a backend-validated candidate payload."""
 
     return f"sha256:{hashlib.sha256(_canonical_json(payload).encode('utf-8')).hexdigest()}"
+
+
+def _provider_lineage(
+    snapshot: StructuredLLMAdmittedRouteSnapshot | None,
+) -> DigiExamAnswerKeyCompletionProviderLineage | None:
+    if snapshot is None:
+        return None
+    payload = admitted_route_snapshot_to_json(snapshot)
+    return DigiExamAnswerKeyCompletionProviderLineage(
+        provider_family=str(payload["provider_family"]),
+        provider_profile_id=str(payload["provider_profile_id"]),
+        model=str(payload["model"]),
+        endpoint_kind=str(payload["endpoint_kind"]),
+        output_mode=str(payload["output_mode"]),
+        reasoning_effort=_optional_json_str(payload["reasoning_effort"]),
+        text_verbosity=_optional_json_str(payload["text_verbosity"]),
+        settings_version=_json_int(payload["settings_version"]),
+        route_class=str(payload["route_class"]),
+        route_decision=str(payload["route_decision"]),
+        remote_provider_authorized=_json_bool(payload["remote_provider_authorized"]),
+    )
+
+
+def _optional_json_str(value: JsonValue) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _json_int(value: JsonValue) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise TypeError("provider lineage settings_version must be an integer")
+    return value
+
+
+def _json_bool(value: JsonValue) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError("provider lineage remote_provider_authorized must be a boolean")
+    return value
 
 
 def _canonical_json(payload: JsonValue) -> str:

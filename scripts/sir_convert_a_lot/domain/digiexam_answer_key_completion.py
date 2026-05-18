@@ -55,6 +55,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     preflight_structured_llm_prompt,
     resolve_structured_llm_token_budget,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
 
 
 async def build_digiexam_answer_key_completion_report(
@@ -66,6 +69,7 @@ async def build_digiexam_answer_key_completion_report(
     route_policy: StructuredLLMRoutePolicy,
     provider: StructuredChatProviderProtocol | None,
     candidate_planner: DigiExamAnswerKeyCandidatePlannerProtocol | None = None,
+    admitted_route: StructuredLLMAdmittedRouteSnapshot | None = None,
 ) -> DigiExamAnswerKeyCompletionReport:
     """Build advisory answer-key candidates for one effective DigiExam exam."""
 
@@ -106,6 +110,7 @@ async def build_digiexam_answer_key_completion_report(
         job_id=job_id,
         completion_mode=completion_mode,
         items=tuple(rows),
+        provider_lineage=admitted_route,
     )
 
 

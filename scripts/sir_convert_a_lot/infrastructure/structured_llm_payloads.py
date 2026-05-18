@@ -80,6 +80,9 @@ def build_responses_payload(
 
     _require_output_mode(profile=profile, allowed=(StructuredLLMOutputMode.JSON_SCHEMA,))
     _require_text_only(request=request, provider_id=profile.provider_id)
+    text_config: dict[str, JsonValue] = {"format": build_responses_text_format(request.output_spec)}
+    if profile.text_verbosity is not None:
+        text_config["verbosity"] = profile.text_verbosity.value
     payload: StructuredLLMPayload = {
         "model": profile.model,
         "input": [
@@ -93,8 +96,10 @@ def build_responses_payload(
         "stream": False,
         "max_output_tokens": request.max_output_tokens,
         "store": False,
-        "text": {"format": build_responses_text_format(request.output_spec)},
+        "text": text_config,
     }
+    if profile.reasoning_effort is not None:
+        payload["reasoning"] = {"effort": profile.reasoning_effort.value}
     return payload
 
 

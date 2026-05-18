@@ -12,6 +12,9 @@ related:
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
+  - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
+  - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/src/skriptoteket/protocols/llm/chat.py
   - /Users/olofs_mba/Documents/Repos/huleedu/services/llm_provider_service/README.md
@@ -54,6 +57,21 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   `ExamAuthoringMatchingManualAnswerKey` contract for matching-capable source
   flows. Skriptoteket must not invent a local matching key shape, submit
   retired `left_id`/`right_id` aliases, or add matching to DigiExam overlays.
+- Expose a Sir Convert-owned route/request-body contract for source-neutral
+  matching correction before Skriptoteket implements matching submit UI. The
+  generated DTO alone is not enough to make local matching edits authoritative.
+  This is a bridge for the current `PR-0332` matching gap, not the desired
+  product pattern for future correction families.
+- ADR-0011 proposes the next Sir Convert producer direction as one
+  source-neutral correction/apply contract, expected at
+  `POST /v2/exam-authoring/corrections/apply`, with typed entries for item
+  text/stem/prompt correction, point correction, manual choice keys, manual
+  gap/open-cloze accepted values, manual matching keys, review decisions, and
+  candidate suppression.
+- Keep HuleEdu as the authenticated edge proxy for that one contract and
+  Skriptoteket as its teacher-correction consumer. Do not add more
+  item-specific HuleEdu Gateway routes unless a future governed task proves
+  why the unified contract cannot cover the case.
 - Preserve public/authenticated access boundaries from the existing Exam
   Converter grant lane; remote LLM fallback for public jobs requires a future
   signed grant contract.
@@ -77,6 +95,10 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   `needs_teacher_review_decision`, `unsupported_target_shape`, and
   `target_validation_failed` without collapsing them into one generic blocked
   state.
+- [ ] The durable teacher-correction API direction is source-neutral and
+  producer-owned; current matching-specific transport is documented as bridge
+  work rather than a route-per-item-type architecture, and implementation waits
+  for ADR-0011 acceptance.
 - [ ] Public Exam Converter jobs remain remote-provider-forbidden unless a
   signed public grant version explicitly opts in.
 - [ ] HuleEdu LLM Provider reuse is treated as a future provider-surface task,

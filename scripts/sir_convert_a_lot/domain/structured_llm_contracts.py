@@ -43,6 +43,25 @@ class StructuredLLMOutputMode(StrEnum):
     VLLM_JSON_SCHEMA = "vllm_json_schema"
 
 
+class StructuredLLMReasoningEffort(StrEnum):
+    """Provider reasoning-effort settings when supported by the endpoint."""
+
+    NONE = "none"
+    MINIMAL = "minimal"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    XHIGH = "xhigh"
+
+
+class StructuredLLMTextVerbosity(StrEnum):
+    """Provider text-verbosity settings when supported by the endpoint."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
 class StructuredLLMRouteReason(StrEnum):
     """Stable routing reasons for structured-provider selection."""
 
@@ -132,6 +151,8 @@ class StructuredLLMProviderProfile:
     max_output_tokens: int
     capabilities: StructuredLLMProviderCapabilities
     temperature: float = 0.0
+    reasoning_effort: StructuredLLMReasoningEffort | None = None
+    text_verbosity: StructuredLLMTextVerbosity | None = None
 
     def __post_init__(self) -> None:
         if not self.provider_id.strip():

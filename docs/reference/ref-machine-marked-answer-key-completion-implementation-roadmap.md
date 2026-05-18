@@ -35,7 +35,10 @@ links:
   - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
   - docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
   - docs/backlog/tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md
+  - docs/backlog/tasks/task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md
+  - docs/backlog/tasks/task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
+  - docs/decisions/0010-hot-swappable-structured-answer-key-provider-routing.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
 ---
@@ -70,6 +73,25 @@ task, reference, report, or retained review surface.
    310\.
 1. Strict service-backed auth/public-edge mirror validation: Task 311.
 1. Cross-repo Skriptoteket/HuleEdu handoff: Task 299.
+1. Hot-swappable direct API provider routing: the next governed task after
+   ADR-0010 should add OpenAI first and prove running-service settings can
+   switch new advisory requests between local and API provider profiles. The
+   production local route depends on Task 320 service-backed Docker DNS and
+   authenticated service-report proof; Task 320 is done with 2026-05-18 proof,
+   while full authenticated/public-edge mirror claims remain gated by Task 311.
+   Provider route selection stays operator-internal unless the same slice adds a
+   governed public contract field, OpenAPI snapshot update, request-validation
+   tests, and Skriptoteket consumer-impact proof. Task 325 is this OpenAI-first
+   slice: direct OpenAI Responses provider, hot running-service settings,
+   operator/internal-identity mutation, admission-time lineage, no public
+   `provider_route_class`, and no HuleEdu LLM Provider Service broker work. Its
+   first OpenAI model manifest entries are pinned to
+   `gpt-5.4-mini-2026-03-17` and `gpt-5.4-nano-2026-03-17`.
+1. OpenAI model-quality eval gate: Task 326 owns the existing local-model
+   answer-key evaluation harness/corpus run for both pinned OpenAI snapshots and
+   compares them to the current Qwen3.6 baseline. Task 325 cannot be marked done
+   and no OpenAI profile can be promoted as an operator-selectable production
+   default until Task 326 is complete.
 1. Deferred local model benchmark harness and live matrix: Task 300, after the
    full app path is working and deployed.
 
@@ -730,9 +752,14 @@ Evidence:
   items using the Task 305 gap contract.
 - `scripts/sir_convert_a_lot/infrastructure/digiexam_answer_key_completion_runtime.py`
   writes `answer-key-completion-report.json` only for the requested advisory
-  mode and leaves default routes as `not_requested`.
+  mode, consumes the provider route snapshot admitted with the job, and leaves
+  default routes as `not_requested`.
 - `DigiExamAnswerKeyCompletionReportV1` is published in the generated v2
-  OpenAPI snapshot for consumer type generation.
+  OpenAPI snapshot for consumer type generation. The report includes
+  report-level provider lineage for provider family, profile ID, model snapshot,
+  output mode, reasoning effort, text verbosity, settings version, route class,
+  and route decision without exposing prompts, raw responses, API keys, or
+  artifact paths.
 
 Stop conditions:
 

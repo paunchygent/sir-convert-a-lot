@@ -49,6 +49,22 @@ ensure_key() {
   mv "${tmp_file}" "${file_path}"
 }
 
+ensure_first_available_key() {
+  local file_path="$1"
+  local target_key="$2"
+  shift 2
+
+  local source_key
+  for source_key in "$@"; do
+    local source_line
+    source_line="$(grep -m1 "^${source_key}=" "${file_path}" || true)"
+    if [[ -n "${source_line}" ]]; then
+      ensure_key "${file_path}" "${target_key}" "${source_line#*=}"
+      return
+    fi
+  done
+}
+
 group_id_or_default() {
   local group_name="$1"
   local default_gid="$2"
@@ -104,6 +120,30 @@ for repo in "${repos[@]}"; do
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR" "/opt/easyocr-models"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID" "$(group_id_or_default video 44)"
     ensure_key "${canonical_env}" "SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID" "$(group_id_or_default render 993)"
+    ensure_first_available_key "${canonical_env}" \
+      "SIR_CONVERT_A_LOT_OPENAI_API_KEY" \
+      "SIR_CONVERT_A_LOT_OPENAI_API_KEY" \
+      "OPENAI_API_KEY"
+    ensure_first_available_key "${canonical_env}" \
+      "OPENAI_API_KEY" \
+      "OPENAI_API_KEY" \
+      "SIR_CONVERT_A_LOT_OPENAI_API_KEY"
+    ensure_first_available_key "${canonical_env}" \
+      "SIR_CONVERT_A_LOT_OPENROUTER_API_KEY" \
+      "SIR_CONVERT_A_LOT_OPENROUTER_API_KEY" \
+      "OPENROUTER_API_KEY"
+    ensure_first_available_key "${canonical_env}" \
+      "OPENROUTER_API_KEY" \
+      "OPENROUTER_API_KEY" \
+      "SIR_CONVERT_A_LOT_OPENROUTER_API_KEY"
+    ensure_first_available_key "${canonical_env}" \
+      "SIR_CONVERT_A_LOT_DEEPSEEK_API_KEY" \
+      "SIR_CONVERT_A_LOT_DEEPSEEK_API_KEY" \
+      "DEEPSEEK_API_KEY"
+    ensure_first_available_key "${canonical_env}" \
+      "DEEPSEEK_API_KEY" \
+      "DEEPSEEK_API_KEY" \
+      "SIR_CONVERT_A_LOT_DEEPSEEK_API_KEY"
     provider_env="$(pdm run answer-key-provider-env --lane hemma-prod-compose)"
     while IFS='=' read -r key_name key_value; do
       if [[ -n "${key_name}" ]]; then

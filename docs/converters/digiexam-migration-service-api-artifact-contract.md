@@ -23,6 +23,8 @@ links:
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
   - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
+  - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
+  - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
@@ -648,10 +650,21 @@ directed pairs without accepting retired `left_id`/`right_id` aliases.
 
 Task 323 exposes that source-neutral matching manual-answer-key producer DTO
 through the generated v2 OpenAPI contract without adding a DigiExam matching
-overlay. Skriptoteket must consume the generated
-`ExamAuthoringMatchingManualAnswerKey` type for matching-capable source flows
-and must continue treating DigiExam `manual_answer_key` overlays as
-choice/gap-only.
+overlay. Task 324 exposes that DTO as accepted request-body JSON on
+`POST /v2/exam-authoring/matching/manual-answer-key/apply` for
+matching-capable source-neutral flows, with source-item fingerprint binding
+validated before target readiness. Skriptoteket must consume the generated
+`ExamAuthoringMatchingManualAnswerKey` type through that route for
+matching-capable source flows and must continue treating DigiExam
+`manual_answer_key` overlays as choice/gap-only.
+
+Task 324 exists because matching had no callable neutral producer route while
+choice/gap, point correction, review decisions, and item patching already had
+reviewed overlay/application paths. That asymmetry is historical, not the
+proposed ADR-0011 product architecture. Task 327 defines the next
+source-neutral correction/apply contract so future teacher correction work can
+converge on one producer-owned route instead of adding more item-specific
+Gateway or service routes.
 
 The implementation must version affected public DigiExam artifacts for removed
 legacy matching overlay fields and update Skriptoteket consumers in the same
@@ -778,10 +791,11 @@ is applied. Rejected patch fields remain item-addressable in
 `rejected_entries`; manual answer keys and review decisions continue through
 their separate Task 295 paths.
 
-`answer_key_completion_report_v1` records structured local-provider advisory
-candidates and backend validation states, never raw prompts, raw provider
-responses, source/parser provenance claims, student data, owner metadata, raw
-`.dxe`, or result-PDF content. Candidate digests are computed from the
+`answer_key_completion_report_v1` records structured provider advisory
+candidates, admission-time provider lineage, and backend validation states,
+never raw prompts, raw provider responses, source/parser provenance claims,
+student data, owner metadata, raw `.dxe`, result-PDF content, raw request
+payloads, API keys, or artifact paths. Candidate digests are computed from the
 canonical backend-validated candidate payload only, not raw provider responses,
 raw prompts, or pre-validation payloads:
 
@@ -790,6 +804,19 @@ raw prompts, or pre-validation payloads:
   "schema_version": "answer_key_completion_report_v1",
   "job_id": "job-1",
   "completion_mode": "local_llm_suggest_missing_machine_marked",
+  "provider_lineage": {
+    "provider_family": "local_structured_llm",
+    "provider_profile_id": "local-structured",
+    "model": "ibm-granite/granite-4.1-8b-fp8",
+    "endpoint_kind": "chat_completions",
+    "output_mode": "json_schema",
+    "reasoning_effort": null,
+    "text_verbosity": null,
+    "settings_version": 1,
+    "route_class": "operator_default",
+    "route_decision": "active_provider_profile",
+    "remote_provider_authorized": false
+  },
   "items": [
     {
       "item_id": "item-1",

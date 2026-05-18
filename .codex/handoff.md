@@ -8,7 +8,7 @@ last_updated: '2026-05-18'
 
 ## Purpose
 
-Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence, and next actions. Move durable session history to `.codex/long-term-memory/entries/` and governed doctrine to docs, rules, runbooks, or skills.
+Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next actions. Move durable history to `.codex/long-term-memory/entries/`.
 
 ## Current State
 
@@ -45,16 +45,19 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   `>=40%` toy improvement gate is withdrawn as a blocker; Task 272 now carries
   the public artifact/retention contract and Task 273 now carries numeric
   promotion/resource thresholds.
-- Task 322 completed and remediated the Sir Convert producer prerequisite for
-  Skriptoteket `PR-0332`: `point_correction.max_score` is strict
-  positive-integer, effective reports expose `effective_point_correction`,
-  source-fingerprint readiness is pinned, reviewed/manual key coexistence is
-  tested, OpenAPI is refreshed, and Skriptoteket generated DTOs/preflight now
-  consume both new fields.
-- Task 323 completed the producer-owned prerequisite before Skriptoteket
-  matching consumer work: source-neutral `ExamAuthoringIR v1` matching DTO,
-  no DigiExam matching overlay, OpenAPI refreshed, and Skriptoteket generated
-  consumer types plus a focused preflight spec now expose the matching DTO.
+- Tasks 322-324 completed the `PR-0332` producer prerequisites: point
+  corrections, source-neutral matching DTO, and
+  `POST /v2/exam-authoring/matching/manual-answer-key/apply` are exposed with
+  source-fingerprint binding, effective state/readiness, OpenAPI, and
+  Skriptoteket generated-type/preflight proof.
+- ADR-0011/Task 327 are proposed for the cleaner producer-contract follow-up:
+  Task 324 is bridge work, and the next source-neutral slice should define
+  `POST /v2/exam-authoring/corrections/apply` with typed correction entries.
+- Task 328 completed the proposed-ADR audit. Task 329 is now proposed for the
+  ADR-0002 closeout: compare ADR-0002 against active Service API v2 authority,
+  then preferably supersede it with a current-state accepted decision. ADR-0009
+  remains proposed until Task 257; ADR-0011 remains proposed until Task 327 plus
+  a later acceptance step.
 
 ## Active Pointers
 
@@ -91,18 +94,15 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   279-282 and 291-292, plus HuleEdu `ST-01-07` auth-edge dependency.
 - Active answer-key completion lane: Epic 11. Tasks 294-309/312/319/321-323
   built provider, advisory, overlay/effective-IR, unkeyed-manual QTI,
-  Qwen3.6, target-key preservation, point-correction producer surfaces, and
-  the source-neutral matching manual-answer-key producer DTO. Qwen3.6 MTP on
-  `llama.cpp` is the guarded advisory model; automatic promotion remains
-  blocked by 3 wrong-but-valid suggestions.
-- Completed matching producer DTO task:
-  `docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md`.
-- Review 17 for Task 306 is closed as `approved`; future generated-type
-  staleness claims need current producer-contract and consumer-regeneration
-  evidence, not the historical PR-0331 finding.
-- Review 18 for Task 319 is closed as `approved`: Hemma is synced, Qwen3.6
-  llama.cpp runs localhost-only with `mmproj-F16.gguf`, `--media-path`, and GPU
-  offload, and provider-status plus choice/gap/vision microprobes are green.
+  Qwen3.6, target-key preservation, point correction, and the matching DTO.
+  ADR-0011/Task 327 are proposed for the unified source-neutral
+  correction/apply contract before adding more item-specific Gateway/service
+  routes. Qwen3.6 remains guarded; ADR-0010 is accepted. Task 325 is in
+  progress for OpenAI hot settings; Task 326 is the linked eval/promotion gate.
+- Review 17 for Task 306 is closed as `approved`; future generated-type claims
+  need current producer/consumer evidence, not the historical PR-0331 finding.
+- Review 18 for Task 319 is closed as `approved`; Hemma/Qwen3.6 live
+  provider-status plus choice/gap/vision microprobes are green.
 - Hemma DevOps skill/runbook cleanup is now structural: the repo-local skill is
   a thin router, the former omnibus Hemma runbook is a compact doorway, and
   focused service/GPU/conversion/TTS runbooks carry current operator guidance.
@@ -122,6 +122,7 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
   `docs/reference/ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md`.
 - ADR-0009 readiness review:
   `docs/backlog/reviews/review-06-ruthless-review-of-adr-0009-gateway-cutover-readiness.md`.
+- Proposed ADR-0002 closeout task: `docs/backlog/tasks/task-329-close-out-adr-0002-against-active-service-api-v2-authority.md`.
 
 ## Next Actions
 
@@ -134,13 +135,20 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 1. Skriptoteket `PR-0322` public live proof can consume Task 292 runtime
    evidence; do not widen this lane beyond
    `digiexam_dxe -> examnet_migration_bundle`.
-1. Continue Skriptoteket `PR-0332` from the completed Task 322 producer and
-   consumer-contract preflight: implement source-bound correction UI using the
-   returned Sir Convert effective IR/readiness/report state.
-1. Skriptoteket matching manual-answer-key consumer work may now start from
-   Task 323's generated `ExamAuthoringMatchingManualAnswerKey` type, but must
-   keep DigiExam overlays choice/gap-only and must not infer matching pairs
-   locally.
+1. Continue Skriptoteket `PR-0332` from completed Tasks 322/324: implement
+   source-bound correction UI using returned Sir Convert effective
+   IR/readiness/report state; submit matching keys through
+   `/v2/exam-authoring/matching/manual-answer-key/apply` with the producer
+   `source_item_fingerprint`; keep browser drafts non-authoritative until Sir
+   Convert returns effective state/readiness.
+1. Before adding more item-specific correction routes, continue Task 327:
+   define the unified source-neutral
+   `/v2/exam-authoring/corrections/apply` contract under proposed ADR-0011,
+   then sequence HuleEdu authenticated edge proxying and Skriptoteket
+   teacher-correction API migration after acceptance.
+1. Execute Task 329: compare ADR-0002 against active Service API v2 authority,
+   then accept an explicitly amended ADR-0002 or, preferably, supersede it with
+   a current-state accepted decision and separate review record.
 1. Continue PR-0331 from the completed Sir Convert Task 321 cleanup: the next
    answer-key UI/consumer slice must preserve reviewed gap/open-cloze keys in
    QTI and PDF artifacts, must not offer QTI packages when adapter follow-up
@@ -164,37 +172,29 @@ Keep only volatile Sir Convert-a-Lot agent state, blockers, validation evidence,
 
 ## Validation
 
-- Older validation evidence (2026-05-13 through 2026-05-15) lives in linked
-  governed tasks, references, reviews, and long-term memory entries.
-- Full Task 309 answer-key validation history (Granite/vLLM demotion, Qwen3.6
-  evaluation, Devstral demotion) is preserved in LTM:
-  `.codex/long-term-memory/entries/session-2026-05-16-answer-key-validation-history.md`.
-- 2026-05-16 Qwen3.6-27B-Q6_K final: 39 correct, 3 wrong-but-valid, 2
-  manual-follow-up out of 44 eligible scored items; promotion gate
-  `wrong_but_valid_count == 0` is not met. Devstral is demoted at 34/8/2.
-- Task 309/319 validation: golden validation covered 44 entries, Qwen3.6
-  request-shape preview covered 44 eligible items with 2 multimodal requests,
-  and Review 18 proved 317/317 Hemma corpus coverage plus green live
-  provider-status/choice/gap/vision microprobes.
-- 2026-05-17 Task 320 in progress: production default is Qwen3.6 MTP
-  (`qwen36-llama-cpp-mtp`, alias `qwen3.6-27b-q6k-mtp`) via Docker service DNS
-  `sir_convert_qwen_answer_key:8082`. The production runtime now separates
-  HTTP admission (`sir_convert_a_lot_prod`, no GPU devices, no submit-time job
-  execution) from current PDF/OCR GPU execution
-  (`sir_convert_a_lot_gpu_worker`, private Docker service with supervisor).
-  Generated dependency image identity files now write under ignored
-  `build/verification/service-deps/` instead of dirtying tracked
-  `docker/service-deps/` state. Local gates passed; live Hemma proof still
-  needs deploy/recreate and authenticated MCQ candidate verification.
+- Older validation evidence lives in governed tasks, references, reviews, and
+  `.codex/long-term-memory/entries/`.
+- 2026-05-16 Task 309/319: Qwen3.6-27B-Q6_K final was 39 correct, 3
+  wrong-but-valid, 2 manual-follow-up out of 44; Review 18 proved 317/317
+  Hemma corpus coverage plus green live provider-status/choice/gap/vision
+  microprobes.
+- 2026-05-17 Task 320 in progress: production default is Qwen3.6 MTP via
+  Docker service DNS `sir_convert_qwen_answer_key:8082`; HTTP admission is
+  separated from PDF/OCR GPU execution, dependency-image identity writes under
+  ignored `build/verification/service-deps/`, and live Hemma proof still needs
+  deploy/recreate plus authenticated MCQ candidate verification.
 - 2026-05-17 Task 321 completed: reviewed/source/teacher gap/open-cloze keys
   now reach QTI/PDF artifacts, QTI blocks omitted-item or missing-gap-key
   packages, and internal fallback text is absent from user-facing PDFs. Local
   validation passed per Task 321 evidence. Live dev-container proof was not
   run; it requires auth edge, Sir Convert, and tunneled LLM together.
+- 2026-05-18 Task 324 local closeout passed OpenAPI export, format/lint/type
+  gates, focused matching/OpenAPI pytest, coverage-gate, and Skriptoteket
+  generated-type/preflight proof.
+- 2026-05-18 Task 329 was scaffolded as the proposed ADR-0002 closeout task; no
+  ADR status changed in this planning slice.
 
 ## Stop Conditions
 
-- Stop before deleting durable Qwen, service, or Hemma evidence that is not
-  already preserved in governed docs or long-term memory.
-- Stop before changing service runtime behavior, Hemma deployment semantics,
-  generated artifact retention, or Qwen experiment interpretation.
+- Stop before deleting durable Qwen/service/Hemma evidence or changing service
+  runtime, Hemma deploy, artifact retention, or Qwen experiment semantics.

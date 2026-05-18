@@ -55,3 +55,15 @@ def test_prod_env_mirror_creates_qwen_vision_media_host_path() -> None:
     assert 'provider_env="$(pdm run answer-key-provider-env --lane hemma-prod-compose)"' in script
     assert "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH" in script
     assert 'mkdir -p "${key_value}"' in script
+
+
+def test_prod_env_mirror_preserves_api_provider_secret_aliases() -> None:
+    script = SYNC_PROD_ENV_MIRROR.read_text(encoding="utf-8")
+
+    assert "ensure_first_available_key" in script
+    assert "SIR_CONVERT_A_LOT_OPENAI_API_KEY" in script
+    assert "OPENAI_API_KEY" in script
+    assert "SIR_CONVERT_A_LOT_OPENROUTER_API_KEY" in script
+    assert "OPENROUTER_API_KEY" in script
+    assert "SIR_CONVERT_A_LOT_DEEPSEEK_API_KEY" in script
+    assert "DEEPSEEK_API_KEY" in script

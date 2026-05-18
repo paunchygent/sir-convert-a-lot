@@ -2643,6 +2643,184 @@
         "title": "DigiExamTargetReadinessRowV1",
         "type": "object"
       },
+      "ExamAuthoringMatchingAnswerKeyV1": {
+        "additionalProperties": false,
+        "description": "Source-neutral matching answer key for effective authoring state.",
+        "properties": {
+          "pairs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingPairV1"
+            },
+            "title": "Pairs",
+            "type": "array"
+          },
+          "provenance": {
+            "enum": [
+              "absent",
+              "source_provided",
+              "teacher_provided",
+              "reviewed",
+              "mixed"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provenance"
+        ],
+        "title": "ExamAuthoringMatchingAnswerKeyV1",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingArtifactAvailabilityRowV1": {
+        "additionalProperties": false,
+        "description": "Artifact availability projection for a corrected matching interaction.",
+        "properties": {
+          "artifact_key": {
+            "enum": [
+              "examnet_pdf",
+              "qti_package"
+            ],
+            "title": "Artifact Key",
+            "type": "string"
+          },
+          "availability": {
+            "enum": [
+              "available",
+              "unavailable"
+            ],
+            "title": "Availability",
+            "type": "string"
+          },
+          "unavailable_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Code"
+          }
+        },
+        "required": [
+          "artifact_key",
+          "availability"
+        ],
+        "title": "ExamAuthoringMatchingArtifactAvailabilityRowV1",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingChoiceV1": {
+        "additionalProperties": false,
+        "description": "One ordered source or target choice in a matching interaction.",
+        "properties": {
+          "choice_id": {
+            "minLength": 1,
+            "title": "Choice Id",
+            "type": "string"
+          },
+          "match_max": {
+            "title": "Match Max",
+            "type": "integer"
+          },
+          "match_min": {
+            "title": "Match Min",
+            "type": "integer"
+          },
+          "order": {
+            "title": "Order",
+            "type": "integer"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "choice_id",
+          "order",
+          "text",
+          "match_min",
+          "match_max"
+        ],
+        "title": "ExamAuthoringMatchingChoiceV1",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingInteractionV1": {
+        "additionalProperties": false,
+        "description": "Source-neutral matching interaction carried by a producer state surface.",
+        "properties": {
+          "answer_key": {
+            "$ref": "#/components/schemas/ExamAuthoringMatchingAnswerKeyV1"
+          },
+          "evidence": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringSourceEvidenceV1"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "interaction_id": {
+            "minLength": 1,
+            "title": "Interaction Id",
+            "type": "string"
+          },
+          "max_associations": {
+            "title": "Max Associations",
+            "type": "integer"
+          },
+          "min_associations": {
+            "title": "Min Associations",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "exam_authoring_ir_v1",
+            "default": "exam_authoring_ir_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_choices": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingChoiceV1"
+            },
+            "title": "Source Choices",
+            "type": "array"
+          },
+          "source_item_fingerprint": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Item Fingerprint"
+          },
+          "target_choices": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingChoiceV1"
+            },
+            "title": "Target Choices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "source_choices",
+          "target_choices",
+          "min_associations",
+          "max_associations",
+          "answer_key"
+        ],
+        "title": "ExamAuthoringMatchingInteractionV1",
+        "type": "object"
+      },
       "ExamAuthoringMatchingManualAnswerKey": {
         "additionalProperties": false,
         "description": "Source-neutral matching manual answer-key submission.",
@@ -2686,6 +2864,75 @@
           "answer_key"
         ],
         "title": "ExamAuthoringMatchingManualAnswerKey",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingManualAnswerKeyApplyRequest": {
+        "additionalProperties": false,
+        "description": "Request body for applying a matching manual answer key.",
+        "properties": {
+          "exam_authoring_matching_manual_answer_key": {
+            "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKey"
+          },
+          "requested_targets": {
+            "default": [
+              "examnet_pdf",
+              "qti_package"
+            ],
+            "items": {
+              "enum": [
+                "examnet_pdf",
+                "qti_package"
+              ],
+              "type": "string"
+            },
+            "title": "Requested Targets",
+            "type": "array"
+          },
+          "source_interaction": {
+            "$ref": "#/components/schemas/ExamAuthoringMatchingInteractionV1"
+          }
+        },
+        "required": [
+          "source_interaction",
+          "exam_authoring_matching_manual_answer_key"
+        ],
+        "title": "ExamAuthoringMatchingManualAnswerKeyApplyRequest",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingManualAnswerKeyApplyResponse": {
+        "additionalProperties": false,
+        "description": "Producer-owned effective state returned after matching key application.",
+        "properties": {
+          "artifact_availability": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingArtifactAvailabilityRowV1"
+            },
+            "title": "Artifact Availability",
+            "type": "array"
+          },
+          "effective_interaction": {
+            "$ref": "#/components/schemas/ExamAuthoringMatchingInteractionV1"
+          },
+          "schema_version": {
+            "const": "exam_authoring_matching_apply_result_v1",
+            "default": "exam_authoring_matching_apply_result_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "target_readiness": {
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringMatchingTargetReadinessRowV1"
+            },
+            "title": "Target Readiness",
+            "type": "array"
+          }
+        },
+        "required": [
+          "effective_interaction",
+          "target_readiness",
+          "artifact_availability"
+        ],
+        "title": "ExamAuthoringMatchingManualAnswerKeyApplyResponse",
         "type": "object"
       },
       "ExamAuthoringMatchingManualAnswerKeyPair": {
@@ -2737,6 +2984,112 @@
           "provenance"
         ],
         "title": "ExamAuthoringMatchingManualAnswerKeyPayload",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingPairV1": {
+        "additionalProperties": false,
+        "description": "One directed source-to-target matching pair.",
+        "properties": {
+          "source_id": {
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "target_id": {
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "target_id"
+        ],
+        "title": "ExamAuthoringMatchingPairV1",
+        "type": "object"
+      },
+      "ExamAuthoringMatchingTargetReadinessRowV1": {
+        "additionalProperties": false,
+        "description": "Target readiness projection for a corrected matching interaction.",
+        "properties": {
+          "export_enabled": {
+            "title": "Export Enabled",
+            "type": "boolean"
+          },
+          "message_key": {
+            "title": "Message Key",
+            "type": "string"
+          },
+          "readiness": {
+            "enum": [
+              "ready",
+              "target_validation_failed",
+              "unsupported_target_shape"
+            ],
+            "title": "Readiness",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "target": {
+            "enum": [
+              "examnet_pdf",
+              "qti_package"
+            ],
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "readiness",
+          "export_enabled",
+          "reason_code",
+          "message_key"
+        ],
+        "title": "ExamAuthoringMatchingTargetReadinessRowV1",
+        "type": "object"
+      },
+      "ExamAuthoringSourceEvidenceV1": {
+        "additionalProperties": false,
+        "description": "Source-neutral evidence reference for an authoring interaction.",
+        "properties": {
+          "locator": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locator"
+          },
+          "source_family": {
+            "minLength": 1,
+            "title": "Source Family",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "required": [
+          "source_family"
+        ],
+        "title": "ExamAuthoringSourceEvidenceV1",
         "type": "object"
       },
       "ExamMigrationTargetV2": {
@@ -3661,6 +4014,220 @@
         "title": "SourceSpecV2",
         "type": "object"
       },
+      "StructuredLLMInternalRouteClass": {
+        "description": "Operator-internal route classes for structured provider routing.",
+        "enum": [
+          "operator_default",
+          "operator_local_only",
+          "operator_api_only",
+          "operator_local_first"
+        ],
+        "title": "StructuredLLMInternalRouteClass",
+        "type": "string"
+      },
+      "StructuredLLMRoutingSettingsMutationResponseV2": {
+        "description": "Response body for successful hot settings replacement.",
+        "properties": {
+          "audit_event": {
+            "$ref": "#/components/schemas/StructuredLLMSettingsAuditEventResponseV2"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/StructuredLLMRoutingSettingsResponseV2"
+          }
+        },
+        "required": [
+          "settings",
+          "audit_event"
+        ],
+        "title": "StructuredLLMRoutingSettingsMutationResponseV2",
+        "type": "object"
+      },
+      "StructuredLLMRoutingSettingsRequestV2": {
+        "additionalProperties": false,
+        "description": "Operator request body for replacing hot provider routing settings.",
+        "properties": {
+          "active_provider_profile_id": {
+            "minLength": 1,
+            "title": "Active Provider Profile Id",
+            "type": "string"
+          },
+          "allowed_internal_route_classes": {
+            "items": {
+              "$ref": "#/components/schemas/StructuredLLMInternalRouteClass"
+            },
+            "minItems": 1,
+            "title": "Allowed Internal Route Classes",
+            "type": "array"
+          },
+          "operator_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Notes"
+          },
+          "remote_provider_authorized": {
+            "default": false,
+            "title": "Remote Provider Authorized",
+            "type": "boolean"
+          },
+          "rollout_label": {
+            "minLength": 1,
+            "title": "Rollout Label",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "active_provider_profile_id",
+          "allowed_internal_route_classes",
+          "rollout_label"
+        ],
+        "title": "StructuredLLMRoutingSettingsRequestV2",
+        "type": "object"
+      },
+      "StructuredLLMRoutingSettingsResponseV2": {
+        "description": "Current hot provider routing settings.",
+        "properties": {
+          "active_provider_profile_id": {
+            "title": "Active Provider Profile Id",
+            "type": "string"
+          },
+          "allowed_internal_route_classes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Internal Route Classes",
+            "type": "array"
+          },
+          "operator_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Notes"
+          },
+          "remote_provider_authorized": {
+            "title": "Remote Provider Authorized",
+            "type": "boolean"
+          },
+          "rollout_label": {
+            "title": "Rollout Label",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "active_provider_profile_id",
+          "allowed_internal_route_classes",
+          "remote_provider_authorized",
+          "rollout_label",
+          "operator_notes"
+        ],
+        "title": "StructuredLLMRoutingSettingsResponseV2",
+        "type": "object"
+      },
+      "StructuredLLMSettingsAuditEventResponseV2": {
+        "description": "Metadata-only audit event response for a settings mutation.",
+        "properties": {
+          "active_settings_version": {
+            "title": "Active Settings Version",
+            "type": "integer"
+          },
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "allowed_internal_route_classes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Internal Route Classes",
+            "type": "array"
+          },
+          "authority_source": {
+            "title": "Authority Source",
+            "type": "string"
+          },
+          "correlation_id": {
+            "title": "Correlation Id",
+            "type": "string"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          },
+          "previous_settings_version": {
+            "title": "Previous Settings Version",
+            "type": "integer"
+          },
+          "remote_provider_authorized": {
+            "title": "Remote Provider Authorized",
+            "type": "boolean"
+          },
+          "requested_settings_version": {
+            "title": "Requested Settings Version",
+            "type": "integer"
+          },
+          "rollout_label": {
+            "title": "Rollout Label",
+            "type": "string"
+          },
+          "selected_provider_profile": {
+            "title": "Selected Provider Profile",
+            "type": "string"
+          },
+          "success": {
+            "title": "Success",
+            "type": "boolean"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actor_id",
+          "authority_source",
+          "previous_settings_version",
+          "requested_settings_version",
+          "active_settings_version",
+          "selected_provider_profile",
+          "allowed_internal_route_classes",
+          "remote_provider_authorized",
+          "rollout_label",
+          "timestamp",
+          "correlation_id",
+          "success",
+          "failure_code"
+        ],
+        "title": "StructuredLLMSettingsAuditEventResponseV2",
+        "type": "object"
+      },
       "TableMode": {
         "description": "Table extraction modes supported by v1.",
         "enum": [
@@ -4521,6 +5088,104 @@
           }
         },
         "summary": "Resume Job"
+      }
+    },
+    "/v2/exam-authoring/matching/manual-answer-key/apply": {
+      "post": {
+        "operationId": "apply_matching_manual_answer_key_v2_exam_authoring_matching_manual_answer_key_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyApplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamAuthoringMatchingManualAnswerKeyApplyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Matching Manual Answer Key"
+      }
+    },
+    "/v2/operator/structured-llm/provider-routing": {
+      "get": {
+        "operationId": "get_provider_routing_settings_v2_operator_structured_llm_provider_routing_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructuredLLMRoutingSettingsResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Provider Routing Settings",
+        "tags": [
+          "operator"
+        ]
+      },
+      "put": {
+        "operationId": "replace_provider_routing_settings_v2_operator_structured_llm_provider_routing_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructuredLLMRoutingSettingsRequestV2"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructuredLLMRoutingSettingsMutationResponseV2"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Provider Routing Settings",
+        "tags": [
+          "operator"
+        ]
       }
     },
     "/v2/push/webhooks/subscriptions": {

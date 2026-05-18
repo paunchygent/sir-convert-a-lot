@@ -39,6 +39,13 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     SourceFormatV2,
     normalized_exam_migration_targets_v2,
 )
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
+    StructuredLLMAdmissionError,
+    resolve_structured_llm_admission_snapshot,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
@@ -66,6 +73,9 @@ from scripts.sir_convert_a_lot.interfaces.http_routes_job_artifacts_v2 import (
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_resume_v2 import (
     register_job_resume_routes_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_structured_llm_settings_state_v2 import (
+    structured_llm_hot_settings_store_for_request,
 )
 
 
@@ -327,6 +337,12 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             response.headers["X-Idempotent-Replay"] = "true"
             return response
 
+        structured_llm_admission = _structured_llm_admission_for_create_request(
+            spec=spec,
+            request=request,
+            service_started_at=service_started_at,
+            public_grant_request=public_grant_access is not None,
+        )
         job = runtime.create_job(
             spec=spec,
             owner_api_key_scope=owner_scope,
@@ -336,6 +352,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             graded_result_pdf_bytes=prepared_route.graded_result_pdf_bytes,
             parity_pdf_bytes=prepared_route.parity_pdf_bytes,
             digiexam_ingestion_overlay_bytes=(prepared_route.digiexam_ingestion_overlay_bytes),
+            structured_llm_admission=structured_llm_admission,
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
         if runtime.config.run_jobs_on_submit:
@@ -453,3 +470,37 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         return JSONResponse(status_code=status_code, content=payload)
 
     return router
+
+
+def _structured_llm_admission_for_create_request(
+    *,
+    spec: JobSpecV2,
+    request: Request,
+    service_started_at: str,
+    public_grant_request: bool,
+) -> StructuredLLMAdmittedRouteSnapshot | None:
+    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
+    hot_settings_store = None
+    if (
+        runtime.config.structured_llm.enabled
+        and runtime.config.structured_llm.provider_set is not None
+    ):
+        hot_settings_store = structured_llm_hot_settings_store_for_request(
+            request,
+            service_started_at=service_started_at,
+        )
+    try:
+        return resolve_structured_llm_admission_snapshot(
+            spec=spec,
+            structured_config=runtime.config.structured_llm,
+            hot_settings_store=hot_settings_store,
+            public_grant_request=public_grant_request,
+        )
+    except StructuredLLMAdmissionError as exc:
+        raise ServiceError(
+            status_code=403,
+            code="structured_llm_route_admission_rejected",
+            message="Structured LLM provider routing is not allowed for this job.",
+            retryable=False,
+            details={"failure_code": exc.failure_code.value},
+        ) from exc

@@ -18,6 +18,9 @@ links:
   - docs/backlog/tasks/task-307-define-source-neutral-exam-authoring-ir-v1-and-adapter-boundary.md
   - docs/backlog/tasks/task-298-define-matching-answer-key-pair-ir-contract.md
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
+  - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
+  - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/backlog/tasks/task-305-define-gapped-open-cloze-accepted-value-ir-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
 ---
@@ -116,11 +119,17 @@ Runtime value objects and validators live in:
 - `scripts/sir_convert_a_lot/domain/exam_authoring_matching_manual_answer_key.py`
   owns the Task 323 producer-ready matching manual-answer-key submission DTO
   and application boundary.
+- `scripts/sir_convert_a_lot/application/exam_authoring_matching_apply_contracts.py`
+  owns the Task 324 source-neutral request/response contract and readiness
+  projection for the matching apply route.
+- `scripts/sir_convert_a_lot/interfaces/http_routes_exam_authoring_matching_v2.py`
+  exposes the Task 324 v2 HTTP route.
 
 Focused proof lives in:
 
 - `tests/sir_convert_a_lot/test_exam_authoring_matching_contracts.py`.
 - `tests/sir_convert_a_lot/test_exam_authoring_matching_manual_answer_key.py`.
+- `tests/sir_convert_a_lot/test_exam_authoring_matching_apply_route.py`.
 
 The DigiExam parser and `DigiExamIntermediateExam` contracts intentionally do
 not contain matching structures or matching answer pairs after this slice.
@@ -164,6 +173,65 @@ fingerprint, exact source/target IDs, duplicate pairs, association bounds, and
 the neutral matching validation rules before returning an updated
 `ExamAuthoringIR v1` interaction. It does not mutate parser-owned source IR or
 source/parser provenance.
+
+## Matching Manual Answer-Key Apply Route
+
+Task 324 exposes the producer-owned source-neutral route that accepts the DTO as
+OpenAPI request-body JSON:
+
+```text
+POST /v2/exam-authoring/matching/manual-answer-key/apply
+```
+
+The request body contains:
+
+- `source_interaction`: the producer-returned `ExamAuthoringIR v1` matching
+  interaction state, including `source_item_fingerprint` when the source state
+  carries one;
+- `exam_authoring_matching_manual_answer_key`: the Task 323 DTO exactly;
+- `requested_targets`: optional target readiness keys, currently `examnet_pdf`
+  and `qti_package`.
+
+The route applies the submitted key to the supplied source-neutral interaction
+and returns `exam_authoring_matching_apply_result_v1` with:
+
+- `effective_interaction`: the corrected producer-owned matching state;
+- `target_readiness`: target rows with export enablement, reason code, and
+  message key;
+- `artifact_availability`: artifact availability keyed by requested target.
+
+Source binding is fail-closed. When the producer interaction carries
+`source_item_fingerprint`, a missing or mismatched
+`source_item_fingerprint` in the submitted manual key fails before target
+readiness is projected. Consumers must submit the binding from returned producer
+state, not infer it from local browser drafts.
+
+The route rejects stale schema version, stale interaction ID, retired
+`left_id`/`right_id` aliases, unknown source/target IDs, duplicate pairs,
+association-bound failures, non-empty pairs with `absent` provenance, and
+aggregate `mixed` provenance before any target is reported ready.
+
+`examnet_pdf` readiness is projected through the current Exam.net PDF matching
+profile. `qti_package` remains unavailable with
+`examnet_qti_matching_import_unproven` until a governed Exam.net QTI import
+proof exists. DigiExam ingestion overlays remain choice/gap-fill only and do
+not accept matching keys through `digiexam_ingestion_overlay`.
+
+This route is intentionally bridge work for the first missing matching
+producer path. The proposed ADR-0011 target teacher-correction architecture is
+not one `/exam-authoring/.../apply` route per item type. Task 327 owns the
+contract for one source-neutral correction/apply route:
+
+```text
+POST /v2/exam-authoring/corrections/apply
+```
+
+That future contract must use typed correction entries for visible item text,
+points, manual choice keys, manual gap/open-cloze accepted values, manual
+matching keys, review decisions, and candidate suppression while keeping source
+adapters as ingestion details. Consumers should not need to know whether the
+original item came from DigiExam, Exam.net, CSV, DOCX, Markdown, or another
+source in order to submit teacher corrections.
 
 ## Gap/Open-Cloze Interaction V1
 

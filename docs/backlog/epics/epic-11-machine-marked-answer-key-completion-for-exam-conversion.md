@@ -22,6 +22,11 @@ related:
   - docs/backlog/tasks/task-321-purge-reviewed-answer-key-export-fallbacks-for-pr-0331.md
   - docs/backlog/tasks/task-322-add-points-scoring-correction-producer-dto-before-pr-0332.md
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
+  - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
+  - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/backlog/tasks/task-328-audit-open-proposed-adr-product-decisions-before-further-architecture-expansion.md
+  - docs/backlog/tasks/task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md
+  - docs/backlog/tasks/task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md
   - docs/backlog/tasks/task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md
   - docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md
   - docs/backlog/tasks/task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md
@@ -31,6 +36,8 @@ related:
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
+  - docs/decisions/0010-hot-swappable-structured-answer-key-provider-routing.md
+  - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
   - docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md
   - docs/reference/ref-machine-marked-answer-key-completion-implementation-roadmap.md
@@ -78,6 +85,9 @@ review gates.
   and eventually matching items.
 - Explicit remote provider policy where remote fallback is forbidden by default
   and explicit false is terminal.
+- Hot service settings for provider routing so sanctioned CLI/API flows can
+  switch new advisory requests between configured local and API providers
+  without service restart or container recreation.
 - Completion reports and manual-follow-up artifacts that let Skriptoteket show
   teachers exactly which items need review.
 - A cross-repo handoff that lets Skriptoteket add the teacher review UI and
@@ -132,6 +142,35 @@ manual-key consumer work. It exposes the source-neutral
 `ExamAuthoringMatchingManualAnswerKey` DTO through Sir Convert's generated
 OpenAPI surface while keeping DigiExam ingestion overlays choice/gap-only and
 forbidding consumer-local matching-pair inference.
+Task 324 is the producer-owned route/application follow-up for the same
+matching path. It makes the source-neutral matching DTO callable through
+request-body semantics and returns producer-owned effective state/readiness so
+Skriptoteket can keep local matching edits non-authoritative until Sir Convert
+returns the corrected bundle.
+ADR-0011 is the proposed decision for the cleaner source-neutral
+correction/apply direction. Task 327 is the linked producer contract slice: it
+reframes Task 324 as bridge work caused by historical route asymmetry and
+defines one source-neutral correction/apply contract for item text, point
+corrections, manual choice keys, manual gap/open-cloze accepted values, manual
+matching keys, review decisions, and candidate suppression. Future
+HuleEdu/Skriptoteket work should build around that unified contract after the
+decision is accepted instead of adding more item-specific Gateway routes.
+Task 328 is the separate proposed-decision audit slice. It keeps ADR-0002 and
+ADR-0009 status cleanup out of ADR-0011 and preserves the rule that ADR-0009
+requires its explicit Gateway acceptance path before acceptance.
+ADR-0010 is the proposed decision for API provider expansion and hot-swappable
+provider routing. It keeps local Qwen3.6 as the guarded default while requiring
+future OpenAI/OpenRouter/DeepSeek provider work to route through service
+settings for new requests without service restart or container recreation.
+Task 325 is the OpenAI-first implementation slice under ADR-0010: direct Sir
+Convert OpenAI Responses provider, hot running-service settings,
+operator/internal-identity mutation, admission-time lineage, no public
+`provider_route_class`, and no HuleEdu LLM Provider Service broker integration.
+Task 326 is the linked eval gate: it runs the existing answer-key model
+evaluation harness/corpus against `gpt-5.4-mini-2026-03-17` and
+`gpt-5.4-nano-2026-03-17` and blocks Task 325 done-state plus OpenAI
+production-default promotion until both snapshots are compared against the
+current Qwen3.6 baseline.
 Task 301 is an experimental Hemma runtime smoke checkpoint for Granite 4.1 8B
 FP8 on the ROCm vLLM preview image; it can inform provider viability, but it
 does not replace Task 300's `llama.cpp` GGUF benchmark matrix or authorize
@@ -163,6 +202,8 @@ deployed.
   non-explanatory, and metadata-only in normal capture.
 - [x] Remote fallback cannot occur unless policy and signed authenticated/public
   consent explicitly allow it.
+- [ ] Provider routing can be changed for new advisory requests through
+  running service settings without restart or container recreation.
 - [x] Advisory completion can be produced without changing renderer input.
 - [ ] Applied completion requires effective provenance, review/report artifacts,
   and tests proving source provenance remains strict.

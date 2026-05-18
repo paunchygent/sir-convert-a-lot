@@ -32,6 +32,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactKey,
 )
 from scripts.sir_convert_a_lot.domain.specs_v2 import DigiExamAnswerKeyCompletionModeV2
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import StructuredChatProviderSet
 from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
     DigiExamVisionCandidatePlanner,
     export_digiexam_answer_key_vision_assets,
@@ -45,6 +49,9 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfi
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     StructuredLLMRuntimeConfig,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
+    provider_set_for_admitted_route,
 )
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_di import (
     create_structured_llm_async_container,
@@ -85,6 +92,7 @@ def write_requested_digiexam_answer_key_completion_report(
         completion_mode=completion_mode.value,
         exam=exam,
         config=config,
+        admitted_route=job.structured_llm_admission,
     )
     write_json(report_path, report_to_json_payload(report))
     return available_entry(
@@ -100,6 +108,7 @@ def run_digiexam_answer_key_completion_report(
     completion_mode: str,
     exam: DigiExamIntermediateExam,
     config: ServiceConfig,
+    admitted_route: StructuredLLMAdmittedRouteSnapshot | None = None,
 ) -> DigiExamAnswerKeyCompletionReport:
     """Run the advisory completion service from the synchronous bundle builder."""
 
@@ -109,6 +118,7 @@ def run_digiexam_answer_key_completion_report(
             completion_mode=completion_mode,
             exam=exam,
             config=config,
+            admitted_route=admitted_route,
         )
     )
 
@@ -119,6 +129,7 @@ async def _run_digiexam_answer_key_completion_report(
     completion_mode: str,
     exam: DigiExamIntermediateExam,
     config: ServiceConfig,
+    admitted_route: StructuredLLMAdmittedRouteSnapshot | None,
 ) -> DigiExamAnswerKeyCompletionReport:
     structured_config = config.structured_llm
     if not structured_config.enabled or structured_config.provider_set is None:
@@ -129,24 +140,31 @@ async def _run_digiexam_answer_key_completion_report(
             provider_set=None,
             route_policy=structured_config.route_policy(allow_remote_fallback=False),
             provider=None,
+            admitted_route=admitted_route,
         )
 
     container = create_structured_llm_async_container(config=structured_config)
     try:
         provider = await container.get(HttpStructuredChatProvider)
+        provider_set = provider_set_for_admitted_route(
+            structured_config=structured_config,
+            admitted_route=admitted_route,
+        )
         candidate_planner = _vision_candidate_planner(
             job_id=job_id,
             exam=exam,
             structured_config=structured_config,
+            provider_set=provider_set,
         )
         return await build_digiexam_answer_key_completion_report(
             job_id=job_id,
             completion_mode=completion_mode,
             exam=exam,
-            provider_set=structured_config.provider_set,
+            provider_set=provider_set,
             route_policy=structured_config.route_policy(allow_remote_fallback=False),
             provider=provider,
             candidate_planner=candidate_planner,
+            admitted_route=admitted_route,
         )
     finally:
         await container.close()
@@ -157,10 +175,11 @@ def _vision_candidate_planner(
     job_id: str,
     exam: DigiExamIntermediateExam,
     structured_config: StructuredLLMRuntimeConfig,
+    provider_set: StructuredChatProviderSet | None,
 ) -> DigiExamVisionCandidatePlanner | None:
-    if structured_config.provider_set is None:
+    if provider_set is None:
         return None
-    primary = structured_config.provider_set.primary
+    primary = provider_set.primary
     if not primary.capabilities.supports_multimodal_vision:
         return None
     from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (

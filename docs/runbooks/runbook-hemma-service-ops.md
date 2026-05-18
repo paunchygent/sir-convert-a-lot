@@ -92,6 +92,13 @@ Deploy/live verification key precedence:
 The implicit development key is rejected unless passed deliberately. Never write
 API keys into reports, logs, or retained artifacts.
 
+API-provider credentials used by structured answer-key completion live in the
+canonical prod env mirror by key reference only. The OpenAI provider reads
+`SIR_CONVERT_A_LOT_OPENAI_API_KEY`; the mirror also preserves the generic
+`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, and `DEEPSEEK_API_KEY` names plus
+Sir-prefixed aliases for follow-on provider profiles. Verify presence by key
+name only and redact values in any retained output.
+
 ## Production Env Mirror
 
 Use the committed mirror command:

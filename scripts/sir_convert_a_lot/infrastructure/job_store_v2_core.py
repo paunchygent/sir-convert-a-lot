@@ -16,6 +16,9 @@ from typing import Iterator
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
 from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     atomic_write_json,
     dt_to_rfc3339,
@@ -153,6 +156,7 @@ class JobStoreV2Core:
         upload_bytes: bytes,
         resources_zip_bytes: bytes | None,
         reference_docx_bytes: bytes | None,
+        structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None,
     ) -> StoredJobRecordV2:
         now = utc_now()
 
@@ -188,6 +192,7 @@ class JobStoreV2Core:
             pinned=pinned,
             raw_expires_at=raw_expires_at,
             artifact_expires_at=artifact_expires_at,
+            structured_llm_admission=structured_llm_admission,
         )
         append_lifecycle_event(
             payload=manifest,

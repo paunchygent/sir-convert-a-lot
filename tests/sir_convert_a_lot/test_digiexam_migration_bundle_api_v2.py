@@ -58,9 +58,12 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMOutputMode,
     StructuredLLMProviderCapabilities,
     StructuredLLMProviderProfile,
+    StructuredLLMReasoningEffort,
     StructuredLLMRequest,
     StructuredLLMResponse,
+    StructuredLLMTextVerbosity,
 )
+from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     StructuredLLMRuntimeConfig,
@@ -303,6 +306,145 @@ def test_digiexam_migration_advisory_completion_report_does_not_mutate_artifacts
     assert "source_provided" not in rendered_report
     assert "teacher_provided" not in rendered_report
     assert "reviewed" not in rendered_report
+
+
+def test_digiexam_migration_admitted_provider_route_does_not_drift_after_hot_switch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider_calls: list[str] = []
+
+    async def advisory_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self
+        provider_calls.append(f"{profile.provider_id}:{request.item_id}")
+        return StructuredLLMResponse(
+            content={
+                "decision_state": "answered",
+                "correct_alternative_ids": [2],
+                "manual_follow_up_code": None,
+            },
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        advisory_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(
+        tmp_path,
+        identity,
+        structured_llm=_structured_llm_config_with_openai_fallback(),
+        run_jobs_on_submit=False,
+    )
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-admission",
+        idempotency_key="idem-digiexam-admission-route",
+        wait_seconds=0,
+        payload=_missing_answer_key_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
+    )
+    assert response.status_code == 202
+    job_id = response.json()["job"]["job_id"]
+
+    settings_headers = _headers(
+        identity,
+        subject="operator-llm-admission",
+        grants={
+            "sir-convert:structured-llm-settings:read",
+            "sir-convert:structured-llm-settings:write",
+        },
+    )
+    settings_response = client.put(
+        "/v2/operator/structured-llm/provider-routing",
+        headers=settings_headers,
+        json={
+            "version": 2,
+            "active_provider_profile_id": "openai-gpt-5.4-mini-2026-03-17",
+            "allowed_internal_route_classes": ["operator_api_only"],
+            "remote_provider_authorized": True,
+            "rollout_label": "openai-after-admission",
+        },
+    )
+    assert settings_response.status_code == 200
+
+    runtime_obj = getattr(client.app.state, "runtime_v2", None)
+    assert isinstance(runtime_obj, ServiceRuntimeV2)
+    runtime_obj.run_job_async(job_id)
+    _wait_for_terminal_job(runtime_obj, job_id)
+
+    headers = _headers(identity, subject="teacher-llm-admission", grants=_read_grants())
+    completion_report = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_completion_report",
+        headers=headers,
+    ).json()
+    rendered_report = json.dumps(completion_report, ensure_ascii=False, sort_keys=True)
+
+    assert provider_calls == ["local-structured:item-001"]
+    assert completion_report["provider_lineage"] == {
+        "provider_family": "local_structured_llm",
+        "provider_profile_id": "local-structured",
+        "model": "local-model",
+        "endpoint_kind": "chat_completions",
+        "output_mode": "json_schema",
+        "reasoning_effort": None,
+        "text_verbosity": None,
+        "settings_version": 1,
+        "route_class": "operator_default",
+        "route_decision": "active_provider_profile",
+        "remote_provider_authorized": True,
+    }
+    assert "openai-gpt-5.4-mini-2026-03-17" not in rendered_report
+    assert "Choose the Greek letter" not in rendered_report
+    assert "Beta" not in rendered_report
+
+    second_response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-llm-admission",
+        idempotency_key="idem-digiexam-admission-route-openai",
+        wait_seconds=0,
+        payload=_missing_answer_key_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
+    )
+    assert second_response.status_code == 202
+    second_job_id = second_response.json()["job"]["job_id"]
+    runtime_obj.run_job_async(second_job_id)
+    _wait_for_terminal_job(runtime_obj, second_job_id)
+
+    second_report = client.get(
+        f"/v2/convert/jobs/{second_job_id}/artifacts/answer_key_completion_report",
+        headers=headers,
+    ).json()
+    assert provider_calls == [
+        "local-structured:item-001",
+        "openai-gpt-5.4-mini-2026-03-17:item-001",
+    ]
+    assert second_report["provider_lineage"] == {
+        "provider_family": "openai_responses",
+        "provider_profile_id": "openai-gpt-5.4-mini-2026-03-17",
+        "model": "gpt-5.4-mini-2026-03-17",
+        "endpoint_kind": "responses",
+        "output_mode": "json_schema",
+        "reasoning_effort": "none",
+        "text_verbosity": "low",
+        "settings_version": 2,
+        "route_class": "operator_api_only",
+        "route_decision": "active_provider_profile",
+        "remote_provider_authorized": True,
+    }
 
 
 def test_digiexam_migration_advisory_completion_allows_valid_embedded_image_item(
@@ -1567,6 +1709,7 @@ def _client(
     identity: _IdentitySigner,
     *,
     structured_llm: StructuredLLMRuntimeConfig | None = None,
+    run_jobs_on_submit: bool = True,
 ) -> TestClient:
     app = create_app(
         ServiceConfig(
@@ -1575,6 +1718,7 @@ def _client(
             gpu_available=False,
             enable_supervisor=False,
             processing_delay_seconds=0.0,
+            run_jobs_on_submit=run_jobs_on_submit,
             internal_identity_public_keys={_KEY_ID: identity.public_key_pem},
             structured_llm=structured_llm or StructuredLLMRuntimeConfig(),
         )
@@ -1681,6 +1825,18 @@ def _post_digiexam_job(
     )
 
 
+def _wait_for_terminal_job(runtime: ServiceRuntimeV2, job_id: str) -> None:
+    deadline = time.monotonic() + 5.0
+    current = runtime.get_job(job_id)
+    while current is not None and current.status not in {JobStatus.SUCCEEDED, JobStatus.FAILED}:
+        if time.monotonic() > deadline:
+            raise AssertionError(f"Job {job_id} did not reach a terminal state")
+        time.sleep(0.05)
+        current = runtime.get_job(job_id)
+    assert current is not None
+    assert current.status == JobStatus.SUCCEEDED
+
+
 def _structured_llm_config() -> StructuredLLMRuntimeConfig:
     profile = StructuredLLMProviderProfile(
         provider_id="local-structured",
@@ -1705,6 +1861,56 @@ def _structured_llm_config() -> StructuredLLMRuntimeConfig:
                 base_url="http://127.0.0.1:8123",
             )
         },
+    )
+
+
+def _structured_llm_config_with_openai_fallback() -> StructuredLLMRuntimeConfig:
+    local_profile = StructuredLLMProviderProfile(
+        provider_id="local-structured",
+        model="local-model",
+        endpoint_kind=StructuredLLMEndpointKind.CHAT_COMPLETIONS,
+        output_mode=StructuredLLMOutputMode.JSON_SCHEMA,
+        is_remote=False,
+        context_window_tokens=4096,
+        max_output_tokens=512,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=False,
+            supports_vllm_structured_choice=False,
+        ),
+    )
+    openai_profile = StructuredLLMProviderProfile(
+        provider_id="openai-gpt-5.4-mini-2026-03-17",
+        model="gpt-5.4-mini-2026-03-17",
+        endpoint_kind=StructuredLLMEndpointKind.RESPONSES,
+        output_mode=StructuredLLMOutputMode.JSON_SCHEMA,
+        is_remote=True,
+        context_window_tokens=400000,
+        max_output_tokens=4096,
+        capabilities=StructuredLLMProviderCapabilities(
+            supports_json_schema=True,
+            supports_gbnf=False,
+            supports_vllm_structured_choice=False,
+        ),
+        reasoning_effort=StructuredLLMReasoningEffort.NONE,
+        text_verbosity=StructuredLLMTextVerbosity.LOW,
+    )
+    return StructuredLLMRuntimeConfig(
+        enabled=True,
+        provider_set=StructuredChatProviderSet(primary=local_profile, fallback=openai_profile),
+        connections={
+            local_profile.provider_id: StructuredLLMProviderConnection(
+                provider_id=local_profile.provider_id,
+                base_url="http://127.0.0.1:8123",
+            ),
+            openai_profile.provider_id: StructuredLLMProviderConnection(
+                provider_id=openai_profile.provider_id,
+                base_url="https://api.openai.com",
+                api_key="test-token",
+            ),
+        },
+        remote_providers_enabled=True,
+        remote_fallback_policy_authorized=True,
     )
 
 

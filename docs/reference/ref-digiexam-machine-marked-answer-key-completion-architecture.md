@@ -23,6 +23,7 @@ links:
   - docs/backlog/tasks/task-302-implement-teacher-item-content-overlay-application-for-effective-ir.md
   - docs/backlog/tasks/task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md
   - docs/backlog/tasks/task-304-publish-generated-sir-convert-v2-openapi-contract-for-digiexam-migration-bundles.md
+  - docs/decisions/0010-hot-swappable-structured-answer-key-provider-routing.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/digiexam-intermediate-exam-representation-contract.md
   - docs/reference/ref-examnet-qti-import-contract-and-validation-strategy.md
@@ -207,15 +208,19 @@ Source-bound evidence wins over LLM completion. A teacher override policy that
 can supersede source-bound evidence must be a separate governed decision.
 
 LLM completion metadata is candidate lineage, not answer-key provenance. The
-advisory report may retain bounded metadata such as provider profile ID,
-completion report digest, candidate digest, schema version, prompt-template
-version, backend status, and review decision ID. When a teacher accepts a
+advisory report may retain bounded metadata such as admission-time provider
+family, provider profile ID, model snapshot, output mode, reasoning effort,
+text verbosity, settings version, route decision, completion report digest,
+candidate digest, schema version, prompt-template version, backend status, and
+review decision ID. When a teacher accepts a
 candidate unchanged, applied effective provenance may become `reviewed` with
 lineage pointing back to the candidate. When a teacher edits the candidate
 before applying it, effective provenance becomes `teacher_provided` with
 lineage noting that the final key was edited from the candidate. Teacher keys
 written without a candidate remain `teacher_provided` without LLM lineage.
 None of these states reclassifies LLM output as source/parser evidence.
+Provider lineage is resolved once when a job is admitted; already-admitted jobs
+must not drift if operators mutate hot provider settings before execution.
 Candidate digests are computed from the canonical backend-validated candidate
 payload only, never from raw prompts, raw provider responses, or pre-validation
 provider output.
@@ -342,6 +347,21 @@ Create a later HuleEdu task only if we want LLM Provider Service to expose a new
 bounded synchronous or callback-backed **generic structured completion** API
 that accepts a schema name/schema payload, returns only schema-valid JSON or a
 typed failure, and preserves Sir Convert's privacy/capture policy.
+
+ADR-0010 adds the product/provider decision for the API-provider lane: OpenAI
+is the first direct API provider, OpenRouter and DeepSeek are follow-up
+provider profiles, and provider routing for new advisory requests must be
+controlled by hot service settings rather than service restart or container
+recreation. Production local-provider routing depends on Task 320's
+service-backed Docker DNS provider path; Task 320 is done with fresh
+2026-05-18 proof from `sir_convert_a_lot_prod` to
+`sir_convert_qwen_answer_key` and an authenticated service-report proof with 8
+suggestions and 0 `provider_request_failed` rows. Task 311 remains the gate for
+full authenticated/public-edge mirror validation. ADR-0010 also keeps provider
+route selection operator-internal unless a later contract task explicitly adds
+a public route field and OpenAPI/consumer proof. That decision does not relax
+the local-first privacy baseline or the teacher-reviewed effective-IR apply
+contract.
 
 ## Prompt And Capture Rules
 

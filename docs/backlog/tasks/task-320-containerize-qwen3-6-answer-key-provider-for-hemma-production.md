@@ -2,10 +2,10 @@
 id: task-320-containerize-qwen3-6-answer-key-provider-for-hemma-production
 title: Containerize Qwen3.6 answer-key provider for Hemma production
 type: task
-status: proposed
+status: done
 priority: high
 created: '2026-05-17'
-last_updated: '2026-05-17'
+last_updated: '2026-05-18'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
@@ -40,6 +40,81 @@ the guarded Qwen3.6 `llama.cpp` provider on host `127.0.0.1:8082`, while the
 production Sir Convert container tried to use that same loopback address from
 inside its own namespace. The result was `provider_request_failed` for eligible
 machine-marked MCQ rows even though the host-local provider was healthy.
+
+## 2026-05-18 Production Reachability Status
+
+Fresh Hemma production proof now shows that the namespace-specific loopback
+failure is fixed for provider reachability. The running service path uses
+Docker DNS from `sir_convert_a_lot_prod` to `sir_convert_qwen_answer_key`
+instead of container-local loopback.
+
+Evidence:
+
+- Hemma repo revision: `2a1dc4d0b0dfe670ce64ba25e125dd59e5d102af`.
+- `sir_convert_a_lot_prod`, `sir_convert_a_lot_gpu_worker`, and
+  `sir_convert_qwen_answer_key` were all running for two hours; prod and worker
+  were healthy.
+- `pdm run answer-key-provider-env --lane hemma-prod-compose --profile qwen36-llama-cpp-mtp` rendered provider base URL
+  `http://sir_convert_qwen_answer_key:8082`, runtime lane
+  `hemma-prod-compose`, model `qwen3.6-27b-q6k-mtp`, context `16384`, max output
+  `4096`, JSON Schema output mode, multimodal vision enabled, and remote
+  providers disabled.
+- Inside `sir_convert_a_lot_prod`, the active provider environment uses
+  `http://sir_convert_qwen_answer_key:8082` and not `127.0.0.1`, `localhost`, or
+  `host.docker.internal`.
+- From inside `sir_convert_a_lot_prod`, `GET http://sir_convert_qwen_answer_key:8082/v1/models` returned
+  `qwen3.6-27b-q6k-mtp` with `n_ctx=16384` and `owned_by=llamacpp`.
+- From inside `sir_convert_a_lot_prod`, a JSON Schema chat-completions
+  microprobe returned `{"decision_state":"answered", "correct_alternative_ids":[1]}` for a synthetic MCQ prompt.
+- `sir_convert_a_lot_prod` has `HostConfig.Devices=null`,
+  `SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR=0`, and
+  `SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT=0`.
+- `sir_convert_qwen_answer_key` has no host port bindings, exposes `8082`, and
+  is attached to `hule-network` with alias `sir_convert_qwen_answer_key`.
+- The running provider process is `llama-server` with
+  `--alias qwen3.6-27b-q6k-mtp`, `--ctx-size 16384`, `--parallel 1`,
+  `--n-gpu-layers all`, `--fit off`, `--flash-attn on`, `--jinja`,
+  `--reasoning off`, `--temp 0.15`, `--offline`, `--spec-type draft-mtp`,
+  `--spec-draft-n-max 2`, and the Task 320 vision media path.
+- The provider mounts only Docker-visible home-backed build/cache roots into
+  `/srv/scratch/sir-convert-a-lot/...`, has GPU device mounts for `/dev/kfd`
+  and `/dev/dri`, and uses numeric group IDs `44` and `993`.
+- `sir_convert_a_lot_gpu_worker` has no host port bindings, is attached to
+  `hule-network`, has supervisor enabled for background execution, and owns
+  `/dev/kfd` plus `/dev/dri` GPU device mounts.
+
+Remaining scope: this proof clears the production provider-reachability gate for
+local Qwen routing.
+
+Additional completion evidence:
+
+- Build-helper contract proof passed locally with
+  `pdm run pytest-root tests/sir_convert_a_lot/test_qwen_provider_build_contract.py`.
+  The test locks the `nice -n 10` / `-j8` runbook build limits, confirms the
+  provider image does not hide a `llama.cpp` build, and confirms prod env mirror
+  creates the Qwen vision media host path.
+- Runtime-lane config proof passed locally with
+  `pdm run pytest-root tests/sir_convert_a_lot/test_answer_key_provider_runtime_config.py`.
+  The local-host lane still renders `http://127.0.0.1:8082`, while the
+  `hemma-prod-compose` lane rejects `127.0.0.1`, `localhost`, and
+  `host.docker.internal`.
+- A direct service submission with only `X-API-Key` failed with
+  `auth_invalid_internal_identity`, proving the DigiExam service route is not a
+  plain Sir API-key path and still requires HuleEdu-signed identity context.
+- A controlled Hemma proof used the configured HuleEdu Gateway internal-identity
+  signing key (`gateway-identity-rs256-v1`) to mint a short-lived
+  `InternalIdentityContextV1` for the Sir service verifier, then submitted
+  `1786767978-23c-biologi-ak-9-slutprov.dxe` through the deployed service at
+  `http://127.0.0.1:28085`.
+- The authenticated service job `jobv2_6843fafd02f0402285763eb6e7` succeeded.
+  Its `answer_key_completion_report_v1` artifact was available, contained 19
+  report rows, produced 8 `suggested` rows, 0 `manual_follow_up_required` rows,
+  and 0 `provider_request_failed` rows. Retained artifacts live outside git at
+  `/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/service-advisory-proof/`.
+
+The remaining full auth/public-edge mirror, including product-edge behavior and
+alpha readiness, is broader than this production provider containerization task
+and remains governed by Task 311.
 
 ## PR Scope
 
@@ -81,48 +156,48 @@ machine-marked MCQ rows even though the host-local provider was healthy.
 
 ## Deliverables
 
-- [ ] Governed production Qwen provider service in Compose.
-- [ ] Governed private GPU worker service for current PDF/OCR execution, with
+- [x] Governed production Qwen provider service in Compose.
+- [x] Governed private GPU worker service for current PDF/OCR execution, with
   API admission separated from GPU execution.
-- [ ] Runbook-aligned `llama.cpp` build helper that enforces `nice -n 10` and
+- [x] Runbook-aligned `llama.cpp` build helper that enforces `nice -n 10` and
   `-j8` maximum build concurrency.
-- [ ] Structured-provider environment renderer/validator for local and Hemma
+- [x] Structured-provider environment renderer/validator for local and Hemma
   production lanes.
-- [ ] Deploy verifier provider reachability and microprobe checks.
-- [ ] Live authenticated path proof showing MCQ candidates in
+- [x] Deploy verifier provider reachability and microprobe checks.
+- [x] Live authenticated path proof showing MCQ candidates in
   `answer_key_completion_report`.
 
 ## Acceptance Criteria
 
-- [ ] Hemma production structured-provider config cannot use `127.0.0.1`,
+- [x] Hemma production structured-provider config cannot use `127.0.0.1`,
   `localhost`, or `host.docker.internal`.
-- [ ] `sir_convert_a_lot_prod` reaches Qwen through
+- [x] `sir_convert_a_lot_prod` reaches Qwen through
   `http://sir_convert_qwen_answer_key:8082`.
-- [ ] `sir_convert_a_lot_prod` has no GPU device mounts, has supervisor
+- [x] `sir_convert_a_lot_prod` has no GPU device mounts, has supervisor
   disabled, and does not execute jobs on submit in Hemma production.
-- [ ] `sir_convert_a_lot_gpu_worker` is private to Docker networking and owns
+- [x] `sir_convert_a_lot_gpu_worker` is private to Docker networking and owns
   current PDF/OCR GPU execution against the shared production job store.
-- [ ] The production provider service uses Docker `expose`, not host `ports`.
-- [ ] The production provider defaults use the smaller MTP Q6_K profile and
+- [x] The production provider service uses Docker `expose`, not host `ports`.
+- [x] The production provider defaults use the smaller MTP Q6_K profile and
   alias `qwen3.6-27b-q6k-mtp`; the XL MTP quant is not the Hemma production
   default.
-- [ ] The production provider is capped to one `llama-server` slot
+- [x] The production provider is capped to one `llama-server` slot
   (`--parallel 1`) so Qwen residency does not silently multiply the 16k KV
   cache while current OCR GPU work remains part of the stack.
-- [ ] Provider build guidance and command surfaces preserve the runbook
+- [x] Provider build guidance and command surfaces preserve the runbook
   `nice -n 10` / `-j8` compile contract.
-- [ ] Active model cache, build, and vision media paths stay on Scratch-backed
+- [x] Active model cache, build, and vision media paths stay on Scratch-backed
   Docker-visible roots, not container-local storage or `/`.
-- [ ] Provider containers do not depend on host `/opt/rocm*` or `/opt/amdgpu`
+- [x] Provider containers do not depend on host `/opt/rocm*` or `/opt/amdgpu`
   bind mounts; ROCm runtime libraries come from the pinned provider image.
-- [ ] GPU device group access uses Hemma host numeric GIDs rendered into prod
+- [x] GPU device group access uses Hemma host numeric GIDs rendered into prod
   env, not image-local `video` / `render` group names.
-- [ ] Advisory `.dxe` MCQ rows produce valid candidates instead of
+- [x] Advisory `.dxe` MCQ rows produce valid candidates instead of
   `provider_request_failed`.
-- [ ] Local host-dev can still use `http://127.0.0.1:8082`.
+- [x] Local host-dev can still use `http://127.0.0.1:8082`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

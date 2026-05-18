@@ -17,6 +17,9 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
+    StructuredLLMAdmittedRouteSnapshot,
+)
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,7 @@ class StoredJobRecordV2:
     failure_message: str | None
     failure_retryable: bool
     failure_details: dict[str, object] | None
+    structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None
 
     @property
     def expires_at(self) -> datetime | None:
