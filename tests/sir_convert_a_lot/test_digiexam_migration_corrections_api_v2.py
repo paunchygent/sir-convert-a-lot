@@ -284,6 +284,104 @@ def test_digiexam_migration_job_emits_gap_correction_source_state_for_issuer(
     )
 
 
+def test_digiexam_correction_apply_returns_downloadable_replay_artifacts(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity)
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-correction-replay-artifacts",
+        idempotency_key="idem-digiexam-correction-replay-artifacts",
+        wait_seconds=20,
+        payload=_missing_answer_key_payload(),
+        targets=("examnet_pdf", "qti_package"),
+    )
+    assert response.status_code == 200
+    assert response.json()["job"]["status"] == JobStatus.SUCCEEDED.value
+    job_id = response.json()["job"]["job_id"]
+
+    headers = _headers(
+        identity,
+        subject="teacher-correction-replay-artifacts",
+        grants={"sir-convert:artifacts:read-own"},
+    )
+    issue_response = client.post(
+        "/v2/exam-authoring/corrections/source-state/issue",
+        headers=headers,
+        json={
+            "schema_version": "exam_authoring_correction_source_state_issue_request_v1",
+            "job_id": job_id,
+        },
+    )
+    assert issue_response.status_code == 200
+    issued = issue_response.json()
+    issued_binding = issued["source_binding"]
+    issued_state = issued["source_authoring_state"]
+    choice_item = next(item for item in issued_state["items"] if item["choice_interactions"])
+    choice_interaction = choice_item["choice_interactions"][0]
+    correct_choice_id = choice_interaction["choices"][1]["choice_id"]
+
+    apply_response = client.post(
+        "/v2/exam-authoring/corrections/apply",
+        headers=headers,
+        json={
+            "schema_version": "exam_authoring_corrections_apply_request_v1",
+            "request_id": "correction-request-replay-artifacts-001",
+            "source_binding": issued_binding,
+            "source_authoring_state": issued_state,
+            "corrections": [
+                {
+                    "entry_id": "corr-choice-replay-artifacts-001",
+                    "kind": "manual_choice_answer_key",
+                    "item_id": choice_item["item_id"],
+                    "sequence": choice_item["sequence"],
+                    "item_type": choice_item["item_type"],
+                    "source_item_fingerprint": choice_item["source_item_fingerprint"],
+                    "interaction_id": choice_interaction["interaction_id"],
+                    "submission_origin": "teacher_authored",
+                    "correct_choice_ids": [correct_choice_id],
+                }
+            ],
+            "requested_targets": ["examnet_pdf", "qti_package"],
+        },
+    )
+
+    assert apply_response.status_code == 200
+    apply_payload = apply_response.json()
+    assert apply_payload["correction_report"]["rejected_entries"] == []
+    readiness_by_target = {
+        row["target"]: row for row in apply_payload["target_readiness"]["targets"]
+    }
+    assert readiness_by_target["examnet_pdf"]["export_enabled"] is True
+    assert readiness_by_target["examnet_pdf"]["artifact_key"] == "correction_replay_examnet_pdf"
+    assert readiness_by_target["qti_package"]["export_enabled"] is True
+    assert readiness_by_target["qti_package"]["artifact_key"] == "correction_replay_qti_package"
+    availability_by_target = {
+        row["artifact_key"]: row["availability"] for row in apply_payload["artifact_availability"]
+    }
+    assert availability_by_target == {
+        "examnet_pdf": "available",
+        "qti_package": "available",
+    }
+
+    pdf_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/correction_replay_examnet_pdf",
+        headers=headers,
+    )
+    qti_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/correction_replay_qti_package",
+        headers=headers,
+    )
+
+    assert pdf_response.status_code == 200
+    assert pdf_response.content.startswith(b"%PDF")
+    assert qti_response.status_code == 200
+    with zipfile.ZipFile(BytesIO(qti_response.content)) as archive:
+        assert "imsmanifest.xml" in archive.namelist()
+
+
 def test_digiexam_migration_applies_source_bound_teacher_overlay(
     tmp_path: Path,
 ) -> None:

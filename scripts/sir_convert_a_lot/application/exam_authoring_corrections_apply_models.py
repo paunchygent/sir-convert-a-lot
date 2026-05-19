@@ -274,6 +274,7 @@ class ExamAuthoringCorrectionTargetReadinessRowV1(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     target: ExamAuthoringCorrectionTargetV1
+    artifact_key: str | None = Field(default=None, min_length=1)
     readiness: ExamAuthoringCorrectionReadinessV1
     export_enabled: bool
     reason_code: str = Field(min_length=1)

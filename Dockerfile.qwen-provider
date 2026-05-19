@@ -18,6 +18,12 @@ ARG QWEN_PROVIDER_BASE_IMAGE=rocm/vllm:rocm7.12.0_gfx120X-all_ubuntu24.04_py3.12
 
 FROM ${QWEN_PROVIDER_BASE_IMAGE} AS qwen-provider-runtime
 
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN mkdir -p \
     /srv/scratch/sir-convert-a-lot/bin \
     /srv/scratch/sir-convert-a-lot/build \

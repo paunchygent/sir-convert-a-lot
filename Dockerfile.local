@@ -14,6 +14,36 @@ ARG DEPS_IMAGE=sir-convert-a-lot-deps-cpu:local
 
 FROM ${DEPS_IMAGE} AS runtime
 
+ARG SIR_CONVERT_A_LOT_SERVICE_REVISION=unknown
+ARG SIR_CONVERT_A_LOT_EXPECTED_REVISION=unknown
+
+COPY .git /tmp/sir-convert-build-git
+
+RUN set -eu; \
+    mkdir -p /opt/sir-convert-a-lot; \
+    revision="${SIR_CONVERT_A_LOT_SERVICE_REVISION}"; \
+    if [ -z "${revision}" ] || [ "${revision}" = "unknown" ]; then \
+      head_ref="$(cat /tmp/sir-convert-build-git/HEAD)"; \
+      case "${head_ref}" in \
+        "ref: "*) \
+          ref_path="${head_ref#ref: }"; \
+          if [ -f "/tmp/sir-convert-build-git/${ref_path}" ]; then \
+            revision="$(cat "/tmp/sir-convert-build-git/${ref_path}")"; \
+          else \
+            revision="$(awk -v ref="${ref_path}" '$2 == ref { print $1; exit }' /tmp/sir-convert-build-git/packed-refs)"; \
+          fi; \
+          ;; \
+        *) revision="${head_ref}" ;; \
+      esac; \
+    fi; \
+    expected_revision="${SIR_CONVERT_A_LOT_EXPECTED_REVISION}"; \
+    if [ -z "${expected_revision}" ] || [ "${expected_revision}" = "unknown" ]; then \
+      expected_revision="${revision}"; \
+    fi; \
+    printf "%s" "${revision:-unknown}" > /opt/sir-convert-a-lot/service_revision; \
+    printf "%s" "${expected_revision:-unknown}" > /opt/sir-convert-a-lot/expected_revision; \
+    rm -rf /tmp/sir-convert-build-git
+
 COPY scripts/__init__.py ./scripts/__init__.py
 COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
 COPY scripts/sir_convert_a_lot/service_local.py ./scripts/sir_convert_a_lot/service_local.py

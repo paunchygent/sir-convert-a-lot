@@ -35,6 +35,9 @@ from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_cont
     ExamAuthoringCorrectionsApplyResultV1,
     apply_exam_authoring_corrections_request,
 )
+from scripts.sir_convert_a_lot.infrastructure.correction_replay_artifact_writer import (
+    write_exam_authoring_correction_replay_artifacts,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
 from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
@@ -113,6 +116,28 @@ def build_exam_authoring_corrections_router_v2(
                 retryable=False,
                 details=exc.details,
             ) from exc
+        source_bundle_id = request_body.source_binding.source_bundle_id
+        if source_bundle_id is not None:
+            runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
+            job = runtime.get_job(source_bundle_id)
+            if job is not None:
+                auth_context = auth_context_for_job_access_v2(
+                    request,
+                    service_started_at=service_started_at,
+                    job=job,
+                    required_grant="sir-convert:artifacts:read-own",
+                )
+                job = require_job_access_v2(
+                    auth_context=auth_context,
+                    job=job,
+                    required_grant="sir-convert:artifacts:read-own",
+                    access_denied_code="exam_authoring_correction_replay_access_denied",
+                )
+                response = write_exam_authoring_correction_replay_artifacts(
+                    job=job,
+                    request_body=request_body,
+                    result=response,
+                )
         return JSONResponse(status_code=200, content=response.model_dump(mode="json"))
 
     return router

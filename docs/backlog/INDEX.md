@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-18
-last_updated: 2026-05-18
+created: 2026-05-19
+last_updated: 2026-05-19
 related: []
 labels:
   - generated
@@ -377,6 +377,7 @@ Generated index for backlog planning documents.
 | task-333-implement-non-matching-unified-correction-apply-runtime-for-digiexam-pr-0332 | [Implement non-matching unified correction apply runtime for DigiExam PR-0332](tasks/task-333-implement-non-matching-unified-correction-apply-runtime-for-digiexam-pr-0332.md) | task | completed |
 | task-334-add-deepseek-v4-flash-json-output-provider-for-answer-key-completion | [Add DeepSeek v4 flash JSON Output provider for answer-key completion](tasks/task-334-add-deepseek-v4-flash-json-output-provider-for-answer-key-completion.md) | task | completed |
 | task-335-replace-deepseek-v4-flash-answer-key-provider-with-v4-pro | [Replace DeepSeek v4 flash answer-key provider with v4 pro](tasks/task-335-replace-deepseek-v4-flash-answer-key-provider-with-v4-pro.md) | task | completed |
+| task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339 | [Implement correction replay artifact references for Skriptoteket PR-0339](tasks/task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339.md) | task | done |
 | task-34-service-v2-job-store-runtime-for-multi-format-artifacts | [Service v2 job store + runtime for multi-format artifacts](tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md) | task | completed |
 | task-35-cli-pivot-remote-only-routes-via-service-api-v2 | [CLI pivot: remote-only routes via service API v2](tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md) | task | completed |
 | task-36-service-v2-route-md-pdf-via-html-intermediary | [Service v2 route: md -> pdf via html intermediary](tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md) | task | completed |

@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
+from pydantic import JsonValue
+
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_models import (
     ExamAuthoringAnswerKeyProvenanceV1,
     ExamAuthoringChoiceAnswerKeyV1,
@@ -27,10 +29,6 @@ from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_stat
     ExamAuthoringGapAcceptedValueV1,
     ExamAuthoringGapAnswerKeyV1,
     ExamAuthoringGapOpenClozeInteractionV1,
-)
-from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_integrity import (
-    choice_answer_key_payload_digest,
-    gap_open_cloze_answer_key_payload_digest,
 )
 from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_models import (
     ExamAuthoringCorrectionAcceptedEntryV1,
@@ -44,6 +42,9 @@ from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_mode
 )
 from scripts.sir_convert_a_lot.application.exam_authoring_non_matching_readiness import (
     non_matching_target_readiness_rows,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
+    answer_key_candidate_payload_digest,
 )
 
 ExamAuthoringNonMatchingCorrectionV1: TypeAlias = (
@@ -128,9 +129,9 @@ def _apply_choice_answer_key(
     correction: ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
     item: ExamAuthoringCorrectionSourceItemV1,
 ) -> ExamAuthoringCorrectionSourceItemV1:
-    _validate_choice_candidate_digest(correction)
     interaction = _choice_interaction(correction=correction, item=item)
     _validate_choice_ids(correction=correction, interaction=interaction)
+    _validate_choice_candidate_digest(correction=correction, interaction=interaction)
     effective_interaction = interaction.model_copy(
         update={
             "answer_key": ExamAuthoringChoiceAnswerKeyV1(
@@ -156,9 +157,9 @@ def _apply_gap_open_cloze_answer_key(
     correction: ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
     item: ExamAuthoringCorrectionSourceItemV1,
 ) -> ExamAuthoringCorrectionSourceItemV1:
-    _validate_gap_candidate_digest(correction)
     interaction = _gap_interaction(correction=correction, item=item)
     _validate_gap_ids(correction=correction, interaction=interaction)
+    _validate_gap_candidate_digest(correction)
     effective_interaction = _replace_gap_answers(
         correction=correction,
         interaction=interaction,
@@ -370,8 +371,31 @@ def _replace_gap_answers(
     )
 
 
-def _validate_choice_candidate_digest(
+def _candidate_alternative_id(choice: ExamAuthoringChoiceOptionV1) -> int:
+    if choice.source_id is not None and choice.source_id.isdecimal():
+        return int(choice.source_id)
+    return choice.order
+
+
+def _candidate_choice_payload(
+    *,
     correction: ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
+    interaction: ExamAuthoringChoiceInteractionV1,
+) -> dict[str, JsonValue]:
+    choices_by_id = {choice.choice_id: choice for choice in interaction.choices}
+    return {
+        "correct_alternative_ids": [
+            _candidate_alternative_id(choices_by_id[choice_id])
+            for choice_id in correction.correct_choice_ids
+        ],
+        "kind": "choice",
+    }
+
+
+def _validate_choice_candidate_digest(
+    *,
+    correction: ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
+    interaction: ExamAuthoringChoiceInteractionV1,
 ) -> None:
     if correction.submission_origin != "accepted_advisory_candidate":
         return
@@ -379,7 +403,9 @@ def _validate_choice_candidate_digest(
         raise _error(
             correction, "advisory_candidate_lineage_missing", "Candidate lineage missing.", {}
         )
-    submitted_digest = choice_answer_key_payload_digest(correction)
+    submitted_digest = answer_key_candidate_payload_digest(
+        _candidate_choice_payload(correction=correction, interaction=interaction)
+    )
     expected_digest = correction.candidate_lineage.candidate_payload_digest
     if submitted_digest != expected_digest:
         raise _error(
@@ -393,6 +419,21 @@ def _validate_choice_candidate_digest(
         )
 
 
+def _candidate_gap_payload(
+    correction: ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
+) -> dict[str, JsonValue]:
+    return {
+        "gap_answers": [
+            {
+                "accepted_values": list(answer.accepted_values),
+                "gap_id": answer.gap_id,
+            }
+            for answer in correction.gap_answers
+        ],
+        "kind": "gap_fill",
+    }
+
+
 def _validate_gap_candidate_digest(
     correction: ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
 ) -> None:
@@ -402,7 +443,7 @@ def _validate_gap_candidate_digest(
         raise _error(
             correction, "advisory_candidate_lineage_missing", "Candidate lineage missing.", {}
         )
-    submitted_digest = gap_open_cloze_answer_key_payload_digest(correction)
+    submitted_digest = answer_key_candidate_payload_digest(_candidate_gap_payload(correction))
     expected_digest = correction.candidate_lineage.candidate_payload_digest
     if submitted_digest != expected_digest:
         raise _error(

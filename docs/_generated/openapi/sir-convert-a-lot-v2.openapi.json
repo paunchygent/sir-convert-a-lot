@@ -3462,6 +3462,18 @@
         "additionalProperties": false,
         "description": "Target readiness projection for corrected authoring state.",
         "properties": {
+          "artifact_key": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Key"
+          },
           "export_enabled": {
             "title": "Export Enabled",
             "type": "boolean"

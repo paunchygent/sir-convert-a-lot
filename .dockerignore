@@ -3,6 +3,13 @@
 # BuildKit.
 *
 
+!.git
+.git/*
+!.git/HEAD
+!.git/refs
+!.git/refs/**
+!.git/packed-refs
+
 !docker
 docker/*
 !docker/service-deps

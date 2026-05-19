@@ -25,8 +25,6 @@ from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_stat
 )
 from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_models import (
     ExamAuthoringCorrectionsApplyRequestV1,
-    ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
-    ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
     ExamAuthoringManualMatchingAnswerKeyCorrectionV1,
 )
 
@@ -69,38 +67,6 @@ def matching_answer_key_payload_digest(
         {
             "kind": "matching",
             "pairs": tuple(pair.model_dump(mode="json") for pair in correction.pairs),
-        }
-    )
-
-
-def choice_answer_key_payload_digest(
-    correction: ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
-) -> str:
-    """Return the advisory payload digest for a choice answer-key correction."""
-
-    return stable_json_sha256(
-        {
-            "kind": "choice",
-            "correct_choice_ids": correction.correct_choice_ids,
-        }
-    )
-
-
-def gap_open_cloze_answer_key_payload_digest(
-    correction: ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
-) -> str:
-    """Return the advisory payload digest for a gap/open-cloze key correction."""
-
-    return stable_json_sha256(
-        {
-            "kind": "gap_open_cloze",
-            "gap_answers": tuple(
-                {
-                    "gap_id": answer.gap_id,
-                    "accepted_values": answer.accepted_values,
-                }
-                for answer in correction.gap_answers
-            ),
         }
     )
 

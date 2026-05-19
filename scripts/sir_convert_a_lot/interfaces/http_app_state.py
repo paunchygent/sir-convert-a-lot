@@ -27,6 +27,11 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRu
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceRuntimeMetadata
 from scripts.sir_convert_a_lot.infrastructure.runtime_telemetry_v2 import RuntimeTelemetrySinkV2
 
+BAKED_EXPECTED_REVISION_PATH = Path("/opt/sir-convert-a-lot/expected_revision")
+BAKED_EXPECTED_REVISION_PATH_ENV = "SIR_CONVERT_A_LOT_BAKED_EXPECTED_REVISION_PATH"
+BAKED_SERVICE_REVISION_PATH = Path("/opt/sir-convert-a-lot/service_revision")
+BAKED_SERVICE_REVISION_PATH_ENV = "SIR_CONVERT_A_LOT_BAKED_SERVICE_REVISION_PATH"
+
 
 def resolve_repo_head_revision() -> str:
     """Resolve current repository HEAD revision."""
@@ -43,19 +48,53 @@ def resolve_repo_head_revision() -> str:
     return output if output != "" else "unknown"
 
 
+def _configured_revision(env_key: str) -> str | None:
+    configured_revision = os.getenv(env_key)
+    if configured_revision is None:
+        return None
+    cleaned = configured_revision.strip()
+    if cleaned == "" or cleaned == "unknown":
+        return None
+    return cleaned
+
+
+def _read_baked_revision(*, default_path: Path, path_env_key: str) -> str | None:
+    raw_path = os.getenv(path_env_key)
+    path = Path(raw_path) if raw_path is not None and raw_path.strip() != "" else default_path
+    try:
+        cleaned = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if cleaned == "" or cleaned == "unknown":
+        return None
+    return cleaned
+
+
 def resolve_service_revision() -> str:
     """Resolve service revision from override or repository metadata."""
-    configured_revision = os.getenv("SIR_CONVERT_A_LOT_SERVICE_REVISION")
-    if configured_revision is not None and configured_revision.strip() != "":
-        return configured_revision.strip()
+    configured_revision = _configured_revision("SIR_CONVERT_A_LOT_SERVICE_REVISION")
+    if configured_revision is not None:
+        return configured_revision
+    baked_revision = _read_baked_revision(
+        default_path=BAKED_SERVICE_REVISION_PATH,
+        path_env_key=BAKED_SERVICE_REVISION_PATH_ENV,
+    )
+    if baked_revision is not None:
+        return baked_revision
     return resolve_repo_head_revision()
 
 
 def resolve_expected_revision(*, default_revision: str) -> str:
     """Resolve expected service revision for readiness verification."""
-    configured_revision = os.getenv("SIR_CONVERT_A_LOT_EXPECTED_REVISION")
-    if configured_revision is not None and configured_revision.strip() != "":
-        return configured_revision.strip()
+    configured_revision = _configured_revision("SIR_CONVERT_A_LOT_EXPECTED_REVISION")
+    if configured_revision is not None:
+        return configured_revision
+    baked_revision = _read_baked_revision(
+        default_path=BAKED_EXPECTED_REVISION_PATH,
+        path_env_key=BAKED_EXPECTED_REVISION_PATH_ENV,
+    )
+    if baked_revision is not None:
+        return baked_revision
     if default_revision.strip() != "":
         return default_revision
     return "unknown"

@@ -83,6 +83,7 @@ def test_corrections_apply_route_returns_effective_matching_state_and_readiness(
     assert payload["target_readiness"]["targets"] == [
         {
             "target": "examnet_pdf",
+            "artifact_key": None,
             "readiness": "ready",
             "export_enabled": True,
             "reason_code": "ready",
@@ -92,6 +93,7 @@ def test_corrections_apply_route_returns_effective_matching_state_and_readiness(
         },
         {
             "target": "qti_package",
+            "artifact_key": None,
             "readiness": "unsupported_target_shape",
             "export_enabled": False,
             "reason_code": "examnet_qti_matching_import_unproven",

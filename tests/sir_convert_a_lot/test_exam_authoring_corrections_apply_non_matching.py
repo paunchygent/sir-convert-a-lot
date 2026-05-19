@@ -15,13 +15,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_integrity import (
-    choice_answer_key_payload_digest,
-    gap_open_cloze_answer_key_payload_digest,
-)
-from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_models import (
-    ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
-    ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
+    answer_key_candidate_payload_digest,
 )
 from tests.sir_convert_a_lot.exam_authoring_corrections_apply_fixtures import (
     API_HEADERS as _API_HEADERS,
@@ -174,10 +169,9 @@ def test_non_matching_choice_advisory_candidate_digest_match_is_reviewed(
     client = _client(tmp_path)
     correction = _choice_answer_key()
     correction["submission_origin"] = "accepted_advisory_candidate"
-    correction["candidate_lineage"] = _candidate_lineage(candidate_payload_digest="sha256:pending")
     correction["candidate_lineage"] = _candidate_lineage(
-        candidate_payload_digest=choice_answer_key_payload_digest(
-            ExamAuthoringManualChoiceAnswerKeyCorrectionV1.model_validate(correction)
+        candidate_payload_digest=answer_key_candidate_payload_digest(
+            {"kind": "choice", "correct_alternative_ids": [2]}
         )
     )
     payload = _non_matching_payload([correction])
@@ -195,10 +189,12 @@ def test_non_matching_gap_advisory_candidate_digest_mismatch_rejected(
     client = _client(tmp_path)
     correction = _gap_answer_key()
     correction["submission_origin"] = "accepted_advisory_candidate"
-    correction["candidate_lineage"] = _candidate_lineage(candidate_payload_digest="sha256:pending")
     correction["candidate_lineage"] = _candidate_lineage(
-        candidate_payload_digest=gap_open_cloze_answer_key_payload_digest(
-            ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1.model_validate(correction)
+        candidate_payload_digest=answer_key_candidate_payload_digest(
+            {
+                "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
+                "kind": "gap_fill",
+            }
         )
     )
     correction["gap_answers"] = [{"gap_id": "gap-1", "accepted_values": ["cellandning"]}]
@@ -208,6 +204,29 @@ def test_non_matching_gap_advisory_candidate_digest_mismatch_rejected(
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "advisory_candidate_payload_digest_mismatch"
+
+
+def test_non_matching_gap_advisory_candidate_digest_match_is_reviewed(
+    tmp_path: Path,
+) -> None:
+    client = _client(tmp_path)
+    correction = _gap_answer_key()
+    correction["submission_origin"] = "accepted_advisory_candidate"
+    correction["candidate_lineage"] = _candidate_lineage(
+        candidate_payload_digest=answer_key_candidate_payload_digest(
+            {
+                "gap_answers": [{"gap_id": "gap-1", "accepted_values": ["fotosyntes"]}],
+                "kind": "gap_fill",
+            }
+        )
+    )
+    payload = _non_matching_payload([correction])
+
+    response = client.post(_ROUTE, headers=_API_HEADERS, json=payload)
+
+    assert response.status_code == 200
+    accepted = response.json()["correction_report"]["accepted_entries"]
+    assert accepted[0]["effective_provenance"] == "reviewed"
 
 
 def _non_matching_payload(corrections: list[dict[str, object]]) -> dict[str, object]:
@@ -246,8 +265,8 @@ def _choice_source_item() -> dict[str, object]:
                 "interaction_id": "choice-item-choice",
                 "interaction_kind": "single_choice",
                 "choices": [
-                    {"choice_id": "choice-001", "order": 1, "text": "Alpha"},
-                    {"choice_id": "choice-002", "order": 2, "text": "Beta"},
+                    {"choice_id": "choice-001", "order": 1, "source_id": "1", "text": "Alpha"},
+                    {"choice_id": "choice-002", "order": 2, "source_id": "2", "text": "Beta"},
                 ],
                 "min_correct_choices": 1,
                 "max_correct_choices": 1,

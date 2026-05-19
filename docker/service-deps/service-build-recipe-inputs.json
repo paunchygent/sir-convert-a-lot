@@ -21,6 +21,23 @@
     "python_image": "python:3.11-slim",
     "syntax": "# syntax=docker/dockerfile:1",
     "system_packages": [
+      "bat",
+      "bind9-dnsutils",
+      "ca-certificates",
+      "curl",
+      "direnv",
+      "eza",
+      "fd-find",
+      "fzf",
+      "gawk",
+      "git",
+      "git-delta",
+      "htop",
+      "iproute2",
+      "iputils-ping",
+      "jq",
+      "just",
+      "less",
       "libgl1",
       "libglib2.0-0",
       "libharfbuzz-subset0",
@@ -31,10 +48,18 @@
       "libxext6",
       "libxcb1",
       "libxrender1",
+      "netcat-openbsd",
       "pandoc",
+      "procps",
+      "ripgrep",
+      "shellcheck",
+      "shfmt",
       "tesseract-ocr",
       "tesseract-ocr-eng",
-      "tesseract-ocr-swe"
+      "tesseract-ocr-swe",
+      "tmux",
+      "tree",
+      "zoxide"
     ]
   },
   "pip_policy": {
@@ -42,9 +67,9 @@
     "install_torch": "python -m pip install --upgrade torch torchvision torchaudio",
     "upgrade_pip": "python -m pip install --upgrade pip"
   },
-  "recipe_hash": "dd9b7e0cf6d8d477030d33901717cff5540f22ad3eb61d656033973ecc87f9f9",
+  "recipe_hash": "1741c95e7bc0e085935ea4b0f42109bf29db80c58c617fa33fd832a114729fbd",
   "recipe_source_files": {
-    "Dockerfile.deps": "8bf2f46b18e886ebccdf41c93bfff0d29d333a839a0b436586bdd1344901ef6a",
+    "Dockerfile.deps": "1fb1ee6c8c19e703630c04c2dd55556c7b5a1bce563156b08a23d33cdda1ec9c",
     "scripts/devops/service-deps-image.sh": "6b165d0751d58644e1091bfb6598022b521d6fc100e9a64c06e5fe62f5ffde5a",
     "scripts/sir_convert_a_lot/devops/service_dependency_inputs.py": "04cbed7b206d7cc1dbabbd4b8854e892fad1107ad0b11cb8be4a17a03c9d3201"
   },

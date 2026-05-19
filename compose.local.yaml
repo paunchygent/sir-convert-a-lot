@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile.local
       args:
         DEPS_IMAGE: ${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-cpu:local}
+        SIR_CONVERT_A_LOT_SERVICE_REVISION: ${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
+        SIR_CONVERT_A_LOT_EXPECTED_REVISION: ${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
     container_name: sir_convert_a_lot_dev
     restart: unless-stopped
     env_file:
@@ -20,6 +22,7 @@ services:
       - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en
       - SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/huleedu/internal-identity/gateway-internal-identity-public-key.pem
+      - WATCHFILES_FORCE_POLLING=${WATCHFILES_FORCE_POLLING:-true}
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.service_local:app
@@ -27,9 +30,13 @@ services:
       - 0.0.0.0
       - --port
       - "8085"
+      - --reload
+      - --reload-dir
+      - /app/scripts
     ports:
       - "${SIR_CONVERT_A_LOT_LOCAL_PORT:-8085}:8085"
     volumes:
+      - ./scripts:/app/scripts:delegated
       - sir-convert-a-lot-local-data:/var/lib/sir-convert-a-lot/local
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-../huleedu/secrets/local-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/huleedu/internal-identity/gateway-internal-identity-public-key.pem:ro
     healthcheck:

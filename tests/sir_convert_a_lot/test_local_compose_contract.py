@@ -76,7 +76,13 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
     assert build_obj.get("context") == "."
     assert build_obj.get("dockerfile") == "Dockerfile.local"
     assert build_obj.get("args") == {
-        "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-cpu:local}"
+        "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-cpu:local}",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION": (
+            "${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}"
+        ),
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION": (
+            "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}"
+        ),
     }
 
     env_map = _service_env_map(service)
@@ -133,6 +139,10 @@ def test_dockerfile_local_uses_cpu_runtime_contract_and_local_entrypoint() -> No
     dockerfile_text = DOCKERFILE_LOCAL.read_text(encoding="utf-8")
     assert "ARG DEPS_IMAGE=sir-convert-a-lot-deps-cpu:local" in dockerfile_text
     assert "FROM ${DEPS_IMAGE} AS runtime" in dockerfile_text
+    assert "COPY .git /tmp/sir-convert-build-git" in dockerfile_text
+    assert "SIR_CONVERT_A_LOT_SERVICE_REVISION=unknown" in dockerfile_text
+    assert "/opt/sir-convert-a-lot/service_revision" in dockerfile_text
+    assert "/opt/sir-convert-a-lot/expected_revision" in dockerfile_text
     assert "COPY pyproject.toml" not in dockerfile_text
     assert "pdm.lock" not in dockerfile_text
     assert "--no-cache-dir" not in dockerfile_text
@@ -158,4 +168,7 @@ def test_dev_pdm_scripts_expose_cpu_dependency_image_lane() -> None:
 
 def test_dockerignore_whitelists_local_service_entrypoint() -> None:
     dockerignore_rules = _load_dockerignore_rules()
+    assert "!.git/HEAD" in dockerignore_rules
+    assert "!.git/refs/**" in dockerignore_rules
+    assert "!.git/packed-refs" in dockerignore_rules
     assert "!scripts/sir_convert_a_lot/service_local.py" in dockerignore_rules

@@ -28,7 +28,6 @@ from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_stat
     write_exam_authoring_correction_source_state_artifact,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamParseStatus
-from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay import (
     parse_and_apply_digiexam_ingestion_overlay,
 )
@@ -36,17 +35,11 @@ from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts impor
     DigiExamIngestionOverlayError,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
-    build_digiexam_intermediate_exam,
     build_digiexam_ir_manifest,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
     DigiExamMigrationArtifactEntry,
     DigiExamMigrationArtifactKey,
-)
-from scripts.sir_convert_a_lot.domain.digiexam_result_pdf_answers import (
-    DigiExamResultPdfAnswerEvidence,
-    DigiExamResultPdfAnswerExtractor,
-    normalize_result_text,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
@@ -67,7 +60,6 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_completion_run
     write_requested_digiexam_answer_key_completion_report,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
-    graded_result_pdf_path_for_upload,
     ingestion_overlay_path_for_upload,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
@@ -84,12 +76,14 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest
     write_manual_follow_up_report,
     write_warnings_report,
 )
+from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_source_loader import (
+    load_digiexam_migration_source_exam,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_target_artifacts import (
     accepted_current_state_item_ids,
     build_examnet_pdf_artifact,
     build_qti_artifacts,
 )
-from scripts.sir_convert_a_lot.infrastructure.digiexam_pdf_text import DigiExamPdfTextExtractor
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 
@@ -113,11 +107,9 @@ def execute_digiexam_migration_bundle_job(
     started = time.perf_counter()
     artifacts_dir = job.artifact_path.parent
     artifacts_dir.mkdir(parents=True, exist_ok=True)
-    source_bytes = job.upload_path.read_bytes()
-    source_file_sha256 = f"sha256:{hashlib.sha256(source_bytes).hexdigest()}"
-    answer_evidence = _answer_evidence_for_job(job)
-
-    parse_result = DigiExamDxeParser().parse_file(job.upload_path, answer_evidence=answer_evidence)
+    loaded_source = load_digiexam_migration_source_exam(job)
+    source_file_sha256 = loaded_source.source_file_sha256
+    parse_result = loaded_source.parse_result
     if parse_result.status == DigiExamParseStatus.BLOCKED and not parse_result.items:
         raise ServiceError(
             status_code=422,
@@ -127,7 +119,7 @@ def execute_digiexam_migration_bundle_job(
             details={"warnings": [warning.message for warning in parse_result.warnings]},
         )
 
-    exam = build_digiexam_intermediate_exam(parse_result)
+    exam = loaded_source.exam
     ir_manifest = build_digiexam_ir_manifest(exam)
     source_item_fingerprints = {item.item_id: source_item_fingerprint(item) for item in exam.items}
     requested_targets = normalized_exam_migration_targets_v2(job.spec)
@@ -139,7 +131,7 @@ def execute_digiexam_migration_bundle_job(
 
     ir_path = artifact_path(artifacts_dir, DigiExamMigrationArtifactKey.IR_JSON)
     write_json(ir_path, json_ready(asdict(exam)))
-    source_ir_sha256 = _artifact_sha256(ir_path)
+    source_ir_sha256 = loaded_source.source_ir_sha256
     effective_exam = exam
     effective_exam_sha256 = source_ir_sha256
     effective_ir_entry = None
@@ -355,45 +347,11 @@ def execute_digiexam_migration_bundle_job(
     )
 
 
-def _answer_evidence_for_job(job: StoredJobV2) -> DigiExamResultPdfAnswerEvidence | None:
-    result_pdf_path = graded_result_pdf_path_for_upload(job.upload_path)
-    if not result_pdf_path.exists():
-        return None
-    _, lines = DigiExamPdfTextExtractor().extract(result_pdf_path)
-    delimiter = _infer_student_block_delimiter(tuple(line.text for line in lines))
-    if delimiter is None:
-        raise ServiceError(
-            status_code=422,
-            code="digiexam_result_pdf_unsafe_evidence",
-            message="Sanitized graded-result PDF evidence could not be classified safely.",
-            retryable=False,
-        )
-    return DigiExamResultPdfAnswerExtractor(student_block_delimiter=delimiter).extract(lines)
-
-
 def _completion_mode(job: StoredJobV2) -> DigiExamAnswerKeyCompletionModeV2:
     options = job.spec.digiexam_migration_options
     if options is None:
         return DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY
     return options.completion_mode
-
-
-def _infer_student_block_delimiter(lines: tuple[str, ...]) -> str | None:
-    counts: dict[str, int] = {}
-    for line in lines:
-        normalized = normalize_result_text(line)
-        if normalized == "" or _looks_like_result_content(normalized):
-            continue
-        counts[normalized] = counts.get(normalized, 0) + 1
-    repeated = tuple((value, count) for value, count in counts.items() if count >= 2)
-    if not repeated:
-        return None
-    return sorted(repeated, key=lambda entry: (-entry[1], entry[0]))[0][0]
-
-
-def _looks_like_result_content(value: str) -> bool:
-    markers = ("Svar", "Erhållen poäng", "Korrekt", "Fel svar", "Max poäng")
-    return any(marker in value for marker in markers)
 
 
 def _exportable_targets(entries: tuple[DigiExamMigrationArtifactEntry, ...]) -> list[str]:
