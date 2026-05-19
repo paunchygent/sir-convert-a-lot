@@ -514,11 +514,15 @@ Accepted companion files are intentionally narrow:
 `digiexam_ingestion_overlay_v2` is accepted only when referenced by
 `digiexam_migration_options.ingestion_overlay_filename`. It is source-bound and
 uses concrete teacher edits, item point corrections, manual answer keys, or
-review decisions.
+reviewed completion answer keys. Task 337 removes accepted-current-state review
+decisions from this contract: authoring corrections mutate effective exam state,
+while export policy consumes effective exam state and produces artifacts.
+`accept_current_state_for_export` is no longer accepted in authoring,
+ingestion-overlay, correction-replay, or target-readiness unlock paths.
 
-Current runtime note: Task 295 applies manual answer keys and review decisions.
-Task 302 applies supported `effective_item_patch` values to effective renderer
-input only. Task 306 applies reviewed completion keys only when
+Current runtime note: Task 295 applies manual answer keys. Task 302 applies
+supported `effective_item_patch` values to effective renderer input only. Task
+306 applies reviewed completion keys only when
 `completion_mode=local_llm_apply_missing_machine_marked_with_review`. Source
 IR, source manifest fingerprints, and parser provenance remain unchanged.
 Task 322 applies supported `point_correction` values to effective renderer
@@ -551,8 +555,7 @@ input only.
       "point_correction": {
         "kind": "item_points",
         "max_score": 3
-      },
-      "review_decision": null
+      }
     }
   ]
 }
@@ -604,8 +607,7 @@ Gap-fill overlays use existing source gap IDs:
 }
 ```
 
-Reviewed completion overlays are separate from `manual_answer_key` and
-`review_decision`:
+Reviewed completion overlays are separate from `manual_answer_key`:
 
 ```json
 {
@@ -659,8 +661,8 @@ effective state, and target readiness. Skriptoteket must continue treating
 DigiExam `manual_answer_key` overlays as choice/gap-only.
 
 Task 324 exists because matching had no callable neutral producer route while
-choice/gap, point correction, review decisions, and item patching already had
-reviewed overlay/application paths. That asymmetry is historical, not the
+choice/gap, point correction, and item patching already had reviewed
+overlay/application paths. That asymmetry is historical, not the
 accepted ADR-0011 product architecture. Task 327 defines the
 source-neutral correction/apply contract so future teacher correction work,
 including PR-0332 work, converges on one producer-owned route instead of adding
@@ -672,7 +674,7 @@ Task 327 publishes the unified correction/apply contract in
 `docs/converters/exam-authoring-corrections-apply-contract.md`, and Task 330
 adds the initial runtime/OpenAPI implementation for matching. That contract maps
 `effective_item_patch`, `point_correction`, choice/gap manual keys, reviewed
-completion keys, review decisions, and Task 324 matching semantics into typed
+completion keys, and Task 324 matching semantics into typed
 source-neutral correction entries. The mapping is semantic and
 implementation-directing; it does not preserve DigiExam overlay field names as
 the long-term teacher-correction API.
@@ -690,22 +692,10 @@ type derived from the Sir Convert contract snapshot.
 Gapped/open-cloze overlays likewise require exact gap accepted-value fields
 before applied completion can treat them as automatically evaluated.
 
-Accepted-current-state is a review decision, not an answer key:
-
-```json
-{
-  "item_id": "item-4",
-  "sequence": 4,
-  "item_type": "multiple_response",
-  "source_item_fingerprint": "sha256:item-source",
-  "review_decision": {
-    "kind": "accept_current_state_for_export",
-    "decision_id": "review-123",
-    "accepted_targets": ["examnet_pdf"],
-    "note": "Teacher accepts export without a machine-marked answer key."
-  }
-}
-```
+Accepted-current-state is not an answer key and not durable exam state. Task 337
+removes `review_decision.kind == "accept_current_state_for_export"` from
+authoring/correction contracts. Missing answer keys remain missing until a real
+authoring correction supplies key state.
 
 Source-derived item context is not an overlay field. It is the parser/provider
 input context already present in source IR: exam title/metadata, item title,
@@ -744,8 +734,7 @@ the exact renderer input.
         "source_item_fingerprint": "sha256:item-source"
       },
       "applied_overlay_entry_ids": ["item-1"],
-      "review_decisions": []
-    }
+      }
   ]
 }
 ```
@@ -1256,9 +1245,7 @@ Readiness classes:
 | Readiness | Export enabled | Meaning |
 | --- | --- | --- |
 | `ready` | yes | Target bytes were created and validated from source or effective evidence. |
-| `ready_after_accepted_current_state` | yes | Sir Convert applied an accepted-current-state review decision and created/validated the target under a governed target policy. |
 | `needs_teacher_answer_key` | no | A machine-marked item lacks an answer key and needs a manual answer-key overlay. |
-| `needs_teacher_review_decision` | no | The target can proceed only if the teacher sends an accepted-current-state review decision. |
 | `unsupported_target_shape` | no | Source/effective item shape has no governed PDF/QTI target representation. |
 | `target_validation_failed` | no | Target generation ran but failed validation, such as QTI package validation. |
 | `provider_unavailable` | no | Requested local provider completion could not run and remote fallback is forbidden or unavailable. |
@@ -1276,13 +1263,13 @@ Example:
   "targets": [
     {
       "target": "examnet_pdf",
-      "readiness": "ready_after_accepted_current_state",
+      "readiness": "ready",
       "export_enabled": true,
       "artifact_key": "examnet_pdf",
-      "reason_code": "accepted_current_state_policy_applied",
+      "reason_code": "target_available",
       "teacher_action": "none",
       "retryable": false,
-      "message_key": "exam_converter.target.ready_after_accept_current_state"
+      "message_key": "exam_converter.target.ready"
     },
     {
       "target": "qti_package",
@@ -1332,29 +1319,20 @@ text-entry responses when local QTI generation succeeds.
 
 Unsupported native target export, such as unproven native multi-gap Exam.net
 PDF import, is reported as a native-target limitation only for the native target
-claim. When the user explicitly accepts current state for PDF export and no
-trusted key exists, the required fallback is a governed manual PDF
-representation rather than target unavailability if visible content can be
-preserved. This preserves the teacher's choices: include a manual/free-text
-representation, omit the item, or use the item as a source for manual
-recreation in the target authoring UI.
-
-An accepted-current-state decision is represented only as a source-bound
-`review_decision` in `digiexam_ingestion_overlay_v2`. It can enable export only
-after Sir Convert validates the overlay, recomputes effective exam and target
-readiness, creates the target bytes, and validates that target. It never creates
-an answer key and never changes source IR provenance.
+claim. Missing-key targets remain blocked until real authoring corrections
+provide keys unless a future export-only request contract reintroduces
+incomplete export. Export-only policy must not be encoded as source IR,
+effective IR, ingestion overlay, or correction replay state.
 
 When effective renderer input changes a source-fingerprint field, such as a
 Task 322 `point_correction.max_score`, `target_readiness_report_v1` rows remain
 bound to the original source item fingerprint. The corrected point value affects
 target bytes and effective report state, not source identity.
 
-Task 303 defines this accepted-current-state path for QTI. Task 308 defines the
-Exam.net PDF counterpart for missing-key machine-marked items. These profiles
-must remain separate from reviewed/source/teacher key application: reviewed
-keys are artifact data, while accepted current state is an explicit export
-decision without a key.
+Tasks 303 and 308 documented the now-removed accepted-current-state QTI/PDF
+paths. Task 337 supersedes those paths for authoring/correction replay:
+reviewed/source/teacher keys are artifact data, while missing-key export remains
+blocked until a real key correction is supplied.
 
 When an item has multiple material blockers, such as missing accepted values
 and a multi-gap `Lucktext` shape without a promoted native Exam.net PDF target,

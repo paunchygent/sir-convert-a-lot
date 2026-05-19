@@ -148,10 +148,7 @@ def _task_303_dxe_item(item_id: str) -> ExamNetQtiItem:
     exam = build_digiexam_intermediate_exam(
         DigiExamDxeParser().parse_payload(payload, filename=_TASK_303_DXE_FIXTURE.name)
     )
-    adapter_result = build_examnet_qti_items_from_digiexam_ir(
-        exam,
-        accepted_current_state_item_ids=(item_id,),
-    )
+    adapter_result = build_examnet_qti_items_from_digiexam_ir(exam)
     items = {item.item_id: item for item in adapter_result.items}
     return items[item_id.replace("-", "_")]
 

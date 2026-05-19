@@ -39,7 +39,6 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
     build_blocked_examnet_qti_package_plan,
     build_examnet_qti_package_plan,
 )
-from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer import (
     render_digiexam_examnet_pdf,
 )
@@ -61,7 +60,6 @@ def build_examnet_pdf_artifact(
     job: StoredJobV2,
     artifacts_dir: Path,
     exam: DigiExamIntermediateExam,
-    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> tuple[DigiExamMigrationArtifactEntry, tuple[DigiExamExamNetPdfWarning, ...]]:
     """Build the Exam.net PDF artifact and bundle entry."""
 
@@ -70,7 +68,6 @@ def build_examnet_pdf_artifact(
         exam=exam,
         output_pdf_path=pdf_path,
         work_dir=artifacts_dir / "examnet-pdf-work",
-        accepted_current_state_item_ids=accepted_current_state_item_ids,
     )
     if result.status == DigiExamExamNetPdfStatus.SUCCESS:
         return (
@@ -96,16 +93,12 @@ def build_qti_artifacts(
     job: StoredJobV2,
     artifacts_dir: Path,
     exam: DigiExamIntermediateExam,
-    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> tuple[
     dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry], list[object], list[str]
 ]:
     """Build QTI package/report artifacts and bundle entries."""
 
-    adapter_result = build_examnet_qti_items_from_digiexam_ir(
-        exam,
-        accepted_current_state_item_ids=accepted_current_state_item_ids,
-    )
+    adapter_result = build_examnet_qti_items_from_digiexam_ir(exam)
     package_name = Path(job.source_filename).stem
     if adapter_result.manual_follow_ups:
         plan = build_blocked_examnet_qti_package_plan(
@@ -154,19 +147,6 @@ def build_qti_artifacts(
     )
     follow_ups = [json_ready(asdict(follow_up)) for follow_up in qti_follow_ups]
     return entries, follow_ups, list(plan.warnings)
-
-
-def accepted_current_state_item_ids(
-    accepted_review_decisions: tuple[tuple[str, ExamMigrationTargetV2], ...],
-    target: ExamMigrationTargetV2,
-) -> tuple[str, ...]:
-    """Return accepted-current-state item IDs for one target."""
-
-    return tuple(
-        item_id
-        for item_id, accepted_target in accepted_review_decisions
-        if accepted_target == target
-    )
 
 
 def _qti_unavailable_code(

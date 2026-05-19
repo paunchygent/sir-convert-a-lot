@@ -33,7 +33,6 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiItem,
     ExamNetQtiManualFollowUp,
     ExamNetQtiManualFollowUpReason,
-    ExamNetQtiManualRepresentation,
     ExamNetQtiTextEntryGap,
 )
 
@@ -48,16 +47,13 @@ class DigiExamExamNetQtiAdapterResult:
 
 def build_examnet_qti_items_from_digiexam_ir(
     exam: DigiExamIntermediateExam,
-    *,
-    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> DigiExamExamNetQtiAdapterResult:
     """Convert supported DigiExam IR items to reusable Exam.net QTI items."""
 
     qti_items: list[ExamNetQtiItem] = []
     follow_ups: list[ExamNetQtiManualFollowUp] = []
-    accepted_item_ids = frozenset(accepted_current_state_item_ids)
     for item in exam.items:
-        qti_item = _qti_item(item, accepted_current_state=item.item_id in accepted_item_ids)
+        qti_item = _qti_item(item)
         if qti_item is None:
             follow_ups.append(_not_supported_follow_up(item))
         else:
@@ -67,33 +63,27 @@ def build_examnet_qti_items_from_digiexam_ir(
     )
 
 
-def _qti_item(item: DigiExamIrItem, *, accepted_current_state: bool) -> ExamNetQtiItem | None:
+def _qti_item(item: DigiExamIrItem) -> ExamNetQtiItem | None:
     if item.item_type == DigiExamItemType.OPEN_ENDED:
         return _base_qti_item(item, ExamNetQtiInteractionType.FREE_TEXT)
     if item.item_type in {DigiExamItemType.SINGLE_CHOICE, DigiExamItemType.MULTIPLE_CHOICE}:
         return _choice_item(
             item,
             ExamNetQtiInteractionType.SINGLE_CHOICE,
-            accepted_current_state=accepted_current_state,
         )
     if item.item_type == DigiExamItemType.MULTIPLE_RESPONSE:
         return _choice_item(
             item,
             ExamNetQtiInteractionType.MULTIPLE_RESPONSE,
-            accepted_current_state=accepted_current_state,
         )
     if item.item_type == DigiExamItemType.GAP_FILL:
-        if item.answer_key.correct_gap_answers or not accepted_current_state:
-            return _gap_fill_item(item)
-        return _manual_free_text_item(item, _gap_fill_preservation_lines(item))
+        return _gap_fill_item(item)
     return None
 
 
 def _choice_item(
     item: DigiExamIrItem,
     interaction_type: ExamNetQtiInteractionType,
-    *,
-    accepted_current_state: bool,
 ) -> ExamNetQtiItem:
     base_item = _base_qti_item(item, interaction_type)
     correct_ids: tuple[str, ...] = ()
@@ -102,8 +92,6 @@ def _choice_item(
             _choice_identifier(value) for value in item.answer_key.correct_alternative_ids
         )
     evaluation_mode = ExamNetQtiEvaluationMode.AUTOMATIC
-    if not correct_ids and accepted_current_state:
-        evaluation_mode = ExamNetQtiEvaluationMode.MANUAL_UNKEYED
     return ExamNetQtiItem(
         item_id=base_item.item_id,
         sequence=base_item.sequence,
@@ -145,25 +133,6 @@ def _base_qti_item(
     )
 
 
-def _manual_free_text_item(
-    item: DigiExamIrItem,
-    prompt_lines: tuple[str, ...],
-) -> ExamNetQtiItem:
-    base_item = _base_qti_item(item, ExamNetQtiInteractionType.FREE_TEXT)
-    return ExamNetQtiItem(
-        item_id=base_item.item_id,
-        sequence=base_item.sequence,
-        title=base_item.title,
-        interaction_type=ExamNetQtiInteractionType.FREE_TEXT,
-        prompt_lines=prompt_lines,
-        max_score=base_item.max_score,
-        evaluation_mode=ExamNetQtiEvaluationMode.MANUAL_UNKEYED,
-        manual_representation=ExamNetQtiManualRepresentation.FREE_TEXT_PRESERVATION,
-        source_item_type=item.item_type.value,
-        image_resources=base_item.image_resources,
-    )
-
-
 def _gap_fill_item(item: DigiExamIrItem) -> ExamNetQtiItem:
     base_item = _base_qti_item(item, ExamNetQtiInteractionType.GAP_FILL)
     accepted_values_by_gap_id = _accepted_values_by_gap_id(item)
@@ -194,16 +163,6 @@ def _accepted_values_by_gap_id(item: DigiExamIrItem) -> dict[str, tuple[str, ...
         if stripped_value and answer.guid in values_by_gap_id:
             values_by_gap_id[answer.guid].append(stripped_value)
     return {gap_id: tuple(values) for gap_id, values in values_by_gap_id.items()}
-
-
-def _gap_fill_preservation_lines(item: DigiExamIrItem) -> tuple[str, ...]:
-    lines = [*_prompt_lines(item)]
-    for index, gap in enumerate(item.gaps, start=1):
-        label = gap.guid or f"gap_{index:03d}"
-        lines.append(f"Lucka {index}: {label}")
-    if not item.gaps:
-        lines.append("Besvara lucktextfrågan manuellt efter import.")
-    return tuple(lines)
 
 
 def _image_resource(

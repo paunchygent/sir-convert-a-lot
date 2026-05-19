@@ -210,17 +210,6 @@ class DigiExamEffectivePointCorrectionV1(BaseModel):
     source_item_fingerprint: str
 
 
-class DigiExamEffectiveReviewDecisionV1(BaseModel):
-    """Applied review decision surfaced in effective exam artifacts."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    kind: str
-    decision_id: str
-    accepted_targets: list[str]
-    note: str | None = None
-
-
 class DigiExamEffectiveItemV1(BaseModel):
     """One item summary in current effective exam artifacts."""
 
@@ -234,7 +223,6 @@ class DigiExamEffectiveItemV1(BaseModel):
     effective_item_patch: DigiExamEffectiveItemPatchSummaryV1 | None = None
     effective_point_correction: DigiExamEffectivePointCorrectionV1 | None = None
     applied_overlay_entry_ids: list[str] = Field(default_factory=list)
-    review_decisions: list[DigiExamEffectiveReviewDecisionV1] = Field(default_factory=list)
 
 
 class DigiExamEffectiveExamV1(BaseModel):

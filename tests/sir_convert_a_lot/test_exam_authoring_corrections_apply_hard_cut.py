@@ -67,3 +67,24 @@ def test_superseded_task_324_matching_route_is_not_accepted(tmp_path: Path) -> N
     response = client.post(_OLD_ROUTE, headers=_API_HEADERS, json={})
 
     assert response.status_code == 404
+
+
+def test_corrections_apply_rejects_legacy_review_decision_entry(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    payload = _request_payload()
+    payload["corrections"] = [
+        {
+            "entry_id": "corr-review-decision-001",
+            "kind": "review_decision",
+            "item_id": "item-001",
+            "sequence": 1,
+            "item_type": "matching",
+            "source_item_fingerprint": "sha256:item-001",
+            "decision": "accept_current_state_for_export",
+        }
+    ]
+
+    response = client.post(_ROUTE, headers=_API_HEADERS, json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"

@@ -119,11 +119,11 @@ validation-only force-eval so it cannot leak into production advisory behavior,
 and Task 311 intentionally includes deployed service, auth, and public-edge
 readiness for the production mirror.
 
-Tasks 302 and 303 close the overlay/export contract gaps discovered after Task
-295: Task 302 now applies supported item-content patches to effective IR, while
-accepted-current-state still cannot enable QTI until Task 303 or a later
-governed unkeyed/manual profile proves schema/profile validity for the selected
-QTI version.
+Tasks 302 and 303 originally closed overlay/export contract gaps discovered
+after Task 295. Task 337 now supersedes the accepted-current-state export
+portion of that work: Task 302 remains active for supported item-content
+patches to effective IR, while missing-key QTI/PDF exports remain blocked until
+real source, manual, or reviewed effective key state exists.
 
 Task 304 is the consumer-contract checkpoint before more Skriptoteket live
 integration. It makes the FastAPI-generated v2 OpenAPI snapshot deterministic
@@ -319,10 +319,10 @@ Stop conditions:
 
 Governing task: `task-303-define-unkeyed-manual-qti-profile-for-accepted-current-state-exports.md`.
 
-Goal: define and validate the QTI profile that lets teacher
-`accept_current_state_for_export` enable QTI export for missing-key items only
-when the selected QTI 2.1 or QTI 3.0 package is otherwise schema-valid and
-target-valid.
+Goal: historical/superseded by Task 337 for current runtime. This tranche
+defined and validated a QTI profile for teacher-accepted missing-key exports,
+but that profile is no longer an active authoring/correction or
+target-readiness unlock.
 
 Missing-key means Sir Convert lacks trusted source, manual, or reviewed
 effective correct-response data for automatic evaluation; it does not mean the
@@ -346,8 +346,9 @@ Checklist:
   manual/unkeyed export in target readiness and validation reports.
 - [x] Generate deterministic sample packages and validation reports for every
   supported shape.
-- [x] Update target readiness so accepted-current-state can enable QTI only
-  inside the validated unkeyed/manual profile.
+- [x] Historical: target readiness previously allowed accepted-current-state
+  QTI only inside the validated unkeyed/manual profile. Task 337 removes this
+  runtime unlock.
 - [x] Record Exam.net import proof as vendor-unproven/external dependency until
   the vendor provides an import test path; use realistic Sir Convert QTI exam
   files for local proof and later vendor support.
@@ -475,13 +476,13 @@ Stop conditions:
 Governing task:
 `task-308-define-examnet-pdf-manual-unkeyed-accepted-current-state-profile-and-multigap-readiness.md`.
 
-Goal: define the Exam.net PDF counterpart to Task 303's manual/unkeyed QTI
-profile so teacher `accept_current_state_for_export` can enable PDF when Sir
-Convert can preserve visible item content without trusted automatic answer-key
-data. Missing-key single-choice, missing-key multiple-response, and
-item-013-style multi-gap gap/open-cloze items must render under this explicit
-user request, either as native PDF-to-exam shapes when fixture-proven or as
-degraded manual/free-text PDF shapes when native import is unproven.
+Goal: historical/superseded by Task 337 for current runtime. This tranche
+defined the Exam.net PDF counterpart to Task 303's manual/unkeyed QTI profile,
+but teacher-accepted missing-key PDF export is no longer an active
+authoring/correction or target-readiness unlock. Missing-key single-choice,
+missing-key multiple-response, and item-013-style multi-gap gap/open-cloze items
+remain blocked until real source, manual, or reviewed effective key state
+exists.
 Task 321 adds the reviewed-key correction: when accepted gap/open-cloze values
 exist, the PDF free-text-style artifact must include those values, and this
 missing-key fallback must not be used to drop reviewed keys.
@@ -495,10 +496,11 @@ Checklist:
 
 - [ ] Define supported and unsupported PDF manual/unkeyed shapes for accepted
   current-state.
-- [ ] Thread accepted-current-state target policy into the Exam.net PDF
-  renderer or an equivalent PDF target validator.
-- [ ] Prove PDF bytes are created and validated before reporting
-  `ready_after_accepted_current_state` for `examnet_pdf`.
+- [ ] Superseded by Task 337: do not thread accepted-current-state target
+  policy into the active Exam.net PDF renderer.
+- [ ] Superseded by Task 337: do not report a removed accepted-current-state
+  readiness unlock for `examnet_pdf`; missing-key PDF remains unavailable until
+  real effective key state exists.
 - [ ] Use item-013 as the regression case for a five-blank `Lucktext` item
   with an embedded image and no accepted blank values.
 - [ ] Promote native multi-gap `Lucktext` PDF rendering if fixture proof

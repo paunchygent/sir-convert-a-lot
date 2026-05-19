@@ -2,7 +2,7 @@
 
 Purpose:
     Validate source-bound teacher overlays and apply accepted manual keys or
-    review decisions to an effective renderer input without mutating source IR.
+    reviewed corrections to an effective renderer input without mutating source IR.
 
 Relationships:
     - Consumes contracts from `domain.digiexam_ingestion_overlay_contracts`.
@@ -32,7 +32,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts impor
     DigiExamEffectiveItem,
     DigiExamEffectiveItemPatchSummary,
     DigiExamEffectivePointCorrection,
-    DigiExamEffectiveReviewDecision,
     DigiExamIngestionOverlay,
     DigiExamIngestionOverlayAcceptedEntry,
     DigiExamIngestionOverlayError,
@@ -63,7 +62,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
     source_item_fingerprint,
 )
-from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
 
 
 def parse_and_apply_digiexam_ingestion_overlay(
@@ -187,7 +185,6 @@ def _apply_overlay(
     accepted: list[DigiExamIngestionOverlayAcceptedEntry] = []
     rejected: list[DigiExamIngestionOverlayRejectedEntry] = []
     effective_items: list[DigiExamEffectiveItem] = []
-    accepted_reviews: list[tuple[str, ExamMigrationTargetV2]] = []
     answered_item_ids: set[str] = set()
     effective_answer_keys: dict[str, DigiExamEffectiveAnswerKey] = {}
     answer_key_completion_report_sha256 = reviewed_completion_report_sha256(overlay)
@@ -195,8 +192,6 @@ def _apply_overlay(
     for entry in overlay.items:
         item = items_by_id[entry.item_id]
         applied_fields: list[str] = []
-        review_decisions = _review_decisions(entry)
-        accepted_reviews.extend((entry.item_id, target) for target in _review_targets(entry))
         patch_summary = None
         point_correction_summary = None
         patch_result = apply_effective_item_patch(entry=entry, item=item)
@@ -237,8 +232,6 @@ def _apply_overlay(
             applied_fields.append("reviewed_completion_answer_key")
             answered_item_ids.add(item.item_id)
             effective_answer_keys[item.item_id] = reviewed_completion.effective_answer_key
-        if review_decisions:
-            applied_fields.append("review_decision")
         if applied_fields:
             accepted.append(_accepted(entry, tuple(applied_fields)))
         effective_items.append(
@@ -248,7 +241,6 @@ def _apply_overlay(
                 source_item_fingerprint=entry.source_item_fingerprint,
                 patch_summary=patch_summary,
                 point_correction_summary=point_correction_summary,
-                review_decisions=review_decisions,
                 effective_answer_key=effective_answer_keys.get(item.item_id),
             )
         )
@@ -270,7 +262,6 @@ def _apply_overlay(
             rejected_entries=tuple(rejected),
         ),
         renderer_input_changed=bool(replacements),
-        accepted_review_decisions=tuple(accepted_reviews),
     )
 
 
@@ -401,7 +392,6 @@ def _effective_item(
     source_item_fingerprint: str,
     patch_summary: DigiExamEffectiveItemPatchSummary | None,
     point_correction_summary: DigiExamEffectivePointCorrection | None,
-    review_decisions: tuple[DigiExamEffectiveReviewDecision, ...],
     effective_answer_key: DigiExamEffectiveAnswerKey | None,
 ) -> DigiExamEffectiveItem:
     return DigiExamEffectiveItem(
@@ -413,30 +403,7 @@ def _effective_item(
         effective_item_patch=patch_summary,
         effective_point_correction=point_correction_summary,
         applied_overlay_entry_ids=(item.item_id,) if applied else (),
-        review_decisions=review_decisions,
     )
-
-
-def _review_decisions(
-    entry: DigiExamIngestionOverlayItem,
-) -> tuple[DigiExamEffectiveReviewDecision, ...]:
-    decision = entry.review_decision
-    if decision is None:
-        return ()
-    return (
-        DigiExamEffectiveReviewDecision(
-            kind=decision.kind,
-            decision_id=decision.decision_id,
-            accepted_targets=tuple(target.value for target in decision.accepted_targets),
-            note=decision.note,
-        ),
-    )
-
-
-def _review_targets(entry: DigiExamIngestionOverlayItem) -> tuple[ExamMigrationTargetV2, ...]:
-    if entry.review_decision is None:
-        return ()
-    return entry.review_decision.accepted_targets
 
 
 def _binding_error(field: str, observed: object, expected: object) -> DigiExamIngestionOverlayError:

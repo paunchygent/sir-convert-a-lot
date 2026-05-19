@@ -297,17 +297,19 @@ must appear as separate accepted values from trusted source, teacher/manual, or
 reviewed evidence.
 
 Target validators decide whether a gap/open-cloze interaction can be emitted as
-native Exam.net PDF, free-text-style PDF with accepted values included, manual
-accepted-current-state preservation, omitted with teacher approval, manual
-recreation guidance, general QTI, future Exam.net QTI, or another target shape.
+native Exam.net PDF, free-text-style PDF with accepted values included, omitted
+with teacher approval, manual recreation guidance, general QTI, future Exam.net
+QTI, or another target shape. Historical accepted-current-state preservation is
+not IR state and is governed for removal from authoring/correction paths by Task
+337.
 
 The current Exam.net PDF target profile keeps native gap-field import proof
 separate from artifact correctness. Reviewed/source/teacher accepted values
 must be preserved in the PDF artifact even when the PDF item renders as
-free-text. A missing-key accepted-current-state fallback may preserve visible
-content without accepted values only after an explicit teacher review decision.
-That target limitation does not remove source-neutral gap/open-cloze semantics
-from the IR.
+free-text. Missing keys remain missing until real authoring corrections provide
+accepted values. Any future missing-key best-effort export must be an
+export-only request policy, not authoring or IR state. That target limitation
+does not remove source-neutral gap/open-cloze semantics from the IR.
 
 QTI 3 documents `qti-gap-match-interaction`, and QTI 2.1 includes
 `gapMatchInteraction`; these standards prove that gap interactions are QTI

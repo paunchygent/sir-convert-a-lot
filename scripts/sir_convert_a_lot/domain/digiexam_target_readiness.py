@@ -21,7 +21,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_exam_authoring_adapter import (
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
-    DigiExamIrItem,
     DigiExamIrManualFollowUpReason,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
@@ -39,8 +38,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
 from scripts.sir_convert_a_lot.domain.exam_authoring_gap_contracts import (
     validate_examnet_pdf_gap_open_cloze_profile,
 )
-from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
-
 GAP_OPEN_CLOZE_TARGET_CHOICE_TEACHER_ACTION: Final = (
     "choose_degraded_manual_free_text_or_omit_or_manual_recreation"
 )
@@ -53,9 +50,7 @@ class DigiExamTargetReadiness(StrEnum):
     """Consumer-facing readiness classes for export targets."""
 
     READY = "ready"
-    READY_AFTER_ACCEPTED_CURRENT_STATE = "ready_after_accepted_current_state"
     NEEDS_TEACHER_ANSWER_KEY = "needs_teacher_answer_key"
-    NEEDS_TEACHER_REVIEW_DECISION = "needs_teacher_review_decision"
     UNSUPPORTED_TARGET_SHAPE = "unsupported_target_shape"
     TARGET_VALIDATION_FAILED = "target_validation_failed"
     PROVIDER_UNAVAILABLE = "provider_unavailable"
@@ -98,7 +93,6 @@ def build_digiexam_target_readiness_report(
     entries: tuple[DigiExamMigrationArtifactEntry, ...],
     source_ir_sha256: str,
     effective_exam_sha256: str,
-    accepted_review_decisions: tuple[tuple[str, ExamMigrationTargetV2], ...] = (),
     source_item_fingerprints: dict[str, str] | None = None,
 ) -> DigiExamTargetReadinessReport:
     """Build readiness rows for the PDF and QTI migration targets."""
@@ -124,11 +118,6 @@ def build_digiexam_target_readiness_report(
                 exam=exam,
                 fingerprints=fingerprints,
                 missing_answer_key_item_ids=missing_answer_key_item_ids,
-                accepted_review_item_ids={
-                    item_id
-                    for item_id, target in accepted_review_decisions
-                    if target.value == entry.artifact_key.value
-                },
             )
         )
     return DigiExamTargetReadinessReport(
@@ -146,24 +135,9 @@ def _rows_for_target(
     exam: DigiExamIntermediateExam,
     fingerprints: dict[str, str],
     missing_answer_key_item_ids: set[str],
-    accepted_review_item_ids: set[str],
 ) -> tuple[DigiExamTargetReadinessRow, ...]:
     target = entry.artifact_key.value
     if entry.availability == DigiExamMigrationArtifactAvailability.AVAILABLE:
-        accepted_missing_item_ids = accepted_review_item_ids.intersection(
-            missing_answer_key_item_ids
-        )
-        if accepted_missing_item_ids:
-            item_by_id = {item.item_id: item for item in exam.items}
-            return tuple(
-                _accepted_current_state_row(
-                    target=target,
-                    item=item_by_id[item_id],
-                    source_item_fingerprint=fingerprints[item_id],
-                )
-                for item_id in sorted(accepted_missing_item_ids)
-                if item_id in item_by_id
-            )
         return (
             DigiExamTargetReadinessRow(
                 target=target,
@@ -197,7 +171,6 @@ def _rows_for_target(
                 item_id=item_id,
                 sequence=item_by_id[item_id].sequence,
                 source_item_fingerprint=fingerprints[item_id],
-                accepted_current_state=item_id in accepted_review_item_ids,
             )
             for item_id in sorted(missing_answer_key_item_ids)
             if item_id in item_by_id
@@ -260,55 +233,13 @@ def _unsupported_gap_open_cloze_rows(
     return tuple(rows)
 
 
-def _accepted_current_state_row(
-    *,
-    target: str,
-    item: DigiExamIrItem,
-    source_item_fingerprint: str,
-) -> DigiExamTargetReadinessRow:
-    return DigiExamTargetReadinessRow(
-        target=target,
-        readiness=DigiExamTargetReadiness.READY_AFTER_ACCEPTED_CURRENT_STATE,
-        export_enabled=True,
-        artifact_key=target,
-        reason_code=_accepted_current_state_reason_code(target),
-        teacher_action="review_after_import",
-        retryable=False,
-        message_key="exam_converter.target.ready_after_accepted_current_state",
-        item_id=item.item_id,
-        sequence=item.sequence,
-        source_item_fingerprint=source_item_fingerprint,
-    )
-
-
-def _accepted_current_state_reason_code(target: str) -> str:
-    if target == DigiExamMigrationArtifactKey.EXAMNET_PDF.value:
-        return "accepted_current_state_pdf_manual_unkeyed_profile"
-    return "accepted_current_state_manual_unkeyed_profile"
-
-
 def _missing_key_row(
     *,
     target: str,
     item_id: str,
     sequence: int,
     source_item_fingerprint: str,
-    accepted_current_state: bool,
 ) -> DigiExamTargetReadinessRow:
-    if accepted_current_state:
-        return DigiExamTargetReadinessRow(
-            target=target,
-            readiness=DigiExamTargetReadiness.UNSUPPORTED_TARGET_SHAPE,
-            export_enabled=False,
-            artifact_key=None,
-            reason_code="accepted_current_state_not_renderable",
-            teacher_action="manual_target_creation_required",
-            retryable=False,
-            message_key="exam_converter.target.accepted_current_state_not_renderable",
-            item_id=item_id,
-            sequence=sequence,
-            source_item_fingerprint=source_item_fingerprint,
-        )
     return DigiExamTargetReadinessRow(
         target=target,
         readiness=DigiExamTargetReadiness.NEEDS_TEACHER_ANSWER_KEY,

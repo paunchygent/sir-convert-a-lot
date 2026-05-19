@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-19
-last_updated: 2026-05-19
+created: 2026-05-20
+last_updated: 2026-05-20
 related: []
 labels:
   - generated
@@ -354,7 +354,7 @@ Generated index for backlog planning documents.
 | task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion | [Run service-backed auth-public-edge mirror validation for answer-key completion](tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md) | task | proposed |
 | task-312-make-answer-key-candidate-planning-provider-protocol-driven | [Make answer-key candidate planning provider-protocol driven](tasks/task-312-make-answer-key-candidate-planning-provider-protocol-driven.md) | task | completed |
 | task-313-audit-solid-domain-coupling-and-implementation-branch-hotspots-across-exam-converter-surfaces | [Audit SOLID domain coupling and implementation-branch hotspots across exam converter surfaces](tasks/task-313-audit-solid-domain-coupling-and-implementation-branch-hotspots-across-exam-converter-surfaces.md) | task | completed |
-| task-315-extract-exam-net-pdf-item-rendering-policy-strategies-from-item-type-branch-ladder | [Extract Exam.net PDF item rendering policy strategies from item-type branch ladder](tasks/task-315-extract-exam-net-pdf-item-rendering-policy-strategies-from-item-type-branch-ladder.md) | task | proposed |
+| task-315-extract-exam-net-pdf-item-rendering-policy-strategies-from-item-type-branch-ladder | [Extract Exam.net PDF item rendering policy strategies from item-type branch ladder](tasks/task-315-extract-exam-net-pdf-item-rendering-policy-strategies-from-item-type-branch-ladder.md) | task | ready |
 | task-316-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches | [Extract target readiness policy decisions from artifact availability and target string branches](tasks/task-316-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches.md) | task | proposed |
 | task-317-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters | [Unify answer-key eligibility and source-evidence mapping decisions across manifests and adapters](tasks/task-317-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters.md) | task | proposed |
 | task-318-make-task-309-eval-provider-metadata-profile-driven | [Make Task 309 eval provider metadata profile-driven](tasks/task-318-make-task-309-eval-provider-metadata-profile-driven.md) | task | completed |
@@ -378,6 +378,7 @@ Generated index for backlog planning documents.
 | task-334-add-deepseek-v4-flash-json-output-provider-for-answer-key-completion | [Add DeepSeek v4 flash JSON Output provider for answer-key completion](tasks/task-334-add-deepseek-v4-flash-json-output-provider-for-answer-key-completion.md) | task | completed |
 | task-335-replace-deepseek-v4-flash-answer-key-provider-with-v4-pro | [Replace DeepSeek v4 flash answer-key provider with v4 pro](tasks/task-335-replace-deepseek-v4-flash-answer-key-provider-with-v4-pro.md) | task | completed |
 | task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339 | [Implement correction replay artifact references for Skriptoteket PR-0339](tasks/task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339.md) | task | done |
+| task-337-remove-accepted-current-state-from-authoring-correction-contracts | [Remove accepted-current-state from authoring correction contracts](tasks/task-337-remove-accepted-current-state-from-authoring-correction-contracts.md) | task | completed |
 | task-34-service-v2-job-store-runtime-for-multi-format-artifacts | [Service v2 job store + runtime for multi-format artifacts](tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md) | task | completed |
 | task-35-cli-pivot-remote-only-routes-via-service-api-v2 | [CLI pivot: remote-only routes via service API v2](tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md) | task | completed |
 | task-36-service-v2-route-md-pdf-via-html-intermediary | [Service v2 route: md -> pdf via html intermediary](tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md) | task | completed |

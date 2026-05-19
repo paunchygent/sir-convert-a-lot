@@ -80,7 +80,6 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_source_loader i
     load_digiexam_migration_source_exam,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_target_artifacts import (
-    accepted_current_state_item_ids,
     build_examnet_pdf_artifact,
     build_qti_artifacts,
 )
@@ -220,14 +219,6 @@ def execute_digiexam_migration_bundle_job(
             job=job,
             artifacts_dir=artifacts_dir,
             exam=effective_exam,
-            accepted_current_state_item_ids=(
-                accepted_current_state_item_ids(
-                    overlay_result.accepted_review_decisions,
-                    ExamMigrationTargetV2.EXAMNET_PDF,
-                )
-                if overlay_result is not None
-                else ()
-            ),
         )
     else:
         pdf_entry = not_requested_entry(job=job, key=DigiExamMigrationArtifactKey.EXAMNET_PDF)
@@ -238,14 +229,6 @@ def execute_digiexam_migration_bundle_job(
             job=job,
             artifacts_dir=artifacts_dir,
             exam=effective_exam,
-            accepted_current_state_item_ids=(
-                accepted_current_state_item_ids(
-                    overlay_result.accepted_review_decisions,
-                    ExamMigrationTargetV2.QTI_PACKAGE,
-                )
-                if overlay_result is not None
-                else ()
-            ),
         )
     else:
         qti_entries = not_requested_qti_entries(job)
@@ -287,9 +270,6 @@ def execute_digiexam_migration_bundle_job(
                 entries=target_readiness_entries,
                 source_ir_sha256=source_ir_sha256,
                 effective_exam_sha256=effective_exam_sha256,
-                accepted_review_decisions=(
-                    overlay_result.accepted_review_decisions if overlay_result is not None else ()
-                ),
                 source_item_fingerprints=source_item_fingerprints,
             )
         ),

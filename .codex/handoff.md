@@ -64,6 +64,7 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
   closeout docs: ADR-0002 is superseded by accepted ADR-0012. Review 22 closed
   as `approved` and explicitly scopes out already-published Task 325-B
   runtime/OpenAPI provider-lineage changes.
+- Task 337 is completed and accepted: accepted-current-state is removed from authoring/correction state and missing-key PDF/QTI exports stay blocked until real key corrections exist. Task 315 is the next ready slice for Exam.net PDF strategy extraction; its strategy model must keep the core PDF item protocol target-agnostic while isolating Exam.net-specific reshaping in the Exam.net PDF target profile.
 
 ## Active Pointers
 
@@ -105,6 +106,9 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
   progress as the eval gate; after teacher adjudication of the mini failure
   rows, the fresh 2026-05-18 rerun scores mini 43/1/0 and nano 36/8/0 versus
   the retained Qwen3.6 41/3/0 baseline.
+- Task 337 is ready as the upstream parent for Skriptoteket PR-0341:
+  remove `review_decision` / `accept_current_state_for_export` from authoring
+  correction contracts; any future incomplete export must be export-only.
 - Review 17 for Task 306 is closed as `approved`; future generated-type claims
   need current producer/consumer evidence, not the historical PR-0331 finding.
 - Review 18 for Task 319 is closed as `approved`; Hemma/Qwen3.6 live
@@ -145,6 +149,7 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
    Task 333: expose the unified source-state issue/apply edge, keep the Task
    324 route absent, and continue Task 332 later before any downstream
    `manual_matching_answer_key` submission.
+1. Task 337 is complete; implement Task 315 next so Exam.net PDF item strategy extraction starts from the clean post-337 boundary.
 1. Continue downstream PR-0332 only after its correction family has a
    producer-issued source-state surface. HuleEdu Gateway proxies
    `/v2/exam-authoring/corrections/apply`, and Skriptoteket treats returned
@@ -161,9 +166,6 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
    Exam.net PDF, teacher-authored DOCX, or teacher-authored Markdown source
    parser: new parsers need source-native parse models plus adapters into
    `ExamAuthoringIR v1`, not direct target-exporter coupling.
-1. For accepted-current-state QTI export, use Task 303's completed
-   `unkeyed_manual_qti_2_1_v1` profile and keep Exam.net import proof marked
-   vendor-unproven until the vendor provides a test path.
 1. Keep the Exam.net artifact authoring route separate from the DigiExam
    migration route. Do not feed Exam.net-origin PDFs or Word exports into
    `digiexam_dxe -> examnet_migration_bundle`.

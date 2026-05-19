@@ -86,54 +86,28 @@ def test_examnet_pdf_document_blocks_machine_marked_item_without_answer_key() ->
     }
 
 
-def test_examnet_pdf_document_accepts_current_state_for_missing_key_choice() -> None:
+def test_examnet_pdf_document_keeps_missing_key_choice_blocked_without_export_state() -> None:
     payload = _renderable_payload()
     payload["exams"][0]["questions"][1]["alternatives"][1]["right"] = False
     exam = _exam_from_payload(payload, filename="missing-key-accepted.dxe")
 
-    document = build_digiexam_examnet_pdf_document(
-        exam,
-        accepted_current_state_item_ids=("item-002",),
-    )
+    document = build_digiexam_examnet_pdf_document(exam)
 
-    assert document.status == DigiExamExamNetPdfStatus.SUCCESS
-    assert "Typ: Fritext" in document.html
-    assert "Ursprunglig flervalsfråga med ett svar. Bedöms manuellt efter import." in (
-        document.html
-    )
-    assert "Manuell bedömning" not in document.html
-    assert "<p>Alpha</p>" in document.html
-    assert "<p>Beta</p>" in document.html
-    assert "Correct answer:" not in document.html
-    assert DigiExamExamNetPdfWarningCode.MANUAL_UNKEYED_CHOICE_RENDERED in {
-        warning.code for warning in document.warnings if not warning.blocking
+    assert document.status == DigiExamExamNetPdfStatus.BLOCKED
+    assert DigiExamExamNetPdfWarningCode.MANUAL_ANSWER_KEY_REQUIRED in {
+        warning.code for warning in document.warnings
     }
 
 
-def test_examnet_pdf_document_accepts_current_state_for_item_013_multigap() -> None:
+def test_examnet_pdf_document_keeps_item_013_multigap_blocked_without_key() -> None:
     exam = _item_013_exam()
 
-    document = build_digiexam_examnet_pdf_document(
-        exam,
-        accepted_current_state_item_ids=("item-001",),
-    )
+    document = build_digiexam_examnet_pdf_document(exam)
 
-    assert document.status == DigiExamExamNetPdfStatus.SUCCESS
-    assert len(document.asset_files) == 1
-    assert document.html.count("[____]") == 5
-    assert "Typ: Fritext" in document.html
-    assert "Ursprunglig lucktext. Bedöms manuellt efter import." in document.html
-    assert "Manuell bedömning" not in document.html
-    assert "Lucka 1" in document.html
-    assert "Lucka 5" in document.html
-    assert "Correct answers:" not in document.html
-    nonblocking_codes = {warning.code for warning in document.warnings if not warning.blocking}
-    assert DigiExamExamNetPdfWarningCode.MANUAL_UNKEYED_GAP_OPEN_CLOZE_RENDERED in (
-        nonblocking_codes
-    )
-    assert DigiExamExamNetPdfWarningCode.EXAMNET_PDF_MULTI_GAP_OPEN_CLOZE_DEGRADED in (
-        nonblocking_codes
-    )
+    assert document.status == DigiExamExamNetPdfStatus.BLOCKED
+    assert DigiExamExamNetPdfWarningCode.MANUAL_ANSWER_KEY_REQUIRED in {
+        warning.code for warning in document.warnings
+    }
 
 
 def test_examnet_pdf_document_keeps_reviewed_multigap_keys_in_free_text_shape() -> None:

@@ -432,28 +432,14 @@ validate against the same item-local ID/value rules. Accepted advisory candidate
 map to effective answer-key provenance `reviewed`; teacher-edited advisory
 candidates map to `teacher_provided` with candidate lineage.
 
-### Review Decision
+### Removed Review Decision Entry
 
-```json
-{
-  "entry_id": "corr-review-001",
-  "kind": "review_decision",
-  "item_id": "item-004",
-  "sequence": 4,
-  "item_type": "multiple_response",
-  "source_item_fingerprint": "sha256:item-source",
-  "decision": "accept_current_state_for_export",
-  "decision_id": "review-123",
-  "accepted_targets": ["examnet_pdf"],
-  "note": "Teacher accepts export without a machine-marked answer key."
-}
-```
-
-`accept_current_state_for_export` is not an answer key. It can enable export only
-after Sir Convert validates the source binding, applies the governed
-accepted-current-state target policy, creates target bytes, and validates those
-bytes. It never creates answer-key provenance and never changes source parser
-provenance.
+Task 337 removes `review_decision` / `accept_current_state_for_export` from the
+authoring correction contract. Authoring corrections mutate effective exam
+state; export policy consumes effective state and produces artifacts.
+Accepted-current-state is not durable exam state and must not be reintroduced
+through correction replay unless a future export-only request contract
+explicitly approves incomplete export.
 
 ### Candidate Suppression
 
@@ -493,7 +479,6 @@ must be submitted as a separate answer-key correction entry.
 | `manual_choice_answer_key` | item ID, sequence, item type, source item fingerprint, choice interaction ID, choice IDs | Effective answer key with teacher or reviewed provenance | unknown choice ID, wrong item type, multiple IDs on single-choice item, candidate digest mismatch |
 | `manual_gap_open_cloze_answer_key` | item ID, sequence, item type, source item fingerprint, gap interaction ID, gap IDs | Effective accepted values for addressed gaps | unknown gap ID, empty required accepted values, wrong item type, stale binding |
 | `manual_matching_answer_key` | item ID, sequence, item type, source item fingerprint, matching interaction ID, source/target IDs | Effective directed matching pairs | retired `left_id`/`right_id`, unknown IDs, duplicate pairs, association-bound failure, opaque `mixed` provenance |
-| `review_decision` | item ID, sequence, item type, source item fingerprint, decision ID, accepted targets | Governed accepted-current-state target policy may run; no key is created | unsupported target, decision treated as answer key, stale binding, missing policy |
 | `candidate_suppression` | item ID, sequence, item type, source item fingerprint, candidate lineage | Candidate hidden/rejected in report only | readiness unlock attempt, missing candidate digest, raw provider data, replacement key hidden inside suppression |
 
 Validation order:
@@ -557,7 +542,7 @@ JSON, raw provider payloads, raw source text, credentials, student data, or
 identity markers.
 
 Accepted entries report applied fields by typed domain names, for example
-`item_text_patch`, `point_correction`, `answer_key`, `review_decision`, or
+`item_text_patch`, `point_correction`, `answer_key`, or
 `candidate_suppression`. Candidate suppression is reported separately from
 answer-key application.
 
@@ -594,7 +579,6 @@ contract as follows:
 | `manual_answer_key.kind == "choice"` | `manual_choice_answer_key` |
 | `manual_answer_key.kind == "gap_fill"` | `manual_gap_open_cloze_answer_key` |
 | `reviewed_completion_answer_key` | answer-key entry with advisory `submission_origin` and `candidate_lineage` |
-| `review_decision.kind == "accept_current_state_for_export"` | `review_decision` |
 | Task 324 matching DTO | `manual_matching_answer_key` |
 
 This mapping is semantic, not a runtime compatibility promise. Task 330

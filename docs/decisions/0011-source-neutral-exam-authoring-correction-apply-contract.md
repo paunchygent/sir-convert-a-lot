@@ -53,8 +53,8 @@ Sir Convert currently has two teacher-correction surfaces:
 
 - `digiexam_ingestion_overlay_v2` on the DXE migration route, which covers
   visible item patches, point corrections, manual choice keys, manual gap-fill
-  accepted values, reviewed completion keys, and accepted-current-state review
-  decisions for the implemented DigiExam `.dxe` pipeline.
+  accepted values, reviewed completion keys, and historical accepted-current-state
+  review decisions for the implemented DigiExam `.dxe` pipeline.
 - `POST /v2/exam-authoring/matching/manual-answer-key/apply`, added by Task
   324 so Skriptoteket can submit source-neutral matching manual keys for
   matching-capable `ExamAuthoringIR v1` flows without forcing matching into the
@@ -67,8 +67,10 @@ matching must stay out of the DigiExam ingestion overlay.
 The architectural risk is different: Task 324 exists because matching was the
 first correction family without a callable neutral producer route. Choice,
 gap/open-cloze, point corrections, item-content patches, reviewed keys, and
-review decisions already had historical DigiExam-overlay paths. That asymmetry
-is not a clean target architecture.
+historical review decisions already had DigiExam-overlay paths. Task 337
+supersedes the accepted-current-state portion of that history because
+accepted-current-state is export policy, not authoring/correction state. That
+asymmetry is not a clean target architecture.
 
 ## 2. Decision
 
@@ -78,6 +80,26 @@ producer-owned, source-neutral apply contract:
 ```text
 POST /v2/exam-authoring/corrections/apply
 ```
+
+### Superseded Portion: Accepted-current-state Review Decision
+
+Task 337 supersedes the original inclusion of `review_decision` /
+`accept_current_state_for_export` in the unified correction contract. That entry
+kind encoded export policy as authoring/correction state, which violates the
+now-explicit boundary:
+
+```text
+authoring corrections mutate effective exam state
+export policy consumes effective exam state and produces artifacts
+```
+
+The unified correction contract therefore keeps real authoring corrections such
+as item text, point, manual answer-key, reviewed answer-key, matching, and
+candidate-suppression entries, but removes accepted-current-state export
+decisions. Missing answer keys remain missing until a real authoring correction
+supplies key state. Any future incomplete/best-effort export must be governed by
+a separate export-only request contract, not by correction replay, ingestion
+overlay, source IR, or effective IR.
 
 The contract must use typed correction entries rather than one route per item
 type or one route per source adapter. Initial correction-entry families are:

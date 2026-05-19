@@ -447,6 +447,22 @@ def test_teacher_overlay_rejects_stale_item_fingerprint_before_application() -> 
     assert error_info.value.code == "digiexam_ingestion_overlay_stale_source_item_fingerprint"
 
 
+def test_teacher_overlay_rejects_legacy_review_decision_payload() -> None:
+    exam = _source_exam()
+
+    with pytest.raises(DigiExamIngestionOverlayError) as error_info:
+        parse_and_apply_digiexam_ingestion_overlay(
+            overlay_bytes=_review_decision_overlay_bytes(
+                source_item_fingerprint(exam.items[0])
+            ),
+            source_file_sha256="sha256:file",
+            source_ir_sha256="sha256:ir",
+            source_exam=exam,
+        )
+
+    assert error_info.value.code == "digiexam_ingestion_overlay_invalid"
+
+
 def _source_exam():
     parse_result = DigiExamDxeParser().parse_payload(
         {
@@ -691,6 +707,21 @@ def _gap_patch_overlay_bytes(source_fingerprint: str) -> bytes:
                     "kind": "gap_fill",
                     "prompt_html": "<p>Skriv huvudstaden i Sverige.</p>",
                     "prompt_lines": ["Skriv huvudstaden i Sverige."],
+                },
+            },
+        ),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _review_decision_overlay_bytes(source_fingerprint: str) -> bytes:
+    return json.dumps(
+        _overlay_payload(
+            source_fingerprint=source_fingerprint,
+            item_fields={
+                "review_decision": {
+                    "kind": "accept_current_state_for_export",
+                    "decision_id": "review-decision-001",
                 },
             },
         ),

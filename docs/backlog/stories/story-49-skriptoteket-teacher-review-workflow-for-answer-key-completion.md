@@ -16,6 +16,7 @@ related:
   - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/backlog/tasks/task-333-implement-non-matching-unified-correction-apply-runtime-for-digiexam-pr-0332.md
   - docs/backlog/tasks/task-332-implement-matching-capable-source-state-producer-for-unified-corrections.md
+  - docs/backlog/tasks/task-337-remove-accepted-current-state-from-authoring-correction-contracts.md
   - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/converters/exam-authoring-corrections-apply-contract.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
@@ -47,15 +48,15 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   submit overlays, show reports, and save final artifacts, but it must not infer
   answer keys outside the governed overlay/manual-key path.
 - Define teacher-review states for source evidence, teacher overlay,
-  LLM-suggested answer keys, manual follow-up, accepted-current-state
-  decisions, and accepted/applied keys.
+  LLM-suggested answer keys, manual follow-up, and accepted/applied keys.
 - Define that Skriptoteket submits review decisions and item edits back to Sir
   Convert through producer-owned correction contracts. It must not treat local
   UI acceptance as file readiness and must refresh target readiness from Sir
   Convert before enabling PDF/QTI download or save.
-- Define that `Godkänn` triggers or resubmits a Sir Convert-owned
-  `review_decision` flow; it does not locally unlock files until refreshed
-  target readiness returns export-enabled rows.
+- Define that accepted-current-state export is no longer part of teacher
+  authoring/correction state. Missing answer keys remain missing until the
+  teacher supplies real answer-key corrections. Any future incomplete export
+  must be a separate export-only request contract.
 - Use Sir Convert's unified `manual_matching_answer_key` correction entry for
   matching-capable source flows. Skriptoteket must not invent a local matching
   key shape, submit retired `left_id`/`right_id` aliases, or add matching to
@@ -79,6 +80,9 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   implemented non-matching families only after HuleEdu exposes the unified
   authenticated edge: point, manual choice, manual gap/open-cloze, and item
   text corrections against producer-issued DigiExam state.
+- Task 337 removes accepted-current-state export from authoring correction
+  contracts. Downstream durable sessions must not persist or replay
+  `review_decision` / `accept_current_state_for_export` as correction state.
 - Task 332 remains the separate matching-capable producer task. Skriptoteket
   must not submit `manual_matching_answer_key` until Task 332 emits real
   matching source state and proves unified-route apply behavior.
@@ -105,14 +109,13 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
   LLM suggestions, applied reviewed answers, and unresolved manual follow-up.
 - [ ] Teacher acceptance of a suggestion is represented as a manual overlay on
   a subsequent request, not retroactively as parser evidence.
-- [ ] Teacher acceptance of the current missing-answer-key state is represented
-  as an overlay review decision, not a local UI flag, and only Sir Convert
-  target-readiness output can enable target artifacts.
+- [ ] Missing-answer-key state remains an authoring blocker until a real
+  answer-key correction is supplied; accepted-current-state export is not an
+  overlay review decision or local UI flag in the active workflow.
 - [ ] The UI consumes readiness classes such as `ready`,
-  `ready_after_accepted_current_state`, `needs_teacher_answer_key`,
-  `needs_teacher_review_decision`, `unsupported_target_shape`, and
+  `needs_teacher_answer_key`, `unsupported_target_shape`, and
   `target_validation_failed` without collapsing them into one generic blocked
-  state.
+  state or reintroducing accepted-current-state export as authoring state.
 - [ ] The durable teacher-correction API direction is source-neutral and
   producer-owned; the matching-specific transport is superseded and abandoned
   rather than treated as a route-per-item-type architecture, transitional route,

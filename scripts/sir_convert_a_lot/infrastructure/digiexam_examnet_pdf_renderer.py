@@ -48,14 +48,10 @@ def render_digiexam_examnet_pdf(
     exam: DigiExamIntermediateExam,
     output_pdf_path: Path,
     work_dir: Path | None = None,
-    accepted_current_state_item_ids: tuple[str, ...] = (),
 ) -> DigiExamExamNetPdfArtifacts:
     """Render one DigiExam IR exam to an Exam.net-oriented PDF artifact."""
 
-    document = build_digiexam_examnet_pdf_document(
-        exam,
-        accepted_current_state_item_ids=accepted_current_state_item_ids,
-    )
+    document = build_digiexam_examnet_pdf_document(exam)
     if document.status == DigiExamExamNetPdfStatus.BLOCKED:
         return DigiExamExamNetPdfArtifacts(
             status=document.status,

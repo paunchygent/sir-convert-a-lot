@@ -168,16 +168,6 @@ class ExamAuthoringManualMatchingAnswerKeyCorrectionV1(ExamAuthoringCorrectionEn
         return self
 
 
-class ExamAuthoringReviewDecisionCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
-    """Review decision entry reserved for unified runtime migration."""
-
-    kind: Literal["review_decision"]
-    decision: Literal["accept_current_state_for_export"]
-    decision_id: str = Field(min_length=1)
-    accepted_targets: tuple[ExamAuthoringCorrectionTargetV1, ...] = Field(min_length=1)
-    note: str | None = Field(default=None, min_length=1)
-
-
 class ExamAuthoringCandidateSuppressionCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
     """Candidate suppression entry reserved for unified runtime migration."""
 
@@ -192,7 +182,6 @@ ExamAuthoringCorrectionEntryV1: TypeAlias = Annotated[
     | ExamAuthoringManualChoiceAnswerKeyCorrectionV1
     | ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1
     | ExamAuthoringManualMatchingAnswerKeyCorrectionV1
-    | ExamAuthoringReviewDecisionCorrectionV1
     | ExamAuthoringCandidateSuppressionCorrectionV1,
     Field(discriminator="kind"),
 ]

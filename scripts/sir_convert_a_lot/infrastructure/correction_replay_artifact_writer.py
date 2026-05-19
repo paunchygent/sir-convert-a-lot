@@ -47,7 +47,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactAvailability,
     DigiExamMigrationArtifactKey,
 )
-from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
     artifact_path,
     json_bytes,
@@ -56,7 +55,6 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_source_loader i
     load_digiexam_migration_source_exam,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_target_artifacts import (
-    accepted_current_state_item_ids,
     build_examnet_pdf_artifact,
     build_qti_artifacts,
 )
@@ -196,10 +194,6 @@ def _write_target_artifact(
             job=job,
             artifacts_dir=work_dir,
             exam=applied.effective_exam_for_rendering,
-            accepted_current_state_item_ids=accepted_current_state_item_ids(
-                applied.accepted_review_decisions,
-                ExamMigrationTargetV2.EXAMNET_PDF,
-            ),
         )
         if entry.availability == DigiExamMigrationArtifactAvailability.AVAILABLE:
             artifact_path(work_dir, DigiExamMigrationArtifactKey.EXAMNET_PDF).replace(final_path)
@@ -211,10 +205,6 @@ def _write_target_artifact(
         job=job,
         artifacts_dir=work_dir,
         exam=applied.effective_exam_for_rendering,
-        accepted_current_state_item_ids=accepted_current_state_item_ids(
-            applied.accepted_review_decisions,
-            ExamMigrationTargetV2.QTI_PACKAGE,
-        ),
     )
     entry = entries[DigiExamMigrationArtifactKey.QTI_PACKAGE]
     if entry.availability == DigiExamMigrationArtifactAvailability.AVAILABLE:

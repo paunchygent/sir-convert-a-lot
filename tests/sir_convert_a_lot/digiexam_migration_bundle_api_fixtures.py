@@ -457,42 +457,6 @@ def _point_correction_overlay_bytes(
     ).encode("utf-8")
 
 
-def _accept_current_state_overlay_bytes(
-    *,
-    baseline_manifest: dict[str, object],
-    item_summary: dict[str, object],
-    target: str,
-) -> bytes:
-    source = baseline_manifest["source"]
-    source_binding = baseline_manifest["source_binding"]
-    if not isinstance(source, dict) or not isinstance(source_binding, dict):
-        raise RuntimeError("baseline manifest has no source binding")
-    return json.dumps(
-        {
-            "schema_version": DIGIEXAM_INGESTION_OVERLAY_SCHEMA_VERSION,
-            "source_binding": {
-                "source_file_sha256": source["sha256"],
-                "source_ir_schema_version": DIGIEXAM_IR_SCHEMA_VERSION,
-                "source_ir_sha256": source_binding["source_ir_sha256"],
-            },
-            "items": [
-                {
-                    "item_id": item_summary["item_id"],
-                    "sequence": item_summary["sequence"],
-                    "item_type": item_summary["item_type"],
-                    "source_item_fingerprint": item_summary["source_item_fingerprint"],
-                    "review_decision": {
-                        "kind": "accept_current_state_for_export",
-                        "decision_id": "accept-qti-current-state",
-                        "accepted_targets": [target],
-                    },
-                }
-            ],
-        },
-        sort_keys=True,
-    ).encode("utf-8")
-
-
 def _qti_maxscore(item_xml: str) -> str | None:
     root = ElementTree.fromstring(item_xml)
     namespace = {"qti": "http://www.imsglobal.org/xsd/imsqti_v2p1"}

@@ -24,6 +24,7 @@ related:
   - docs/backlog/tasks/task-323-expose-source-neutral-matching-manual-answer-key-producer-dto-for-skriptoteket.md
   - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
   - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
+  - docs/backlog/tasks/task-337-remove-accepted-current-state-from-authoring-correction-contracts.md
   - docs/backlog/tasks/task-328-audit-open-proposed-adr-product-decisions-before-further-architecture-expansion.md
   - docs/backlog/tasks/task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md
   - docs/backlog/tasks/task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md
@@ -152,6 +153,12 @@ adds the unified runtime route, moves matching into `manual_matching_answer_key`
 and removes the Task 324 route rather than preserving it as a transitional route or
 compatibility layer. Future HuleEdu/Skriptoteket work should build around that
 unified contract instead of adding more item-specific Gateway routes.
+Task 337 supersedes the review-decision portion of that contract: accepted
+current state is an export policy concern, not authoring/correction state.
+The unified correction contract must remove `review_decision` /
+`accept_current_state_for_export`, keep missing keys blocked until real
+authoring corrections supply them, and leave any future incomplete export mode
+to a separate export-only contract.
 Task 328 is the separate proposed-decision audit slice. It keeps ADR-0002 and
 ADR-0009 status cleanup out of ADR-0011 and preserves the rule that ADR-0009
 requires its explicit Gateway acceptance path before acceptance.

@@ -30,10 +30,15 @@ target-name branch ladders into typed readiness decisions owned by the target
 profile.
 
 The current path correctly reports consumer-ready rows, but the policy that
-decides artifact availability, teacher action, accepted-current-state reason
-codes, unsupported target shapes, and retryability is concentrated in one
-function family. That makes every new target or unresolved item profile a
-change to the same branch ladder.
+decides artifact availability, teacher action, unsupported target shapes, and
+retryability is concentrated in one function family. That makes every new target
+or unresolved item profile a change to the same branch ladder.
+
+Historical accepted-current-state readiness classes and reason codes are not a
+target policy to preserve. Task 337 owns their removal from authoring/correction
+state and target-readiness unlocks. If Task 316 lands before Task 337, it may
+isolate that current behavior only to make deletion safer; it must not promote
+accepted-current-state into the durable target-readiness policy model.
 
 ## PR Scope
 
@@ -41,8 +46,10 @@ change to the same branch ladder.
   item context into `DigiExamTargetReadinessRow` values.
 - Replace raw `unavailable_code` string checks with a typed reason surface or a
   method on artifact entries before readiness rows are built.
-- Move target-specific accepted-current-state reason codes and unsupported
-  gap/open-cloze policy into the target profile.
+- Move unsupported gap/open-cloze and other target-profile decisions into the
+  target profile. Keep accepted-current-state reason codes out of the durable
+  model unless a future export-only request contract explicitly reintroduces
+  incomplete export.
 - Keep named artifact availability, manifest schema, target labels, localized
   message keys, and Skriptoteket-facing row fields compatible.
 - Do not add new renderer support or relax unsupported-target-shape failures.
@@ -55,8 +62,9 @@ change to the same branch ladder.
 - [ ] Artifact unavailable reasons exposed without raw string matching in the
   readiness builder.
 - [ ] Focused tests for available, not requested, not implemented, failed,
-  provider unavailable, missing answer key, accepted current state, and
-  unsupported target shape rows.
+  provider unavailable, missing answer key, and unsupported target shape rows.
+  If legacy accepted-current-state rows still exist when this task starts, add
+  temporary characterization coverage only to support Task 337 removal.
 
 ## Acceptance Criteria
 
@@ -64,8 +72,9 @@ change to the same branch ladder.
   `_rows_for_target` or `_accepted_current_state_reason_code`.
 - [ ] Item-level readiness rows still carry target, item binding, reason code,
   `export_enabled`, `teacher_action`, retryability, and message key.
-- [ ] Accepted-current-state rows remain target-specific and do not imply
-  automatic answer-key synthesis.
+- [ ] Accepted-current-state rows are not part of the durable readiness policy.
+  Existing rows, if still present at task start, are isolated as legacy behavior
+  and removed by Task 337 rather than normalized into the new policy surface.
 - [ ] Unsupported multi-gap/open-cloze behavior stays fail-closed unless a
   governed target profile explicitly supports it.
 - [ ] Existing API/artifact contracts and generated OpenAPI schemas remain

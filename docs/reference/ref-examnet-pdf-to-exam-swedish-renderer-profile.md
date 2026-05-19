@@ -111,6 +111,34 @@ Avoid:
 Alternatives should be indented plain text. Exam.net owns any final option
 labels and may reshuffle alternatives.
 
+## Policy Ownership Boundary
+
+This profile owns Exam.net PDF export policy only. It may consume source IR or
+effective IR state, but it must not define, mutate, or serialize that state.
+
+- Source IR owns parsed source structure, source evidence, source provenance,
+  stable item identity, and renderer-neutral embedded assets.
+- Effective IR owns accepted authoring corrections such as manual answer keys,
+  reviewed answer-key completion, item text changes, point corrections, and
+  gap/choice corrections.
+- The Exam.net PDF target profile owns supported export shapes, Swedish layout
+  labels, item-level target warnings, and PDF-specific formatting.
+- Accepted-current-state is not source IR or effective IR state. The historical
+  manual/degraded accepted-current-state PDF path is removed from current
+  authoring/correction runtime by Task 337. A future
+  best-effort incomplete PDF export, if approved, must be modeled as an
+  export-only request policy consumed by this target profile.
+- The core PDF exam item protocol must not carry Exam.net import needs.
+  Exam.net-specific reshaping is allowed only inside the Exam.net PDF target
+  profile. A gap/open-cloze item may therefore be presented in a
+  target-compatible free-text-style shape when the requested output is
+  Exam.net-oriented PDF, but that reshape must be explicit target policy with
+  provenance-preserving labels, warnings, and manual-follow-up signals. It must
+  not rewrite source IR, effective IR, or neutral PDF item semantics.
+- The WeasyPrint adapter owns HTML/CSS materialization into PDF bytes. It must
+  stay infrastructure-only and must not decide item support, answer-key trust,
+  accepted-current-state behavior, or readiness semantics.
+
 ## Supported Item Profiles
 
 ### Flerval, Ett Rätt Svar
@@ -303,7 +331,7 @@ Vid cellandning reagerar [glukos] med [syre] och bildar [koldioxid] och [vatten]
 No separate `Rätt svar:`, `Rätta svar:`, or `Facit:` line should be used in
 the next gap-fill experiment.
 
-Required accepted-current-state missing-key fallback profile:
+Historical Task 308 missing-key fallback profile, superseded by Task 337:
 
 ```text
 Fråga 10
@@ -314,9 +342,11 @@ Ursprunglig lucktext. Bedöms manuellt efter import.
 Cellens kortsiktiga energivaluta är [____]. ...
 ```
 
-This fallback is not a claim that Exam.net will create native gap fields. It is
-a governed content-preserving PDF export path for teachers who explicitly
-request accepted-current-state output and accept manual follow-up.
+This fallback was not a claim that Exam.net would create native gap fields.
+Task 337 removes it from current authoring/correction and migration-bundle
+runtime. Missing-key PDF export now remains unavailable until real source,
+manual, or reviewed effective key state exists. A future content-preserving
+incomplete PDF export would need a separate export-only contract.
 
 ## Authoring Bundle Direction
 

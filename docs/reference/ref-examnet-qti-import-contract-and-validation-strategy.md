@@ -158,20 +158,23 @@ answer key before `qti_package` can be marked exportable as an automatically
 evaluated item. This is a Sir Convert target-readiness rule, not a universal
 QTI schema rule.
 
-Teacher `accept_current_state_for_export` decisions can enable QTI only under
-the Task 303 unkeyed/manual profile after Sir Convert creates and validates the
-package. They cannot add a key, bypass validation, or make a package available
-when an item would be silently omitted.
-
-Task 303 defines the QTI 2.1 unkeyed/manual representation for accepted-current
-items that have no machine-marked key. Any later QTI 3.0 representation must be
-promoted by a separate compatibility decision.
+Task 337 supersedes the Task 303 accepted-current-state enablement path for
+current authoring/correction and migration-bundle runtime. Missing
+machine-marked keys now keep `qti_package` unavailable until source,
+teacher-authored manual, or reviewed completion key state exists. Historical
+Task 303 manual/unkeyed sample work remains evidence for a possible future
+export-only incomplete-QTI policy, but it is not an active readiness unlock and
+must not be modeled as IR, effective IR, ingestion-overlay, or correction
+replay state.
 
 ### Task 303 Manual/unkeyed Preservation Direction
 
-The product direction for Task 303 is preservation-first: missing
-machine-marked keys must remove Sir Convert's automatic-evaluation claim, not
-remove the teacher-visible question from QTI or PDF output.
+Task 303's preservation-first manual/unkeyed profile is historical after Task
+337. The current runtime rule is stricter: missing machine-marked keys remove
+Sir Convert's automatic-evaluation claim and keep QTI unavailable for
+machine-markable items until real effective key state exists. A future
+best-effort incomplete QTI export would need a new export-only contract and
+must stay outside authoring/correction state.
 
 For single-choice and multiple-response items, the first unkeyed/manual profile
 must preserve prompt text, all visible alternatives, allowed media/resources,
@@ -202,9 +205,9 @@ manual/unkeyed export:
 
 - Unsupported for automatic evaluation means Sir Convert can preserve the
   visible item in a schema/profile-valid package, but it does not assert a
-  correct answer or automatic evaluation rule. Target readiness may become
-  `ready_after_accepted_current_state` after teacher acceptance, and the report
-  must carry item-level manual/unkeyed follow-up.
+  correct answer or automatic evaluation rule. Task 337 removes teacher
+  acceptance as a current readiness unlock; any future manual/unkeyed export
+  would require a separate export-only policy and item-level manual follow-up.
 - Unavailable for manual/unkeyed export means Sir Convert cannot produce a
   valid preservation package for the item or target without dropping visible
   content, violating package/profile rules, including forbidden resources, or

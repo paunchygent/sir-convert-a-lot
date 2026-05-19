@@ -30,12 +30,10 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from tests.sir_convert_a_lot.digiexam_migration_bundle_api_fixtures import (
     _LIVE_CORPUS_DXE_FILENAMES,
     _ONEDRIVE_CORPUS_ROOT,
-    _accept_current_state_overlay_bytes,
     _client,
     _embedded_image_payload,
     _headers,
     _IdentitySigner,
-    _item_013_payload,
     _missing_answer_key_payload,
     _pdf_bytes,
     _post_digiexam_job,
@@ -278,6 +276,8 @@ def test_digiexam_migration_unavailable_pdf_target_returns_named_artifact_error(
     entries = {entry["artifact_key"]: entry for entry in manifest_response.json()["artifacts"]}
     assert entries["examnet_pdf"]["availability"] == "unavailable"
     assert entries["examnet_pdf"]["unavailable_code"] == "manual_answer_key_required"
+    assert entries["qti_package"]["availability"] == "unavailable"
+    assert entries["qti_package"]["unavailable_code"] == "manual_answer_key_required"
     assert manifest_response.json()["manual_follow_up"]["required"] is True
     assert manifest_response.json()["readiness"]["review_required"] is True
 
@@ -287,248 +287,31 @@ def test_digiexam_migration_unavailable_pdf_target_returns_named_artifact_error(
     )
     assert artifact_response.status_code == 409
     assert artifact_response.json()["error"]["code"] == "manual_answer_key_required"
+    qti_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/qti_package",
+        headers=headers,
+    )
+    assert qti_response.status_code == 409
+    assert qti_response.json()["error"]["code"] == "manual_answer_key_required"
     readiness_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
         headers=headers,
     )
+    assert readiness_response.status_code == 200
+    removed_readiness_values = {
+        "ready_after_accepted_current_state",
+        "needs_teacher_review_decision",
+        "accepted_current_state_manual_unkeyed_profile",
+        "accepted_current_state_pdf_manual_unkeyed_profile",
+    }
+    for removed_value in removed_readiness_values:
+        assert removed_value not in readiness_response.text
     readiness_targets = readiness_response.json()["targets"]
     assert any(
         row["readiness"] == "needs_teacher_answer_key"
         and row["source_item_fingerprint"].startswith("sha256:")
         for row in readiness_targets
     )
-
-
-def test_accept_current_state_enables_manual_unkeyed_qti_without_correct_response(
-    tmp_path: Path,
-) -> None:
-    identity = _IdentitySigner()
-    client = _client(tmp_path, identity)
-    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
-    source_payload = _missing_answer_key_payload()
-
-    baseline_response = _post_digiexam_job(
-        client=client,
-        identity=identity,
-        subject="teacher-1",
-        idempotency_key="idem-accept-current-baseline",
-        wait_seconds=20,
-        payload=source_payload,
-    )
-    assert baseline_response.status_code == 200
-    baseline_job_id = baseline_response.json()["job"]["job_id"]
-    baseline_manifest = client.get(
-        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
-        headers=headers,
-    ).json()
-    migration_manifest = client.get(
-        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
-        headers=headers,
-    ).json()
-
-    overlay_response = _post_digiexam_job(
-        client=client,
-        identity=identity,
-        subject="teacher-1",
-        idempotency_key="idem-accept-current-qti",
-        wait_seconds=20,
-        payload=source_payload,
-        digiexam_ingestion_overlay=(
-            "teacher-overlay.json",
-            _accept_current_state_overlay_bytes(
-                baseline_manifest=baseline_manifest,
-                item_summary=migration_manifest["item_summaries"][0],
-                target="qti_package",
-            ),
-        ),
-    )
-    assert overlay_response.status_code == 200
-    job_id = overlay_response.json()["job"]["job_id"]
-    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
-    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
-
-    assert entries["qti_package"]["availability"] == "available"
-    readiness = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
-        headers=headers,
-    ).json()
-    assert any(
-        row["target"] == "qti_package"
-        and row["readiness"] == "ready_after_accepted_current_state"
-        and row["export_enabled"] is True
-        for row in readiness["targets"]
-    )
-
-    qti_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/qti_package",
-        headers=headers,
-    )
-    assert qti_response.status_code == 200
-    with zipfile.ZipFile(BytesIO(qti_response.content)) as archive:
-        item_xml = archive.read("items/item_001.xml").decode("utf-8")
-
-    assert "choice_001" in item_xml
-    assert "choice_002" in item_xml
-    assert "correctResponse" not in item_xml
-    assert "responseProcessing" not in item_xml
-
-
-def test_accept_current_state_enables_manual_unkeyed_examnet_pdf_without_key_claims(
-    tmp_path: Path,
-) -> None:
-    identity = _IdentitySigner()
-    client = _client(tmp_path, identity)
-    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
-    source_payload = _missing_answer_key_payload()
-
-    baseline_response = _post_digiexam_job(
-        client=client,
-        identity=identity,
-        subject="teacher-1",
-        idempotency_key="idem-accept-current-pdf-baseline",
-        wait_seconds=20,
-        payload=source_payload,
-    )
-    baseline_job_id = baseline_response.json()["job"]["job_id"]
-    baseline_manifest = client.get(
-        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
-        headers=headers,
-    ).json()
-    migration_manifest = client.get(
-        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
-        headers=headers,
-    ).json()
-
-    overlay_response = _post_digiexam_job(
-        client=client,
-        identity=identity,
-        subject="teacher-1",
-        idempotency_key="idem-accept-current-pdf",
-        wait_seconds=20,
-        payload=source_payload,
-        digiexam_ingestion_overlay=(
-            "teacher-overlay.json",
-            _accept_current_state_overlay_bytes(
-                baseline_manifest=baseline_manifest,
-                item_summary=migration_manifest["item_summaries"][0],
-                target="examnet_pdf",
-            ),
-        ),
-    )
-    assert overlay_response.status_code == 200
-    job_id = overlay_response.json()["job"]["job_id"]
-    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
-    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
-
-    assert entries["examnet_pdf"]["availability"] == "available"
-    readiness = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
-        headers=headers,
-    ).json()
-    assert any(
-        row["target"] == "examnet_pdf"
-        and row["readiness"] == "ready_after_accepted_current_state"
-        and row["reason_code"] == "accepted_current_state_pdf_manual_unkeyed_profile"
-        and row["export_enabled"] is True
-        for row in readiness["targets"]
-    )
-
-    pdf_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
-        headers=headers,
-    )
-    assert pdf_response.status_code == 200
-    with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
-        text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
-    assert "Alpha" in text
-    assert "Beta" in text
-    assert "Correct answer" not in text
-    assert "Correct answers" not in text
-
-
-def test_accept_current_state_enables_manual_unkeyed_examnet_pdf_for_item_013_multigap(
-    tmp_path: Path,
-) -> None:
-    identity = _IdentitySigner()
-    client = _client(tmp_path, identity)
-    headers = _headers(identity, subject="teacher-1", grants=_read_grants())
-    source_payload = _item_013_payload()
-
-    baseline_response = _post_digiexam_job(
-        client=client,
-        identity=identity,
-        subject="teacher-1",
-        idempotency_key="idem-item-013-pdf-baseline",
-        wait_seconds=20,
-        payload=source_payload,
-    )
-    baseline_job_id = baseline_response.json()["job"]["job_id"]
-    baseline_manifest = client.get(
-        f"/v2/convert/jobs/{baseline_job_id}/artifacts",
-        headers=headers,
-    ).json()
-    migration_manifest = client.get(
-        f"/v2/convert/jobs/{baseline_job_id}/artifacts/migration_manifest",
-        headers=headers,
-    ).json()
-
-    overlay_response = _post_digiexam_job(
-        client=client,
-        identity=identity,
-        subject="teacher-1",
-        idempotency_key="idem-item-013-pdf",
-        wait_seconds=20,
-        payload=source_payload,
-        digiexam_ingestion_overlay=(
-            "teacher-overlay.json",
-            _accept_current_state_overlay_bytes(
-                baseline_manifest=baseline_manifest,
-                item_summary=migration_manifest["item_summaries"][0],
-                target="examnet_pdf",
-            ),
-        ),
-    )
-    assert overlay_response.status_code == 200
-    job_id = overlay_response.json()["job"]["job_id"]
-    manifest = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=headers).json()
-    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
-
-    assert entries["examnet_pdf"]["availability"] == "available"
-    readiness = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
-        headers=headers,
-    ).json()
-    assert any(
-        row["target"] == "examnet_pdf"
-        and row["readiness"] == "ready_after_accepted_current_state"
-        and row["export_enabled"] is True
-        for row in readiness["targets"]
-    )
-    warnings = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/warnings_report",
-        headers=headers,
-    ).json()
-    warning_codes = {
-        warning["code"]
-        for warning in warnings["examnet_pdf_warnings"]
-        if warning["blocking"] is False
-    }
-    assert "manual_unkeyed_gap_open_cloze_rendered" in warning_codes
-    assert "examnet_pdf_multi_gap_open_cloze_degraded" in warning_codes
-
-    pdf_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
-        headers=headers,
-    )
-    assert pdf_response.status_code == 200
-    with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
-        text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
-        has_image = any(page.get_images(full=True) for page in document)
-    assert has_image
-    assert text.count("____") >= 5
-    assert "Lucka 1" in text
-    assert "Lucka 5" in text
-    assert "Correct answers" not in text
 
 
 def test_digiexam_migration_bundle_downloads_embedded_image_pdf(tmp_path: Path) -> None:

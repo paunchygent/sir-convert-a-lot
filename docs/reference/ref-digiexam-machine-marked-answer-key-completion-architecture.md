@@ -118,42 +118,43 @@ Overlay item payloads may include:
   only the effective IR.
 - `manual_answer_key`: a teacher-authored or teacher-accepted key that is
   authoritative in the effective layer.
-- `review_decision`: a teacher decision about the current item state, such as
-  accepting a missing machine-marked answer key for export without adding an
-  answer. Review decisions are not answer keys, do not change parser
-  provenance, and must be bound to the item ID, sequence, type, and source item
-  fingerprint.
+- `reviewed_completion_answer_key`: a reviewed local-LLM candidate that becomes
+  concrete effective answer-key state only under the governed reviewed
+  completion mode.
+
+Task 337 removes accepted-current-state review decisions from the active
+overlay payload. Missing machine-marked keys remain missing until source,
+manual, or reviewed effective answer-key state exists.
 
 Source-derived item context for the first enrichment pass comes from `.dxe`
 fields already represented in source IR, such as exam metadata, item title,
 prompt/body HTML, alternatives, gaps, grading policy, and asset references. It
 is not a Skriptoteket overlay field and does not become answer-key evidence.
 
-Runtime status: Task 295 applies manual answer keys and review decisions. Task
-302 applies supported `effective_item_patch` visible-content repairs to
-effective IR. That path remains separate from answer-key overlays and review
-decisions.
+Runtime status: Task 295 applies manual answer keys, Task 302 applies supported
+`effective_item_patch` visible-content repairs to effective IR, Task 306
+applies reviewed completion answer keys under its explicit apply mode, and Task
+322 applies point corrections. None of these paths preserve accepted-current
+state as overlay or effective IR state.
 
-## Target Readiness And Accepted Current State
+## Target Readiness After Task 337
 
 Skriptoteket cannot make PDF or QTI downloadable by flipping a local review
 flag. Target readiness belongs to Sir Convert because only Sir Convert knows
 which effective items each renderer/importer can safely produce.
 
-The accepted-current-state path is therefore:
+The current readiness path is therefore:
 
 ```text
-Skriptoteket teacher decision
-  -> source-bound overlay review_decision
-  -> Sir Convert validates source binding and item type
+source/parser state plus optional concrete teacher/reviewed corrections
+  -> Sir Convert validates source binding, item type, and effective key state
   -> Sir Convert recomputes effective exam and target readiness
   -> Sir Convert emits available artifacts or precise blockers
   -> Skriptoteket enables only rows Sir Convert marks available
 ```
 
-Accepted current state may allow a target-specific best-effort output only when
-that target has a governed renderer/import policy for the unresolved item. It
-must not:
+Historical Task 303/308 accepted-current-state behavior is superseded by Task
+337. Current readiness must not:
 
 - synthesize answer keys;
 - mutate `ir_json` or parser provenance;
@@ -162,18 +163,16 @@ must not:
 - mark a named artifact as downloadable unless bytes were actually created and
   validated.
 
-For QTI, the current profile stays stricter than bare QTI schema validity:
-missing machine-marked keys keep `qti_package` disabled unless a manual key is
-provided or Task 303/later profile proves an unkeyed/manual QTI 2.1 or QTI 3.0
-representation with schema, target-readiness, and Exam.net import evidence.
+For QTI and Exam.net PDF, missing machine-marked keys keep artifacts disabled
+unless source, manual, or reviewed effective answer-key state is available.
+Future best-effort incomplete exports must be defined as export-only policy,
+not authoring/correction state.
 
 Target readiness must remain per-target and per-item. It must distinguish at
 least:
 
 - `ready`;
-- `ready_after_accepted_current_state`;
 - `needs_teacher_answer_key`;
-- `needs_teacher_review_decision`;
 - `unsupported_target_shape`, for example multi-gap gap-fill without governed
   PDF/QTI representation;
 - `target_validation_failed`, for example QTI package validation;

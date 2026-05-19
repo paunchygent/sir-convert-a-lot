@@ -1013,13 +1013,6 @@
             "title": "Item Type",
             "type": "string"
           },
-          "review_decisions": {
-            "items": {
-              "$ref": "#/components/schemas/DigiExamEffectiveReviewDecisionV1"
-            },
-            "title": "Review Decisions",
-            "type": "array"
-          },
           "sequence": {
             "minimum": 1,
             "title": "Sequence",
@@ -1076,46 +1069,6 @@
           "source_item_fingerprint"
         ],
         "title": "DigiExamEffectivePointCorrectionV1",
-        "type": "object"
-      },
-      "DigiExamEffectiveReviewDecisionV1": {
-        "additionalProperties": false,
-        "description": "Applied review decision surfaced in effective exam artifacts.",
-        "properties": {
-          "accepted_targets": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Accepted Targets",
-            "type": "array"
-          },
-          "decision_id": {
-            "title": "Decision Id",
-            "type": "string"
-          },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Note"
-          }
-        },
-        "required": [
-          "kind",
-          "decision_id",
-          "accepted_targets"
-        ],
-        "title": "DigiExamEffectiveReviewDecisionV1",
         "type": "object"
       },
       "DigiExamIngestionOverlay": {
@@ -1244,17 +1197,6 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/DigiExamOverlayPointCorrection"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
-          },
-          "review_decision": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DigiExamOverlayReviewDecision"
               },
               {
                 "type": "null"
@@ -2335,51 +2277,6 @@
         "title": "DigiExamOverlayPointCorrection",
         "type": "object"
       },
-      "DigiExamOverlayReviewDecision": {
-        "additionalProperties": false,
-        "description": "Teacher review decision that never creates answer-key evidence.",
-        "properties": {
-          "accepted_targets": {
-            "items": {
-              "$ref": "#/components/schemas/ExamMigrationTargetV2"
-            },
-            "minItems": 1,
-            "title": "Accepted Targets",
-            "type": "array"
-          },
-          "decision_id": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Decision Id",
-            "type": "string"
-          },
-          "kind": {
-            "const": "accept_current_state_for_export",
-            "title": "Kind",
-            "type": "string"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Note"
-          }
-        },
-        "required": [
-          "kind",
-          "decision_id",
-          "accepted_targets"
-        ],
-        "title": "DigiExamOverlayReviewDecision",
-        "type": "object"
-      },
       "DigiExamOverlayReviewedChoiceAnswerPayload": {
         "additionalProperties": false,
         "description": "Reviewed choice answer payload using Task 297 candidate semantics.",
@@ -2601,9 +2498,7 @@
         "description": "Consumer-facing readiness classes for export targets.",
         "enum": [
           "ready",
-          "ready_after_accepted_current_state",
           "needs_teacher_answer_key",
-          "needs_teacher_review_decision",
           "unsupported_target_shape",
           "target_validation_failed",
           "provider_unavailable",
@@ -3553,8 +3448,7 @@
                   "manual_choice_answer_key": "#/components/schemas/ExamAuthoringManualChoiceAnswerKeyCorrectionV1",
                   "manual_gap_open_cloze_answer_key": "#/components/schemas/ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1",
                   "manual_matching_answer_key": "#/components/schemas/ExamAuthoringManualMatchingAnswerKeyCorrectionV1",
-                  "point_correction": "#/components/schemas/ExamAuthoringPointCorrectionV1",
-                  "review_decision": "#/components/schemas/ExamAuthoringReviewDecisionCorrectionV1"
+                  "point_correction": "#/components/schemas/ExamAuthoringPointCorrectionV1"
                 },
                 "propertyName": "kind"
               },
@@ -3573,9 +3467,6 @@
                 },
                 {
                   "$ref": "#/components/schemas/ExamAuthoringManualMatchingAnswerKeyCorrectionV1"
-                },
-                {
-                  "$ref": "#/components/schemas/ExamAuthoringReviewDecisionCorrectionV1"
                 },
                 {
                   "$ref": "#/components/schemas/ExamAuthoringCandidateSuppressionCorrectionV1"
@@ -4506,95 +4397,6 @@
           "max_score"
         ],
         "title": "ExamAuthoringPointCorrectionV1",
-        "type": "object"
-      },
-      "ExamAuthoringReviewDecisionCorrectionV1": {
-        "additionalProperties": false,
-        "description": "Review decision entry reserved for unified runtime migration.",
-        "properties": {
-          "accepted_targets": {
-            "items": {
-              "enum": [
-                "examnet_pdf",
-                "qti_package"
-              ],
-              "type": "string"
-            },
-            "minItems": 1,
-            "title": "Accepted Targets",
-            "type": "array"
-          },
-          "decision": {
-            "const": "accept_current_state_for_export",
-            "title": "Decision",
-            "type": "string"
-          },
-          "decision_id": {
-            "minLength": 1,
-            "title": "Decision Id",
-            "type": "string"
-          },
-          "entry_id": {
-            "minLength": 1,
-            "title": "Entry Id",
-            "type": "string"
-          },
-          "item_id": {
-            "minLength": 1,
-            "title": "Item Id",
-            "type": "string"
-          },
-          "item_type": {
-            "minLength": 1,
-            "title": "Item Type",
-            "type": "string"
-          },
-          "kind": {
-            "const": "review_decision",
-            "title": "Kind",
-            "type": "string"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          },
-          "sequence": {
-            "minimum": 1.0,
-            "title": "Sequence",
-            "type": "integer"
-          },
-          "source_item_fingerprint": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Item Fingerprint"
-          }
-        },
-        "required": [
-          "kind",
-          "entry_id",
-          "item_id",
-          "sequence",
-          "item_type",
-          "decision",
-          "decision_id",
-          "accepted_targets"
-        ],
-        "title": "ExamAuthoringReviewDecisionCorrectionV1",
         "type": "object"
       },
       "ExamAuthoringSourceEvidenceV1": {

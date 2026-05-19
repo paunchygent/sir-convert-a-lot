@@ -39,24 +39,10 @@ class DigiExamExamNetPdfWarningCode(StrEnum):
     EMBEDDED_ASSET_PAYLOAD_MISSING = "embedded_asset_payload_missing"
     EMBEDDED_ASSET_PAYLOAD_INVALID = "embedded_asset_payload_invalid"
     EMBEDDED_ASSET_REFERENCE_MISSING = "embedded_asset_reference_missing"
-    MANUAL_UNKEYED_CHOICE_RENDERED = "manual_unkeyed_choice_rendered"
-    MANUAL_UNKEYED_GAP_OPEN_CLOZE_RENDERED = "manual_unkeyed_gap_open_cloze_rendered"
     EXAMNET_PDF_GAP_OPEN_CLOZE_NATIVE_SUPPORT_UNPROVEN = (
         "examnet_pdf_gap_open_cloze_native_support_unproven"
     )
     EXAMNET_PDF_MULTI_GAP_OPEN_CLOZE_DEGRADED = "examnet_pdf_multi_gap_open_cloze_degraded"
-
-
-@dataclass(frozen=True)
-class DigiExamExamNetPdfRenderPolicy:
-    """Target policy for accepted-current-state PDF rendering."""
-
-    accepted_current_state_item_ids: tuple[str, ...] = ()
-
-    def accepts_current_state(self, item_id: str) -> bool:
-        """Return whether this item may render through manual/unkeyed PDF mode."""
-
-        return item_id in self.accepted_current_state_item_ids
 
 
 @dataclass(frozen=True)

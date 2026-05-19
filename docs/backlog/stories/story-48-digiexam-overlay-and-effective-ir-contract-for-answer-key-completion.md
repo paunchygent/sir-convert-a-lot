@@ -77,21 +77,11 @@ keys, and review decisions without mutating the parser-owned source IR.
 - Implement item-content repair as a separate runtime slice after Task 295:
   `effective_item_patch` changes effective renderer input only and must not
   mutate source IR or answer-key provenance.
-- Preserve Task 303's completed `unkeyed_manual_qti_2_1_v1` profile:
-  teacher `accept_current_state_for_export` may enable QTI only when the
-  selected QTI package is schema-valid, profile-valid, target-valid, free of
-  unsupported resources, and marked with vendor-unproven Exam.net import proof
-  until a live vendor test path exists. The profile preserves visible content
-  without claiming automatic evaluation when trusted machine-marked keys are
-  absent.
-- Treat Exam.net PDF accepted-current-state as a separate governed target
-  profile. Task 303 does not make PDF exportable. Until Task 308 defines and
-  validates a PDF manual/unkeyed profile, Sir Convert must keep PDF disabled
-  when accepted-current-state cannot preserve the visible item shape without
-  trusted keys. Task 308 must support user-requested PDF rendering for
-  missing-key single-choice, missing-key multiple-response, and item-013-style
-  multi-gap gap/open-cloze items through native PDF-to-exam shapes when proven
-  or degraded manual/free-text shapes when native import is unproven.
+- Task 337 supersedes Task 303/308 accepted-current-state export behavior for
+  authoring/correction replay. Missing answer keys remain missing until real
+  authoring corrections provide key state. Any future best-effort incomplete
+  QTI/PDF export must be an export-only request contract, not an overlay,
+  correction, source IR, or effective IR state.
 - Publish and snapshot the generated Sir Convert v2 OpenAPI contract so
   Skriptoteket can validate overlay/effective-IR/readiness integration before
   live Docker/service tests.

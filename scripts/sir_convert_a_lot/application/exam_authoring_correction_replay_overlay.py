@@ -26,7 +26,6 @@ from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_mode
     ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
     ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
     ExamAuthoringPointCorrectionV1,
-    ExamAuthoringReviewDecisionCorrectionV1,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import DIGIEXAM_IR_SCHEMA_VERSION
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
@@ -99,7 +98,6 @@ def _renderable_correction(correction: ExamAuthoringCorrectionEntryV1) -> bool:
             ExamAuthoringManualChoiceAnswerKeyCorrectionV1,
             ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1,
             ExamAuthoringPointCorrectionV1,
-            ExamAuthoringReviewDecisionCorrectionV1,
         ),
     )
 
@@ -165,13 +163,6 @@ def _apply_overlay_field(
             "max_score": correction.max_score,
         }
         return False
-    if isinstance(correction, ExamAuthoringReviewDecisionCorrectionV1):
-        payload["review_decision"] = {
-            "kind": correction.decision,
-            "decision_id": correction.decision_id,
-            "accepted_targets": list(correction.accepted_targets),
-            "note": correction.note,
-        }
     return False
 
 

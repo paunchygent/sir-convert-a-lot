@@ -26,7 +26,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DigiExamIntermediateExamSchemaVersion,
     IngestionOverlayReportSchemaVersion,
 )
-from scripts.sir_convert_a_lot.domain.specs_v2 import ExamMigrationTargetV2
 
 
 class DigiExamIngestionOverlayError(ValueError):
@@ -242,17 +241,6 @@ DigiExamOverlayEffectiveItemPatch = Annotated[
 ]
 
 
-class DigiExamOverlayReviewDecision(BaseModel):
-    """Teacher review decision that never creates answer-key evidence."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    kind: Literal["accept_current_state_for_export"]
-    decision_id: str = Field(min_length=1, max_length=120)
-    accepted_targets: tuple[ExamMigrationTargetV2, ...] = Field(min_length=1)
-    note: str | None = Field(default=None, max_length=500)
-
-
 class DigiExamOverlayPointCorrection(BaseModel):
     """Bounded item point correction applied only to effective renderer input."""
 
@@ -274,15 +262,12 @@ class DigiExamIngestionOverlayItem(BaseModel):
     effective_item_patch: DigiExamOverlayEffectiveItemPatch | None = None
     manual_answer_key: DigiExamOverlayManualAnswerKey | None = None
     reviewed_completion_answer_key: DigiExamOverlayReviewedCompletionAnswerKey | None = None
-    review_decision: DigiExamOverlayReviewDecision | None = None
     point_correction: DigiExamOverlayPointCorrection | None = None
 
     @model_validator(mode="after")
     def _validate_answer_key_source(self) -> Self:
         if self.manual_answer_key is not None and self.reviewed_completion_answer_key is not None:
             raise ValueError("manual_answer_key and reviewed_completion_answer_key are exclusive")
-        if self.review_decision is not None and self.reviewed_completion_answer_key is not None:
-            raise ValueError("review_decision and reviewed_completion_answer_key are exclusive")
         return self
 
 
@@ -313,16 +298,6 @@ class DigiExamIngestionOverlayRejectedEntry:
     sequence: int
     reason_code: str
     message: str
-
-
-@dataclass(frozen=True)
-class DigiExamEffectiveReviewDecision:
-    """Applied review decision surfaced in effective item reporting."""
-
-    kind: str
-    decision_id: str
-    accepted_targets: tuple[str, ...]
-    note: str | None
 
 
 @dataclass(frozen=True)
@@ -389,7 +364,6 @@ class DigiExamEffectiveItem:
     effective_item_patch: DigiExamEffectiveItemPatchSummary | None
     effective_point_correction: DigiExamEffectivePointCorrection | None
     applied_overlay_entry_ids: tuple[str, ...]
-    review_decisions: tuple[DigiExamEffectiveReviewDecision, ...]
 
 
 @dataclass(frozen=True)
@@ -424,7 +398,6 @@ class DigiExamOverlayApplicationResult:
     effective_exam_report: DigiExamEffectiveExam
     ingestion_overlay_report: DigiExamIngestionOverlayReport
     renderer_input_changed: bool
-    accepted_review_decisions: tuple[tuple[str, ExamMigrationTargetV2], ...]
 
 
 def _reject_embedded_resources(value: str) -> None:

@@ -4,7 +4,7 @@ id: REF-exam-converter-solid-domain-coupling-audit
 title: Exam Converter SOLID Domain Coupling Audit
 status: active
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-20
 owners:
   - platform
 tags:
@@ -41,12 +41,31 @@ with implementation mechanics so that adding a new item type, target, source
 family, provenance state, or provider output policy requires edits across
 unrelated functions.
 
+The core separation rule for the exam converter is:
+
+```text
+source parser/source IR/effective IR -> target policy/validator -> exporter
+```
+
+Exporters and target policies consume IR state, but they must not own or mutate
+IR state. Source IR owns source structure and provenance. Effective IR owns
+accepted authoring corrections such as manual answer keys, reviewed completion,
+item text changes, point corrections, and gap/choice corrections. Target/export
+policy owns layout, target support, warning semantics, artifact availability,
+and target-readiness interpretation.
+
+Incomplete export is not exam state. Historical runtime behavior encoded
+best-effort export as an authoring/correction-shaped decision. Task 337 removes
+that coupling. If incomplete export is approved again later, it must enter as
+export-only request context consumed by the relevant target policy, not as
+parser IR, effective IR, ingestion overlay, or correction replay state.
+
 The smell is stronger when one function decides several of these at once:
 
 - item-type support;
 - target/export capability;
 - answer-key trust or missing-key policy;
-- accepted-current-state behavior;
+- incomplete-export request policy;
 - teacher action or target-readiness reason codes;
 - source-evidence family or provenance mapping;
 - provider/request output mode; and
@@ -73,19 +92,28 @@ Evidence:
 
 - `_render_item` dispatches on `DigiExamItemType` and also decides unsupported
   target-shape warnings.
-- Choice, multiple-response, and gap-fill helpers each mix answer-key
-  provenance checks, accepted-current-state manual/unkeyed behavior, target
-  support, warning construction, and HTML assembly.
+- Choice, multiple-response, and gap-fill helpers historically mixed
+  answer-key provenance checks, target support, warning construction, and HTML
+  assembly. Task 337 removes the historical export-unlock branch from current
+  runtime, but the remaining target policy and formatting concerns still need
+  strategy extraction.
 - Adding a new PDF target item profile would currently widen the same branch
   ladder and likely duplicate trust/manual-follow-up policy.
 
 Refactor direction:
 
 - Introduce an Exam.net PDF item rendering strategy/protocol selected by item
-  kind and target profile.
+  semantics and target profile.
 - Keep HTML escaping/shell helpers local and pure.
-- Move support, answer-key trust, accepted-current-state, and warning semantics
+- Move support, answer-key trust, target-profile support, and warning semantics
   into strategy objects.
+- Keep the core PDF item protocol target-agnostic. Exam.net-specific target
+  shaping, including gap/open-cloze free-text-style presentation, must live in
+  the Exam.net PDF profile/extension and preserve source/effective provenance
+  through labels, warnings, and manual-follow-up state.
+- Keep renderer strategies read-only with respect to source IR and effective IR;
+  their output is target sections, target warnings, and PDF-ready layout state,
+  not parser/source/effective-IR state.
 
 Governed follow-up: Task 315.
 
@@ -103,15 +131,18 @@ Evidence:
 
 - `_rows_for_target` branches over artifact availability, raw
   `unavailable_code` strings, target name, missing answer-key item IDs,
-  accepted review item IDs, teacher action, retryability, and localized message
-  keys.
+  teacher action, retryability, and localized message keys.
 - `_unsupported_gap_open_cloze_rows` special-cases the Exam.net PDF target in
-  the readiness builder rather than in a target profile.
-- `_accepted_current_state_reason_code` maps target names directly to reason
-  strings.
+  the readiness builder rather than in a target profile. This keeps PDF
+  gap/open-cloze support policy in the generic readiness assembler.
+- Missing-key rows are assembled from source IR manual-follow-up reasons plus
+  artifact unavailability state. That is the right semantic layer after Task
+  337, but it is still encoded as a target-string branch instead of a typed
+  target-readiness policy.
 - The bundle builder has target-specific assembly branches. That is acceptable
   orchestration today, but readiness policy must not keep growing around target
-  strings when more targets or accepted-current-state profiles are added.
+  strings when more targets, missing-key policies, or future export-only
+  incomplete-output requests are added.
 
 Refactor direction:
 
@@ -119,8 +150,8 @@ Refactor direction:
   `DigiExamTargetReadinessRow` decisions from artifact state and item context.
 - Replace raw unavailable-code string checks with typed unavailable reasons or
   a method on artifact entries.
-- Move accepted-current-state reason codes and unsupported target-shape
-  decisions into target profiles.
+- Move missing-key, unsupported target-shape, and future export-only incomplete
+  output decisions into target profiles.
 
 Governed follow-up: Task 316.
 
@@ -197,7 +228,7 @@ Rationale:
 
 - QTI item-type dispatch is currently small and target-specific.
 - It should become a strategy boundary if QTI expands to more item types,
-  accepted-current-state profiles, matching, gaps, or alternate Exam.net
+  incomplete-export profiles, matching, gaps, or alternate Exam.net
   import profiles.
 
 ### Bundle Target Assembly
@@ -215,7 +246,7 @@ Rationale:
 
 - Target-specific artifact calls can remain in bundle orchestration while the
   target set is small.
-- If target policy, readiness, or accepted-current-state semantics remain in
+- If target policy, readiness, or incomplete-export semantics remain in
   the builder, split target artifact builders behind a registry.
 
 ## Non-Findings
@@ -246,8 +277,8 @@ renderer, readiness, or source-evidence decisions outside that boundary.
 ## Priority Order
 
 1. Task 315: PDF item rendering policy extraction. Highest near-term risk
-   because accepted-current-state and target support are already mixed into
-   renderer assembly.
+   because answer-key trust, target support, and warning construction are still
+   mixed into renderer assembly.
 1. Task 316: target-readiness policy extraction. High consumer-contract risk
    because Skriptoteket enables actions from these rows.
 1. Task 317: answer-key eligibility/output-mode and source-evidence mapping

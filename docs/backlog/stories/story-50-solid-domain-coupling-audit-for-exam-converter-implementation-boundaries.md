@@ -45,6 +45,16 @@ of being appended to a completed answer-key task.
   branches are findings when domain policy, target capability, provenance, or
   implementation construction are entangled so that adding a new item type,
   source family, target, or output mode changes several unrelated functions.
+- Treat export policy as a consumer of IR/effective-IR state, never as an owner
+  of IR state. Target renderers may read item semantics, provenance, accepted
+  authoring corrections, and target-readiness inputs, but layout, target
+  support, warning wording, artifact availability, and degraded/manual export
+  choices must stay outside parser/source/effective-IR contracts.
+- Treat `accept_current_state_for_export` as historical/current runtime behavior
+  slated for removal from authoring/correction state by Task 337. Future
+  incomplete or best-effort export, if approved, must be represented as
+  target-specific export request policy, not as source IR, effective IR,
+  ingestion overlay, or correction replay state.
 - Document the first audit pass in a reference doc with explicit code evidence,
   priority, non-findings, and recommended protocol or strategy boundaries.
 - Refactor high-priority hotspots only through follow-up PR-sized tasks.
@@ -61,6 +71,12 @@ of being appended to a completed answer-key task.
   the mere existence of an `if` statement.
 - [x] Follow-up tasks are split by refactor boundary rather than grouped under
   one broad cleanup bucket.
+- [ ] Task 315 is the next governed PDF-layout decoupling slice and preserves
+  the boundary that export concerns consume IR state without changing, owning,
+  or serializing IR/effective-IR state semantics. It must not re-home
+  accepted-current-state authoring/correction behavior inside PDF strategies
+  except as deleted/historical behavior until a future export-only request
+  contract exists.
 - [ ] Exam.net PDF item rendering policy is protocol/strategy-driven instead
   of centralized in an item-type branch ladder.
 - [ ] Target readiness rows are built from typed readiness decisions rather
@@ -71,8 +87,13 @@ of being appended to a completed answer-key task.
 ## Test Requirements
 
 - [x] Audit docs validate through the normal docs-as-code gates.
-- [ ] PDF renderer tests prove existing rendered output, warnings, and
-  accepted-current-state behavior are unchanged after policy extraction.
+- [ ] PDF renderer tests prove existing post-Task-337 rendered output,
+  warnings, missing-key blockers, and unsupported-item behavior are unchanged
+  after policy extraction.
+- [ ] PDF renderer strategy tests prove Exam.net target reshaping is isolated
+  from the core PDF item protocol and does not mutate source/effective item
+  semantics, even when gap/open-cloze items are presented in a target-compatible
+  free-text-style shape.
 - [ ] Target-readiness tests prove artifact availability, item-specific
   readiness rows, accepted-current-state rows, and unsupported-target-shape
   rows are unchanged after policy extraction.
