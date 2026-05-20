@@ -46,6 +46,7 @@ def write_examnet_qti_artifacts(
     output_dir: Path,
     package_filename: str = "qti-package.zip",
     report_filename: str = "qti-validation-report.json",
+    report_package_filename: str | None = None,
 ) -> ExamNetQtiWrittenArtifacts:
     """Write a QTI package, when available, and its validation report."""
 
@@ -59,7 +60,7 @@ def write_examnet_qti_artifacts(
 
     report = build_examnet_qti_validation_report(
         plan=plan,
-        package_filename=package_filename,
+        package_filename=report_package_filename or package_filename,
         package_bytes=package_bytes,
     )
     report_path = output_dir / report_filename

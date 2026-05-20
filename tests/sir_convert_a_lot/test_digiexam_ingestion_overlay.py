@@ -452,9 +452,7 @@ def test_teacher_overlay_rejects_legacy_review_decision_payload() -> None:
 
     with pytest.raises(DigiExamIngestionOverlayError) as error_info:
         parse_and_apply_digiexam_ingestion_overlay(
-            overlay_bytes=_review_decision_overlay_bytes(
-                source_item_fingerprint(exam.items[0])
-            ),
+            overlay_bytes=_review_decision_overlay_bytes(source_item_fingerprint(exam.items[0])),
             source_file_sha256="sha256:file",
             source_ir_sha256="sha256:ir",
             source_exam=exam,

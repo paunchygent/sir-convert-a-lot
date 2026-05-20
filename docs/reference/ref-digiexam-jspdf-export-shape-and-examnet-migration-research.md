@@ -239,7 +239,6 @@ Do not generate:
 Fråga {number}
 Points: {points}
 Type: Multiple choice
-Choose one answer
 {prompt}
     {option_1}
     {option_2}
@@ -264,7 +263,6 @@ unattended bulk import until `Flera val` can be forced off or reliably checked.
 Fråga {number}
 Points: {points}
 Type: Multiple response
-Choose all correct answers
 {prompt}
     {option_1}
     {option_2}
@@ -318,7 +316,6 @@ Fråga {number}
 Points: {points}
 Type: Free text
 {prompt}
-{student_writing_instruction}
 ```
 
 Swedish-friendly score and type variant:
@@ -328,7 +325,6 @@ Fråga {number}
 Poängvärde: {points}
 Typ: Fritext
 {prompt}
-{student_writing_instruction}
 ```
 
 Sidecar-only rubric shape:

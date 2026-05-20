@@ -484,8 +484,8 @@ missing-key multiple-response, and item-013-style multi-gap gap/open-cloze items
 remain blocked until real source, manual, or reviewed effective key state
 exists.
 Task 321 adds the reviewed-key correction: when accepted gap/open-cloze values
-exist, the PDF free-text-style artifact must include those values, and this
-missing-key fallback must not be used to drop reviewed keys.
+exist, the PDF artifact must include those values, and this missing-key
+fallback must not be used to drop reviewed keys.
 
 Task 303 is QTI-only. It proves that missing keys can become
 manual/unkeyed QTI when XML/package/profile validation allows it. It does not
@@ -504,9 +504,8 @@ Checklist:
 - [ ] Use item-013 as the regression case for a five-blank `Lucktext` item
   with an embedded image and no accepted blank values.
 - [ ] Promote native multi-gap `Lucktext` PDF rendering if fixture proof
-  validates the shape; otherwise render a governed degraded manual/free-text
-  PDF shape that preserves prompt text, blanks, embedded images, order, and
-  manual-follow-up state.
+  validates the shape; otherwise block the current profile until a governed
+  provenance-preserving degraded target shape is approved.
 - [ ] Fix warning/readiness precedence so item-specific multi-gap limitations
   are not masked by the first `manual_answer_key_required` warning or confused
   with fatal target unavailability when degraded rendering succeeds.
@@ -515,8 +514,8 @@ Stop conditions:
 
 - Stop if PDF output would drop visible prompt text, alternatives, gaps,
   embedded images, or manual follow-up semantics.
-- Stop if neither native nor degraded manual/free-text rendering can preserve
-  the item content requested for PDF export.
+- Stop if no governed provenance-preserving rendering can preserve the item
+  content requested for PDF export.
 - Stop if the profile would invent answers or source provenance.
 
 ### PR-0331 reviewed-key target fallback purge
@@ -528,8 +527,7 @@ Goal: prevent target-specific QTI/PDF fallbacks from removing reviewed,
 teacher-provided, or source-provided keys after those keys reach effective
 renderer input. QTI package availability must fail closed when items are
 omitted or still missing required accepted values; reviewed gap/open-cloze
-values must be emitted in keyed QTI text-entry responses and in PDF
-free-text-style artifacts.
+values must be emitted in keyed QTI text-entry responses and in PDF artifacts.
 
 - Stop if public JSON shape changes without OpenAPI snapshot and same-slice
   consumer impact planning.

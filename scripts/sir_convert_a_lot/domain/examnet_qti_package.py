@@ -87,7 +87,8 @@ def build_examnet_qti_package_plan(
         image_files_by_item_id[item.item_id] = image_files
 
     manifest = _manifest_file(
-        item_files=tuple(item_files), image_files_by_item_id=image_files_by_item_id
+        item_files=tuple(item_files),
+        image_files_by_item_id=image_files_by_item_id,
     )
     files = tuple(
         sorted(

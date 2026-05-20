@@ -71,13 +71,13 @@ of being appended to a completed answer-key task.
   the mere existence of an `if` statement.
 - [x] Follow-up tasks are split by refactor boundary rather than grouped under
   one broad cleanup bucket.
-- [ ] Task 315 is the next governed PDF-layout decoupling slice and preserves
+- [x] Task 315 is the next governed PDF-layout decoupling slice and preserves
   the boundary that export concerns consume IR state without changing, owning,
   or serializing IR/effective-IR state semantics. It must not re-home
   accepted-current-state authoring/correction behavior inside PDF strategies
   except as deleted/historical behavior until a future export-only request
   contract exists.
-- [ ] Exam.net PDF item rendering policy is protocol/strategy-driven instead
+- [x] Exam.net PDF item rendering policy is protocol/strategy-driven instead
   of centralized in an item-type branch ladder.
 - [ ] Target readiness rows are built from typed readiness decisions rather
   than artifact availability strings and target-name branches.
@@ -87,16 +87,16 @@ of being appended to a completed answer-key task.
 ## Test Requirements
 
 - [x] Audit docs validate through the normal docs-as-code gates.
-- [ ] PDF renderer tests prove existing post-Task-337 rendered output,
+- [x] PDF renderer tests prove existing post-Task-337 rendered output,
   warnings, missing-key blockers, and unsupported-item behavior are unchanged
   after policy extraction.
-- [ ] PDF renderer strategy tests prove Exam.net target reshaping is isolated
+- [x] PDF renderer strategy tests prove Exam.net target reshaping is isolated
   from the core PDF item protocol and does not mutate source/effective item
-  semantics, even when gap/open-cloze items are presented in a target-compatible
-  free-text-style shape.
+  semantics. Current Exam.net PDF output must not label open-cloze/`Lucktext`
+  items as `Fritext`.
 - [ ] Target-readiness tests prove artifact availability, item-specific
-  readiness rows, accepted-current-state rows, and unsupported-target-shape
-  rows are unchanged after policy extraction.
+  readiness rows, removed accepted-current-state rows, and
+  unsupported-target-shape rows are unchanged after policy extraction.
 - [ ] Answer-key manifest and source-evidence tests prove no eligibility,
   output-mode, provenance, or manual-follow-up semantics drift.
 

@@ -38,6 +38,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
 from scripts.sir_convert_a_lot.domain.exam_authoring_gap_contracts import (
     validate_examnet_pdf_gap_open_cloze_profile,
 )
+
 GAP_OPEN_CLOZE_TARGET_CHOICE_TEACHER_ACTION: Final = (
     "choose_degraded_manual_free_text_or_omit_or_manual_recreation"
 )

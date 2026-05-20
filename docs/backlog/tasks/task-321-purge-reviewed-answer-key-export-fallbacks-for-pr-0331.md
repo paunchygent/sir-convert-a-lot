@@ -48,11 +48,12 @@ accepted keys.
   values.
 - Keep QTI package download unavailable when any source item is omitted,
   unsupported, or still missing required accepted values.
-- Render keyed PDF gap/open-cloze items as Exam.net PDF free-text items with
-  accepted values included for every gap.
+- Render keyed PDF gap/open-cloze items as Exam.net PDF `Lucktext` items with
+  accepted values included for every gap; do not relabel `Lucktext` as
+  `Fritext`.
 - Remove internal diagnostic wording from user-facing PDF artifacts.
-- Keep accepted-current-state/manual-unkeyed fallbacks only where a teacher
-  explicitly sends that review decision and no trusted key exists.
+- Superseded by Task 337: remove accepted-current-state/manual-unkeyed export
+  fallbacks from current authoring/correction replay.
 - Document every remaining degraded-output fallback and why it is allowed.
 
 ## Definitions
@@ -87,13 +88,13 @@ accepted keys.
 
 | Surface | Branch | Decision | Defense |
 | --- | --- | --- | --- |
-| QTI choice with missing key and explicit accepted current state | Manual/unkeyed choice interaction, no `correctResponse` or automatic `responseProcessing` | Keep | This is a teacher review decision that preserves visible alternatives while making no key claim. It is not used for reviewed/accepted key application. |
+| Historical QTI choice with missing key and explicit accepted current state | Manual/unkeyed choice interaction, no `correctResponse` or automatic `responseProcessing` | Superseded by Task 337 | Current missing-key QTI export remains blocked until real reviewed/source/teacher key corrections are supplied. |
 | QTI gap/open-cloze with reviewed/source/teacher accepted values | `textEntryInteraction` with per-gap response declarations, correct response, and value mappings | Fix and keep keyed | Accepted values are first-class keys and must be emitted. The local package/report marks live Exam.net import status as `examnet_proof_status: not_proven` and `target_support_status: proof_gated` for gap-fill, but that status does not block package generation when local QTI validation passes. |
-| QTI gap/open-cloze with missing key and explicit accepted current state | Manual/free-text preservation | Keep | This preserves visible content only after an explicit accepted-current-state decision. It carries manual follow-up and no key/evaluation claim. |
+| Historical QTI gap/open-cloze with missing key and explicit accepted current state | Manual/free-text preservation | Superseded by Task 337 | Current missing-key QTI export remains blocked until real reviewed/source/teacher key corrections are supplied. |
 | QTI item omitted by the DigiExam adapter | Previously a partial package could still be offered | Remove | A package that silently drops source items is a degraded product outcome. The package is now unavailable with item-level follow-up. |
 | QTI validation failure | Failed artifact with `qti_validation_failed` | Keep as failure | This does not accept degraded output; it blocks download until package validation passes. |
 | QTI unsupported resources | Resource omitted with item-addressable manual follow-up | Keep | Only target-unsupported resources are omitted. The item remains visible, the omission is explicit, and the report carries the manual action. |
-| PDF choice with missing key and explicit accepted current state | Free-text/manual rendering with visible alternatives and no key claim | Keep | This is a teacher review decision for export without trusted key data. It is not an approve-AI-suggestion path. |
+| Historical PDF choice with missing key and explicit accepted current state | Free-text/manual rendering with visible alternatives and no key claim | Superseded by Task 337 | Current missing-key PDF export remains blocked until real reviewed/source/teacher key corrections are supplied. |
 | PDF gap/open-cloze with reviewed/source/teacher accepted values | Free-text-style PDF item with accepted values included | Fix and keep keyed | PDF may use a free-text target shape for gaps, but accepted key values must be present in the artifact. |
 | PDF gap/open-cloze with missing key and explicit accepted current state | Free-text/manual rendering preserving blanks/media/order and no accepted-value claim | Keep | This is the Task 308 content-preserving fallback. It is explicit, reported, and only applies when no trusted key exists. |
 | PDF missing asset, empty prompt, invalid points, malformed key binding, or unsupported item type | Blocked/unavailable artifact | Keep as failure | These branches do not accept degraded output. They block artifact creation when the renderer cannot bind referenced assets, cannot produce visible prompt content, cannot assign points to automatically evaluated target items, cannot bind submitted keys to known source options/gaps, or has no governed target renderer for the item type. |

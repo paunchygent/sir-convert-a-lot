@@ -77,12 +77,8 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
     assert build_obj.get("dockerfile") == "Dockerfile.local"
     assert build_obj.get("args") == {
         "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-cpu:local}",
-        "SIR_CONVERT_A_LOT_EXPECTED_REVISION": (
-            "${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}"
-        ),
-        "SIR_CONVERT_A_LOT_SERVICE_REVISION": (
-            "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}"
-        ),
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION": ("${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}"),
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION": ("${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}"),
     }
 
     env_map = _service_env_map(service)

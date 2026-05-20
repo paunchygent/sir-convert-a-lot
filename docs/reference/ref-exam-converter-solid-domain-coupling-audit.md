@@ -108,9 +108,9 @@ Refactor direction:
 - Move support, answer-key trust, target-profile support, and warning semantics
   into strategy objects.
 - Keep the core PDF item protocol target-agnostic. Exam.net-specific target
-  shaping, including gap/open-cloze free-text-style presentation, must live in
-  the Exam.net PDF profile/extension and preserve source/effective provenance
-  through labels, warnings, and manual-follow-up state.
+  shaping must live in the Exam.net PDF profile/extension and preserve
+  source/effective provenance through labels, warnings, and manual-follow-up
+  state. The current profile must not label open-cloze/`Lucktext` as `Fritext`.
 - Keep renderer strategies read-only with respect to source IR and effective IR;
   their output is target sections, target warnings, and PDF-ready layout state,
   not parser/source/effective-IR state.

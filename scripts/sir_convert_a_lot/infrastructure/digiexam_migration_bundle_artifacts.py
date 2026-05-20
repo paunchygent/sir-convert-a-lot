@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Literal
 
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
+    ARTIFACT_DEFINITIONS,
     DigiExamMigrationArtifactAvailability,
     DigiExamMigrationArtifactKey,
 )
@@ -29,6 +30,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 )
 from scripts.sir_convert_a_lot.infrastructure.correction_replay_artifact_writer import (
     resolve_exam_authoring_correction_replay_artifact,
+)
+from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
+    public_artifact_filename,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
@@ -78,7 +82,10 @@ def resolve_digiexam_migration_artifact(
         return ResolvedDigiExamMigrationArtifact(
             path=job.artifact_path,
             content_type="application/json",
-            filename=job.artifact_path.name,
+            filename=public_artifact_filename(
+                job=job,
+                key=DigiExamMigrationArtifactKey.BUNDLE_MANIFEST,
+            ),
         )
 
     manifest = _load_manifest(job.artifact_path)
@@ -169,11 +176,15 @@ def _resolve_entry(
                 "availability": str(availability),
             },
         )
+    artifact_key_value = entry.get("artifact_key")
+    if not isinstance(artifact_key_value, str):
+        raise _invalid_manifest_error()
+    artifact_key = _normalize_artifact_key(artifact_key_value)
     filename = entry.get("filename")
     content_type = entry.get("content_type")
     if not isinstance(filename, str) or not isinstance(content_type, str):
         raise _invalid_manifest_error()
-    artifact_path = job.artifact_path.parent / filename
+    artifact_path = job.artifact_path.parent / ARTIFACT_DEFINITIONS[artifact_key].filename
     if not artifact_path.exists():
         raise ServiceError(
             status_code=500,

@@ -1,8 +1,8 @@
 """DigiExam migration artifact-bundle domain contract.
 
 Purpose:
-    Define deterministic artifact keys, filenames, availability states, and
-    manifest value objects for the DigiExam-to-Exam.net service route.
+    Define deterministic artifact keys, storage filenames, availability states,
+    and manifest value objects for the DigiExam-to-Exam.net service route.
 
 Relationships:
     - Produced by `infrastructure.digiexam_migration_bundle_builder`.
@@ -57,7 +57,7 @@ class DigiExamMigrationBundleStatus(StrEnum):
 
 @dataclass(frozen=True)
 class DigiExamMigrationArtifactDefinition:
-    """Static deterministic artifact identity."""
+    """Static deterministic artifact identity and storage filename."""
 
     artifact_key: DigiExamMigrationArtifactKey
     filename: str

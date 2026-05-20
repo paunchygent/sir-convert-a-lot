@@ -1014,7 +1014,7 @@ The canonical bundle manifest schema version is
   "artifacts": [
     {
       "artifact_key": "examnet_pdf",
-      "filename": "examnet-import.pdf",
+      "filename": "exam.pdf",
       "content_type": "application/pdf",
       "availability": "available",
       "size_bytes": 48192,
@@ -1023,7 +1023,7 @@ The canonical bundle manifest schema version is
     },
     {
       "artifact_key": "qti_package",
-      "filename": "qti-package.zip",
+      "filename": "exam.zip",
       "content_type": "application/zip",
       "availability": "available",
       "size_bytes": 8124,
@@ -1032,7 +1032,7 @@ The canonical bundle manifest schema version is
     },
     {
       "artifact_key": "qti_validation_report",
-      "filename": "qti-validation-report.json",
+      "filename": "exam-qti-validation-report.json",
       "content_type": "application/json",
       "availability": "available",
       "size_bytes": 2048,
@@ -1066,7 +1066,7 @@ The canonical bundle manifest schema version is
 Every artifact entry MUST include:
 
 - `artifact_key`
-- deterministic `filename`
+- deterministic public `filename` from the artifact-key definition
 - `content_type`
 - `availability`
 - `size_bytes` when available
@@ -1092,25 +1092,29 @@ unavailable-artifact error.
 
 ### Required Bundle Entries
 
-| Artifact key | Filename | Content type | Availability rules |
+| Artifact key | Public filename pattern | Content type | Availability rules |
 | --- | --- | --- | --- |
-| `bundle_manifest` | `artifact-bundle.json` | `application/json` | Always available for terminal bundles. |
-| `examnet_pdf` | `examnet-import.pdf` | `application/pdf` | Available when the Exam.net PDF renderer carries all required content and assets. Blocked when target shape is unsupported. |
-| `qti_package` | `qti-package.zip` | `application/zip` | Available when the Task 280 QTI package generator passes the governed local profile. Blocked when local validation fails, when adapter mapping cannot represent all source items, or when required accepted values are missing. Live Exam.net import proof state is reported separately. |
-| `qti_validation_report` | `qti-validation-report.json` | `application/json` | Present when QTI generation is requested or defaulted. Task 280 defines `examnet_qti_validation_report_v1`; Task 282 service bundles expose this report as a named artifact. |
-| `ir_json` | `digiexam-ir.json` | `application/json` | Available when `.dxe` parsing reaches IR generation. May include teacher-owned embedded asset payloads required by renderers. |
-| `effective_ir_json` | `digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
-| `migration_manifest` | `migration-manifest.json` | `application/json` | Available when IR manifest generation succeeds. Must not embed raw asset payloads or result-PDF private data. |
-| `target_readiness_report` | `target-readiness-report.json` | `application/json` | Always available for terminal v2 bundles. It is the consumer authority for enabling PDF/QTI export actions. |
-| `ingestion_overlay_report` | `ingestion-overlay-report.json` | `application/json` | Available when an overlay is submitted. Summarizes accepted/rejected overlay entries without exposing raw overlay JSON. |
-| `answer_key_completion_report` | `answer-key-completion-report.json` | `application/json` | Available for advisory `local_llm_suggest_missing_machine_marked`. Not requested for reviewed apply mode in this slice; reviewed apply consumes submitted bounded lineage and must not call the provider. |
-| `manual_follow_up_report` | `manual-follow-up.md` | `text/markdown; charset=utf-8` | Always available for terminal bundles. Empty or review-only when no action is required. |
-| `warnings_report` | `warnings.json` | `application/json` | Always available for terminal bundles. Empty list when there are no warnings. |
-| `asset_summary` | `asset-summary.json` | `application/json` | Always available for terminal bundles. Must contain hashes and metadata only, not raw base64 payloads. |
+| `bundle_manifest` | `<source-stem>-artifact-bundle.json` | `application/json` | Always available for terminal bundles. |
+| `examnet_pdf` | `<source-stem>.pdf` | `application/pdf` | Available when the Exam.net PDF renderer carries all required content and assets. Blocked when target shape is unsupported. |
+| `qti_package` | `<source-stem>.zip` | `application/zip` | Available when the Task 280 QTI package generator passes the governed local profile. Blocked when local validation fails, when adapter mapping cannot represent all source items, or when required accepted values are missing. Live Exam.net import proof state is reported separately. |
+| `qti_validation_report` | `<source-stem>-qti-validation-report.json` | `application/json` | Present when QTI generation is requested or defaulted. Task 280 defines `examnet_qti_validation_report_v1`; Task 282 service bundles expose this report as a named artifact. |
+| `ir_json` | `<source-stem>-digiexam-ir.json` | `application/json` | Available when `.dxe` parsing reaches IR generation. May include teacher-owned embedded asset payloads required by renderers. |
+| `effective_ir_json` | `<source-stem>-digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
+| `migration_manifest` | `<source-stem>-migration-manifest.json` | `application/json` | Available when IR manifest generation succeeds. Must not embed raw asset payloads or result-PDF private data. |
+| `target_readiness_report` | `<source-stem>-target-readiness-report.json` | `application/json` | Always available for terminal v2 bundles. It is the consumer authority for enabling PDF/QTI export actions. |
+| `ingestion_overlay_report` | `<source-stem>-ingestion-overlay-report.json` | `application/json` | Available when an overlay is submitted. Summarizes accepted/rejected overlay entries without exposing raw overlay JSON. |
+| `answer_key_completion_report` | `<source-stem>-answer-key-completion-report.json` | `application/json` | Available for advisory `local_llm_suggest_missing_machine_marked`. Not requested for reviewed apply mode in this slice; reviewed apply consumes submitted bounded lineage and must not call the provider. |
+| `manual_follow_up_report` | `<source-stem>-manual-follow-up.md` | `text/markdown; charset=utf-8` | Always available for terminal bundles. Empty or review-only when no action is required. |
+| `warnings_report` | `<source-stem>-warnings.json` | `application/json` | Always available for terminal bundles. Empty list when there are no warnings. |
+| `asset_summary` | `<source-stem>-asset-summary.json` | `application/json` | Always available for terminal bundles. Must contain hashes and metadata only, not raw base64 payloads. |
 
-Deterministic filenames are fixed per artifact key. Display names and saved
-filenames in Skriptoteket may add teacher-facing context, but the Sir Convert
-bundle filenames remain stable for conformance tests.
+Public filenames preserve the uploaded source filename stem so Skriptoteket and
+other callers can present downloadable artifacts with the teacher's original
+source name. Internal storage filenames remain fixed per artifact key for
+deterministic service operation. The QTI ZIP public filename is also recorded
+in `qti_validation_report.package_filename`; QTI package files such as
+`imsmanifest.xml` and `items/*.xml` remain at archive root to preserve the
+governed local QTI package profile.
 
 ### Named Artifact Endpoints
 
@@ -1312,10 +1316,11 @@ Gap/open-cloze readiness rows consume the Task 305
 `ExamAuthoringGapOpenClozeInteraction` semantics. Missing accepted values on
 required gaps mean the item is structurally valid but not automatically
 evaluable. When accepted values exist, target proof gaps must not remove them
-from the generated artifacts. Exam.net PDF may render gap/open-cloze as a
-free-text-style item, but the accepted values must be included. Exam.net QTI may
-remain live-import proof-gated, but the package must still carry the keyed
-text-entry responses when local QTI generation succeeds.
+from the generated artifacts. Exam.net PDF must not relabel gap/open-cloze as
+`Fritext` in the current profile; accepted values must be included under the
+gap/open-cloze target shape. Exam.net QTI may remain live-import proof-gated,
+but the package must still carry the keyed text-entry responses when local QTI
+generation succeeds.
 
 Unsupported native target export, such as unproven native multi-gap Exam.net
 PDF import, is reported as a native-target limitation only for the native target
@@ -1339,10 +1344,12 @@ and a multi-gap `Lucktext` shape without a promoted native Exam.net PDF target,
 Sir Convert must not let artifact-level first-warning selection hide the
 item-specific native target limitation. The artifact entry may expose one
 `unavailable_code`, but `target_readiness_report_v1` must preserve actionable
-item reasons and degraded/manual mode warnings so Skriptoteket does not display
-a generic accepted-current-state blocker for item-013-style cases. A native
-multi-gap limitation is not fatal when the degraded PDF profile preserves the
-prompt, blanks, embedded image, ordering, and manual-follow-up state.
+item reasons so Skriptoteket does not display a generic missing-key blocker for
+item-013-style cases. Missing-key PDF/QTI export remains blocked until real
+reviewed/source/teacher key corrections are supplied; any future incomplete or
+best-effort export must enter through a governed export-only request policy,
+not through source IR, effective IR, ingestion overlays, correction replay, or
+target-readiness unlocks.
 
 ## Skriptoteket Adapter Contract
 
@@ -1481,7 +1488,7 @@ curl -sS "${SIR_BASE_URL}/v2/convert/jobs/job_123/artifacts" \
 curl -sS "${SIR_BASE_URL}/v2/convert/jobs/job_123/artifacts/examnet_pdf" \
   -H "X-API-Key: ${SIR_CONVERT_A_LOT_V2_API_KEY}" \
   -H "X-Correlation-ID: corr_skriptoteket_digiexam_001" \
-  -o examnet-import.pdf
+  -o exam.pdf
 ```
 
 Skriptoteket save-to-user-files is a consumer-owned action using the downloaded
@@ -1499,7 +1506,7 @@ file metadata.
   "artifacts": [
     {
       "artifact_key": "examnet_pdf",
-      "filename": "examnet-import.pdf",
+      "filename": "exam.pdf",
       "content_type": "application/pdf",
       "availability": "unavailable",
       "unavailable_code": "unsupported_target_shape",
@@ -1530,7 +1537,7 @@ for:
   optional parity PDF, unsupported companions, and payload-size limits;
 - idempotency replay across `.dxe` and companion-file digests;
 - owner-scoped job, result, artifact-list, and named artifact reads;
-- terminal bundle manifest entries with deterministic filenames, content
+- terminal bundle manifest entries with deterministic public filenames, content
   types, sizes, hashes, retention, and availability states;
 - absence of forbidden result-PDF data from API responses, logs intended for
   product consumption, IR, manifests, and reports;

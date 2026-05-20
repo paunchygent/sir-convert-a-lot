@@ -22,6 +22,7 @@ import pymupdf
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
     DigiExamAnswerKeyProvenance,
     DigiExamGapAnswer,
+    DigiExamItemType,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf import (
@@ -31,10 +32,17 @@ from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_contracts import (
     DigiExamExamNetPdfStatus,
     DigiExamExamNetPdfWarningCode,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_examnet_pdf_items import (
+    render_examnet_pdf_items,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     DigiExamIntermediateExam,
     DigiExamIrAnswerKey,
     build_digiexam_intermediate_exam,
+)
+from scripts.sir_convert_a_lot.domain.examnet_pdf_item_strategies import (
+    ExamNetPdfItemLabelPolicy,
+    ExamNetPdfTargetProfileContext,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_examnet_pdf_renderer import (
     render_digiexam_examnet_pdf,
@@ -57,16 +65,17 @@ def test_examnet_pdf_document_uses_promoted_converter_shape_without_option_label
     assert "Points:" not in document.html
     assert "Poängvärde: 2" in document.html
     assert "Typ: Fritext" in document.html
-    assert "Skriv ditt svar i Exam.net." in document.html
+    assert "Skriv ditt svar i Exam.net." not in document.html
     assert "Type: Multiple choice" in document.html
-    assert "Choose one answer" in document.html
+    assert "Choose one answer" not in document.html
     assert "<p>Alpha</p>" in document.html
     assert "<p>Beta</p>" in document.html
     assert "Correct answer: Beta" in document.html
     assert "Type: Multiple response" in document.html
-    assert "Choose all correct answers" in document.html
+    assert "Choose all correct answers" not in document.html
     assert "Correct answers: First; Third" in document.html
-    assert document.html.count("Typ: Fritext") == 2
+    assert document.html.count("Typ: Fritext") == 1
+    assert "Typ: Lucktext" in document.html
     assert "Type: Short answer" not in document.html
     assert "Correct answers: Stockholm; stockholm" in document.html
     assert "A. Alpha" not in document.html
@@ -110,7 +119,7 @@ def test_examnet_pdf_document_keeps_item_013_multigap_blocked_without_key() -> N
     }
 
 
-def test_examnet_pdf_document_keeps_reviewed_multigap_keys_in_free_text_shape() -> None:
+def test_examnet_pdf_document_keeps_reviewed_multigap_keys_in_lucktext_shape() -> None:
     exam = _item_013_exam()
     item = exam.items[0]
     answers = tuple(
@@ -130,7 +139,7 @@ def test_examnet_pdf_document_keeps_reviewed_multigap_keys_in_free_text_shape() 
     document = build_digiexam_examnet_pdf_document(keyed_exam)
 
     assert document.status == DigiExamExamNetPdfStatus.SUCCESS
-    assert "Typ: Fritext" in document.html
+    assert "Typ: Lucktext" in document.html
     assert "Type: Short answer" not in document.html
     assert "Correct answers:" in document.html
     assert "Lucka 1: facit 1" in document.html
@@ -139,6 +148,28 @@ def test_examnet_pdf_document_keeps_reviewed_multigap_keys_in_free_text_shape() 
     assert DigiExamExamNetPdfWarningCode.UNSUPPORTED_ITEM_TYPE not in {
         warning.code for warning in document.warnings
     }
+
+
+def test_examnet_pdf_target_profile_labels_do_not_mutate_ir_item_semantics() -> None:
+    exam = _exam_from_payload(_renderable_payload(), filename="profile-labels.dxe")
+    original_item = exam.items[0]
+    target_context = ExamNetPdfTargetProfileContext(
+        target_id="examnet_pdf",
+        profile_version="test-profile",
+        label_policy=ExamNetPdfItemLabelPolicy(free_text_type_label="Profile free text"),
+    )
+
+    result = render_examnet_pdf_items(
+        exam=replace(exam, items=(original_item,)),
+        asset_paths_by_reference={},
+        target_profile_context=target_context,
+    )
+
+    assert not result.warnings
+    assert result.items
+    assert "Typ: Profile free text" in result.items[0].html
+    assert exam.items[0].item_type == original_item.item_type
+    assert exam.items[0].answer_key == original_item.answer_key
 
 
 def test_examnet_pdf_document_blocks_source_labelled_options() -> None:
@@ -152,6 +183,23 @@ def test_examnet_pdf_document_blocks_source_labelled_options() -> None:
     assert DigiExamExamNetPdfWarningCode.OPTION_TEXT_LOOKS_LABELLED in {
         warning.code for warning in document.warnings
     }
+
+
+def test_examnet_pdf_document_preserves_unsupported_source_type_warning() -> None:
+    exam = _exam_from_payload(_renderable_payload(), filename="unsupported.dxe")
+    unsupported_exam = replace(
+        exam,
+        items=(replace(exam.items[0], item_type=DigiExamItemType.UNKNOWN),),
+    )
+
+    document = build_digiexam_examnet_pdf_document(unsupported_exam)
+
+    assert document.status == DigiExamExamNetPdfStatus.BLOCKED
+    assert [
+        warning.message
+        for warning in document.warnings
+        if warning.code == DigiExamExamNetPdfWarningCode.UNSUPPORTED_ITEM_TYPE
+    ] == ["Item type unknown has no governed Exam.net PDF-converter target shape yet."]
 
 
 def test_examnet_pdf_document_blocks_missing_embedded_asset_payload() -> None:
@@ -191,7 +239,7 @@ def test_live_examnet_pdf_renderer_generates_pdf_with_embedded_image(tmp_path: P
         assert "Fråga 1" in text
         assert "Poängvärde: 1" in text
         assert "Typ: Fritext" in text
-        assert "Skriv ditt svar i Exam.net." in text
+        assert "Skriv ditt svar i Exam.net." not in text
         assert "Look at the embedded prompt image." in text
         assert page.get_images(full=True)
 

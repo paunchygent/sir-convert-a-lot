@@ -47,6 +47,7 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest
     available_entry,
     failed_entry,
     json_ready,
+    public_artifact_filename,
     unavailable_entry,
 )
 from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import (
@@ -119,6 +120,10 @@ def build_qti_artifacts(
         report_filename=ARTIFACT_DEFINITIONS[
             DigiExamMigrationArtifactKey.QTI_VALIDATION_REPORT
         ].filename,
+        report_package_filename=public_artifact_filename(
+            job=job,
+            key=DigiExamMigrationArtifactKey.QTI_PACKAGE,
+        ),
     )
     entries: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry] = {}
     qti_follow_ups = plan.manual_follow_ups

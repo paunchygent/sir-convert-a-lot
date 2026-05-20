@@ -154,7 +154,7 @@ source/parser state plus optional concrete teacher/reviewed corrections
 ```
 
 Historical Task 303/308 accepted-current-state behavior is superseded by Task
-337. Current readiness must not:
+337\. Current readiness must not:
 
 - synthesize answer keys;
 - mutate `ir_json` or parser provenance;

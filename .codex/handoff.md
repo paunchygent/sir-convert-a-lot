@@ -64,7 +64,7 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
   closeout docs: ADR-0002 is superseded by accepted ADR-0012. Review 22 closed
   as `approved` and explicitly scopes out already-published Task 325-B
   runtime/OpenAPI provider-lineage changes.
-- Task 337 is completed and accepted: accepted-current-state is removed from authoring/correction state and missing-key PDF/QTI exports stay blocked until real key corrections exist. Task 315 is the next ready slice for Exam.net PDF strategy extraction; its strategy model must keep the core PDF item protocol target-agnostic while isolating Exam.net-specific reshaping in the Exam.net PDF target profile.
+- Task 337 is completed and accepted: accepted-current-state is removed from authoring/correction state and missing-key PDF/QTI exports stay blocked until real key corrections exist. Task 315 is completed: Exam.net PDF item rendering policy now lives behind target-profile strategies that consume source-neutral PDF item semantics; DigiExam IR is adapted at the source edge only and is not imported by the Exam.net strategy module. Public downloadable artifact filenames preserve the uploaded source filename stem for Skriptoteket and other consumers, while internal storage filenames remain deterministic.
 
 ## Active Pointers
 
@@ -149,7 +149,7 @@ Keep volatile Sir Convert-a-Lot state, blockers, validation evidence, and next a
    Task 333: expose the unified source-state issue/apply edge, keep the Task
    324 route absent, and continue Task 332 later before any downstream
    `manual_matching_answer_key` submission.
-1. Task 337 is complete; implement Task 315 next so Exam.net PDF item strategy extraction starts from the clean post-337 boundary.
+1. Continue Story 50 with Task 316: extract target-readiness policy decisions from artifact availability and target-string branches, preserving the post-Task-337 no accepted-current-state boundary.
 1. Continue downstream PR-0332 only after its correction family has a
    producer-issued source-state surface. HuleEdu Gateway proxies
    `/v2/exam-authoring/corrections/apply`, and Skriptoteket treats returned

@@ -297,11 +297,11 @@ must appear as separate accepted values from trusted source, teacher/manual, or
 reviewed evidence.
 
 Target validators decide whether a gap/open-cloze interaction can be emitted as
-native Exam.net PDF, free-text-style PDF with accepted values included, omitted
-with teacher approval, manual recreation guidance, general QTI, future Exam.net
-QTI, or another target shape. Historical accepted-current-state preservation is
-not IR state and is governed for removal from authoring/correction paths by Task
-337.
+native Exam.net PDF, another provenance-preserving Exam.net PDF shape with
+accepted values included, omitted with teacher approval, manual recreation
+guidance, general QTI, future Exam.net QTI, or another target shape. Historical
+accepted-current-state preservation is not IR state and is governed for removal
+from authoring/correction paths by Task 337.
 
 The current Exam.net PDF target profile keeps native gap-field import proof
 separate from artifact correctness. Reviewed/source/teacher accepted values

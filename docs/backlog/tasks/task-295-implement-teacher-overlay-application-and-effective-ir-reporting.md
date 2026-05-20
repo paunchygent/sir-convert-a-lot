@@ -127,29 +127,29 @@ Checkpoint:
   unchanged.
 - `accept_current_state` review decisions apply only as reviewed policy input.
   They do not create answer keys and do not satisfy parser provenance.
-- The first accepted-current-state target policy is conservative:
-  Sir Convert may enable a target only after the renderer/import path can
-  create and validate bytes under a governed no-answer-key policy. If PDF can
-  create a valid teacher-reviewed unkeyed/manual representation, PDF may become
-  exportable. QTI stays unavailable for missing machine-marked keys unless the
-  QTI package profile has an explicit validated unkeyed/manual representation.
+- Historical pre-Task-337 note: the former accepted-current-state target policy
+  was conservative and required governed no-answer-key bytes before target
+  enablement. Task 337 supersedes that policy for current
+  authoring/correction replay; missing-key exports remain blocked until real
+  reviewed/source/teacher key corrections are supplied.
 
 Checkpoint:
 
 - source IR artifact bytes remain unchanged by overlay;
 - effective IR appears only when renderer input differs from source IR;
-- accepted-current-state decisions are visible as decisions, not answer keys.
+- Historical pre-Task-337 accepted-current-state decisions were visible as
+  decisions, not answer keys. Current runtime no longer accepts them as
+  authoring/correction or target-readiness unlock state.
 
 ### 5. Recompute target readiness from effective inputs
 
 - Update `domain/digiexam_target_readiness.py` so readiness receives source IR,
   effective exam state, ingestion overlay report state, and target artifact
   outcomes.
-- Distinguish at least:
-  `ready`, `ready_after_accepted_current_state`,
-  `needs_teacher_answer_key`, `needs_teacher_review_decision`,
-  `unsupported_target_shape`, `target_validation_failed`, `not_requested`, and
-  `not_implemented`.
+- Historical pre-Task-337 readiness classes included
+  `ready_after_accepted_current_state` and `needs_teacher_review_decision`.
+  Current readiness must not emit those removed accepted-current-state unlock
+  states.
 - Keep unsupported target shape and validation failure separate from missing
   answer-key review. Teacher acceptance must not hide QTI validation failures
   or renderer unsupported-shape failures.
@@ -184,8 +184,9 @@ Checkpoint:
 ### 7. Close with consumer-facing tests and docs
 
 - Extend `tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py`
-  for valid overlay, stale overlay, manual answer key, accepted-current-state,
-  no-overlay baseline, named report downloads, and idempotency digest behavior.
+  for valid overlay, stale overlay, manual answer key, the historical
+  accepted-current-state state later superseded by Task 337, no-overlay
+  baseline, named report downloads, and idempotency digest behavior.
 - Add focused domain tests for overlay validation, fingerprint stability, and
   effective exam application.
 - Update the service API contract only where runtime details discovered during

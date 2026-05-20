@@ -92,45 +92,45 @@ or target-readiness unlock inside authoring replay.
 
 - [ ] Correction apply contract and generated schema remove `review_decision`.
 - [ ] DigiExam ingestion overlay and replay runtime no longer accept or apply
-      accepted-current-state export decisions.
+  accepted-current-state export decisions.
 - [ ] Target-readiness output no longer emits accepted-current-state readiness
-      classes or reason codes.
+  classes or reason codes.
 - [ ] QTI/PDF artifact builders are reachable from correction replay only with
-      real authoring/effective state, not accepted-current-state item IDs.
+  real authoring/effective state, not accepted-current-state item IDs.
 - [ ] Converter contracts, reference docs, generated OpenAPI, and tests reflect
-      the authoring/export boundary.
+  the authoring/export boundary.
 
 ## Open Questions Closed
 
 1. Should Sir Convert keep accepting `accept_current_state_for_export` for
    correction replay?
    - Decision: no. Correction replay is authoring-state replay.
-2. Should missing-key artifacts still be downloadable through manual/unkeyed
+1. Should missing-key artifacts still be downloadable through manual/unkeyed
    fallbacks?
    - Decision: no active path. Missing-key targets are blocked until keys are
      supplied through authoring corrections.
-3. Should legacy accepted-current-state tests remain as compatibility coverage?
+1. Should legacy accepted-current-state tests remain as compatibility coverage?
    - Decision: no. Rewrite them as negative tests or delete them.
-4. Where should future incomplete export live?
+1. Where should future incomplete export live?
    - Decision: in a future export-only request contract, if approved.
 
 ## Acceptance Criteria
 
 - [ ] `POST /v2/exam-authoring/corrections/apply` generated schemas expose no
-      `review_decision` correction entry and reject any such submitted payload.
+  `review_decision` correction entry and reject any such submitted payload.
 - [ ] DigiExam correction replay can render corrected PDF/QTI artifacts only
-      from real source/effective answer-key, point, or text corrections.
+  from real source/effective answer-key, point, or text corrections.
 - [ ] Missing choice or gap/open-cloze answer keys produce non-exportable
-      readiness rows until corrected answer-key state exists.
+  readiness rows until corrected answer-key state exists.
 - [ ] Target-readiness reports contain no
-      `ready_after_accepted_current_state`,
-      `needs_teacher_review_decision`,
-      `accepted_current_state_manual_unkeyed_profile`, or
-      `accepted_current_state_pdf_manual_unkeyed_profile` values.
+  `ready_after_accepted_current_state`,
+  `needs_teacher_review_decision`,
+  `accepted_current_state_manual_unkeyed_profile`, or
+  `accepted_current_state_pdf_manual_unkeyed_profile` values.
 - [ ] No authoring/correction path passes accepted-current-state item IDs into
-      QTI/PDF artifact builders.
+  QTI/PDF artifact builders.
 - [ ] Generated OpenAPI and converter docs match the new authoring/export
-      boundary.
+  boundary.
 
 ## Validation Plan
 

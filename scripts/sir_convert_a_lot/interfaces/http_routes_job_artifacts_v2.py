@@ -28,6 +28,9 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
 from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
     DigiExamMigrationBundleManifestV2,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
+    DigiExamMigrationArtifactKey,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
@@ -36,6 +39,9 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceForm
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifacts import (
     load_digiexam_migration_result_metadata,
     resolve_digiexam_migration_artifact,
+)
+from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
+    public_artifact_filename,
 )
 from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
     PdfCheckpointV2,
@@ -251,7 +257,10 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
         return FileResponse(
             path=job.artifact_path.as_posix(),
             media_type="application/json",
-            filename=job.artifact_path.name,
+            filename=public_artifact_filename(
+                job=job,
+                key=DigiExamMigrationArtifactKey.BUNDLE_MANIFEST,
+            ),
         )
 
     @router.get(

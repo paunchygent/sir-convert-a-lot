@@ -64,7 +64,9 @@ keys, and review decisions without mutating the parser-owned source IR.
   with consumer-ready states rather than a single coarse blocker class.
   Readiness must be per target and per item, distinguish missing answer keys
   from unsupported target shapes, and state whether the artifact can actually
-  be created under the accepted-current-state policy.
+  be created from source/effective key state. Task 337 supersedes
+  accepted-current-state target unlocks; missing-key exports remain blocked
+  until real authoring corrections provide key state.
 - Keep source answer-key provenance strict; teacher overlay provenance belongs
   to the effective layer.
 - Keep overlay input, overlay reports, effective IR, manifests, target
@@ -106,16 +108,11 @@ reopened by default:
   overlay privacy/provenance guard rails.
 - Task 302 implemented `effective_item_patch` for visible item-content repairs
   in effective IR while preserving source IR and source answer-key provenance.
-- Task 303 completed the `unkeyed_manual_qti_2_1_v1` profile for accepted
-  current-state exports with local package/profile validation and
-  vendor-unproven Exam.net import status.
-- Task 303 is QTI-only. Task 308 remains the owner for an Exam.net PDF
-  manual/unkeyed accepted-current-state profile and for item-specific
-  readiness/warning precision when PDF target limitations, such as multi-gap
-  `Lucktext`, coexist with missing answer-key evidence. The Task 308 outcome
-  must be content-preserving PDF output under explicit accepted-current-state
-  for missing-key choice and item-013-style multi-gap items unless no native or
-  degraded manual representation can preserve the visible item.
+- Historical: Task 303 completed the `unkeyed_manual_qti_2_1_v1` profile and
+  Task 308 completed the Exam.net PDF manual/unkeyed counterpart. Task 337
+  supersedes those accepted-current-state export unlocks for current
+  authoring/correction replay. Current missing-key PDF/QTI export remains
+  blocked until real reviewed/source/teacher key corrections are supplied.
 - Task 304 published the generated v2 OpenAPI snapshot for the DigiExam
   overlay, effective-IR, and target-readiness contract.
 
@@ -131,10 +128,11 @@ Remaining blocker for Story 48 closeout:
 1. Task 306 applies reviewed completion into effective IR only through the
    completed Task 298 and Task 305 first-class pair/value contracts and
    validators.
-1. Task 308 defines the accepted-current-state Exam.net PDF profile, implements
-   missing-key choice and item-013-style multi-gap rendering, and fixes
-   readiness reporting so native multi-gap/gap-open-cloze target limitations
-   are not masked by coarse missing-key warning precedence.
+1. Historical: Task 308 defined the now-superseded accepted-current-state
+   Exam.net PDF profile. Task 337 removes that export unlock from current
+   authoring/correction replay; current follow-up preserves item-specific
+   missing-key and native-target limitation reasons while keeping missing-key
+   exports blocked.
 
 ## Acceptance Criteria
 
@@ -204,17 +202,16 @@ Remaining blocker for Story 48 closeout:
   different conversion request.
 - [x] OpenAPI contract tests prove the committed snapshot matches runtime
   schema generation and includes consumer-required DigiExam components.
-- [ ] QTI readiness tests prove Task 303's `unkeyed_manual_qti_2_1_v1` profile
-  can enable accepted-current-state QTI only after package/profile validation,
-  unsupported-resource checks, item-level manual/unkeyed follow-up reporting,
-  and vendor-unproven Exam.net import status are preserved.
+- [ ] Superseded by Task 337: QTI readiness tests must prove removed
+  accepted-current-state values are absent and missing-key exports remain
+  blocked until real key corrections are supplied.
 - [ ] Answer-key completion tests prove Task 306 can apply matching pairs or
   gap accepted values only through the completed Task 298 and Task 305
   first-class IR/effective-IR contracts and validators.
-- [x] PDF readiness tests prove Task 308 renders missing-key choice and
-  item-013-style multi-gap accepted-current-state PDF output without answer-key
-  claims, and reports native multi-gap target limitations distinctly from
-  missing answer-key review when degraded rendering is used.
+- [x] Historical Task 308 PDF readiness tests covered the retired
+  accepted-current-state PDF path. Task 337 supersedes that path; current PDF
+  readiness keeps missing-key choice and item-013-style multi-gap exports
+  blocked until real key corrections are supplied.
 
 ## Done Definition
 

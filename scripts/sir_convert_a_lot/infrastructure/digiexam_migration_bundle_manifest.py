@@ -36,6 +36,19 @@ def artifact_path(artifacts_dir: Path, key: DigiExamMigrationArtifactKey) -> Pat
     return artifacts_dir / ARTIFACT_DEFINITIONS[key].filename
 
 
+def public_artifact_filename(*, job: StoredJobV2, key: DigiExamMigrationArtifactKey) -> str:
+    """Return the source-preserving public filename for one downloadable artifact."""
+
+    source_stem = _safe_source_stem(job.source_filename)
+    if key == DigiExamMigrationArtifactKey.EXAMNET_PDF:
+        return f"{source_stem}.pdf"
+    if key == DigiExamMigrationArtifactKey.QTI_PACKAGE:
+        return f"{source_stem}.zip"
+    definition = ARTIFACT_DEFINITIONS[key]
+    definition_path = Path(definition.filename)
+    return f"{source_stem}-{definition_path.stem}{definition_path.suffix}"
+
+
 def available_entry(
     *,
     job: StoredJobV2,
@@ -48,7 +61,7 @@ def available_entry(
     payload = path.read_bytes()
     return DigiExamMigrationArtifactEntry(
         artifact_key=key,
-        filename=definition.filename,
+        filename=public_artifact_filename(job=job, key=key),
         content_type=definition.content_type,
         availability=DigiExamMigrationArtifactAvailability.AVAILABLE,
         size_bytes=len(payload),
@@ -68,7 +81,7 @@ def unavailable_entry(
     definition = ARTIFACT_DEFINITIONS[key]
     return DigiExamMigrationArtifactEntry(
         artifact_key=key,
-        filename=definition.filename,
+        filename=public_artifact_filename(job=job, key=key),
         content_type=definition.content_type,
         availability=DigiExamMigrationArtifactAvailability.UNAVAILABLE,
         size_bytes=None,
@@ -89,7 +102,7 @@ def failed_entry(
     definition = ARTIFACT_DEFINITIONS[key]
     return DigiExamMigrationArtifactEntry(
         artifact_key=key,
-        filename=definition.filename,
+        filename=public_artifact_filename(job=job, key=key),
         content_type=definition.content_type,
         availability=DigiExamMigrationArtifactAvailability.FAILED,
         size_bytes=None,
@@ -110,7 +123,7 @@ def not_requested_entry(
     definition = ARTIFACT_DEFINITIONS[key]
     return DigiExamMigrationArtifactEntry(
         artifact_key=key,
-        filename=definition.filename,
+        filename=public_artifact_filename(job=job, key=key),
         content_type=definition.content_type,
         availability=DigiExamMigrationArtifactAvailability.NOT_REQUESTED,
         size_bytes=None,
@@ -315,10 +328,22 @@ def _manifest_entry(job: StoredJobV2) -> DigiExamMigrationArtifactEntry:
     definition = ARTIFACT_DEFINITIONS[DigiExamMigrationArtifactKey.BUNDLE_MANIFEST]
     return DigiExamMigrationArtifactEntry(
         artifact_key=DigiExamMigrationArtifactKey.BUNDLE_MANIFEST,
-        filename=definition.filename,
+        filename=public_artifact_filename(
+            job=job,
+            key=DigiExamMigrationArtifactKey.BUNDLE_MANIFEST,
+        ),
         content_type=definition.content_type,
         availability=DigiExamMigrationArtifactAvailability.AVAILABLE,
         size_bytes=None,
         sha256=None,
         download_path=f"/v2/convert/jobs/{job.job_id}/artifacts/bundle_manifest",
     )
+
+
+def _safe_source_stem(source_filename: str) -> str:
+    stem = Path(source_filename).stem.strip()
+    safe = "".join(
+        character if character.isalnum() or character in {"-", "_"} else "-" for character in stem
+    )
+    safe = "-".join(part for part in safe.split("-") if part)
+    return safe or "source"

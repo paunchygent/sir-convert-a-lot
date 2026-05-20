@@ -63,10 +63,12 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
     assert manifest_response.status_code == 200
     manifest = manifest_response.json()
     artifact_entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+    source_stem = Path(manifest["source"]["filename"]).stem
 
     assert manifest["schema_version"] == DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION
     assert manifest["source"]["format"] == "digiexam_dxe"
     assert manifest["bundle_status"] == "partial"
+    assert f"{source_stem}-artifact-bundle.json" in manifest_response.headers["content-disposition"]
     assert set(artifact_entries) == {
         "bundle_manifest",
         "examnet_pdf",
@@ -83,8 +85,13 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
         "asset_summary",
     }
     assert artifact_entries["examnet_pdf"]["availability"] == "available"
+    assert artifact_entries["examnet_pdf"]["filename"] == f"{source_stem}.pdf"
     assert artifact_entries["qti_package"]["availability"] == "available"
+    assert artifact_entries["qti_package"]["filename"] == f"{source_stem}.zip"
     assert artifact_entries["qti_validation_report"]["availability"] == "available"
+    assert artifact_entries["qti_validation_report"]["filename"] == (
+        f"{source_stem}-qti-validation-report.json"
+    )
     assert artifact_entries["target_readiness_report"]["availability"] == "available"
     assert artifact_entries["effective_ir_json"]["availability"] == "not_requested"
 
@@ -94,6 +101,7 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
     )
     assert pdf_response.status_code == 200
     assert pdf_response.headers["content-type"] == "application/pdf"
+    assert f"{source_stem}.pdf" in pdf_response.headers["content-disposition"]
     assert pdf_response.content.startswith(b"%PDF")
 
     qti_response = client.get(
@@ -101,16 +109,21 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
         headers=headers,
     )
     assert qti_response.status_code == 200
+    assert f"{source_stem}.zip" in qti_response.headers["content-disposition"]
     with zipfile.ZipFile(BytesIO(qti_response.content)) as archive:
         assert "imsmanifest.xml" in archive.namelist()
         assert "items/item_002.xml" in archive.namelist()
+        manifest_xml = archive.read("imsmanifest.xml").decode("utf-8")
+        assert 'identifier="examnet_qti_package"' in manifest_xml
 
     report_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifacts/qti_validation_report",
         headers=headers,
     )
     assert report_response.status_code == 200
-    assert report_response.json()["schema_version"] == "examnet_qti_validation_report_v1"
+    report = report_response.json()
+    assert report["schema_version"] == "examnet_qti_validation_report_v1"
+    assert report["package_filename"] == f"{source_stem}.zip"
     readiness_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
         headers=headers,

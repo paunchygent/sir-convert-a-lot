@@ -1,9 +1,9 @@
 ---
-id: 'task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339'
-title: 'Implement correction replay artifact references for Skriptoteket PR-0339'
-type: 'task'
-status: 'done'
-priority: 'critical'
+id: task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339
+title: Implement correction replay artifact references for Skriptoteket PR-0339
+type: task
+status: done
+priority: critical
 created: '2026-05-19'
 last_updated: '2026-05-19'
 related:
@@ -19,6 +19,7 @@ labels:
   - artifact-authority
   - skriptoteket
 ---
+
 ## Implement Correction Replay Artifact References For Skriptoteket PR-0339
 
 ## Objective
@@ -51,26 +52,26 @@ artifacts.
 ## Deliverables
 
 - [x] Export-enabled correction target readiness rows include a replay artifact
-      key only after corrected target bytes are written.
+  key only after corrected target bytes are written.
 - [x] Non-exportable targets expose no downloadable replay artifact key.
 - [x] Replay artifact keys are distinct from original artifact keys.
 - [x] Owner-scoped artifact downloads return the corrected PDF/QTI bytes for
-      replay artifact keys.
+  replay artifact keys.
 - [x] Focused route tests prove artifact key emission and artifact download.
 
 ## Acceptance Criteria
 
 - [x] Given a DigiExam source-state issue/apply flow corrects a missing choice
-      key, when both PDF and QTI targets are requested, then correction apply
-      returns `artifact_key` on the export-enabled target readiness rows.
+  key, when both PDF and QTI targets are requested, then correction apply
+  returns `artifact_key` on the export-enabled target readiness rows.
 - [x] Given the returned replay artifact keys, when the caller downloads named
-      artifacts from the source job, then the returned bytes are the corrected
-      replay artifacts.
+  artifacts from the source job, then the returned bytes are the corrected
+  replay artifacts.
 - [x] Given a target cannot be rendered, when correction apply returns target
-      readiness, then that target has no replay artifact key and artifact
-      availability is unavailable.
+  readiness, then that target has no replay artifact key and artifact
+  availability is unavailable.
 - [x] Given legacy matching-specific paths are probed, then no retired route,
-      alias, shim, wrapper, or compatibility layer is exposed.
+  alias, shim, wrapper, or compatibility layer is exposed.
 
 ## Checklist
 

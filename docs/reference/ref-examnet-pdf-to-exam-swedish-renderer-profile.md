@@ -130,11 +130,23 @@ effective IR state, but it must not define, mutate, or serialize that state.
   export-only request policy consumed by this target profile.
 - The core PDF exam item protocol must not carry Exam.net import needs.
   Exam.net-specific reshaping is allowed only inside the Exam.net PDF target
-  profile. A gap/open-cloze item may therefore be presented in a
-  target-compatible free-text-style shape when the requested output is
+  profile. A source item may therefore be presented through a
+  target-compatible alternate layout when the requested output is
   Exam.net-oriented PDF, but that reshape must be explicit target policy with
-  provenance-preserving labels, warnings, and manual-follow-up signals. It must
-  not rewrite source IR, effective IR, or neutral PDF item semantics.
+  provenance-preserving labels, warnings, and manual-follow-up signals. The
+  current Exam.net PDF profile must not present open-cloze/`Lucktext` as
+  `Fritext`; it must keep the `Lucktext` label or block the item with typed
+  warnings. Target shaping must not rewrite source IR, effective IR, or neutral
+  PDF item semantics.
+- The Exam.net target-profile context is a read-only export policy value, not
+  an IR or correction layer. It may carry target identity/version, Swedish label
+  policy, Exam.net shaping permissions, target-support decisions, warning codes,
+  manual-follow-up semantics, and importer-facing formatting constraints,
+  including removal of generic helper instructions that degrade import quality.
+  It must not carry parser/source fields, effective IR mutations, overlay or
+  correction payloads, target-readiness rows, artifact availability, QTI policy,
+  accepted-current-state decisions, service job state, HTML shell details, or
+  WeasyPrint/filesystem concerns.
 - The WeasyPrint adapter owns HTML/CSS materialization into PDF bytes. It must
   stay infrastructure-only and must not decide item support, answer-key trust,
   accepted-current-state behavior, or readiness semantics.
@@ -147,7 +159,6 @@ effective IR state, but it must not define, mutate, or serialize that state.
 Fråga 1
 Poängvärde: 4
 Typ: Flerval
-Välj ett svar.
 
 Vilket påstående är den starkaste tesen?
 
@@ -175,7 +186,6 @@ answer multiple choice is supported with a manual validation warning.
 Fråga 2
 Poängvärde: 5
 Typ: Flerval
-Välj alla korrekta svar.
 
 Vilka drag stärker vanligtvis ett källkritiskt svar om information på nätet?
 
@@ -277,35 +287,29 @@ target profile must report those shapes as not ready for keyed Exam.net PDF
 export until product explicitly promotes that PDF target shape. This is a
 target-profile question, not a DigiExam-source restriction.
 
-## Manual/unkeyed Accepted-current-state PDF
+## Gap/Open-cloze PDF Target Profile
 
 Gap-fill PDF-to-exam native auto-evaluation support is not promoted yet.
 Reviewed/source/teacher accepted values must still be included in the PDF
-artifact. The current supported PDF shape for keyed gap/open-cloze items is a
-free-text-style item with the accepted values listed in the artifact.
+artifact. The current supported PDF shape for keyed gap/open-cloze items keeps
+the item labeled as `Lucktext` and lists the accepted values in the artifact.
 
-Accepted-current-state does not change source evidence by itself. Task 303
-defines a manual/unkeyed QTI profile only; Task 308 owns the Exam.net PDF
-counterpart. Under that profile, an explicit accepted-current-state review
-decision may enable PDF only after Sir Convert creates PDF bytes that preserve
-visible item content and avoids all answer-key, accepted-value, and
-automatic-evaluation claims.
-
-For missing-key single-choice and multiple-response items, the required PDF
-behavior is content-preserving manual/unkeyed rendering: keep the prompt,
-alternatives, media, order, points, and manual-follow-up state; omit `Correct answer`, `Correct answers`, accepted-value lists, and any automatic marking
-claim. If native unkeyed Exam.net choice import is not fixture-proven, the
-renderer must use a governed degraded manual/free-text representation that
-still preserves the visible choices for teacher review or manual recreation.
+Task 337 supersedes the former Task 303/308 accepted-current-state export path.
+Missing-key single-choice, multiple-response, and gap/open-cloze items remain
+blocked for Exam.net PDF export until a real reviewed/source/teacher answer-key
+correction supplies the required key data. The current renderer must not emit a
+manual/unkeyed accepted-current-state fallback, must not relabel `Lucktext` as
+`Fritext`, and must not claim automatic evaluation without trusted keys.
 
 The live ecology fixture `item-013` is a DigiExam `Lucktext`/gap item with five
 blanks, an embedded image, and no accepted values in blank validations. In the
-missing-key accepted-current-state path, target readiness must not report only
-the coarse missing-key path; it must preserve the item-specific manual/free-text
-fallback warning so consumers can show the correct teacher action.
+current profile this item remains blocked until reviewed/source/teacher
+accepted values are supplied. Target readiness must preserve item-specific
+missing-key and native-target limitation reasons so consumers can show the
+correct teacher action.
 
-Task 308 defines the missing-key manual/unkeyed profile. Task 321 keeps that
-fallback separate from keyed output: when accepted values exist, the PDF must
+Task 308 is historical for the retired missing-key manual/unkeyed PDF profile.
+Task 321 remains current for keyed output: when accepted values exist, the PDF must
 include them even for multi-gap items.
 
 Preferred native experiment profile:
@@ -331,18 +335,8 @@ Vid cellandning reagerar [glukos] med [syre] och bildar [koldioxid] och [vatten]
 No separate `Rätt svar:`, `Rätta svar:`, or `Facit:` line should be used in
 the next gap-fill experiment.
 
-Historical Task 308 missing-key fallback profile, superseded by Task 337:
-
-```text
-Fråga 10
-Poängvärde: 5
-Typ: Fritext
-
-Ursprunglig lucktext. Bedöms manuellt efter import.
-Cellens kortsiktiga energivaluta är [____]. ...
-```
-
-This fallback was not a claim that Exam.net would create native gap fields.
+Historical Task 308 missing-key fallback profile is superseded by Task 337 and
+is not part of the current template.
 Task 337 removes it from current authoring/correction and migration-bundle
 runtime. Missing-key PDF export now remains unavailable until real source,
 manual, or reviewed effective key state exists. A future content-preserving

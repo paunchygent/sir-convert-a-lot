@@ -170,7 +170,7 @@ replay state.
 ### Task 303 Manual/unkeyed Preservation Direction
 
 Task 303's preservation-first manual/unkeyed profile is historical after Task
-337. The current runtime rule is stricter: missing machine-marked keys remove
+337\. The current runtime rule is stricter: missing machine-marked keys remove
 Sir Convert's automatic-evaluation claim and keep QTI unavailable for
 machine-markable items until real effective key state exists. A future
 best-effort incomplete QTI export would need a new export-only contract and
