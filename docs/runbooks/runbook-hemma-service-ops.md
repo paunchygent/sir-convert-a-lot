@@ -40,6 +40,11 @@ runtime guidance.
 - Hemma wrapper: `pdm run run-hemma -- <command> [args]`
 - Short shell probe: `pdm run run-hemma --shell "<command>"`
 - Deploy and live verify: `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
+- GPU runtime verify from a client checkout:
+  `pdm run run-local-pdm hemma-verify-gpu-runtime`. The local launcher reuses
+  `SIR_CONVERT_A_LOT_V2_API_KEY` loaded by `run-local-pdm` and forwards only
+  that key through the `run-hemma` verifier opt-in; operators should not
+  rediscover or routinely pass `--api-key` by hand.
 
 `hemma-deploy-and-verify` gates deploy success on revision/readiness parity,
 structured LLM provider verification, metrics safety, and public-edge reserved
@@ -51,6 +56,9 @@ client machine it SSHes to Hemma; from the canonical Hemma Server checkout it
 runs directly after checking the hostname, repo root, and shared skill
 repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an
 operator deliberately needs the SSH path despite local Hemma detection.
+`run-hemma` does not forward local secrets by default; the GPU verifier is the
+committed exception and opts in to forwarding only `SIR_CONVERT_A_LOT_V2_API_KEY`
+for its remote process.
 
 Direct production and ROCm helpers such as `prod-*`,
 `prod-deps-rocm-build`, and `hemma-sync-prod-env-mirror` are Hemma

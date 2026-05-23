@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-20
-last_updated: 2026-05-20
+created: 2026-05-23
+last_updated: 2026-05-23
 related: []
 labels:
   - generated
@@ -379,6 +379,8 @@ Generated index for backlog planning documents.
 | task-335-replace-deepseek-v4-flash-answer-key-provider-with-v4-pro | [Replace DeepSeek v4 flash answer-key provider with v4 pro](tasks/task-335-replace-deepseek-v4-flash-answer-key-provider-with-v4-pro.md) | task | completed |
 | task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339 | [Implement correction replay artifact references for Skriptoteket PR-0339](tasks/task-336-implement-correction-replay-artifact-references-for-skriptoteket-pr-0339.md) | task | done |
 | task-337-remove-accepted-current-state-from-authoring-correction-contracts | [Remove accepted-current-state from authoring correction contracts](tasks/task-337-remove-accepted-current-state-from-authoring-correction-contracts.md) | task | completed |
+| task-338-bridge-local-sir-convert-api-key-into-hemma-gpu-verification | [Bridge local Sir Convert API key into Hemma GPU verification](tasks/task-338-bridge-local-sir-convert-api-key-into-hemma-gpu-verification.md) | task | completed |
+| task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker | [Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker](tasks/task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker.md) | task | in_progress |
 | task-34-service-v2-job-store-runtime-for-multi-format-artifacts | [Service v2 job store + runtime for multi-format artifacts](tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md) | task | completed |
 | task-35-cli-pivot-remote-only-routes-via-service-api-v2 | [CLI pivot: remote-only routes via service API v2](tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md) | task | completed |
 | task-36-service-v2-route-md-pdf-via-html-intermediary | [Service v2 route: md -> pdf via html intermediary](tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md) | task | completed |

@@ -223,3 +223,52 @@ def test_preflight_gpu_required_skips_probe_when_gpu_disabled_and_fallback_allow
     outcome = preflight_pdf_ocr_or_raise(spec=spec, config=config)
     assert outcome is not None
     assert outcome.resolved.use_gpu is False
+
+
+def test_preflight_gpu_required_can_defer_runtime_probe_for_enqueue_only_admission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _unexpected_probe() -> object:
+        raise AssertionError("enqueue-only admission must defer local GPU runtime probing")
+
+    monkeypatch.setattr(ocr_preflight_v2, "probe_torch_gpu_runtime", _unexpected_probe)
+
+    spec = _pdf_job_spec(ocr_engine="auto", ocr_languages=[], acceleration_policy="gpu_required")
+    config = ServiceConfig(
+        api_key="secret-key",
+        data_root=tmp_path / "service_data",
+        gpu_available=False,
+        allow_cpu_fallback=False,
+    )
+
+    outcome = preflight_pdf_ocr_or_raise(
+        spec=spec,
+        config=config,
+        enforce_local_gpu_runtime=False,
+    )
+
+    assert outcome is not None
+    assert outcome.resolved.use_gpu is False
+
+
+def test_preflight_gpu_required_fails_when_local_runtime_will_execute_without_gpu(
+    tmp_path: Path,
+) -> None:
+    spec = _pdf_job_spec(ocr_engine="auto", ocr_languages=[], acceleration_policy="gpu_required")
+    config = ServiceConfig(
+        api_key="secret-key",
+        data_root=tmp_path / "service_data",
+        gpu_available=False,
+        allow_cpu_fallback=False,
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        preflight_pdf_ocr_or_raise(
+            spec=spec,
+            config=config,
+            enforce_local_gpu_runtime=True,
+        )
+
+    error = exc_info.value
+    assert error.status_code == 503
+    assert error.code == "gpu_not_available"

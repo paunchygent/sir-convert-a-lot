@@ -355,7 +355,13 @@ class ServiceRuntimeV2:
         digiexam_ingestion_overlay_bytes: bytes | None = None,
         structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None,
     ) -> StoredJobV2:
-        preflight_pdf_ocr_or_raise(spec=spec, config=self.config)
+        preflight_pdf_ocr_or_raise(
+            spec=spec,
+            config=self.config,
+            enforce_local_gpu_runtime=(
+                self.config.run_jobs_on_submit or self.config.enable_supervisor
+            ),
+        )
         job_id = self._new_job_id()
         record = self.job_store.create_job(
             job_id=job_id,

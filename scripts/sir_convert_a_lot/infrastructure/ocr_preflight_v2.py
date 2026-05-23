@@ -139,7 +139,7 @@ def _easyocr_supported_languages() -> set[str]:
 
 
 def preflight_pdf_ocr_or_raise(
-    *, spec: JobSpecV2, config: ServiceConfig
+    *, spec: JobSpecV2, config: ServiceConfig, enforce_local_gpu_runtime: bool = True
 ) -> OcrPreflightOutcomeV2 | None:
     """Run OCR preflight for a v2 job, raising ServiceError on failures."""
     try:
@@ -154,10 +154,15 @@ def preflight_pdf_ocr_or_raise(
     if resolved is None:
         return None
 
-    if spec.execution is not None and spec.execution.acceleration_policy in {
-        AccelerationPolicy.GPU_REQUIRED,
-        AccelerationPolicy.GPU_PREFER,
-    }:
+    if (
+        spec.execution is not None
+        and spec.execution.acceleration_policy
+        in {
+            AccelerationPolicy.GPU_REQUIRED,
+            AccelerationPolicy.GPU_PREFER,
+        }
+        and enforce_local_gpu_runtime
+    ):
         if not config.gpu_available:
             if not config.allow_cpu_fallback:
                 raise ServiceError(

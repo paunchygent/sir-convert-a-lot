@@ -73,6 +73,34 @@ def _md_to_pdf_spec(*, filename: str) -> JobSpecV2:
     )
 
 
+def _pdf_to_md_ocr_spec(*, filename: str) -> JobSpecV2:
+    return JobSpecV2.model_validate(
+        {
+            "api_version": "v2",
+            "source": {"kind": "upload", "filename": filename, "format": "pdf"},
+            "conversion": {
+                "output_format": "md",
+                "css_filenames": [],
+                "reference_docx_filename": None,
+            },
+            "pdf_options": {
+                "backend_strategy": "auto",
+                "ocr_mode": "force",
+                "ocr_engine": "auto",
+                "ocr_languages": [],
+                "table_mode": "accurate",
+                "normalize": "strict",
+            },
+            "execution": {
+                "acceleration_policy": "gpu_required",
+                "priority": "normal",
+                "document_timeout_seconds": 1800,
+            },
+            "retention": {"pin": False},
+        }
+    )
+
+
 def test_create_job_raises_when_immediate_readback_is_missing(monkeypatch, tmp_path: Path) -> None:
     runtime = ServiceRuntimeV2(_runtime_config(tmp_path / "service_data"))
     monkeypatch.setattr(runtime, "get_job", lambda _job_id: None)
@@ -84,6 +112,53 @@ def test_create_job_raises_when_immediate_readback_is_missing(monkeypatch, tmp_p
             resources_zip_bytes=None,
             reference_docx_bytes=None,
         )
+
+
+def test_enqueue_only_runtime_defers_pdf_ocr_gpu_probe_at_admission(tmp_path: Path) -> None:
+    runtime = ServiceRuntimeV2(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=False,
+            run_jobs_on_submit=False,
+            enable_supervisor=False,
+        )
+    )
+
+    job = runtime.create_job(
+        spec=_pdf_to_md_ocr_spec(filename="queued.pdf"),
+        upload_bytes=b"%PDF-1.7\n%%EOF\n",
+        resources_zip_bytes=None,
+        reference_docx_bytes=None,
+    )
+
+    assert job.status == JobStatus.QUEUED
+
+
+def test_executing_runtime_rejects_pdf_ocr_gpu_required_when_gpu_missing(tmp_path: Path) -> None:
+    runtime = ServiceRuntimeV2(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_fallback=False,
+            run_jobs_on_submit=True,
+            enable_supervisor=False,
+        )
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        runtime.create_job(
+            spec=_pdf_to_md_ocr_spec(filename="local-exec.pdf"),
+            upload_bytes=b"%PDF-1.7\n%%EOF\n",
+            resources_zip_bytes=None,
+            reference_docx_bytes=None,
+        )
+
+    error = exc_info.value
+    assert error.status_code == 503
+    assert error.code == "gpu_not_available"
 
 
 def test_get_job_maps_job_expired_to_service_error(monkeypatch, tmp_path: Path) -> None:

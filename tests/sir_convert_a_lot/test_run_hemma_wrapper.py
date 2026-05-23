@@ -43,6 +43,7 @@ if [[ -z "${host}" ]]; then
 fi
 
 decoded_cmd="$(cat)"
+unset SIR_CONVERT_A_LOT_V2_API_KEY
 /bin/bash --noprofile --norc -s <<<"${decoded_cmd}"
 """,
         encoding="utf-8",
@@ -138,6 +139,55 @@ def test_run_hemma_executes_command_inside_remote_root(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert result.stdout.strip() == str(remote_root)
+
+
+def test_run_hemma_does_not_forward_api_key_without_opt_in(tmp_path: Path) -> None:
+    remote_root = tmp_path / "remote-repo"
+    remote_root.mkdir(parents=True)
+    (remote_root / ".git").mkdir()
+
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_ssh(fake_bin)
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["SIR_CONVERT_A_LOT_HEMMA_HOST"] = "fake-host"
+    env["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(remote_root)
+    env["SIR_CONVERT_A_LOT_V2_API_KEY"] = "local-secret"
+
+    result = _run_wrapper(
+        ["--", "bash", "-c", 'printf "%s" "${SIR_CONVERT_A_LOT_V2_API_KEY:-missing}"'],
+        env,
+    )
+
+    assert result.returncode == 0
+    assert result.stdout == "missing"
+
+
+def test_run_hemma_forwards_api_key_when_opted_in(tmp_path: Path) -> None:
+    remote_root = tmp_path / "remote-repo"
+    remote_root.mkdir(parents=True)
+    (remote_root / ".git").mkdir()
+
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_ssh(fake_bin)
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["SIR_CONVERT_A_LOT_HEMMA_HOST"] = "fake-host"
+    env["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(remote_root)
+    env["SIR_CONVERT_A_LOT_V2_API_KEY"] = "local-secret"
+    env["SIR_CONVERT_A_LOT_RUN_HEMMA_FORWARD_API_KEY"] = "1"
+
+    result = _run_wrapper(
+        ["--", "bash", "-c", 'printf "%s" "${SIR_CONVERT_A_LOT_V2_API_KEY:-missing}"'],
+        env,
+    )
+
+    assert result.returncode == 0
+    assert result.stdout == "local-secret"
 
 
 def test_run_hemma_fails_if_remote_root_is_missing(tmp_path: Path) -> None:
