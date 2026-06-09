@@ -9,6 +9,7 @@ last_updated: '2026-06-09'
 related:
   - docs/backlog/epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
+  - docs/backlog/reviews/review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
 labels:
@@ -20,7 +21,7 @@ labels:
   - markdown
 ---
 
-Implementation slice with acceptance-driven scope.
+Proposed implementation slice with acceptance-driven scope.
 
 ## Objective
 
@@ -28,7 +29,38 @@ Add optional human-readable transcript formatter artifacts as modular
 strategies over the canonical `transcript_json` artifact after the JSON core is
 stable.
 
+## Blocked Implementation Decision
+
+Story 54 remains `proposed` and is blocked by Story 53's current governed
+state. The retained review at
+`docs/backlog/reviews/review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md`
+accepted only a blocked/proposed Story 53 outcome: no runtime
+`audio -> transcript_bundle` route, no canonical `transcript_json` persistence,
+and no API route surface. Because Story 54 depends on a valid canonical
+`transcript_json` artifact from Story 53, this story cannot truthfully
+implement formatter strategies, DI wiring, API fields, artifact persistence, or
+public route behavior yet.
+
+Do not implement formatter strategies from this story state. The next
+production-enabling slice must first replace Story 53's blocked state with
+accepted route execution and canonical `transcript_json` persistence, then
+return to this story or a smaller linked task for formatter implementation.
+
+Current runtime truth:
+
+- Service API v2 create-job route registration remains absent for
+  `audio -> transcript_bundle`.
+- `JobSpecV2` does not accept an `audio -> transcript_bundle` create-job
+  request.
+- Audio public options still reject formatter artifact requests such as
+  `transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`.
+- No production formatter strategy, DI composition, named formatter artifact,
+  API field, or formatter persistence path is authorized by this story state.
+
 ## Scope
+
+Future runtime scope, after Story 53 has accepted route execution and canonical
+`transcript_json` persistence:
 
 - Implement formatter strategies for:
   - plain text;
@@ -75,8 +107,15 @@ The story is done when transcript formatter artifacts are available as
 side-effect-free strategies over canonical JSON and downstream consumers can
 choose JSON-first persistence without waiting for every human-readable format.
 
+Current blocked state: this done definition is not satisfied. Story 54 cannot
+move to runtime implementation completion until Story 53 has accepted route
+execution and canonical `transcript_json` persistence.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Blocked implementation decision recorded
+- [x] Formatter runtime remains unimplemented
+- [x] Story 53 blocked retained review linked as current blocker
+- [ ] Runtime formatter implementation complete
+- [ ] Runtime tests and validations complete
+- [ ] Runtime docs synchronized
