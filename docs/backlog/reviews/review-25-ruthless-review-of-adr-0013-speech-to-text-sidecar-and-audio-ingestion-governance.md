@@ -1,9 +1,9 @@
 ---
-id: 'review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance'
-title: 'Ruthless review of ADR-0013 speech-to-text sidecar and audio ingestion governance'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance
+title: Ruthless review of ADR-0013 speech-to-text sidecar and audio ingestion governance
+type: review
+status: completed
+priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
 related:
@@ -30,6 +30,7 @@ labels:
   - diarization
   - gateway
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

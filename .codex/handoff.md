@@ -22,8 +22,7 @@ durable implementation authority lives in governed docs.
   `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active Gateway cutover lane:
   `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
-- Active speech-to-text planning lane: Epic 12; ADR-0013/audio contract are
-  remediated drafts pending Review 25 re-review.
+- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in Review 26; Stories 52-55 scaffolded.
 - Active exam artifact conversion/authoring lane:
   `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks:
@@ -158,9 +157,7 @@ formula evidence with VLM output.
 
 ## Validation
 
-- ADR-0013/audio docs-only remediation: `docs-sync`, `docs-validate`
-  (`440 backlog`, `docs=515 rules=11`), `skills-validate`,
-  `handoff-validate`, and `git diff --check` passed.
+- STT Story 51 implementation: focused pytest `35 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed.
 - Task 344 focused local tests passed:
   `pdm run test tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_task344_page_window_replay.py`
   -> `20 passed`.

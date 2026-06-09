@@ -115,20 +115,14 @@ until their implementation tasks land:
 | Source | Target | Route key | Contract |
 | --- | --- | --- | --- |
 | `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
-
-## Draft Specialized Routes
-
-These routes are in docs-as-code planning and must not be treated as runtime
-surfaces until their governing decision and implementation tasks land:
-
-| Source | Target | Route key | Contract |
-| --- | --- | --- | --- |
 | `audio` | `transcript_bundle` | `audio -> transcript_bundle` | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
 `/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion
 jobs. The initial product contract is authenticated Gateway plus tunnel API
-only; no public grant or anonymous transcription lane is part of the draft.
+only; no public grant or anonymous transcription lane is part of the accepted
+ADR-0013 boundary. The route is not a runtime surface until its implementation
+tasks register it and publish OpenAPI updates.
 
 ## PDF Page CSS Modes
 

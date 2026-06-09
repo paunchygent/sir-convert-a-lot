@@ -29,6 +29,7 @@ links:
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
+
 ## Purpose
 
 Define the draft Service API v2 route contract for speech-to-text jobs that
@@ -42,8 +43,8 @@ route-specific conformance tests.
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
 approved the remediated contract direction on 2026-06-09. This contract remains
-draft until the governing ADR is accepted and a later implementation task
-registers the runtime route.
+draft until later implementation tasks publish OpenAPI updates, prove sidecar
+runtime behavior, and register the route.
 
 ## Relationship To Existing V2 API
 
@@ -174,6 +175,23 @@ Runtime rules:
   files must live under job-scoped scratch roots and be cleaned according to
   the retention policy.
 
+### Route-Level Admission Caps
+
+Story 51 locks the first concrete admission policy before runtime route
+registration. A service instance must reject, not queue, new audio jobs when
+any cap is exhausted:
+
+| Cap | Initial value | Failure code |
+| --- | --- | --- |
+| Active STT jobs per service instance | `2` | `audio_route_capacity_exceeded` |
+| Active probe/normalization workers | `2` | `audio_route_capacity_exceeded` |
+| Active sidecar transcription/diarization requests | `1` | `audio_route_capacity_exceeded` |
+| GPU slots per service instance | `1` | `audio_route_capacity_exceeded` |
+| Queue behavior | reject immediately; no internal wait queue in the first slice | `audio_route_capacity_exceeded` |
+
+These caps are route-local and do not authorize runtime registration. They are
+the admission contract for later worker, sidecar-client, and Gateway slices.
+
 ## STT Sidecar Internal Contract
 
 The public v2 route integrates with one Sir-owned internal adapter contract.
@@ -247,10 +265,13 @@ Required response shape:
   "cache": {
     "cache_family": "huggingface",
     "host_root": "/srv/scratch/sir-convert-a-lot/cache/huggingface",
-    "container_root": "/cache/huggingface"
+    "container_root": "/cache/huggingface",
+    "cache_roots_ready": true,
+    "model_artifacts_present": true
   },
   "secrets": {
     "required_secret_names": ["HUGGINGFACE_TOKEN"],
+    "required_secrets_present": true,
     "values_exposed": false
   }
 }
@@ -267,6 +288,9 @@ Rules:
   fail readiness.
 - The sidecar must not publish a host port and must accept requests only from
   the main Sir Convert service on the internal Docker network.
+- `cache_roots_ready`, `model_artifacts_present`, and
+  `required_secrets_present` are readiness truth fields. Missing or false
+  values fail closed before a job can be admitted.
 
 ### `POST /transcribe`
 
@@ -338,6 +362,15 @@ Planned formatter artifacts:
 Formatter artifacts must be produced by modular downstream strategies wired by
 DI after the JSON core is stable. They must not duplicate transcription,
 diarization, or segment-alignment logic.
+
+### Public Backend Control Exclusion
+
+Public request options are limited to language intent, diarization mode/hints,
+duration guardrails, and requested artifact families. Browser, Gateway,
+Skriptoteket, and local-operator callers must not pass raw model ids, model
+paths, device choices, beam sizes, VAD internals, quantization/compute types,
+cache paths, prompts, or backend-native alignment knobs. Such fields fail
+admission with `audio_public_options_unsupported`.
 
 ## Transcript Bundle JSON
 
@@ -442,6 +475,7 @@ must not duplicate transcript segments, diarization windows, or artifacts.
 Required deterministic errors:
 
 - `audio_route_disabled`
+- `audio_route_capacity_exceeded`
 - `audio_upload_size_exceeded`
 - `audio_input_protocol_unsupported`
 - `audio_stream_missing`
@@ -452,6 +486,7 @@ Required deterministic errors:
 - `audio_probe_timeout`
 - `audio_normalization_failed`
 - `audio_normalization_timeout`
+- `audio_sidecar_unavailable`
 - `audio_transcription_backend_unavailable`
 - `audio_diarization_backend_unavailable`
 - `audio_model_cache_unavailable`
@@ -462,6 +497,9 @@ Required deterministic errors:
 - `audio_segment_alignment_failed`
 - `audio_sidecar_canceled`
 - `audio_transcript_artifact_unavailable`
+- `audio_diarization_options_invalid`
+- `audio_public_options_unsupported`
+- `audio_retention_pin_unsupported`
 
 The service must not return empty transcript artifacts as success.
 The service must not return diarization-unavailable artifacts as success.

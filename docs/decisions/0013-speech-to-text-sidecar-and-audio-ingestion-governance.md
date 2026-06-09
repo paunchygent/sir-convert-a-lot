@@ -2,7 +2,7 @@
 type: decision
 id: ADR-0013
 title: Speech-to-Text Sidecar and Audio Ingestion Governance
-status: proposed
+status: accepted
 created: 2026-06-09
 updated: 2026-06-09
 owners:
@@ -32,24 +32,26 @@ links:
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
+
 ## Purpose
 
-Record the proposed architecture and governance boundary for speech-to-text
+Record the accepted architecture and governance boundary for speech-to-text
 audio ingestion before runtime work begins.
 
 ## Status
 
-- Proposed
+- Accepted
 - Date: 2026-06-09
 
-This decision is not accepted production authority yet. Runtime implementation
-tasks may use it for planning, but product behavior must wait for an accepted
-decision or a task that explicitly records the approval gate.
+This decision is accepted architecture and governance authority for the
+speech-to-text sidecar direction. It does not register a runtime route, expose
+OpenAPI fields, or authorize implementation without PR-sized governed tasks.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
-approved the remediated decision text on 2026-06-09. This ADR remains
-`proposed` until a separate accepted decision/status-change task promotes it.
+approved the remediated decision text on 2026-06-09. This status-change slice
+promotes ADR-0013 to `accepted`; implementation still remains gated by Epic 12
+stories and route-specific tasks.
 
 ## Context
 
@@ -72,7 +74,7 @@ that image without a specific accepted exception.
 
 ## Decision
 
-Adopt a sidecar-backed speech-to-text architecture for the proposed
+Adopt a sidecar-backed speech-to-text architecture for the planned
 `audio -> transcript_bundle` Service API v2 route.
 
 ### Main Service Boundary
@@ -358,10 +360,8 @@ Tradeoffs:
 
 - Publish or accept the route-specific converter contract:
   `docs/converters/audio-transcription-service-api-artifact-contract.md`.
-- Re-review ADR-0013 against
-  `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
-  before changing status from `proposed`.
-- Scaffold implementation stories and tasks under Epic 12.
+- Scaffold implementation stories and tasks under Epic 12, starting with
+  route-level concurrency/admission caps before runtime registration.
 - Benchmark codec probing, transcription, diarization, and 120-minute batch
   processing on Hemma before production route registration.
 - Update HuleEdu Gateway route docs/tests when the generic Sir Convert product

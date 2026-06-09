@@ -1,9 +1,9 @@
 ---
-id: 'epic-12-speech-to-text-audio-ingestion-and-transcript-delivery'
-title: 'Speech-to-text audio ingestion and transcript delivery'
-type: 'epic'
-status: 'proposed'
-priority: 'high'
+id: epic-12-speech-to-text-audio-ingestion-and-transcript-delivery
+title: Speech-to-text audio ingestion and transcript delivery
+type: epic
+status: in_progress
+priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
 related:
@@ -14,6 +14,16 @@ related:
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/internal_adapter_contract_v2.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
+  - docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
+  - docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
+  - docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
+  - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
+  - docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md
+  - docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md
+  - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
+  - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
+  - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md
+  - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -27,6 +37,7 @@ labels:
   - hemma
   - v2
 ---
+
 Major capability increment managed through linked stories.
 
 ## Goal
@@ -44,7 +55,7 @@ that consume the JSON core rather than parallel transcription pipelines.
 ## In Scope
 
 - API and product contract:
-  - new draft route key `audio -> transcript_bundle`;
+  - accepted ADR-0013 route key `audio -> transcript_bundle`;
   - uploaded audio files plus video containers with an audio stream;
   - Swedish and English language auto-detection as the day-one product target;
   - optional language override may be added by implementation tasks when the
@@ -89,32 +100,44 @@ that consume the JSON core rather than parallel transcription pipelines.
 
 ## Stories
 
-Planned story slices to scaffold after this epic is accepted:
+Planned story slices:
 
-1. Publish the speech-to-text sidecar, route-policy, and transcript JSON
-   contract.
-1. Benchmark STT and diarization sidecar candidates on Hemma with 120-minute
-   batch-processing evidence.
-1. Implement `audio -> transcript_bundle` route registration, validation,
-   execution, and JSON artifact persistence.
-1. Add formatter strategies for plain text, Markdown, VTT, and SRT as
-   downstream modules wired by DI after the JSON core stabilizes.
-1. Cut Skriptoteket and HuleEdu Gateway consumers to the authenticated
-   `/sir-convert` product edge for transcript jobs.
+1. `docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md`
+   defines the STT sidecar adapter, media admission, route policy, and concrete
+   route-level concurrency/admission caps.
+1. `docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md`
+   benchmarks and selects the first Hemma STT/diarization backend profile.
+1. `docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md`
+   implements route registration, execution, progress, cancellation, retention,
+   and canonical JSON artifact persistence.
+1. `docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md`
+   adds plain text, Markdown, VTT, and SRT formatter strategies after JSON core
+   behavior is stable.
+1. `docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md`
+   coordinates HuleEdu Gateway and Skriptoteket downstream story planning.
+1. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md`
+   is the HuleEdu Gateway companion story.
+1. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md`,
+   `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md`,
+   and
+   `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md`
+   are the Skriptoteket Conversion Hub companion stories.
 
 ## Acceptance Criteria
 
-- [ ] Route-specific converter contract is published and linked from the v2 API
+- [x] Route-specific converter contract is published and linked from the v2 API
   contract and downstream integration guide.
-- [ ] ADR-0013 or its successor is accepted before runtime implementation
+- [x] ADR-0013 or its successor is accepted before runtime implementation
   treats STT sidecar, diarization, or non-PDF GPU policy as production
   authority.
-- [ ] Review 25's remediated readiness approval is preserved before ADR-0013
+- [x] Review 25's remediated readiness approval is preserved before ADR-0013
   changes status from `proposed`.
-- [ ] The accepted route contract defines the STT sidecar health/capability
-  contract, untrusted media limits, fail-closed diarization behavior,
-  model/cache/secret governance, retention classes, and audio long-job
-  progress/cancel/retry semantics.
+- [x] The route contract defines the STT sidecar health/capability contract,
+  untrusted media limits, fail-closed diarization behavior, model/cache/secret
+  governance, retention classes, and audio long-job progress/cancel/retry
+  semantics.
+- [x] The first implementation story defines concrete route-level
+  concurrency/admission caps before runtime registration.
 - [ ] Hemma benchmark evidence proves the selected codec, transcription, and
   diarization stack can process representative Swedish and English recordings.
 - [ ] Implementation tasks prove stable processing for audio or video sources
@@ -132,6 +155,6 @@ Planned story slices to scaffold after this epic is accepted:
 
 ## Checklist
 
-- [ ] Stories linked
+- [x] Stories linked
 - [x] Acceptance criteria defined
 - [x] Execution gate defined

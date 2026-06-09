@@ -150,35 +150,26 @@ The approved v2 route extensions that are not yet implemented in the runtime
 are:
 
 - `md -> wav` (sidecar-backed TTS on Hemma; see ADR-0006)
-
-Important:
-
-- This route is approved for planning and contract publication.
-- It is **not yet implemented** in the runtime.
-- The public contract remains provider-neutral and the TTS backend must remain a Hemma sidecar,
-  not an in-process dependency in the main service image.
-- Internal multi-backend TTS reuse is governed by ADR-0007; backend-native sidecar APIs are not
-  the normative Sir-facing contract.
-
-## Proposed Route Extensions (Not Yet Accepted Or Implemented)
-
-The proposed v2 route extensions below are in docs-as-code planning and are not
-runtime surfaces:
-
 - `audio -> transcript_bundle` (sidecar-backed speech-to-text with
-  diarization; see draft ADR-0013 and
+  diarization; see ADR-0013 and
   `docs/converters/audio-transcription-service-api-artifact-contract.md`)
 
 Important:
 
-- The audio transcription route is not accepted production authority until the
-  governing decision is accepted.
-- The retained ADR-0013 readiness review approved the remediated draft on
-  2026-06-09, but runtime work must still wait for ADR acceptance and a governed
-  implementation task.
-- The first stable output authority is structured JSON; `txt`, `md`, `vtt`,
-  and `srt` are later formatter artifacts over that JSON core.
-- The draft route contract defines STT sidecar health/capability endpoints,
+- These routes are approved for planning and contract publication.
+- They are **not yet implemented** in the runtime.
+- The public contracts remain provider-neutral and the TTS/STT backends must
+  remain Hemma sidecars, not in-process dependencies in the main service image.
+- Internal multi-backend TTS reuse is governed by ADR-0007; backend-native
+  sidecar APIs are not the normative Sir-facing contract.
+- ADR-0013 is accepted, but audio transcription runtime work still requires
+  governed implementation tasks and route registration.
+- The first audio implementation task must define route-level
+  concurrency/admission caps before runtime registration.
+- For audio transcription, the first stable output authority is structured
+  JSON; `txt`, `md`, `vtt`, and `srt` are later formatter artifacts over that
+  JSON core.
+- The audio route contract defines STT sidecar health/capability endpoints,
   fail-closed diarization, untrusted media limits, short retention classes, and
   route-specific audio progress fields.
 - Product/browser access uses the existing HuleEdu Gateway `/sir-convert`
