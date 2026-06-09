@@ -165,7 +165,7 @@ def _required_matrix_row(
         if row.stabilization_variant == stabilization_variant and row.case_id == case_id:
             return row
     raise SystemExit(
-        "Qwen stability lab stability lab could not resolve the required matrix row "
+        "Qwen stability lab could not resolve the required matrix row "
         f"`{stabilization_variant}:{case_id}` for the FP32_SCALED_LAYER15_OUTPUT assessment."
     )
 

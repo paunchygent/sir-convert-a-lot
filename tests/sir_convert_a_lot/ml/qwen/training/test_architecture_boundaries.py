@@ -1,12 +1,12 @@
 """Architecture guard tests for the Qwen training control plane.
 
 Purpose:
-    Enforce the Qwen architecture boundary SRP/DDD boundaries so the old god-file drift does not
-    silently return in future edits.
+    Enforce Qwen training control-plane boundaries so CLI, runtime, and
+    reporting responsibilities stay separated.
 
 Relationships:
     - Guards the public CLI composition root and extracted runtime packages.
-    - Fails fast if deleted broad modules are reintroduced.
+    - Fails fast if broad orchestration modules are reintroduced.
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ def _line_count(path: Path) -> int:
     return len(path.read_text(encoding="utf-8").splitlines())
 
 
-def test_deleted_qwen_god_modules_stay_deleted() -> None:
-    """The old broad orchestrator and reporting modules should stay gone."""
+def test_broad_qwen_orchestration_modules_stay_absent() -> None:
+    """Broad orchestrator and reporting modules should stay absent."""
     assert not (REPO_ROOT / "scripts/sir_convert_a_lot/ml/qwen/training/orchestrator.py").exists()
     assert not (REPO_ROOT / "scripts/sir_convert_a_lot/ml/qwen/training/reporting.py").exists()
 

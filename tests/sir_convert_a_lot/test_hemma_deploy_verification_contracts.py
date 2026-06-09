@@ -1,4 +1,4 @@
-"""Regression tests for Hemma deploy verification deploy/verification contracts.
+"""Regression tests for Hemma deploy and live-verification contracts.
 
 Purpose:
     Lock expected remediation messaging and guardrail behavior for revision

@@ -1,11 +1,8 @@
-"""Layernorm-specific hook helpers for Qwen backward-lineage and fresh-start proof lane/31
-backward-lineage probes.
+"""Layernorm-specific hook helpers for Qwen backward-lineage probes.
 
 Purpose:
-    Keep the reversible layernorm wrapper logic out of the central hook-session
-    module so the hot-path hook dispatcher stays within the repo size cap while
-    still exposing the exact internal and seam-localized normalization
-    surfaces used by input-layernorm internal and downstream Qwen stability lab diagnosis tasks.
+    Provide reversible layernorm forward-hook logic while exposing the internal
+    and seam-localized normalization surfaces used by Qwen stability diagnosis.
 
 Relationships:
     - Imported by `qwen_backward_lineage_hooks.py`.
@@ -32,7 +29,7 @@ def install_input_layernorm_internal_trace(
     patch_module_forward: Callable[[torch.nn.Module, Callable[..., object]], None],
     trace_names: tuple[str, ...],
 ) -> None:
-    """Patch the input-layernorm internal layer-16 input-layernorm forward for internal tracing."""
+    """Install an internal trace on the layer-16 input-layernorm forward pass."""
     input_layernorm = resolve_talker_input_layernorm(model, layer_index=16)
     patch_module_forward(
         input_layernorm,
@@ -48,7 +45,7 @@ def build_input_layernorm_internal_forward(
     attach_tensor: Callable[[str, torch.Tensor], None],
     trace_names: tuple[str, ...],
 ) -> Callable[[torch.nn.Module, object], torch.Tensor]:
-    """Build one reversible RMSNorm wrapper for the input-layernorm internal internal chain."""
+    """Build one reversible RMSNorm forward hook for the input-layernorm chain."""
     (
         residual_input_name,
         fp32_input_name,

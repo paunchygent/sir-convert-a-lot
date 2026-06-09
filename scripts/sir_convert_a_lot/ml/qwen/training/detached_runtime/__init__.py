@@ -2,11 +2,11 @@
 
 Purpose:
     Expose the canonical detached launch, inspect, stop, id, snapshot, and
-    command-building surfaces after the Qwen architecture boundary god-file split.
+    command-building surfaces for Qwen training runtime control.
 
 Relationships:
     - Imported by control-plane use cases, schedule control, and diagnostics.
-    - Replaces the former mixed-concern `training.orchestrator` module.
+    - Keeps detached execution separate from training-loop and reporting modules.
 """
 
 from .artifact_freshness import load_optional_json

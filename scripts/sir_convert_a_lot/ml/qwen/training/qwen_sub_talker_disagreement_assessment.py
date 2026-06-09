@@ -1,4 +1,4 @@
-"""Focused sub-talker disagreement disagreement assessment for the Qwen stability lab stability lab.
+"""Focused sub-talker disagreement assessment for the Qwen stability lab.
 
 Purpose:
     Derive the mixed post-input-layernorm output `sub_talker_loss` conclusion from the compact
@@ -175,7 +175,7 @@ def _required_matrix_row(
         if row.stabilization_variant == stabilization_variant and row.case_id == case_id:
             return row
     raise SystemExit(
-        "Qwen stability lab stability lab could not resolve the required matrix row "
+        "Qwen stability lab could not resolve the required matrix row "
         f"`{stabilization_variant}:{case_id}` for the SUB_TALKER_DISAGREEMENT assessment."
     )
 

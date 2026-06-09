@@ -271,9 +271,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Prepare and inspect answer-key live validation live-validation."
-    )
+    parser = argparse.ArgumentParser(description="Prepare and inspect answer-key live validation.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     prepare = subparsers.add_parser(

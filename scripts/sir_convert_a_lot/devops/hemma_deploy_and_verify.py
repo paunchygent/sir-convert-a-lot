@@ -1,9 +1,9 @@
 """One-command Hemma deploy and live verification orchestrator.
 
 Purpose:
-    Execute Hemma deploy verification deploy parity and live verification in one deterministic
+    Execute Hemma revision parity and live verification in one deterministic
     command: push -> remote pull -> production rebuild/recreate -> readiness
-    parity -> live GPU smoke -> metrics safety scan.
+    parity -> live smoke -> metrics safety scan.
 
 Relationships:
     - Exposed as `pdm run hemma-deploy-and-verify`.
@@ -452,7 +452,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint for Hemma deploy verification deploy and verification workflow."""
+    """CLI entrypoint for the Hemma deploy and live-verification workflow."""
     args = _parse_args(sys.argv[1:] if argv is None else argv)
     try:
         settings = _load_workflow_settings(args)

@@ -1,4 +1,4 @@
-"""Focused sub-boundary sub-boundary assessment for the Qwen stability lab stability lab.
+"""Focused sub-boundary assessment for the Qwen stability lab.
 
 Purpose:
     Derive the narrowed post-layer-16 handoff pair-versus-single-row comparison from the
@@ -179,7 +179,7 @@ def _required_matrix_row(
         if row.stabilization_variant == stabilization_variant and row.case_id == case_id:
             return row
     raise SystemExit(
-        "Qwen stability lab stability lab could not resolve the required matrix row "
+        "Qwen stability lab could not resolve the required matrix row "
         f"`{stabilization_variant}:{case_id}` for the SUB_BOUNDARY assessment."
     )
 

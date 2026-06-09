@@ -2,7 +2,7 @@
 
 Purpose:
     Preserve the provider profile, runtime, request settings, launch settings,
-    capabilities, and artifact paths that produced one answer-key live validation live-validation
+    capabilities, and artifact paths that produced one answer-key live validation
     run.
 
 Relationships:
@@ -43,7 +43,7 @@ ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION = (
 
 @dataclass(frozen=True)
 class AnswerKeyProviderRunMetadata:
-    """Serializable provider metadata for one answer-key live validation live-validation run."""
+    """Serializable provider metadata for one answer-key live validation run."""
 
     schema_version: str
     available: bool

@@ -52,7 +52,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.smoke import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the public CLI parser for the Qwen stability lab stability lab."""
+    """Build the public CLI parser for the Qwen stability lab."""
     parser = argparse.ArgumentParser(
         description="Run the Qwen stability lab talker-core stability-lab exploration surface."
     )
@@ -96,7 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run one Qwen stability lab stability-lab matrix and persist compact artifacts."""
+    """Run one Qwen stability lab matrix and persist compact artifacts."""
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command == "gate":
@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(asdict(gate_report), indent=2, ensure_ascii=False))
         return 0
     if args.command != "run":
-        raise SystemExit(f"Unsupported Qwen stability lab stability-lab command: {args.command}")
+        raise SystemExit(f"Unsupported Qwen stability lab command: {args.command}")
     settings = QwenStabilityLabSettings(
         output_root=Path(args.output_root),
         dockerfile_path=Path(args.dockerfile_path),
@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
 def _parse_source_lines(raw_value: str) -> tuple[int, int]:
     pieces = [piece.strip() for piece in raw_value.split(",") if piece.strip() != ""]
     if len(pieces) != 2:
-        raise SystemExit("Qwen stability lab stability lab requires exactly two source lines.")
+        raise SystemExit("Qwen stability lab requires exactly two source lines.")
     return int(pieces[0]), int(pieces[1])
 
 

@@ -115,7 +115,7 @@ def load_results_payload(results_path: Path) -> dict[str, object]:
     """Load one previously emitted Qwen stability lab matrix payload from disk."""
     payload = json.loads(results_path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise SystemExit("Qwen stability lab stability lab results payload was not a JSON object.")
+        raise SystemExit("Qwen stability lab results payload was not a JSON object.")
     return payload
 
 
@@ -190,13 +190,11 @@ def _rows_by_variant_case(
 ) -> dict[tuple[str, str], dict[str, object]]:
     rows_value = results_payload.get("matrix_rows")
     if not isinstance(rows_value, list):
-        raise SystemExit(
-            "Qwen stability lab stability lab results payload was missing `matrix_rows`."
-        )
+        raise SystemExit("Qwen stability lab results payload was missing `matrix_rows`.")
     rows_by_variant_case: dict[tuple[str, str], dict[str, object]] = {}
     for row in rows_value:
         if not isinstance(row, dict):
-            raise SystemExit("Qwen stability lab stability lab matrix row payload was malformed.")
+            raise SystemExit("Qwen stability lab matrix row payload was malformed.")
         rows_by_variant_case[
             (
                 _required_str(row, "stabilization_variant"),

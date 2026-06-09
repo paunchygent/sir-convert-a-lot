@@ -1,6 +1,4 @@
-"""
-Focused input-layernorm internal internal layernorm assessment for the Qwen stability lab stability
-lab.
+"""Focused input-layernorm assessment for the Qwen stability lab.
 
 Purpose:
     Derive the normalization-internal pair-versus-single-row conclusion from
@@ -10,7 +8,7 @@ Purpose:
 Relationships:
     - Imported by `qwen_stability_lab_runner.py` for run-time validation and
       report assembly.
-    - Reuses `sft_12hz_talker_core_trace.py` for the canonical input-layernorm internal internal
+    - Reuses `sft_12hz_talker_core_trace.py` for the canonical input-layernorm
       trace order and `qwen_stability_lab_contracts.py` for the typed payload.
 """
 
@@ -171,7 +169,7 @@ def _required_matrix_row(
         if row.stabilization_variant == stabilization_variant and row.case_id == case_id:
             return row
     raise SystemExit(
-        "Qwen stability lab stability lab could not resolve the required matrix row "
+        "Qwen stability lab could not resolve the required matrix row "
         f"`{stabilization_variant}:{case_id}` for the INPUT_LAYERNORM_INTERNAL assessment."
     )
 

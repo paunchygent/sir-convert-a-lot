@@ -1,4 +1,4 @@
-"""Tests for the Qwen stability lab stability-lab promotion gate.
+"""Tests for the Qwen stability lab promotion gate.
 
 Purpose:
     Prove the first local promotion rule evaluates the exact fresh-start

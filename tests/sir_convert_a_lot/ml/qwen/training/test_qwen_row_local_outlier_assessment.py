@@ -31,7 +31,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.qwen_stability_lab_contracts imp
 
 
 def test_validate_row_local_outlier_contract_rejects_multi_variant_family() -> None:
-    """The row-local outlier row-local probe should accept only the strongest input-layernorm output
+    """The row-local outlier probe should accept only the strongest input-layernorm output
     member.
     """
     settings = QwenStabilityLabSettings(

@@ -1,12 +1,12 @@
 """Bounded control-plane package for Qwen training host-side commands.
 
 Purpose:
-    Expose the canonical parser and dispatch surfaces after splitting the old
-    `qwen_train.py` god file into focused use-case and policy modules.
+    Expose the canonical parser and dispatch surfaces for Qwen training
+    host-side commands.
 
 Relationships:
     - Imported by the public CLI entrypoint.
-    - Shared across launch, resume, eval, schedule, diagnose, status, and stop.
+    - Keeps command use cases separate from the public CLI entrypoint.
 """
 
 from .command_registry import dispatch_command

@@ -20,7 +20,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class QwenStabilityLabSettings:
-    """Configuration for one attached Qwen stability lab stability-lab matrix run."""
+    """Configuration for one attached Qwen stability lab matrix run."""
 
     output_root: Path
     dockerfile_path: Path
@@ -58,7 +58,7 @@ class StabilityLabMatrixRow:
 
 @dataclass(frozen=True)
 class SubBoundaryComparisonRow:
-    """Comparable pair-versus-single row outcome for one sub-boundary sub-boundary case."""
+    """Comparable pair-versus-single row outcome for one sub-boundary case."""
 
     case_id: str
     source_line_numbers: tuple[int, ...]
@@ -71,7 +71,7 @@ class SubBoundaryComparisonRow:
 
 @dataclass(frozen=True)
 class QwenSubBoundaryAssessment:
-    """Focused sub-boundary assessment for the shifted post-layer-16 handoff handoff seam."""
+    """Focused sub-boundary assessment for the shifted post-layer-16 handoff seam."""
 
     stabilization_variant: str
     target_loss_kind: str
@@ -85,7 +85,7 @@ class QwenSubBoundaryAssessment:
 
 @dataclass(frozen=True)
 class InputLayernormInternalComparisonRow:
-    """Comparable pair-versus-single row outcome for one input-layernorm internal internal case."""
+    """Comparable pair-versus-single row outcome for one input-layernorm case."""
 
     case_id: str
     source_line_numbers: tuple[int, ...]

@@ -1,8 +1,8 @@
 """Unit tests for Qwen training forensic payload helpers.
 
 Purpose:
-    Keep row-provenance and tensor-finiteness payload coverage in a focused
-    test module so train-loop integration tests do not become a new god file.
+    Keep row-provenance and tensor-finiteness payload coverage focused so
+    train-loop integration tests can stay centered on end-to-end failures.
 
 Relationships:
     - Exercises `sft_12hz_forensics.py`.

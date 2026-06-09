@@ -1,4 +1,4 @@
-"""Markdown rendering for the Qwen stability lab stability lab.
+"""Markdown rendering for the Qwen stability lab.
 
 Purpose:
     Keep the compact operator-facing markdown summary separate from the Story

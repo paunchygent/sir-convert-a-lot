@@ -68,9 +68,7 @@ def resolve_talker_input_layernorm(model: object, layer_index: int) -> torch.nn.
 
 
 def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
-    """
-    Return the fixed input-layernorm internal internal trace chain for `layer_16.input_layernorm`.
-    """
+    """Return the fixed internal trace chain for `layer_16.input_layernorm`."""
     layer_prefix = (
         f"{_TALKER_CORE_PREFIX}layer_{_INPUT_LAYERNORM_INTERNAL_LAYER_INDEX}.input_layernorm"
     )
@@ -84,7 +82,7 @@ def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
 
 
 def talker_core_row_local_outlier_trace_names() -> tuple[str, ...]:
-    """Return the fixed row-local outlier row-local outlier corridor for `sub_talker_loss`."""
+    """Return the fixed row-local outlier corridor for `sub_talker_loss`."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.output",
         f"{_TALKER_CORE_PREFIX}layer_16.input",
@@ -280,7 +278,7 @@ def iter_talker_core_sub_talker_disagreement_trace_targets(
 def iter_talker_core_row_local_outlier_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed row-local outlier row-local corridor around the line-4 outlier."""
+    """Return the narrowed row-local outlier corridor around the line-4 outlier."""
     layer_16, layer_15 = (
         resolve_talker_decoder_layer(model, layer_index)
         for layer_index in _POST_SUB_TALKER_DISAGREEMENT_ROW_LOCAL_OUTLIER_LAYER_INDICES

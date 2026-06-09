@@ -33,7 +33,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.qwen_sub_talker_disagreement_ass
 
 def test_validate_sub_talker_disagreement_contract_rejects_multi_variant_family() -> None:
     """
-    The sub-talker disagreement disagreement probe should accept only the strongest input-layernorm
+    The sub-talker disagreement probe should accept only the strongest input-layernorm
     output member.
     """
     settings = QwenStabilityLabSettings(

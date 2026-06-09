@@ -1,4 +1,4 @@
-"""Focused row-local outlier row-local outlier assessment for the Qwen stability lab stability lab.
+"""Focused row-local outlier assessment for the Qwen stability lab.
 
 Purpose:
     Derive the post-sub-talker disagreement row-local line-4 conclusion from the compact Qwen
@@ -154,7 +154,7 @@ def _required_matrix_row(
         if row.stabilization_variant == stabilization_variant and row.case_id == case_id:
             return row
     raise SystemExit(
-        "Qwen stability lab stability lab could not resolve the required matrix row "
+        "Qwen stability lab could not resolve the required matrix row "
         f"`{stabilization_variant}:{case_id}` for the ROW_LOCAL_OUTLIER assessment."
     )
 

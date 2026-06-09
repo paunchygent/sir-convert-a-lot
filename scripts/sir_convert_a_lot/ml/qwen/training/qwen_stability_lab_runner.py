@@ -134,15 +134,13 @@ def parse_stabilization_variants(raw_value: str) -> tuple[str, ...]:
     """Parse a comma-separated stabilization variant list."""
     variants = tuple(piece.strip() for piece in raw_value.split(",") if piece.strip() != "")
     if len(variants) == 0:
-        raise SystemExit(
-            "Qwen stability lab stability lab requires at least one stabilization variant."
-        )
+        raise SystemExit("Qwen stability lab requires at least one stabilization variant.")
     unsupported = [
         variant for variant in variants if variant not in TALKER_CORE_STABILIZATION_CHOICES
     ]
     if unsupported:
         raise SystemExit(
-            "Qwen stability lab stability lab received unsupported talker-core stabilization "
+            "Qwen stability lab received unsupported talker-core stabilization "
             f"variants: {unsupported}."
         )
     return variants
@@ -177,7 +175,7 @@ def write_markdown(path: Path, markdown: str) -> None:
 
 
 def run_stability_lab(settings: QwenStabilityLabSettings) -> QwenStabilityLabReport:
-    """Run the Qwen stability lab stability-lab matrix and return its compact report."""
+    """Run the Qwen stability lab matrix and return its compact report."""
     prepare_output_root(settings.output_root)
     validate_hook_profile_variant_contract(settings)
     validate_input_layernorm_internal_contract(settings)
@@ -400,11 +398,11 @@ def _build_matrix_rows(
     interaction_modes = _interaction_modes_by_loss(probe_payload)
     cases_value = probe_payload.get("cases")
     if not isinstance(cases_value, list):
-        raise SystemExit("Qwen stability lab stability lab probe payload was missing `cases`.")
+        raise SystemExit("Qwen stability lab probe payload was missing `cases`.")
     rows: list[StabilityLabMatrixRow] = []
     for case in cases_value:
         if not isinstance(case, dict):
-            raise SystemExit("Qwen stability lab stability lab case payload was malformed.")
+            raise SystemExit("Qwen stability lab case payload was malformed.")
         loss_kind = _required_str(case, "loss_kind")
         rows.append(
             StabilityLabMatrixRow(
@@ -439,15 +437,11 @@ def _build_matrix_rows(
 def _interaction_modes_by_loss(probe_payload: dict[str, object]) -> dict[str, str]:
     branch_summaries = probe_payload.get("branch_summaries")
     if not isinstance(branch_summaries, list):
-        raise SystemExit(
-            "Qwen stability lab stability lab probe payload was missing `branch_summaries`."
-        )
+        raise SystemExit("Qwen stability lab probe payload was missing `branch_summaries`.")
     interaction_modes: dict[str, str] = {}
     for summary in branch_summaries:
         if not isinstance(summary, dict):
-            raise SystemExit(
-                "Qwen stability lab stability lab branch summary payload was malformed."
-            )
+            raise SystemExit("Qwen stability lab branch summary payload was malformed.")
         interaction_modes[_required_str(summary, "loss_kind")] = _required_str(
             summary,
             "interaction_mode",
@@ -475,7 +469,7 @@ def _extract_anomaly_operator(anomaly_trace: str | None) -> str | None:
 def _required_str(payload: dict[str, object], key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str):
-        raise SystemExit(f"Qwen stability lab stability lab payload missing string `{key}`.")
+        raise SystemExit(f"Qwen stability lab payload missing string `{key}`.")
     return value
 
 
@@ -487,14 +481,14 @@ def _optional_str(payload: dict[str, object], key: str) -> str | None:
 def _required_int(payload: dict[str, object], key: str) -> int:
     value = payload.get(key)
     if not isinstance(value, int):
-        raise SystemExit(f"Qwen stability lab stability lab payload missing integer `{key}`.")
+        raise SystemExit(f"Qwen stability lab payload missing integer `{key}`.")
     return value
 
 
 def _required_int_tuple(payload: dict[str, object], key: str) -> tuple[int, ...]:
     value = payload.get(key)
     if not isinstance(value, list) or not all(isinstance(item, int) for item in value):
-        raise SystemExit(f"Qwen stability lab stability lab payload missing integer-list `{key}`.")
+        raise SystemExit(f"Qwen stability lab payload missing integer-list `{key}`.")
     return tuple(value)
 
 
