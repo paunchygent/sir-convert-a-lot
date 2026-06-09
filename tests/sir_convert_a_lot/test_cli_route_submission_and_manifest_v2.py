@@ -61,6 +61,7 @@ class _FakeClient:
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
+        progress_callback=None,
     ) -> ArtifactOutcomeV2:
         del (
             idempotency_key,
@@ -72,6 +73,22 @@ class _FakeClient:
             resources_zip_bytes,
             reference_docx_bytes,
         )
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "job": {
+                        "job_id": f"job_ok_{source_path.stem}",
+                        "status": "running",
+                        "progress": {
+                            "stage": "converting",
+                            "processed_pages": 1,
+                            "total_pages": 4,
+                            "percent_complete": 25.0,
+                            "eta_seconds": 45,
+                        },
+                    }
+                }
+            )
         self.submitted_specs.append(job_spec)
         return ArtifactOutcomeV2(
             job_id=f"job_ok_{source_path.stem}",
@@ -123,7 +140,10 @@ def test_cli_route_submission_builds_success_entry_and_artifact(tmp_path: Path) 
     assert result.entries[0].pipeline_used == "service: md -> pdf (v2)"
     assert result.entries[0].output_path == (output_dir / "note.pdf").as_posix()
     assert (output_dir / "note.pdf").read_bytes().startswith(b"%PDF")
-    assert messages == [f"✓ Converted note.md -> {output_dir / 'note.pdf'}"]
+    assert messages == [
+        "... Running note.md, converting, 1/4 pages (25.0%), eta 45s, job_ok_note",
+        f"✓ Converted note.md -> {output_dir / 'note.pdf'}",
+    ]
 
 
 def test_cli_manifest_writer_sorts_entries_by_source_path(tmp_path: Path) -> None:

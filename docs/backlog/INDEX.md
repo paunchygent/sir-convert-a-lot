@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-05-23
-last_updated: 2026-05-23
+created: 2026-06-09
+last_updated: 2026-06-09
 related: []
 labels:
   - generated
@@ -31,6 +31,7 @@ Generated index for backlog planning documents.
 | epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot | [Gateway cutover and internal access contract for Sir Convert-a-Lot](epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md) | epic | proposed |
 | epic-10-digiexam-to-exam-net-exam-migration-pipeline | [Exam artifact conversion and authoring to Exam.net-compatible targets](epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md) | epic | proposed |
 | epic-11-machine-marked-answer-key-completion-for-exam-conversion | [Machine-marked answer-key completion for exam conversion](epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md) | epic | proposed |
+| epic-12-speech-to-text-audio-ingestion-and-transcript-delivery | [Speech-to-text audio ingestion and transcript delivery](epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md) | epic | proposed |
 | fix-01-harden-cli-timeout-handling-for-long-running-background-jobs | [Harden CLI timeout handling for long-running background jobs](tasks/fix-01-harden-cli-timeout-handling-for-long-running-background-jobs.md) | fix | completed |
 | 001-sir-convert-a-lot-platform-foundation-programme | [Sir Convert-a-Lot platform foundation](programmes/programme-01-sir-convert-a-lot-platform-foundation.md) | programme | in_progress |
 | review-01-brutal-review-service-api-v2-multi-format-pivot | [Brutal review: service API v2 multi-format pivot](reviews/review-01-brutal-review-service-api-v2-multi-format-pivot.md) | review | completed |
@@ -57,6 +58,7 @@ Generated index for backlog planning documents.
 | review-22-ruthless-review-of-task-329-adr-0002-closeout | [Ruthless review of Task 329 ADR-0002 closeout](reviews/review-22-ruthless-review-of-task-329-adr-0002-closeout.md) | review | completed |
 | review-23-ruthless-review-of-adr-0011-source-neutral-correction-apply-contract | [Ruthless review of ADR-0011 source-neutral correction apply contract](reviews/review-23-ruthless-review-of-adr-0011-source-neutral-correction-apply-contract.md) | review | completed |
 | review-24-ruthless-review-of-task-330-unified-correction-apply-api-contract-implementation | [Ruthless review of Task 330 unified correction apply API contract implementation](reviews/review-24-ruthless-review-of-task-330-unified-correction-apply-api-contract-implementation.md) | review | completed |
+| review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance | [Ruthless review of ADR-0013 speech-to-text sidecar and audio ingestion governance](reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -382,7 +384,18 @@ Generated index for backlog planning documents.
 | task-338-bridge-local-sir-convert-api-key-into-hemma-gpu-verification | [Bridge local Sir Convert API key into Hemma GPU verification](tasks/task-338-bridge-local-sir-convert-api-key-into-hemma-gpu-verification.md) | task | completed |
 | task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker | [Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker](tasks/task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker.md) | task | in_progress |
 | task-34-service-v2-job-store-runtime-for-multi-format-artifacts | [Service v2 job store + runtime for multi-format artifacts](tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md) | task | completed |
+| task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds | [Prune superseded Sir Convert dependency image tags after successful deps builds](tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md) | task | completed |
+| task-341-replace-legacy-task-81-docker-build-with-buildkit-buildx | [Replace legacy Task 81 Docker build with BuildKit buildx](tasks/task-341-replace-legacy-task-81-docker-build-with-buildkit-buildx.md) | task | completed |
+| task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions | [Harden batch CLI live progress and idempotent replay visibility for long conversions](tasks/task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md) | task | in_progress |
+| task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution | [Investigate PDF conversion decision logic and GPU CPU performance attribution](tasks/task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md) | task | in_progress |
+| task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking | [Diagnose and harden PDF page-window unit-of-work head-of-line blocking](tasks/task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md) | task | in_progress |
+| task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs | [Make source-layer formula evidence authoritative for born-digital PDFs](tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md) | task | in_progress |
+| task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure | [Evaluate specialist formula OCR candidates before formula-lane infrastructure](tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md) | task | completed |
+| task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay | [Enable Hemma specialist OCR runtimes for Task 346 candidate replay](tasks/task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay.md) | task | completed |
+| task-348-probe-paddleocr-vl-and-paddlex-amd-gpu-container-support-for-formula-recognition-on-hemma | [Probe PaddleOCR-VL and PaddleX AMD GPU container support for formula recognition on Hemma](tasks/task-348-probe-paddleocr-vl-and-paddlex-amd-gpu-container-support-for-formula-recognition-on-hemma.md) | task | completed |
+| task-349-probe-official-amd-paddlex-paddle-vllm-container-for-paddleocr-formula-recognition-on-hemma | [Probe official AMD PaddleX Paddle/vLLM container for PaddleOCR formula recognition on Hemma](tasks/task-349-probe-official-amd-paddlex-paddle-vllm-container-for-paddleocr-formula-recognition-on-hemma.md) | task | completed |
 | task-35-cli-pivot-remote-only-routes-via-service-api-v2 | [CLI pivot: remote-only routes via service API v2](tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md) | task | completed |
+| task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346 | [Integrate DeepSeek OCR 2 HF eager candidate replay for Task 346](tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md) | task | completed |
 | task-36-service-v2-route-md-pdf-via-html-intermediary | [Service v2 route: md -> pdf via html intermediary](tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md) | task | completed |
 | task-37-service-v2-route-html-css-pdf-weasyprint | [Service v2 route: html + css -> pdf (WeasyPrint)](tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |

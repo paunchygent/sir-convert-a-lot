@@ -30,6 +30,10 @@ from scripts.sir_convert_a_lot.infrastructure.markdown_quality_report import (
     format_extreme_line_warning,
     format_reserved_token_warning,
 )
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_MARKDOWN_NORMALIZE_MS,
+    TIMING_KEY_OCR_LAYOUT_EXTRACT_MS,
+)
 
 
 def merge_phase_timings(current: dict[str, int], additional: dict[str, int]) -> dict[str, int]:
@@ -65,6 +69,7 @@ def execute_job_conversion(
         table_mode=spec.conversion.table_mode,
         gpu_available=gpu_available,
         gpu_runtime_probe=gpu_runtime_probe,
+        document_timeout_seconds=spec.execution.document_timeout_seconds,
     )
     backend = select_backend(
         backend_strategy=spec.conversion.backend_strategy,
@@ -75,17 +80,19 @@ def execute_job_conversion(
 
     backend_started = time.perf_counter()
     backend_result = backend.convert(request)
-    phase_timings_ms["backend_convert_ms"] = max(
-        0, int((time.perf_counter() - backend_started) * 1000)
-    )
+    backend_convert_ms = max(0, int((time.perf_counter() - backend_started) * 1000))
+    phase_timings_ms["backend_convert_ms"] = backend_convert_ms
     phase_timings_ms = merge_phase_timings(phase_timings_ms, backend_result.phase_timings_ms)
+    phase_timings_ms.setdefault(TIMING_KEY_OCR_LAYOUT_EXTRACT_MS, backend_convert_ms)
     raw_quality = build_markdown_quality_report(backend_result.markdown_content)
 
     normalize_started = time.perf_counter()
     markdown_content = normalize_markdown(
         backend_result.markdown_content, spec.conversion.normalize
     )
-    phase_timings_ms["normalize_ms"] = max(0, int((time.perf_counter() - normalize_started) * 1000))
+    normalize_ms = max(0, int((time.perf_counter() - normalize_started) * 1000))
+    phase_timings_ms["normalize_ms"] = normalize_ms
+    phase_timings_ms[TIMING_KEY_MARKDOWN_NORMALIZE_MS] = normalize_ms
     normalized_quality = build_markdown_quality_report(markdown_content)
 
     options_fingerprint = hashlib.sha256(

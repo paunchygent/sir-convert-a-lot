@@ -4,7 +4,7 @@ id: CONV-internal-adapter-contract-v2
 title: Internal Adapter Contract v2
 status: active
 created: 2026-03-04
-updated: 2026-05-11
+updated: 2026-06-09
 owners:
   - platform
 tags:
@@ -13,6 +13,7 @@ tags:
   - contract
   - internal
 links:
+  - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
@@ -38,6 +39,9 @@ headers, and error propagation), not service runtime policy internals.
 - Route-specific adapters, including DigiExam migration for Skriptoteket, must
   follow the route-specific converter contract without embedding conversion
   policy in the consumer app.
+- Draft route-specific adapters, including audio transcription, must remain
+  transport-only until their governing contract and implementation tasks are
+  accepted.
 - Internal adapters currently use the v2 service API key as a transport
   credential. Under ADR-0009, user-originated adapter calls must also preserve
   HuleEdu `InternalIdentityContextV1` with audience `sir-convert-a-lot` so job
@@ -72,6 +76,14 @@ headers, and error propagation), not service runtime policy internals.
   - `source.kind: "upload"`
   - `source.format: "digiexam_dxe"`
   - `conversion.output_format: "examnet_migration_bundle"`
+  - `retention.pin: false`
+- For future audio transcription, required defaults are owned by
+  `docs/converters/audio-transcription-service-api-artifact-contract.md` and
+  begin with:
+  - `api_version: "v2"`
+  - `source.kind: "upload"`
+  - `source.format: "audio"`
+  - `conversion.output_format: "transcript_bundle"`
   - `retention.pin: false`
 
 Canonical reference implementation:
@@ -139,6 +151,22 @@ Canonical reference implementation:
   keys, hide manual-follow-up states, rewrite target warnings, or inspect Sir
   Convert work directories.
 
+### 9. Audio transcription adapter boundary
+
+- Skriptoteket and HuleEdu adapters may submit governed audio transcription
+  jobs only after the route-specific contract and runtime implementation tasks
+  land.
+- The adapter must remain transport-only: it builds headers and job specs,
+  uploads the declared source file, polls status/result, lists named artifacts,
+  downloads transcript artifacts, and passes artifact metadata to product-owned
+  persistence.
+- The adapter must not perform local transcription, diarization, source media
+  probing, chunking, transcript formatting policy, retention decisions, or
+  sidecar/backend selection.
+- The first stable product artifact is the canonical transcript JSON bundle.
+  Plain text, Markdown, VTT, and SRT must be requested or consumed as
+  downstream formatter artifacts once Sir Convert exposes them.
+
 ## Conformance Gate (Primary)
 
 The acceptance gate for this contract is automated conformance tests in:
@@ -155,6 +183,9 @@ Required scenario coverage includes:
 - DigiExam migration conformance must cover route-specific idempotency over
   `.dxe` plus companion digests and named artifact bundle handling when the
   runtime route is implemented.
+- Audio transcription conformance must cover route-specific idempotency over
+  uploaded media, optional diarization settings, canonical transcript JSON
+  artifact handling, and no adapter-side transcription or diarization policy.
 
 ## Tunnel and Operational Expectations
 

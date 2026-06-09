@@ -32,13 +32,31 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_conversion import execute_
 
 
 class _Backend:
-    def __init__(self, markdown_content: str) -> None:
+    def __init__(
+        self, markdown_content: str, phase_timings_ms: dict[str, int] | None = None
+    ) -> None:
         self._markdown_content = markdown_content
+        self._phase_timings_ms = phase_timings_ms or {}
 
     def convert(self, request: ConversionRequest) -> ConversionResultData:
         del request
         return ConversionResultData(
             markdown_content=self._markdown_content,
+            backend_used="docling",
+            acceleration_used="cuda",
+            ocr_enabled=False,
+            phase_timings_ms=dict(self._phase_timings_ms),
+        )
+
+
+class _CapturingBackend:
+    def __init__(self) -> None:
+        self.requests: list[ConversionRequest] = []
+
+    def convert(self, request: ConversionRequest) -> ConversionResultData:
+        self.requests.append(request)
+        return ConversionResultData(
+            markdown_content="# converted\n",
             backend_used="docling",
             acceleration_used="cuda",
             ocr_enabled=False,
@@ -101,3 +119,70 @@ def test_execute_job_conversion_emits_quality_warnings_and_strips_reserved_token
     assert any(
         warning.startswith("markdown_quality_normalized_extreme_lines:") for warning in warnings
     )
+
+
+def test_execute_job_conversion_exposes_canonical_v2_timing_keys() -> None:
+    spec = JobSpec(
+        api_version="v1",
+        source=SourceSpec(kind=SourceKind.UPLOAD, filename="paper.pdf"),
+        conversion=ConversionSpec(
+            output_format="md",
+            backend_strategy=BackendStrategy.DOCLING,
+            ocr_mode=OcrMode.OFF,
+            table_mode=TableMode.ACCURATE,
+            normalize=NormalizeMode.STANDARD,
+        ),
+        execution=ExecutionSpec(
+            acceleration_policy=AccelerationPolicy.GPU_REQUIRED,
+            priority=Priority.NORMAL,
+            document_timeout_seconds=1800,
+        ),
+    )
+
+    _, _, _, timings = execute_job_conversion(
+        spec=spec,
+        source_filename="paper.pdf",
+        source_bytes=b"%PDF-1.4 fixture",
+        gpu_available=True,
+        gpu_runtime_probe=None,
+        docling_backend=_Backend("# converted\n"),
+        pymupdf_backend=_Backend("unused"),
+    )
+
+    assert "backend_convert_ms" in timings
+    assert "normalize_ms" in timings
+    assert "ocr_layout_extract_ms" in timings
+    assert "markdown_normalize_ms" in timings
+
+
+def test_execute_job_conversion_passes_document_timeout_to_backend_request() -> None:
+    backend = _CapturingBackend()
+    spec = JobSpec(
+        api_version="v1",
+        source=SourceSpec(kind=SourceKind.UPLOAD, filename="paper.pdf"),
+        conversion=ConversionSpec(
+            output_format="md",
+            backend_strategy=BackendStrategy.DOCLING,
+            ocr_mode=OcrMode.OFF,
+            table_mode=TableMode.ACCURATE,
+            normalize=NormalizeMode.STANDARD,
+        ),
+        execution=ExecutionSpec(
+            acceleration_policy=AccelerationPolicy.GPU_REQUIRED,
+            priority=Priority.NORMAL,
+            document_timeout_seconds=77,
+        ),
+    )
+
+    execute_job_conversion(
+        spec=spec,
+        source_filename="paper.pdf",
+        source_bytes=b"%PDF-1.4 fixture",
+        gpu_available=True,
+        gpu_runtime_probe=None,
+        docling_backend=backend,
+        pymupdf_backend=_Backend("unused"),
+    )
+
+    assert len(backend.requests) == 1
+    assert backend.requests[0].document_timeout_seconds == 77

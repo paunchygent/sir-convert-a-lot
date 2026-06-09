@@ -17,6 +17,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions
 
+import scripts.sir_convert_a_lot.infrastructure.docling_backend as docling_backend_module
 from scripts.sir_convert_a_lot.domain.specs import BackendStrategy, OcrMode, TableMode
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
@@ -24,6 +25,7 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendGpuUnavailableError,
     BackendInputError,
     ConversionRequest,
+    ConversionResultData,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     DoclingConversionBackend,
@@ -31,7 +33,15 @@ from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     _DoclingAttempt,
     _resolve_layout_model_config,
 )
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_authority import (
+    FORMULA_SOURCE_BACKED_VLM_REJECTED_WARNING,
+    SourceFormulaEvidenceState,
+    SourceLayerFormulaEvidence,
+)
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_FORMULA_ENRICHMENT_MS,
+)
 from tests.sir_convert_a_lot.pdf_fixtures import docling_cuda_available, fixture_pdf_bytes
 
 
@@ -48,6 +58,32 @@ def _request(
         ocr_mode=ocr_mode,
         table_mode=table_mode,
         gpu_available=gpu_available,
+    )
+
+
+def _source_layer_evidence(state: SourceFormulaEvidenceState) -> SourceLayerFormulaEvidence:
+    if state is SourceFormulaEvidenceState.USABLE:
+        return SourceLayerFormulaEvidence(
+            state=state,
+            method="test",
+            page_count=1,
+            word_count=12,
+            raw_character_count=42,
+            text_character_count=42,
+            pages_with_words=1,
+            pages_with_raw_characters=1,
+            reason="test_usable_source_layer",
+        )
+    return SourceLayerFormulaEvidence(
+        state=state,
+        method="test",
+        page_count=1,
+        word_count=0,
+        raw_character_count=0,
+        text_character_count=0,
+        pages_with_words=0,
+        pages_with_raw_characters=0,
+        reason="test_no_authoritative_source_layer",
     )
 
 
@@ -83,6 +119,15 @@ def _probe_gpu_available(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.infrastructure.docling_backend.probe_torch_gpu_runtime",
         lambda: probe,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _default_source_layer_evidence_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.docling_formula_authority."
+        "collect_source_layer_formula_evidence",
+        lambda source_bytes: _source_layer_evidence(SourceFormulaEvidenceState.ABSENT),
     )
 
 
@@ -206,6 +251,7 @@ def test_easyocr_options_use_pipeline_accelerator_device() -> None:
             layout_model_key="docling_layout_heron",
             formula_enrichment=False,
             formula_preset="codeformulav2",
+            document_timeout_seconds=97,
         )
     )
 
@@ -215,8 +261,52 @@ def test_easyocr_options_use_pipeline_accelerator_device() -> None:
     assert isinstance(pipeline_options, PdfPipelineOptions)
     assert isinstance(pipeline_options.ocr_options, EasyOcrOptions)
     assert pipeline_options.accelerator_options.device == AcceleratorDevice.CUDA
+    assert pipeline_options.document_timeout == 97
     assert pipeline_options.ocr_options.use_gpu is None
     assert pipeline_options.ocr_options.model_storage_directory == "/opt/easyocr-models"
+
+
+def test_docling_backend_exposes_formula_vlm_timing_from_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend = DoclingConversionBackend()
+    token = object()
+
+    def _fake_convert_with_active_formula_diagnostics(
+        request: ConversionRequest,
+    ) -> ConversionResultData:
+        del request
+        return ConversionResultData(
+            markdown_content="Formula content",
+            backend_used="docling",
+            acceleration_used="cuda",
+            ocr_enabled=False,
+        )
+
+    monkeypatch.setattr(
+        docling_backend_module,
+        "begin_docling_formula_diagnostics",
+        lambda: token,
+    )
+    monkeypatch.setattr(
+        docling_backend_module,
+        "end_docling_formula_diagnostics",
+        lambda received_token: {
+            "formula_vlm_batch_count": 1,
+            "formula_vlm_total_ms": 42,
+            "token_seen": received_token is token,
+        },
+    )
+    monkeypatch.setattr(
+        backend,
+        "_convert_with_active_formula_diagnostics",
+        _fake_convert_with_active_formula_diagnostics,
+    )
+
+    result = backend.convert(_request(ocr_mode=OcrMode.OFF))
+
+    assert result.phase_timings_ms[TIMING_KEY_FORMULA_ENRICHMENT_MS] == 42
+    assert backend.last_formula_diagnostics()["token_seen"] is True
 
 
 def test_auto_mode_retries_when_low_confidence_even_if_dense(monkeypatch) -> None:
@@ -338,6 +428,8 @@ def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
     assert result.markdown_content == "formula-enriched-output"
     assert formula_flags == [(True, "codeformulav2")]
     assert "docling_formula_enrichment_unavailable_fallback" not in result.warnings
+    assert "ocr_layout_extract_ms" in result.phase_timings_ms
+    assert "formula_enrichment_ms" not in result.phase_timings_ms
 
 
 def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> None:
@@ -584,6 +676,132 @@ def test_formula_enrichment_switches_to_granite_on_real_hard_case_excerpt(monkey
 
     assert calls == ["codeformulav2", "granite_docling"]
     assert result.markdown_content == "$$\\rho = \\frac { a } { b }$$\n"
+    assert result.warnings == [
+        "docling_formula_preset_switched_to_granite_docling",
+        "docling_formula_quality_switch_applied",
+    ]
+
+
+def test_source_backed_formula_defect_rejects_generated_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend = DoclingConversionBackend()
+    calls: list[tuple[bool, str]] = []
+
+    def _fake_collect_source_evidence(source_bytes: bytes) -> SourceLayerFormulaEvidence:
+        assert source_bytes == fixture_pdf_bytes("paper_alpha.pdf")
+        return _source_layer_evidence(SourceFormulaEvidenceState.USABLE)
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+        formula_preset: str,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device
+        calls.append((formula_enrichment, formula_preset))
+        if formula_enrichment and formula_preset == "codeformulav2":
+            return _DoclingAttempt(
+                markdown_content="$$<formula><loc_34>\\alpha</formula$$\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        if formula_enrichment and formula_preset == "granite_docling":
+            return _DoclingAttempt(
+                markdown_content="$$\\alpha$$\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        return _DoclingAttempt(
+            markdown_content="docling-output-without-generated-formula",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.docling_formula_authority."
+        "collect_source_layer_formula_evidence",
+        _fake_collect_source_evidence,
+    )
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+
+    result = backend.convert(
+        _request(
+            ocr_mode=OcrMode.OFF,
+            gpu_available=True,
+            table_mode=TableMode.ACCURATE,
+        )
+    )
+
+    assert calls == [
+        (True, "codeformulav2"),
+        (True, "granite_docling"),
+        (False, "codeformulav2"),
+    ]
+    assert result.markdown_content == "docling-output-without-generated-formula"
+    assert result.warnings == [
+        FORMULA_SOURCE_BACKED_VLM_REJECTED_WARNING,
+        "docling_formula_preset_switched_to_granite_docling",
+        "docling_formula_quality_switch_applied",
+    ]
+
+
+def test_absent_source_evidence_keeps_granite_formula_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend = DoclingConversionBackend()
+
+    def _fake_collect_source_evidence(source_bytes: bytes) -> SourceLayerFormulaEvidence:
+        assert source_bytes == fixture_pdf_bytes("paper_alpha.pdf")
+        return _source_layer_evidence(SourceFormulaEvidenceState.ABSENT)
+
+    def _fake_convert_once(
+        request: ConversionRequest,
+        *,
+        ocr_enabled: bool,
+        force_full_page_ocr: bool,
+        acceleration_device,
+        formula_enrichment: bool,
+        formula_preset: str,
+    ) -> _DoclingAttempt:
+        del request, ocr_enabled, force_full_page_ocr, acceleration_device
+        if formula_enrichment and formula_preset == "codeformulav2":
+            return _DoclingAttempt(
+                markdown_content="$$<formula><loc_34>\\alpha</formula$$\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        if formula_enrichment and formula_preset == "granite_docling":
+            return _DoclingAttempt(
+                markdown_content="$$\\alpha$$\n",
+                page_count=1,
+                low_confidence=False,
+            )
+        return _DoclingAttempt(
+            markdown_content="docling-output-without-generated-formula",
+            page_count=1,
+            low_confidence=False,
+        )
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.infrastructure.docling_formula_authority."
+        "collect_source_layer_formula_evidence",
+        _fake_collect_source_evidence,
+    )
+    monkeypatch.setattr(backend, "_convert_once", _fake_convert_once)
+
+    result = backend.convert(
+        _request(
+            ocr_mode=OcrMode.OFF,
+            gpu_available=True,
+            table_mode=TableMode.ACCURATE,
+        )
+    )
+
+    assert result.markdown_content == "$$\\alpha$$\n"
     assert result.warnings == [
         "docling_formula_preset_switched_to_granite_docling",
         "docling_formula_quality_switch_applied",

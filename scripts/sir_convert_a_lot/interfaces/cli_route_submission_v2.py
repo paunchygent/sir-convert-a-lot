@@ -36,6 +36,9 @@ from scripts.sir_convert_a_lot.interfaces.cli_manifest_writer_v2 import (
     build_running_manifest_entry_v2,
     build_success_manifest_entry_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.cli_progress_messages_v2 import (
+    progress_callback_for_source_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.cli_routes import CliRoute, SourceFormat, TargetFormat
 from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
     ArtifactOutcomeV2,
@@ -60,6 +63,7 @@ class CliArtifactClientV2(Protocol):
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
+        progress_callback: Callable[[dict[str, object]], None] | None = None,
     ) -> ArtifactOutcomeV2:
         """Submit one upload and return a terminal artifact or raise a client error."""
 
@@ -364,6 +368,10 @@ def _submit_one_source_file_v2(
             correlation_id=correlation_id,
             resources_zip_bytes=companion_payload.resources_zip_bytes,
             reference_docx_bytes=companion_payload.reference_docx_bytes,
+            progress_callback=progress_callback_for_source_v2(
+                relative_label=relative_label,
+                message_sink=message_sink,
+            ),
         )
         if v2_outcome.rerun_of_job_id is not None:
             message_sink(

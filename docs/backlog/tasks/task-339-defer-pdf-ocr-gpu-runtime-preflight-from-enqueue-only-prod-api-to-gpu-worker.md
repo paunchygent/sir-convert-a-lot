@@ -1,9 +1,9 @@
 ---
-id: 'task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker'
-title: 'Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker
+title: Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker
+type: task
+status: in_progress
+priority: high
 created: '2026-05-23'
 last_updated: '2026-05-23'
 related:
@@ -19,6 +19,7 @@ labels:
   - ocr
   - production
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -44,22 +45,22 @@ but create-job OCR preflight rejects `gpu_required` before the private
 ## Deliverables
 
 - [ ] OCR preflight can distinguish local execution/runtime-probe enforcement
-      from enqueue-only admission.
+  from enqueue-only admission.
 - [ ] `ServiceRuntimeV2.create_job` passes the correct enforcement mode from
-      runtime config.
+  runtime config.
 - [ ] Regression tests prove enqueue-only prod API admission does not reject
-      `gpu_required`, while executing runtimes still fail when GPU is missing.
+  `gpu_required`, while executing runtimes still fail when GPU is missing.
 
 ## Acceptance Criteria
 
 - [ ] `gpu_required` PDF/OCR create-job admission succeeds on an enqueue-only
-      runtime with `gpu_available=false`, `run_jobs_on_submit=false`, and
-      `enable_supervisor=false`.
+  runtime with `gpu_available=false`, `run_jobs_on_submit=false`, and
+  `enable_supervisor=false`.
 - [ ] `gpu_required` PDF/OCR create-job admission still fails on a runtime that
-      will execute locally when `gpu_available=false` and CPU fallback is not
-      allowed.
+  will execute locally when `gpu_available=false` and CPU fallback is not
+  allowed.
 - [ ] Hemma prod conversion through the tunnel succeeds with
-      `acceleration_policy=gpu_required`, processed by the private GPU worker.
+  `acceleration_policy=gpu_required`, processed by the private GPU worker.
 - [ ] No CPU fallback is introduced.
 
 ## Checklist

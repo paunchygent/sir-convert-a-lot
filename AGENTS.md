@@ -70,6 +70,7 @@ reference docs, ADRs, and backlog items rather than expanding this root context.
 | Qwen3-TTS fine-tuning, preprocessing, evaluation, and promotion decisions | `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md` |
 | Speech-model fine-tuning beyond Qwen-specific guidance | `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md` |
 | Colab/Hemma notebook orchestration | `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md` |
+| Testing strategy, test implementation, test repair, or test-quality audits | `testing` |
 | Code review | `ruthless-code-review` |
 | Review/context packages | `repomix-package-builder` |
 | Logs, metrics, traces, dashboards, public-edge logging policy | `observability-stack` |

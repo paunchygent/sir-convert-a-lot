@@ -14,6 +14,9 @@ related:
   - docs/backlog/tasks/task-256-inventory-sir-convert-callers-and-access-lanes-before-gateway-cutover.md
   - docs/backlog/tasks/task-259-define-sir-convert-internal-caller-identity-contract.md
   - docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md
+  - docs/backlog/epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md
+  - docs/converters/audio-transcription-service-api-artifact-contract.md
+  - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
   - gateway
@@ -46,6 +49,9 @@ a local operator-accessible GPU offload lane.
 - HuleEdu Gateway proxy route planning and cross-repo implementation handoff.
   The HuleEdu execution authority is now
   `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-07-expose-sir-convert-artifact-bundle-routes-through-huleedu-auth-edge.md`.
+- Future governed conversion routes, including the proposed speech-to-text
+  `audio -> transcript_bundle` route, use the same `/sir-convert` product-edge
+  authority when they become product/browser surfaces.
 - Local operator tunnel/offload lane preservation.
 - Pre-cutover direct public app-route isolation for `convert.hule.education`.
 - Auth-aware public-edge evidence for ruling out or blocking unknown direct

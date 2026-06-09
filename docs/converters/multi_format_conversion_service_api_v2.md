@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-05-13
+updated: 2026-06-09
 owners:
   - platform
 tags:
@@ -21,11 +21,13 @@ links:
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/decisions/0008-curated-app-owned-pdf-exports-stay-out-of-sir-convert-v2.md
+  - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/reference/ref-hemma-sidecar-tts-md-to-wav-contract-outline.md
   - docs/backlog/tasks/task-44-remove-v1-api-cli-clients-and-contracts-clean-break-to-v2.md
   - docs/backlog/tasks/task-54-publish-v2-async-push-api-contract-for-sse-and-webhooks.md
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
+  - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/multi_format_conversion_service_api_v2_async_push.md
   - docs/converters/multi_format_conversion_service_api_v2_errors.md
@@ -53,7 +55,9 @@ Service API v2 is the single active conversion contract surface for:
 
 Specialized route extensions are governed by route-specific converter
 contracts. The DigiExam migration extension is defined in
-`docs/converters/digiexam-migration-service-api-artifact-contract.md`.
+`docs/converters/digiexam-migration-service-api-artifact-contract.md`; the
+draft speech-to-text extension is defined in
+`docs/converters/audio-transcription-service-api-artifact-contract.md`.
 
 ## Status
 
@@ -71,6 +75,8 @@ contracts. The DigiExam migration extension is defined in
   `docs/converters/multi_format_conversion_service_api_v2_async_push.md`
 - DigiExam migration artifact-bundle contract:
   `docs/converters/digiexam-migration-service-api-artifact-contract.md`
+- Draft audio transcription artifact-bundle contract:
+  `docs/converters/audio-transcription-service-api-artifact-contract.md`
 
 ## Base Conventions
 
@@ -154,6 +160,30 @@ Important:
 - Internal multi-backend TTS reuse is governed by ADR-0007; backend-native sidecar APIs are not
   the normative Sir-facing contract.
 
+## Proposed Route Extensions (Not Yet Accepted Or Implemented)
+
+The proposed v2 route extensions below are in docs-as-code planning and are not
+runtime surfaces:
+
+- `audio -> transcript_bundle` (sidecar-backed speech-to-text with
+  diarization; see draft ADR-0013 and
+  `docs/converters/audio-transcription-service-api-artifact-contract.md`)
+
+Important:
+
+- The audio transcription route is not accepted production authority until the
+  governing decision is accepted.
+- The retained ADR-0013 readiness review approved the remediated draft on
+  2026-06-09, but runtime work must still wait for ADR acceptance and a governed
+  implementation task.
+- The first stable output authority is structured JSON; `txt`, `md`, `vtt`,
+  and `srt` are later formatter artifacts over that JSON core.
+- The draft route contract defines STT sidecar health/capability endpoints,
+  fail-closed diarization, untrusted media limits, short retention classes, and
+  route-specific audio progress fields.
+- Product/browser access uses the existing HuleEdu Gateway `/sir-convert`
+  edge; direct anonymous public access remains out of scope.
+
 The implemented DigiExam migration route keeps `.dxe` as the required
 structure source and uses a route-specific named artifact bundle rather than
 the generic singular artifact as its product-facing contract.
@@ -203,6 +233,11 @@ PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes
 - `percent_complete` (`float | null`) (monotonic; range `0..100`)
 - `pages_per_minute` (`float | null`) (non-negative; best-effort)
 - `eta_seconds` (`int | null`) (non-negative; best-effort)
+
+Draft audio transcription work must add route-specific `audio_*` progress
+fields through its converter contract and OpenAPI update before runtime
+registration. It must not overload PDF page counters for processed duration or
+audio chunks.
 
 ### Metrics Label Policy (v2)
 

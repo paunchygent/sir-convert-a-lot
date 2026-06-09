@@ -70,3 +70,5 @@ class PdfChunkConversionOutcomeV2:
     warnings: list[str]
     phase_timings_ms: dict[str, int]
     chunk_elapsed_ms: int
+    started_at: str | None
+    completed_at: str | None

@@ -305,14 +305,16 @@ def ensure_image_present(settings: BenchmarkSettings) -> tuple[bool, str]:
     if build_performed:
         docker_checked(
             [
+                "buildx",
                 "build",
+                "--load",
                 "-t",
                 settings.image,
                 "-f",
                 settings.dockerfile_path.resolve().as_posix(),
                 ".",
             ],
-            label="docker build task81 image",
+            label="docker buildx build task81 image",
         )
         image_id = docker_checked(
             ["image", "inspect", settings.image, "--format", "{{.Id}}"],

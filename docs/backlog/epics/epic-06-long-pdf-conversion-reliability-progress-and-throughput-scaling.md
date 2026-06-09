@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-03-04'
-last_updated: '2026-04-27'
+last_updated: '2026-06-06'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md
@@ -28,6 +28,12 @@ related:
   - docs/backlog/tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md
   - docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md
   - docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md
+  - docs/backlog/tasks/task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md
+  - docs/backlog/tasks/task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md
+  - docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md
+  - docs/backlog/tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md
+  - docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md
+  - docs/backlog/tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/sir_convert_a_lot.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -109,6 +115,12 @@ high-throughput pipeline with:
 - [x] `T269` `docs/backlog/tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md`
 - [x] `T270` `docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md`
 - [x] `T271` `docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md`
+- [ ] `T342` `docs/backlog/tasks/task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md`
+- [ ] `T343` `docs/backlog/tasks/task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md`
+- [ ] `T344` `docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md`
+- [x] `T346` `docs/backlog/tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md`
+- [x] `T350` `docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md`
+- [ ] `T345` `docs/backlog/tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md`
 - [ ] `T74` `docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md`
 
 ## Execution Plan (Implementation Order)
@@ -138,6 +150,27 @@ This epic is intentionally ordered to reduce risk and prevent wasted work.
    - align OCR metadata across API docs, CLI docs, runtime metadata, smoke reports, and tests,
    - define and run a hard/dirty real-data corpus gate so performance claims are not fixture-only,
    - execute through `T268` -> `T269` -> `T270` -> `T271` before treating `T74` as final evidence.
+1. `T342` / `T343` / `T344` / `T346` / `T345`
+   (incident-driven visibility, diagnosis, candidate evaluation, and
+   authority):
+   - close the CLI/user-feedback blind spots that made long jobs appear stuck,
+   - inspect and tune the current quality pipeline before changing defaults,
+   - isolate the page-window unit-of-work and head-of-line-blocking pathology exposed by the
+     2026-06-04 incident before using chunk-size tuning as benchmark evidence,
+   - run the no-fuss Task 346 pre-infrastructure candidate evaluation on the
+     established pages/crops before promoting any specialist formula/OCR model
+     or formula-lane infrastructure,
+   - make source-layer formula evidence authoritative for born-digital PDFs so
+     Task 344's generation-stability fix is not mistaken for formula-output
+     correctness, and so Task 343's decision model has formula-specific
+     source-evidence metrics before final throughput benchmarking,
+   - land Task 345's formula evidence/authority data model before Task 342
+     presentation work or Task 343 decision-policy work reuses those signals;
+     later tasks must consume the Task 345 model instead of reimplementing
+     formula source-layer extraction or formula authority decisions,
+   - keep best-effort artifact production as the conversion invariant: formula
+     gates must choose the least-lossy representation and warnings, not create
+     a new path for silently missing or dropped formula regions.
 1. `T74` (benchmark/report):
    - run baseline vs tuned profiles and publish operational defaults + rollback criteria,
    - consume the story-39 dirty-corpus evidence or explicitly document any remaining blocker,

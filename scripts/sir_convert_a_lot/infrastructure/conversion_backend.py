@@ -33,6 +33,7 @@ class ConversionRequest:
     ocr_languages: tuple[str, ...] = ()
     ocr_use_gpu: bool | None = None
     gpu_runtime_probe: GpuRuntimeProbeResult | None = None
+    document_timeout_seconds: int | None = None
 
 
 @dataclass(frozen=True)

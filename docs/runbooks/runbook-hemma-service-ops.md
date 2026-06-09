@@ -65,6 +65,24 @@ Direct production and ROCm helpers such as `prod-*`,
 Server-only. They fail before Docker or host env mutation when the session does
 not prove the canonical Hemma hostname, repo root, and shared skill repository.
 
+## Dependency Image Cleanup
+
+`scripts/devops/service-deps-image.sh` builds CPU and ROCm dependency images
+through explicit repositories:
+
+- `sir-convert-a-lot-deps-cpu:<dependency-image-hash>` and `:local`
+- `sir-convert-a-lot-deps-rocm:<dependency-image-hash>` and `:local`
+
+After a dependency-image build completes, the same script prunes superseded
+tags only for the repository it just built. It protects the current hash tag,
+the `local` tag, and any image ID used by a running container. This keeps
+storage pressure down without pruning unrelated Sir service images, sibling
+repo images, or BuildKit cache.
+
+Set `SIR_CONVERT_A_LOT_PRUNE_SUPERSEDED_DEPS_IMAGES=0` only for exceptional
+debugging when an operator deliberately wants to retain old dependency-image
+tags.
+
 ## Repo Placement Check
 
 Before deploy, smoke, or destructive maintenance:

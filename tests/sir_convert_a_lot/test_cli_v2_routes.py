@@ -58,8 +58,9 @@ class FakeV2Client:
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
+        progress_callback=None,
     ) -> ArtifactOutcomeV2:
-        del wait_seconds, max_poll_seconds, stall_timeout_seconds
+        del wait_seconds, max_poll_seconds, stall_timeout_seconds, progress_callback
 
         if source_path.stem.endswith("slow"):
             raise ClientErrorV2(

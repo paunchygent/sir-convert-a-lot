@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-05-11
+updated: 2026-06-09
 owners:
   - platform
 tags:
@@ -16,6 +16,7 @@ links:
   - docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md
   - docs/backlog/tasks/task-52-publish-downstream-integration-contract-for-skriptoteket-hule-and-projektveckor.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
+  - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/docx-template-catalog-contract-v2.md
   - docs/converters/sir_convert_a_lot.md
@@ -114,6 +115,20 @@ until their implementation tasks land:
 | Source | Target | Route key | Contract |
 | --- | --- | --- | --- |
 | `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
+
+## Draft Specialized Routes
+
+These routes are in docs-as-code planning and must not be treated as runtime
+surfaces until their governing decision and implementation tasks land:
+
+| Source | Target | Route key | Contract |
+| --- | --- | --- | --- |
+| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+
+For audio transcription, product/browser traffic uses the same HuleEdu Gateway
+`/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion
+jobs. The initial product contract is authenticated Gateway plus tunnel API
+only; no public grant or anonymous transcription lane is part of the draft.
 
 ## PDF Page CSS Modes
 

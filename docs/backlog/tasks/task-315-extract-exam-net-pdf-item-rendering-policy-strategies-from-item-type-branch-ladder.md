@@ -150,12 +150,12 @@ target warnings, and manual-follow-up signals.
 - [x] Strategy input is source-neutral PDF item semantics; DigiExam IR is
   consumed only by the source adapter edge before target-profile dispatch.
 - [x] Focused tests proving rendered output and warnings are unchanged except
-      for the deliberate template cleanup: no free-text prompt hint, no
-      single-choice generic choice hint, and no open-cloze-to-`Fritext` label.
+  for the deliberate template cleanup: no free-text prompt hint, no
+  single-choice generic choice hint, and no open-cloze-to-`Fritext` label.
 - [x] Regression tests proving no accepted-current-state input or strategy path
-      is introduced.
+  is introduced.
 - [x] Regression tests proving gap/open-cloze output is not labeled `Fritext`
-      in the current Exam.net PDF target profile.
+  in the current Exam.net PDF target profile.
 - [x] Artifact naming contract follow-up is either completed in this slice or
   split into its own governed task: downloadable artifacts should preserve
   the uploaded source filename stem with artifact-specific extensions.

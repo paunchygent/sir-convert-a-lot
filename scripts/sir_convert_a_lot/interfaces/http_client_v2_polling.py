@@ -14,6 +14,7 @@ Relationships:
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -27,8 +28,6 @@ from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
 
 class JobPollerV2(Protocol):
     """Minimal protocol required to poll and classify v2 job status timeouts."""
-
-    def get_job_status(self, job_id: str, *, correlation_id: str | None = None) -> JobStatus: ...
 
     def get_job_payload(
         self, job_id: str, *, correlation_id: str | None = None
@@ -45,16 +44,26 @@ def wait_for_terminal_status_v2(
     stall_timeout_seconds: float,
     poll_interval_seconds: float,
     correlation_id: str | None,
+    progress_callback: Callable[[dict[str, object]], None] | None = None,
 ) -> JobStatus:
     """Poll v2 job status until terminal status or classified timeout."""
     deadline = time.monotonic() + timeout_seconds
+    last_payload: dict[str, object] | None = None
     while time.monotonic() < deadline:
-        status = poller.get_job_status(job_id, correlation_id=correlation_id)
+        payload = poller.get_job_payload(job_id, correlation_id=correlation_id)
+        last_payload = payload
+        if progress_callback is not None:
+            progress_callback(payload)
+        status = poller._read_job_status(payload).status
         if status in TERMINAL_JOB_STATUSES:
             return status
         time.sleep(poll_interval_seconds)
 
-    payload = poller.get_job_payload(job_id, correlation_id=correlation_id)
+    payload = (
+        last_payload
+        if last_payload is not None
+        else poller.get_job_payload(job_id, correlation_id=correlation_id)
+    )
     status = poller._read_job_status(payload).status
     if status in TERMINAL_JOB_STATUSES:
         return status

@@ -1,12 +1,10 @@
 """Docling conversion backend for Sir Convert-a-Lot.
 
 Purpose:
-    Execute PDF-to-markdown conversion using Docling while mapping v1
-    backend/table/OCR semantics to Docling pipeline options.
+    Execute PDF-to-markdown conversion with Docling.
 
 Relationships:
-    - Implements `infrastructure.conversion_backend.ConversionBackend`.
-    - Called by `infrastructure.runtime_engine.ServiceRuntime`.
+    Implements `ConversionBackend` for runtime execution surfaces.
 """
 
 from __future__ import annotations
@@ -40,8 +38,24 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     ConversionRequest,
     ConversionResultData,
 )
+from scripts.sir_convert_a_lot.infrastructure.docling_confidence import (
+    is_docling_low_confidence,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_diagnostics import (
+    begin_docling_formula_diagnostics,
+    end_docling_formula_diagnostics,
+    formula_enrichment_elapsed_ms,
+    install_docling_formula_diagnostics_patch,
+    record_docling_converter_cache_lookup,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_diagnostics_events import (
+    emit_docling_formula_diagnostic_event,
+)
 from scripts.sir_convert_a_lot.infrastructure.docling_formula_fallback import (
     convert_once_guarded_formula,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_duplicate_guard import (
+    clear_formula_batch_doc_state,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
     DEFAULT_LAYOUT_MODEL_KEY as _DEFAULT_LAYOUT_MODEL_KEY,
@@ -77,9 +91,11 @@ from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import (
 from scripts.sir_convert_a_lot.infrastructure.ocr_language_mapping_v2 import (
     map_bcp47_languages_to_tesseract,
 )
+from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_FORMULA_ENRICHMENT_MS,
+)
 
 _AUTO_OCR_CHARS_PER_PAGE_THRESHOLD = 120.0
-_LOW_CONFIDENCE_GRADES = {"poor", "fair"}
 _DOCLING_DEPRECATED_TABLE_IMAGES_WARNING = (
     r"This field is deprecated\. Use `generate_page_images=True` and call "
     r"`TableItem\.get_image\(\)` to extract table images from page images\."
@@ -117,6 +133,7 @@ class _ConverterKey:
     layout_model_key: str
     formula_enrichment: bool
     formula_preset: str
+    document_timeout_seconds: int | None
 
 
 class DoclingConversionBackend(ConversionBackend):
@@ -128,6 +145,7 @@ class DoclingConversionBackend(ConversionBackend):
         easyocr_model_storage_directory: str | None = None,
         easyocr_download_enabled: bool = False,
     ) -> None:
+        install_docling_formula_diagnostics_patch()
         self._thread_local = threading.local()
         self._ordering_patch_enabled = _is_env_flag_enabled(
             env_var=_DOCLING_ORDERING_PATCH_ENV_VAR,
@@ -143,6 +161,36 @@ class DoclingConversionBackend(ConversionBackend):
             install_docling_form_ordering_patch()
 
     def convert(self, request: ConversionRequest) -> ConversionResultData:
+        token = begin_docling_formula_diagnostics()
+        try:
+            result = self._convert_with_active_formula_diagnostics(request)
+        except Exception:
+            self._thread_local.last_formula_diagnostics = end_docling_formula_diagnostics(token)
+            raise
+        diagnostics = end_docling_formula_diagnostics(token)
+        self._thread_local.last_formula_diagnostics = diagnostics
+        formula_elapsed_ms = formula_enrichment_elapsed_ms(diagnostics)
+        if formula_elapsed_ms is not None:
+            result = replace(
+                result,
+                phase_timings_ms=self._merge_phase_timings(
+                    result.phase_timings_ms,
+                    {TIMING_KEY_FORMULA_ENRICHMENT_MS: formula_elapsed_ms},
+                ),
+            )
+        return result
+
+    def last_formula_diagnostics(self) -> dict[str, object]:
+        """Return diagnostics from the most recent conversion on this thread."""
+        diagnostics = getattr(self._thread_local, "last_formula_diagnostics", None)
+        if isinstance(diagnostics, dict):
+            return {str(key): value for key, value in diagnostics.items()}
+        return {}
+
+    def _convert_with_active_formula_diagnostics(
+        self,
+        request: ConversionRequest,
+    ) -> ConversionResultData:
         if request.backend_strategy not in {BackendStrategy.AUTO, BackendStrategy.DOCLING}:
             raise ValueError(f"unsupported backend for docling adapter: {request.backend_strategy}")
 
@@ -311,11 +359,23 @@ class DoclingConversionBackend(ConversionBackend):
             layout_model_key=layout_model_key,
             formula_enrichment=formula_enrichment,
             formula_preset=formula_preset,
+            document_timeout_seconds=request.document_timeout_seconds,
         )
         converter = self._get_converter(key)
         document_stream = DocumentStream(
             name=request.source_filename,
             stream=BytesIO(request.source_bytes),
+        )
+        emit_docling_formula_diagnostic_event(
+            {
+                "event": "docling_convert_attempt_started",
+                "layout_model_key": layout_model_key,
+                "formula_preset": formula_preset,
+                "formula_enrichment": formula_enrichment,
+                "ocr_enabled": ocr_enabled,
+                "force_full_page_ocr": force_full_page_ocr,
+                "table_mode": request.table_mode.value,
+            }
         )
         try:
             with warnings.catch_warnings():
@@ -330,10 +390,11 @@ class DoclingConversionBackend(ConversionBackend):
         except Exception as exc:  # pragma: no cover - defensive guard for backend runtime issues.
             raise BackendExecutionError(f"Docling backend execution failed: {exc}") from exc
         markdown_content = self._export_markdown(result.document)
+        clear_formula_batch_doc_state(result.document)
 
         raw_pages = getattr(result, "pages", None)
         page_count = len(raw_pages) if raw_pages is not None else 1
-        low_confidence = self._is_low_confidence(result)
+        low_confidence = is_docling_low_confidence(result)
         ordering_quality: OrderingQualityReport | None = None
         if evaluate_ordering_quality:
             ordering_quality = evaluate_docling_ordering_quality(markdown_content)
@@ -344,19 +405,6 @@ class DoclingConversionBackend(ConversionBackend):
             layout_model_key=layout_model_key,
             ordering_quality=ordering_quality,
         )
-
-    def _is_low_confidence(self, result: object) -> bool:
-        confidence = getattr(result, "confidence", None)
-        if confidence is None:
-            return False
-        low_grade = getattr(confidence, "low_grade", None)
-        if low_grade is None:
-            return False
-        if hasattr(low_grade, "value"):
-            grade_value = str(low_grade.value).lower()
-        else:
-            grade_value = str(low_grade).lower()
-        return grade_value in _LOW_CONFIDENCE_GRADES
 
     def _resolve_acceleration(
         self,
@@ -386,6 +434,7 @@ class DoclingConversionBackend(ConversionBackend):
     def _get_converter(self, key: _ConverterKey) -> DocumentConverter:
         cache = self._converter_cache()
         converter = cache.get(key)
+        record_docling_converter_cache_lookup(hit=converter is not None, key=key)
         if converter is None:
             converter = self._build_converter(key)
             cache[key] = converter
@@ -400,6 +449,8 @@ class DoclingConversionBackend(ConversionBackend):
 
     def _build_converter(self, key: _ConverterKey) -> DocumentConverter:
         pipeline_options = PdfPipelineOptions()
+        if key.document_timeout_seconds is not None:
+            pipeline_options.document_timeout = max(1, int(key.document_timeout_seconds))
         layout_options = pipeline_options.layout_options
         if hasattr(layout_options, "model_spec"):
             setattr(

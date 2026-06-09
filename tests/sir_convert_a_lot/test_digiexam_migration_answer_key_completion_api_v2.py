@@ -660,7 +660,7 @@ def test_digiexam_migration_reviewed_gap_completion_keeps_keys_in_pdf_and_qti(
     assert pdf_response.status_code == 200
     with pymupdf.open(stream=pdf_response.content, filetype="pdf") as document:
         text = "\n".join(str(page.get_text("text", sort=True)) for page in document)
-    assert "Typ: Fritext" in text
+    assert "Typ: Lucktext" in text
     assert "Correct answers" in text
     assert "bild" in text
     assert "foto" in text

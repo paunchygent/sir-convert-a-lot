@@ -5,7 +5,7 @@ type: task
 status: completed
 priority: critical
 created: '2026-05-19'
-last_updated: '2026-05-20'
+last_updated: '2026-06-04'
 related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
@@ -131,6 +131,19 @@ or target-readiness unlock inside authoring replay.
   QTI/PDF artifact builders.
 - [ ] Generated OpenAPI and converter docs match the new authoring/export
   boundary.
+
+## Follow-up Test-contract Closeout
+
+2026-06-04 follow-up closed the leftover coverage-gate failures that still
+encoded the superseded `TASK-303` accepted-current-state QTI/PDF behavior.
+
+- Rewrote legacy QTI sample assertions so missing-key choice and gap/open-cloze
+  examples now prove blocked QTI reports and no generated `qti-package.zip`.
+- Kept the synthetic manual matching sample as an export-only/manual free-text
+  preservation sample, not as an authoring/correction replay unlock.
+- Updated the reviewed gap-completion PDF assertion to expect `Typ: Lucktext`
+  with retained accepted values, aligning with `TASK-315` and `TASK-321`.
+- Verified the original seven failing coverage-gate node IDs now pass.
 
 ## Validation Plan
 

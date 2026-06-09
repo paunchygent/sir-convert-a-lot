@@ -38,7 +38,8 @@ ML pipeline, including Docker entrypoints, runbooks, and active backlog document
 
 ## Acceptance Criteria
 
-- [ ] `docker build` for the Qwen image succeeds with the new structure.
+- [ ] `docker buildx build --load` for the Qwen image succeeds with the new
+  structure.
 - [ ] Runbook steps are verified against the new command names.
 - [ ] `pdm run validate-docs` and `pdm run validate-tasks` pass.
 

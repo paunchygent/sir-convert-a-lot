@@ -46,6 +46,7 @@ from scripts.sir_convert_a_lot.devops.task81_openvoice_runtime import (
     _extract_debug_artifact_archive,
     collect_setup_artifact_evidence,
     copy_debug_artifacts_from_container,
+    ensure_image_present,
     prefetch_openvoice_assets,
     prefetch_vad_assets,
     reference_audio_evidence,
@@ -167,6 +168,66 @@ def test_resolve_effective_cache_dir_uses_home_bind_mount_when_srv_probe_fails(
     assert resolved.used_home_mount is True
     assert probe_calls == [cache_dir, home_mount]
     assert bind_calls == [(cache_dir, home_mount)]
+
+
+def test_ensure_image_present_builds_with_buildkit_buildx_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Task 81 image builds must use BuildKit buildx, not legacy docker build."""
+    calls: list[tuple[list[str], str]] = []
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        calls.append((args, label))
+        if label == "docker image inspect":
+            raise SystemExit(1)
+        if label == "docker image inspect after build":
+            return "sha256:task81"
+        return ""
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.task81_openvoice_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+    settings = BenchmarkSettings(
+        output_root=tmp_path / "output",
+        reference_audio_path=tmp_path / "reference.wav",
+        dockerfile_path=tmp_path / "Dockerfile.openvoice",
+        image="sir-convert-a-lot/openvoice-sidecar-task81:test",
+        openvoice_checkpoint_url="https://example.invalid/checkpoints.zip",
+        base_model_id="facebook/mms-tts-swe",
+        network="sir-task81",
+        network_alias="task81-sidecar",
+        container_name="task81",
+        service_container="sir_convert_a_lot_prod",
+        container_port=8092,
+        host_port=18092,
+        startup_timeout_seconds=1.0,
+        hf_cache_dir=tmp_path / "hf-cache",
+        hf_cache_home_mount=tmp_path / "hf-home-cache",
+        openvoice_cache_dir=tmp_path / "openvoice-cache",
+        openvoice_cache_home_mount=tmp_path / "openvoice-home-cache",
+        probe_text="Hej",
+        build_image=False,
+        retain_container=False,
+    )
+
+    build_performed, image_id = ensure_image_present(settings)
+
+    assert build_performed is True
+    assert image_id == "sha256:task81"
+    assert (
+        [
+            "buildx",
+            "build",
+            "--load",
+            "-t",
+            settings.image,
+            "-f",
+            settings.dockerfile_path.resolve().as_posix(),
+            ".",
+        ],
+        "docker buildx build task81 image",
+    ) in calls
 
 
 def test_prefetch_openvoice_assets_extracts_archive_without_redownload(tmp_path: Path) -> None:

@@ -51,6 +51,7 @@ class FakeV2Client:
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
+        progress_callback=None,
     ) -> ArtifactOutcomeV2:
         del (
             job_spec,
@@ -62,6 +63,7 @@ class FakeV2Client:
             correlation_id,
             resources_zip_bytes,
             reference_docx_bytes,
+            progress_callback,
         )
 
         if source_path.stem.endswith("9") or source_path.stem.endswith("10"):
@@ -96,6 +98,7 @@ class FakeTimeoutV2Client(FakeV2Client):
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
+        progress_callback=None,
     ) -> ArtifactOutcomeV2:
         del (
             job_spec,
@@ -107,6 +110,7 @@ class FakeTimeoutV2Client(FakeV2Client):
             correlation_id,
             resources_zip_bytes,
             reference_docx_bytes,
+            progress_callback,
         )
         if source_path.stem.endswith("slow"):
             raise ClientErrorV2(
@@ -142,7 +146,9 @@ class CapturingV2Client(FakeV2Client):
         correlation_id: str | None = None,
         resources_zip_bytes: bytes | None = None,
         reference_docx_bytes: bytes | None = None,
+        progress_callback=None,
     ) -> ArtifactOutcomeV2:
+        del progress_callback
         self.captured_specs.append(job_spec)
         self.captured_requests.append(
             {

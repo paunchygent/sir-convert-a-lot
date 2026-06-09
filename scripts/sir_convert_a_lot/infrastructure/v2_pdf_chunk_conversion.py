@@ -26,6 +26,7 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
     BackendInputError,
     ConversionBackend,
 )
+from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import dt_to_rfc3339, utc_now
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import GpuRuntimeProbeResult
 from scripts.sir_convert_a_lot.infrastructure.ocr_resolution_v2 import ResolvedPdfOcrRequestV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
@@ -106,6 +107,7 @@ def convert_pending_pdf_chunk_v2(
         on_chunk_worker_start()
         acquired_chunk_slot = True
     try:
+        chunk_started_at = dt_to_rfc3339(utc_now())
         chunk_started = time.perf_counter()
         (
             markdown_content,
@@ -128,6 +130,7 @@ def convert_pending_pdf_chunk_v2(
             execute_chunk_conversion=execute_chunk_conversion,
         )
         chunk_elapsed_ms = max(0, int((time.perf_counter() - chunk_started) * 1000))
+        chunk_completed_at = dt_to_rfc3339(utc_now())
         return PdfChunkConversionOutcomeV2(
             chunk_index=chunk_index,
             start_page=start_page,
@@ -141,6 +144,8 @@ def convert_pending_pdf_chunk_v2(
             warnings=chunk_warnings,
             phase_timings_ms=chunk_phase_timings,
             chunk_elapsed_ms=chunk_elapsed_ms,
+            started_at=chunk_started_at,
+            completed_at=chunk_completed_at,
         )
     finally:
         if acquired_chunk_slot and on_chunk_worker_finish is not None:

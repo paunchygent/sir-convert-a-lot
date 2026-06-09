@@ -98,11 +98,15 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
         "0.0.0.0",
         "--port",
         "8085",
+        "--reload",
+        "--reload-dir",
+        "/app/scripts",
     ]
     assert service.get("devices") is None
     assert service.get("group_add") is None
     assert service.get("ports") == ["${SIR_CONVERT_A_LOT_LOCAL_PORT:-8085}:8085"]
     assert service.get("volumes") == [
+        "./scripts:/app/scripts:delegated",
         "sir-convert-a-lot-local-data:/var/lib/sir-convert-a-lot/local",
         (
             "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"

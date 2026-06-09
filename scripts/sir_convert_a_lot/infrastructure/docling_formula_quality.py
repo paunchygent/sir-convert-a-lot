@@ -43,6 +43,11 @@ def formula_placeholder_count(markdown_content: str) -> int:
 
 def markdown_quality_penalty(markdown_content: str) -> int:
     """Compute structural markdown penalty for formula candidate selection."""
+    return markdown_quality_penalty_breakdown(markdown_content)["penalty"]
+
+
+def markdown_quality_penalty_breakdown(markdown_content: str) -> dict[str, int]:
+    """Return structural markdown penalty components for formula fallback."""
     lines = markdown_content.splitlines()
     leaked_control_sentinels = sum(
         1 for line in lines if _LEAKED_CONTROL_SENTINEL_RE.match(line) is not None
@@ -53,13 +58,21 @@ def markdown_quality_penalty(markdown_content: str) -> int:
     leaked_loc_tokens = sum(1 for line in lines if _LEAKED_LOC_TOKEN_RE.search(line) is not None)
     malformed_inline_math_lines = sum(1 for line in lines if _is_malformed_inline_math_line(line))
     unbalanced_display_math_blocks = sum(line.count("$$") for line in lines) % 2
-    return (
+    penalty = (
         leaked_control_sentinels * 20
         + leaked_formula_tags * 25
         + leaked_loc_tokens * 25
         + malformed_inline_math_lines * 20
         + unbalanced_display_math_blocks * 5
     )
+    return {
+        "leaked_control_sentinels": leaked_control_sentinels,
+        "leaked_formula_tags": leaked_formula_tags,
+        "leaked_loc_tokens": leaked_loc_tokens,
+        "malformed_inline_math_lines": malformed_inline_math_lines,
+        "unbalanced_display_math_blocks": unbalanced_display_math_blocks,
+        "penalty": penalty,
+    }
 
 
 def is_formula_runtime_unavailable(error_message: str) -> bool:

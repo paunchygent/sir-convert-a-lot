@@ -67,10 +67,10 @@
     "install_torch": "python -m pip install --upgrade torch torchvision torchaudio",
     "upgrade_pip": "python -m pip install --upgrade pip"
   },
-  "recipe_hash": "1741c95e7bc0e085935ea4b0f42109bf29db80c58c617fa33fd832a114729fbd",
+  "recipe_hash": "a3d2ccdbb32ac9b4b612994d0d5f77be762ed35b0577e2c7cf4e15449e14fbf1",
   "recipe_source_files": {
     "Dockerfile.deps": "1fb1ee6c8c19e703630c04c2dd55556c7b5a1bce563156b08a23d33cdda1ec9c",
-    "scripts/devops/service-deps-image.sh": "6b165d0751d58644e1091bfb6598022b521d6fc100e9a64c06e5fe62f5ffde5a",
+    "scripts/devops/service-deps-image.sh": "224fedd6a7d01f3e2e5c05365fef2aa7059dabc0a2d8acdd7d55359e11b4cc8e",
     "scripts/sir_convert_a_lot/devops/service_dependency_inputs.py": "04cbed7b206d7cc1dbabbd4b8854e892fad1107ad0b11cb8be4a17a03c9d3201"
   },
   "schema_version": 1

@@ -113,46 +113,54 @@ def test_gap_fill_package_encodes_text_entries_and_accepted_values(tmp_path: Pat
     )
 
 
-def test_task_303_unkeyed_choice_preserves_options_without_automatic_evaluation(
+def test_post_task_337_missing_choice_key_blocks_qti_package(
     tmp_path: Path,
 ) -> None:
     samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
     sample_dir = _write_sample(samples["unkeyed-multiple-response-preserved"], tmp_path)
-    item = _item_root(sample_dir / "qti-package.zip")
     report = _read_report(sample_dir / "qti-validation-report.json")
 
-    assert _response_declaration(item).attrib["cardinality"] == "multiple"
-    assert _choice_interaction(item).attrib["maxChoices"] == "3"
-    assert len(item.findall(f".//{{{QTI_NAMESPACE}}}simpleChoice")) == 3
-    assert _correct_values(item) == []
-    assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
-    assert _json_string(report, "package_status") == "passed"
-    assert _json_string(report, "profile_id") == "unkeyed_manual_qti_2_1_v1"
+    assert not (sample_dir / "qti-package.zip").exists()
+    assert _json_string(report, "package_status") == "blocked"
+    assert _json_string(report, "profile_id") == "examnet_qti_2_1_v1"
     follow_up = _first_manual_follow_up(report)
     assert _json_string(follow_up, "reason_code") == (
-        ExamNetQtiManualFollowUpReason.AUTOMATIC_EVALUATION_UNSUPPORTED
+        ExamNetQtiManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED
     )
+    assert _report_contains_warning(report, "needs one or more correct choices")
 
 
-def test_task_303_gap_and_matching_samples_are_manual_free_text_preservation(
+def test_post_task_337_missing_gap_values_block_qti_package(
     tmp_path: Path,
 ) -> None:
     samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
-    for sample_name, expected_text in (
-        ("manual-gap-fill-preserved-as-free-text", "Lucka 1: 84ef31ef"),
-        ("manual-matching-preserved-as-free-text", "Vänster kolumn:"),
-    ):
-        sample_dir = _write_sample(samples[sample_name], tmp_path / sample_name)
-        item = _item_root(sample_dir / "qti-package.zip")
-        report = _read_report(sample_dir / "qti-validation-report.json")
+    sample_dir = _write_sample(samples["manual-gap-fill-preserved-as-free-text"], tmp_path)
+    report = _read_report(sample_dir / "qti-validation-report.json")
 
-        assert item.find(f".//{{{QTI_NAMESPACE}}}extendedTextInteraction") is not None
-        assert item.find(f".//{{{QTI_NAMESPACE}}}correctResponse") is None
-        assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
-        assert expected_text in _item_xml(sample_dir / "qti-package.zip")
-        assert _json_string(report, "examnet_proof_status") == (
-            ExamNetQtiExamNetProofStatus.VENDOR_REPORTED_UNPROVEN
-        )
+    assert not (sample_dir / "qti-package.zip").exists()
+    assert _json_string(report, "package_status") == "blocked"
+    follow_up = _first_manual_follow_up(report)
+    assert _json_string(follow_up, "reason_code") == (
+        ExamNetQtiManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED
+    )
+    assert _report_contains_warning(report, "accepted values for every gap")
+
+
+def test_export_only_matching_sample_preserves_visible_content_as_manual_free_text(
+    tmp_path: Path,
+) -> None:
+    samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
+    sample_dir = _write_sample(samples["manual-matching-preserved-as-free-text"], tmp_path)
+    item = _item_root(sample_dir / "qti-package.zip")
+    report = _read_report(sample_dir / "qti-validation-report.json")
+
+    assert item.find(f".//{{{QTI_NAMESPACE}}}extendedTextInteraction") is not None
+    assert item.find(f".//{{{QTI_NAMESPACE}}}correctResponse") is None
+    assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
+    assert "Vänster kolumn:" in _item_xml(sample_dir / "qti-package.zip")
+    assert _json_string(report, "examnet_proof_status") == (
+        ExamNetQtiExamNetProofStatus.VENDOR_REPORTED_UNPROVEN
+    )
 
 
 def test_free_text_package_uses_extended_text_without_answer_key(tmp_path: Path) -> None:
@@ -357,7 +365,7 @@ def _sample(name: str) -> ExamNetQtiSamplePackage:
 
 
 def _write_sample(sample: ExamNetQtiSamplePackage, root: Path) -> Path:
-    sample_dir = root / sample.name
+    sample_dir = root / str(sample.name)
     plan = build_examnet_qti_package_plan(package_name=sample.name, items=sample.items)
     write_examnet_qti_artifacts(
         plan=plan,
@@ -398,6 +406,12 @@ def _first_manual_follow_up(report: dict[str, object]) -> dict[str, object]:
     first = value[0]
     assert isinstance(first, dict)
     return {str(key): child for key, child in first.items()}
+
+
+def _report_contains_warning(report: dict[str, object], expected_text: str) -> bool:
+    value = report["warnings"]
+    assert isinstance(value, list)
+    return any(isinstance(warning, str) and expected_text in warning for warning in value)
 
 
 def _item_root(package_path: Path) -> ElementTree.Element:

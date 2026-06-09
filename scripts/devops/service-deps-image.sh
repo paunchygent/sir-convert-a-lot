@@ -134,7 +134,8 @@ image_is_current() {
 }
 
 build_args=(
-  docker build
+  docker buildx build
+  --load
   --file Dockerfile.deps
   --target "${TARGET_STAGE}"
   --build-arg "PYTHON_IMAGE=${PYTHON_IMAGE}"
@@ -151,10 +152,27 @@ fi
 
 build_args+=(.)
 
+prune_superseded_dependency_images() {
+  if [[ "${SIR_CONVERT_A_LOT_PRUNE_SUPERSEDED_DEPS_IMAGES:-1}" == "0" ]]; then
+    echo "service-deps-image: skipping superseded dependency image cleanup by request" >&2
+    return 0
+  fi
+
+  echo "service-deps-image: pruning superseded dependency image tags for ${IMAGE_REPOSITORY}" >&2
+  if ! python -m scripts.sir_convert_a_lot.devops.prune_superseded_deps_images \
+    --execute \
+    --repository "${IMAGE_REPOSITORY}" \
+    --keep-tag local \
+    --keep-tag "${DEPENDENCY_IMAGE_HASH}"; then
+    echo "service-deps-image: superseded dependency image cleanup failed; continuing" >&2
+  fi
+}
+
 if [[ "${ACTION}" == "ensure" ]] && image_is_current; then
   docker tag "${HASH_IMAGE}" "${LOCAL_IMAGE}" >/dev/null
 else
   "${build_args[@]}"
+  prune_superseded_dependency_images
 fi
 
 printf "runtime_kind=%s\n" "${RUNTIME_KIND}"

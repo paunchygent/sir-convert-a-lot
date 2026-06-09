@@ -72,6 +72,17 @@ case "${1:-}" in
     fi
     exit 0
     ;;
+  buildx)
+    if [[ "${2:-}" != "build" ]]; then
+      echo "fake-docker: unsupported buildx command: $*" >&2
+      exit 90
+    fi
+    shift 2
+    if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
+      printf "buildx build %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
+    fi
+    exit 0
+    ;;
   tag)
     shift
     if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
@@ -80,7 +91,7 @@ case "${1:-}" in
     exit 0
     ;;
   *)
-    echo "fake-docker: expected compose/build/image/tag command, got: $*" >&2
+    echo "fake-docker: expected compose/buildx/build/image/tag command, got: $*" >&2
     exit 90
     ;;
 esac
@@ -306,7 +317,9 @@ def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: P
     log_lines = log_file.read_text(encoding="utf-8").splitlines()
     dependency_image = f"sir-convert-a-lot-deps-rocm:{identity['dependency_image_hash']}"
     assert f"tag {dependency_image} sir-convert-a-lot-deps-rocm:local" in log_lines
-    assert not any(line.startswith("build --file Dockerfile.deps") for line in log_lines)
+    assert not any(
+        line.startswith("buildx build --load --file Dockerfile.deps") for line in log_lines
+    )
 
 
 def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
@@ -334,7 +347,7 @@ def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
     assert result.returncode == 0
 
     log_lines = log_file.read_text(encoding="utf-8").splitlines()
-    assert any(line.startswith("build --file Dockerfile.deps") for line in log_lines)
+    assert any(line.startswith("buildx build --load --file Dockerfile.deps") for line in log_lines)
     assert any(
         f"--build-arg SERVICE_RECIPE_HASH={identity['recipe_hash']}" in line for line in log_lines
     )
