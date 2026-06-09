@@ -10,7 +10,13 @@ related:
   - docs/backlog/epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
   - docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
+  - docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
+  - docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md
+  - docs/backlog/reviews/review-26-ruthless-review-of-story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
+  - docs/backlog/reviews/review-27-ruthless-review-of-story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
+  - docs/backlog/reviews/review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
+  - docs/backlog/reviews/review-29-ruthless-review-of-story-54-transcript-formatter-strategies-over-canonical-json.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
@@ -39,6 +45,16 @@ Skriptoteket downstream planning so product access uses the existing
 `/sir-convert` edge and durable transcript retention remains outside Sir
 Convert.
 
+Story 55 coordination is completed as planning/alignment only. It is not
+runtime Gateway proxy, route registration, formatter, or UI work. Story 52 was
+accepted in Review 27 as a governed production-profile rejection. Story 53
+remains `proposed` and blocked until accepted Hemma STT sidecar
+benchmark-runner/profile proof exists, and Story 54 remains `proposed` and
+blocked until Story 53 has accepted route execution plus canonical
+`transcript_json` persistence. Therefore no downstream story may treat the
+route as live before Sir Convert registers it through a later governed runtime
+slice.
+
 ## Scope
 
 - Keep Sir Convert docs authoritative for:
@@ -48,11 +64,17 @@ Convert.
   - short operational retention;
   - no direct browser, anonymous, public-grant, or sidecar ingress.
 - Align HuleEdu planning around:
+  - HuleEdu ST-01-08 as the governed Gateway companion story;
   - Gateway `/sir-convert/v2/convert/...` proxy coverage for audio jobs;
   - `InternalIdentityContextV1` propagation and Sir Convert audience;
   - entitlement/rate-limit/admission error mapping;
   - OpenAPI/client updates for the approved-but-not-runtime route.
 - Align Skriptoteket planning around:
+  - Skriptoteket ST-21-05 for transcript intake and diarization controls;
+  - Skriptoteket ST-21-06 for transcript job lifecycle through HuleEdu
+    Gateway;
+  - Skriptoteket ST-21-07 for durable transcript saves and JSON-first
+    downstream formatting;
   - audio upload UX;
   - known speaker count and min/max speaker controls;
   - polling and transcript artifact retrieval through Gateway;
@@ -60,6 +82,26 @@ Convert.
   - JSON-first formatter strategy consumption.
 - Preserve cross-repo stop conditions so downstream repos do not implement
   against an unregistered route or bypass the Gateway edge.
+
+## Alignment Record
+
+- HuleEdu ST-01-08, Skriptoteket ST-21-05, Skriptoteket ST-21-06, and
+  Skriptoteket ST-21-07 are the downstream governed planning records linked
+  from this completed coordination story.
+- The shared access model is Gateway-only `/sir-convert/v2/convert` product
+  access with HuleEdu-signed `InternalIdentityContextV1` for user-originated
+  Sir Convert work.
+- The Sir Convert audio route is accepted planning authority but not an
+  implemented runtime surface while Story 53 remains blocked.
+- Retention ownership is split intentionally: short Sir Convert operational
+  retention for uploaded media and generated artifacts, durable Skriptoteket
+  transcript retention after product save.
+- Downstream sequencing is JSON-first durable save before formatter artifacts
+  as follow-on outputs. Skriptoteket may plan formatting consumption, but Sir
+  Convert Story 54 remains blocked until canonical transcript JSON persistence
+  is live.
+- The coordinated stop condition is no public, no-login, direct sidecar, or
+  sidecar-public ingress for transcript delivery.
 
 ## Acceptance Criteria
 
