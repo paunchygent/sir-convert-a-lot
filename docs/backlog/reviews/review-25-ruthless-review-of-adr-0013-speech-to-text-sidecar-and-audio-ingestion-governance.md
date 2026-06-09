@@ -464,11 +464,10 @@ PR-sized governed task.
 
 Initial ruthless review completed on 2026-06-09 with `changes_requested`.
 ADR-0013 remains `proposed`; this review does not accept or amend the decision.
-Remediation response recorded on 2026-06-09; ADR-0013 still requires
-independent re-review before acceptance.
+Remediation response recorded on 2026-06-09.
 
-Re-review completed on 2026-06-09 with `approved`. ADR-0013 remains `proposed`
-until a separate accepted decision/status-change task promotes it.
+Re-review completed on 2026-06-09 with `approved`. ADR-0013 remains
+`proposed` until a separate accepted decision/status-change task promotes it.
 
 ## Checklist
 
