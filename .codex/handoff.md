@@ -22,7 +22,7 @@ durable implementation authority lives in governed docs.
   `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active Gateway cutover lane:
   `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
-- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in Review 26; Stories 52-55 scaffolded.
+- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in Review 26; Story 52 accepted in Review 27 as governed profile rejection; Story 53 route registration remains blocked until a governed STT sidecar benchmark runner proves the Hemma backend profile.
 - Active exam artifact conversion/authoring lane:
   `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks:
@@ -158,6 +158,7 @@ formula evidence with VLM output.
 ## Validation
 
 - STT Story 51 implementation: focused pytest `35 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed.
+- STT Story 52 governed rejection: focused pytest `7 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed; Review 27 approved the rejection outcome.
 - Task 344 focused local tests passed:
   `pdm run test tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_task344_page_window_replay.py`
   -> `20 passed`.
