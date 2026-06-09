@@ -32,6 +32,30 @@ Implement the accepted `audio -> transcript_bundle` Service API v2 route once
 Story 51 defines route policy/admission caps and Story 52 proves the backend
 profile, producing a canonical owner-scoped JSON transcript artifact.
 
+## Blocked Implementation Decision
+
+Story 53 remains `proposed` and is blocked by Story 52 production profile
+rejection. Review 27 approved Story 52 only as a governed rejection outcome:
+production `stt_profile` and `diarization_profile` are rejected until a later
+governed STT sidecar benchmark image/runner proves FFmpeg/ffprobe, backend
+dependencies, token/cache readiness, Swedish/English fixtures, diarization
+speaker hints, and 120-minute lifecycle behavior on Hemma.
+
+Do not register the route, persist transcript artifacts, publish OpenAPI route
+fields, or implement formatter outputs from this story state. The next
+production-enabling slice must first provide accepted sidecar benchmark-runner
+and backend-profile evidence, then return to this story or a smaller linked
+task for route registration.
+
+Current runtime truth:
+
+- Service API v2 create-job route registration remains absent for
+  `audio -> transcript_bundle`.
+- `JobSpecV2` does not accept an `audio -> transcript_bundle` create-job
+  request.
+- Downstream and internal adapter docs describe audio transcription as a draft
+  or planned route, not a live runtime surface.
+
 ## Scope
 
 - Register the route in the v2 route/spec surfaces without adding legacy or
@@ -51,7 +75,7 @@ profile, producing a canonical owner-scoped JSON transcript artifact.
 
 ## Acceptance Criteria
 
-- [ ] Runtime route registration is gated by accepted Story 51 admission caps
+- [x] Runtime route registration is gated by accepted Story 51 admission caps
   and Story 52 backend profile evidence.
 - [ ] Successful jobs produce `transcript_json` with schema version, timestamps,
   speaker labels, language evidence, warnings, and bounded runtime metadata.
@@ -88,8 +112,15 @@ The story is done when the v2 runtime can accept governed audio transcript jobs
 and return owner-scoped `transcript_json` artifacts through the canonical
 Service API v2 lifecycle, with no formatter artifacts required yet.
 
+Current blocked state: this done definition is not satisfied. Story 53 cannot
+move to implementation completion until Story 52's rejected production profile
+is superseded by accepted Hemma sidecar benchmark-runner/profile proof.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Blocked implementation decision recorded
+- [x] Runtime route remains unregistered
+- [x] Story 52 rejection linked as current blocker
+- [ ] Runtime route implementation complete
+- [ ] Runtime tests and validations complete
+- [ ] Runtime docs synchronized
