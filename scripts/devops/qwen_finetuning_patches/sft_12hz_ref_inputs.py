@@ -2,7 +2,7 @@
 
 Purpose:
     Provide one canonical implementation for extracting, persisting, and loading
-    precomputed Task 101 reference-mel inputs.
+    precomputed Qwen pilot training reference-mel inputs.
 
 Relationships:
     - Imported by `dataset.py` to load persisted precomputed ref-mel tensors.
@@ -47,7 +47,7 @@ def load_audio_to_np(path: Path) -> tuple[AudioArray, int]:
 
 @torch.inference_mode()
 def extract_ref_mel(audio: AudioArray, *, sample_rate: int) -> torch.Tensor:
-    """Extract one canonical Task 101 reference-mel tensor from 24 kHz audio."""
+    """Extract one canonical Qwen pilot training reference-mel tensor from 24 kHz audio."""
     if sample_rate != 24000:
         raise ValueError("Only support 24kHz audio for precomputed reference inputs.")
     mel_spectrogram = _load_mel_spectrogram()

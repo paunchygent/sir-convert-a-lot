@@ -62,7 +62,7 @@ OpenVoice V2 produced technically successful but qualitatively sub-par teacher-v
 
 ## Deliverables
 
-- [x] Committed `benchmark:task-85` command surface (or equivalent named wrapper).
+- [x] Committed `benchmark:f5-tts-smoke` command surface (or equivalent named wrapper).
 - [x] Deterministic Hemma evidence under `build/verification/task-85-f5-tts-hemma/`.
 - [x] Recorded model asset inventory for the Swedish Hugging Face fine-tune, including the exact
   checkpoint filename used by the benchmark.

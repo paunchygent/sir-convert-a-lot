@@ -1,7 +1,7 @@
 """Tests for PyMuPDF backend mapping and deterministic conversion behavior.
 
 Purpose:
-    Validate Task 11 backend semantics: table-strategy mapping, deterministic
+    Validate PyMuPDF backend semantics backend semantics: table-strategy mapping, deterministic
     output, and metadata truth for `backend_strategy="pymupdf"`.
 
 Relationships:

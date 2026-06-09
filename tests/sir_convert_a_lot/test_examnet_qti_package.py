@@ -1,9 +1,9 @@
-"""Tests for the Task 280 Exam.net QTI package contract.
+"""Tests for the keyed QTI Exam.net QTI package contract.
 
 Purpose:
     Prove deterministic QTI 2.1 sample package generation, validation-report
     semantics, image packaging, matching proof-gating, and DigiExam IR adapter
-    compatibility.
+    alignment.
 
 Relationships:
     - Exercises QTI domain contracts, package planning, validation reports, and
@@ -43,8 +43,8 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_samples import (
     ExamNetQtiSamplePackage,
-    examnet_qti_task_280_samples,
-    examnet_qti_task_303_samples,
+    examnet_qti_keyed_samples,
+    examnet_qti_manual_unkeyed_samples,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_validation import (
     build_examnet_qti_validation_report,
@@ -56,8 +56,8 @@ from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import 
 )
 
 
-def test_task_280_sample_packages_are_deterministic(tmp_path: Path) -> None:
-    for sample in examnet_qti_task_280_samples():
+def test_sample_packages_are_deterministic(tmp_path: Path) -> None:
+    for sample in examnet_qti_keyed_samples():
         first = _write_sample(sample, tmp_path / "first")
         second = _write_sample(sample, tmp_path / "second")
 
@@ -113,10 +113,10 @@ def test_gap_fill_package_encodes_text_entries_and_accepted_values(tmp_path: Pat
     )
 
 
-def test_post_task_337_missing_choice_key_blocks_qti_package(
+def test_post_missing_choice_key_blocks_qti_package(
     tmp_path: Path,
 ) -> None:
-    samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
+    samples = {sample.name: sample for sample in examnet_qti_manual_unkeyed_samples()}
     sample_dir = _write_sample(samples["unkeyed-multiple-response-preserved"], tmp_path)
     report = _read_report(sample_dir / "qti-validation-report.json")
 
@@ -130,10 +130,10 @@ def test_post_task_337_missing_choice_key_blocks_qti_package(
     assert _report_contains_warning(report, "needs one or more correct choices")
 
 
-def test_post_task_337_missing_gap_values_block_qti_package(
+def test_post_missing_gap_values_block_qti_package(
     tmp_path: Path,
 ) -> None:
-    samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
+    samples = {sample.name: sample for sample in examnet_qti_manual_unkeyed_samples()}
     sample_dir = _write_sample(samples["manual-gap-fill-preserved-as-free-text"], tmp_path)
     report = _read_report(sample_dir / "qti-validation-report.json")
 
@@ -149,7 +149,7 @@ def test_post_task_337_missing_gap_values_block_qti_package(
 def test_export_only_matching_sample_preserves_visible_content_as_manual_free_text(
     tmp_path: Path,
 ) -> None:
-    samples = {sample.name: sample for sample in examnet_qti_task_303_samples()}
+    samples = {sample.name: sample for sample in examnet_qti_manual_unkeyed_samples()}
     sample_dir = _write_sample(samples["manual-matching-preserved-as-free-text"], tmp_path)
     item = _item_root(sample_dir / "qti-package.zip")
     report = _read_report(sample_dir / "qti-validation-report.json")
@@ -360,7 +360,7 @@ def test_digiexam_ir_adapter_feeds_reusable_qti_package_plan() -> None:
 
 
 def _sample(name: str) -> ExamNetQtiSamplePackage:
-    samples = {sample.name: sample for sample in examnet_qti_task_280_samples()}
+    samples = {sample.name: sample for sample in examnet_qti_keyed_samples()}
     return samples[name]
 
 

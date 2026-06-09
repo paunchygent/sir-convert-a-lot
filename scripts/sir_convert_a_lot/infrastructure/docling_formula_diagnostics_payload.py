@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Used by `infrastructure.docling_formula_diagnostics`.
-    - Complements the JSONL event writer for Task 344 replay evidence.
+    - Complements the JSONL event writer for Docling page-window replay replay evidence.
 """
 
 from __future__ import annotations

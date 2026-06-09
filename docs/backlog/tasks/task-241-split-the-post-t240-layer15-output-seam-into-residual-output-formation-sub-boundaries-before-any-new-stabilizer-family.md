@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-240-split-the-post-t237-downstream-convergence-seam-beneath-layer15-output-before-any-promotion-discussion.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -37,7 +37,7 @@ before any new stabilizer family is considered.
 
 - Treat `T240` as closed truth:
   - truthful bounded rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task240-20260318t165458z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task240-20260318t165458z-a1`
   - resolved downstream classification:
     `converged_layer15_output`
   - fixed winner only:
@@ -99,20 +99,20 @@ before any new stabilizer family is considered.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t240_layer15_output_split_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_layer15_output_split_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_stability_lab.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task241-20260318t175714z-a1 --skip-build --hook-profile talker_core_post_t240_layer15_output_split --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task241-20260318t175714z-a1 --skip-build --hook-profile talker_core_post_t240_layer15_output_split --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
 
 ## Result
 
 `T241` is now closed as truthful mechanism evidence under:
 
 - run root:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task241-20260318t175714z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task241-20260318t175714z-a1`
 - fixed winner:
   `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
 - hook profile:

@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Used by `infrastructure.docling_formula_diagnostics`.
-    - Consumed by Task 344 page-window replay reports.
+    - Consumed by Docling page-window replay page-window replay reports.
 """
 
 from __future__ import annotations

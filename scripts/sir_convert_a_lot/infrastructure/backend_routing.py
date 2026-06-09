@@ -1,7 +1,7 @@
 """Backend routing and policy validation for conversion runtime orchestration.
 
 Purpose:
-    Centralize backend-selection and rollout-compatibility checks so runtime
+    Centralize backend-selection and rollout policy checks so runtime
     orchestration remains focused on job lifecycle and persistence concerns.
 
 Relationships:
@@ -34,7 +34,7 @@ class PolicyViolation:
 
 
 def validate_backend_strategy(spec: JobSpec) -> PolicyViolation | None:
-    """Validate backend-specific compatibility constraints."""
+    """Validate backend-specific policy constraints."""
     if spec.conversion.backend_strategy != BackendStrategy.PYMUPDF:
         return None
 

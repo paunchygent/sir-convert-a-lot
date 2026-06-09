@@ -1,12 +1,12 @@
-"""Tests for Task 79 Qwen request payload and input-evidence helpers.
+"""Tests for TTS sidecar benchmark Qwen request payload and input-evidence helpers.
 
 Purpose:
     Protect the Base-clone request shape and deterministic input-evidence
     preparation added for the Qwen Hemma benchmark.
 
 Relationships:
-    - Exercises `task79_qwen3_tts_request_payload`.
-    - Complements the higher-level Task 79 benchmark tests.
+    - Exercises `qwen3_tts_request_payload`.
+    - Complements the higher-level TTS sidecar benchmark tests.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.devops.task79_qwen3_tts_request_payload import (
+from scripts.sir_convert_a_lot.devops.qwen3_tts_request_payload import (
     build_speech_payload,
     encode_audio_to_data_url,
     prepare_request_inputs,

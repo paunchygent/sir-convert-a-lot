@@ -20,7 +20,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import DetachedLaunch, De
 
 @dataclass(frozen=True)
 class LaunchMetadataCompatibilityDefaults:
-    """Default values for legacy launch-payload compatibility resolution."""
+    """Default values for retained launch-payload field resolution."""
 
     default_throughput_profile_label: str
     default_legacy_small_batch_throughput_profile_label: str

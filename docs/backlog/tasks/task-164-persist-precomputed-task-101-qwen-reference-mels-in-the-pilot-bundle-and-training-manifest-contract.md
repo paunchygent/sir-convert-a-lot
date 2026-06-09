@@ -1,6 +1,6 @@
 ---
 id: task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract
-title: Persist precomputed Task 101 Qwen reference mels in the pilot bundle and training manifest contract
+title: Persist precomputed Qwen reference mels in the pilot bundle and training manifest contract
 type: task
 status: proposed
 priority: medium
@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md
   - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
   - docs/backlog/tasks/task-161-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-task-101-qwen-reference-mels.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
 labels:
   - qwen
   - finetuning

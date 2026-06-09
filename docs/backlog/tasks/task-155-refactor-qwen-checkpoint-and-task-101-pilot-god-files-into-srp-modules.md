@@ -61,7 +61,7 @@ story-level refactoring goal.
 - Extract Task 101 detached-pilot metadata parsing, path helpers, artifact
   writers, latest-pointer resolution, resume-checkpoint validation, and status
   markdown rendering into one dedicated module that the launcher imports.
-- Extract Task 101 runtime data contracts and artifact/parsing helpers into
+- Extract Qwen pilot runtime data contracts and artifact/parsing helpers into
   dedicated modules so the runtime surface is primarily Docker command and
   detached-run orchestration.
 - Extract Task 101 probe report/status payload assembly and JSON artifact
@@ -104,7 +104,7 @@ story-level refactoring goal.
   artifact paths, JSON parsing helpers, latest-launch resolution,
   latest-checkpoint resolution, resume-path validation, and markdown rendering
   currently embedded in `run_task101_hemma_qwen_pilot.py`.
-- [x] The new Task 101 runtime helper modules own the detached-run data
+- [x] The new Qwen pilot runtime helper modules own the detached-run data
   contracts and the JSON/artifact/Docker-inspect parsing logic currently
   embedded in `task101_qwen_pilot_runtime.py`.
 - [x] The new Task 101 probe helper module owns the status/report payload

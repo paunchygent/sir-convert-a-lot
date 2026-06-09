@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Called by `scripts.sir_convert_a_lot.interfaces.cli_app` for the
-      `md -> pdf` route (Task 28).
+      `md -> pdf` route (Markdown to PDF route).
     - Intended for reuse by later routes such as `md -> docx` and hybrid
       `pdf -> docx` (service pdf->md + local md->html->docx).
 """

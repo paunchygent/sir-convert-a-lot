@@ -1,11 +1,11 @@
-"""Task 309 structured-provider microprobes.
+"""answer-key live validation structured-provider microprobes.
 
 Purpose:
     Execute redacted structured-output microprobes against the selected Task
     309 provider before full-corpus answer-key validation.
 
 Relationships:
-    - Uses the generic Task 296 HTTP structured-provider adapter.
+    - Uses the generic structured LLM provider harness HTTP structured-provider adapter.
     - Proves vLLM choice/schema modes or llama.cpp JSON Schema/GBNF modes.
     - Produces report rows without raw prompts or raw provider responses.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 import httpx
 
 from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import (
-    build_task309_provider_status,
+    build_answer_key_provider_status,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_MODEL,
@@ -61,11 +61,11 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
 
-TASK309_MICROPROBE_REPORT_SCHEMA_VERSION = "task309_granite_microprobe_report_v1"
+ANSWER_KEY_MICROPROBE_REPORT_SCHEMA_VERSION = "answer_key_granite_microprobe_report_v1"
 
 
 @dataclass(frozen=True)
-class Task309MicroprobeResult:
+class AnswerKeyMicroprobeResult:
     """One redacted provider microprobe result."""
 
     probe_id: str
@@ -82,7 +82,7 @@ class Task309MicroprobeResult:
 
 
 @dataclass(frozen=True)
-class Task309MicroprobeReport:
+class AnswerKeyMicroprobeReport:
     """Redacted provider microprobe report."""
 
     schema_version: str
@@ -91,7 +91,7 @@ class Task309MicroprobeReport:
     provider_runtime: str
     provider_ready: bool
     blocked: bool
-    results: tuple[Task309MicroprobeResult, ...]
+    results: tuple[AnswerKeyMicroprobeResult, ...]
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload for the microprobe report."""
@@ -99,7 +99,7 @@ class Task309MicroprobeReport:
         return _json_object(asdict(self))
 
 
-def run_task309_microprobes(
+def run_answer_key_microprobes(
     *,
     provider_url: str = DEFAULT_PROVIDER_URL,
     model: str = DEFAULT_PROVIDER_MODEL,
@@ -111,11 +111,11 @@ def run_task309_microprobes(
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
     vision_media_path: Path | None = None,
-) -> Task309MicroprobeReport:
-    """Run the Task 309 provider microprobes."""
+) -> AnswerKeyMicroprobeReport:
+    """Run the answer-key live validation provider microprobes."""
 
     return asyncio.run(
-        _run_task309_microprobes(
+        _run_answer_key_microprobes(
             provider_url=provider_url,
             model=model,
             provider_runtime=provider_runtime,
@@ -130,7 +130,7 @@ def run_task309_microprobes(
     )
 
 
-async def _run_task309_microprobes(
+async def _run_answer_key_microprobes(
     *,
     provider_url: str,
     model: str,
@@ -142,19 +142,19 @@ async def _run_task309_microprobes(
     require_provider_ready: bool,
     timeout_seconds: float,
     vision_media_path: Path | None,
-) -> Task309MicroprobeReport:
+) -> AnswerKeyMicroprobeReport:
     from urllib.parse import urlparse
 
     parsed = urlparse(provider_url)
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    ready = build_task309_provider_status(
+    ready = build_answer_key_provider_status(
         provider_url=provider_url,
         port=port,
         timeout_seconds=min(timeout_seconds, 2.0),
     ).ready
     if require_provider_ready and not ready:
-        return Task309MicroprobeReport(
-            schema_version=TASK309_MICROPROBE_REPORT_SCHEMA_VERSION,
+        return AnswerKeyMicroprobeReport(
+            schema_version=ANSWER_KEY_MICROPROBE_REPORT_SCHEMA_VERSION,
             provider_url=provider_url,
             model=model,
             provider_runtime=provider_runtime.value,
@@ -184,8 +184,8 @@ async def _run_task309_microprobes(
                 vision_media_path=vision_media_path,
             )
         ]
-    return Task309MicroprobeReport(
-        schema_version=TASK309_MICROPROBE_REPORT_SCHEMA_VERSION,
+    return AnswerKeyMicroprobeReport(
+        schema_version=ANSWER_KEY_MICROPROBE_REPORT_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
         provider_runtime=provider_runtime.value,
@@ -200,12 +200,12 @@ async def _microprobe(
     request: StructuredLLMRequest,
     profile: StructuredLLMProviderProfile,
     expected: dict[str, object],
-) -> Task309MicroprobeResult:
+) -> AnswerKeyMicroprobeResult:
     started = time.perf_counter()
     try:
         response = await provider.complete_structured_chat(request=request, profile=profile)
     except StructuredLLMProviderError as exc:
-        return Task309MicroprobeResult(
+        return AnswerKeyMicroprobeResult(
             probe_id=request.item_id,
             output_mode=profile.output_mode.value,
             schema_name=request.output_spec.schema_name,
@@ -218,7 +218,7 @@ async def _microprobe(
             failure_code=exc.failure_code.value,
             provider_error_diagnostic=exc.diagnostic,
         )
-    return Task309MicroprobeResult(
+    return AnswerKeyMicroprobeResult(
         probe_id=request.item_id,
         output_mode=profile.output_mode.value,
         schema_name=request.output_spec.schema_name,
@@ -339,10 +339,10 @@ def _request(
         else ()
     )
     return StructuredLLMRequest(
-        job_id="task309-microprobe",
+        job_id="answer-key-live-validation-microprobe",
         item_id=item_id,
         item_type="microprobe",
-        prompt_template_version="task309_granite_microprobe_v1",
+        prompt_template_version="answer_key_granite_microprobe_v1",
         system_prompt="Return only the constrained answer requested by the schema.",
         user_payload=user_payload,
         output_spec=output_spec,
@@ -368,8 +368,8 @@ def _write_tiny_vision_probe(vision_media_path: Path) -> str:
 
 def _choice_probe_spec() -> StructuredOutputSpec:
     return StructuredOutputSpec(
-        schema_name="task309_choice_microprobe",
-        schema_version="task309_choice_microprobe_v1",
+        schema_name="answer_key_choice_microprobe",
+        schema_version="answer_key_choice_microprobe_v1",
         json_schema={
             "type": "object",
             "additionalProperties": False,
@@ -452,7 +452,7 @@ def _content_matches(response: StructuredLLMResponse, expected: dict[str, object
 
 def _json_object(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise TypeError("Task 309 microprobe report must serialize to an object.")
+        raise TypeError("answer-key live validation microprobe report must serialize to an object.")
     return {str(key): _json_value(child) for key, child in value.items()}
 
 
@@ -463,4 +463,6 @@ def _json_value(value: object) -> object:
         return [_json_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 microprobe JSON value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation microprobe JSON value: {type(value).__name__}"
+    )

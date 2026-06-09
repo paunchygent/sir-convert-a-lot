@@ -1,4 +1,4 @@
-"""Tests for the canonical Task 203 codebook-fusion proof surface."""
+"""Tests for the canonical Qwen codebook-fusion proof codebook-fusion proof surface."""
 
 from __future__ import annotations
 

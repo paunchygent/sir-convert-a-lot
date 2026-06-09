@@ -31,7 +31,7 @@ def test_rixvox_train_staging_parse_args_defaults() -> None:
 
 
 def test_normalize_train_audio_shards_rejects_empty_tuple() -> None:
-    """Task 108 should require at least one bounded train shard."""
+    """Rixvox staging should require at least one bounded train shard."""
     with pytest.raises(SystemExit, match="at least one"):
         normalize_train_audio_shards(())
 

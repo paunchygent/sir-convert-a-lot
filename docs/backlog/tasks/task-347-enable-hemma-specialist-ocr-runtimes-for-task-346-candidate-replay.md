@@ -1,9 +1,9 @@
 ---
-id: 'task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay'
-title: 'Enable Hemma specialist OCR runtimes for Task 346 candidate replay'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay
+title: Enable Hemma specialist OCR runtimes for Task 346 candidate replay
+type: task
+status: completed
+priority: high
 created: '2026-06-06'
 last_updated: '2026-06-06'
 related:
@@ -11,10 +11,10 @@ related:
   - docs/backlog/tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md
   - docs/backlog/tasks/task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md
   - docs/runbooks/runbook-hemma-gpu-runtime.md
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py
-  - scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_vllm_batch.py
-  - scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_hf_command.py
-  - scripts/sir_convert_a_lot/devops/task347_paddle_formula_command.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval.py
+  - scripts/sir_convert_a_lot/devops/deepseek_ocr2_vllm_batch.py
+  - scripts/sir_convert_a_lot/devops/deepseek_ocr2_hf_command.py
+  - scripts/sir_convert_a_lot/devops/paddle_formula_command.py
 labels:
   - pdf
   - formula
@@ -24,6 +24,7 @@ labels:
   - paddleocr
   - deepseek-ocr
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## User Intent and Boundary
@@ -123,8 +124,7 @@ Primary docs consulted before implementation:
   outcome.
 - DeepSeek-OCR-2 docs: official Transformers inference uses
   `AutoTokenizer.from_pretrained(..., trust_remote_code=True)`,
-  `AutoModel.from_pretrained(..., trust_remote_code=True,
-  use_safetensors=True)`, prompt
+  `AutoModel.from_pretrained(..., trust_remote_code=True, use_safetensors=True)`, prompt
   `<image>\n<|grounding|>Convert the document to markdown.`, and
   `model.infer(..., base_size=1024, image_size=768, crop_mode=True)`.
 
@@ -143,8 +143,7 @@ PaddleOCR:
 
 - Hemma isolated runtime install used `paddleocr 3.6.0` plus the official
   `paddlepaddle-gpu==3.3.0` wheel index published for CUDA.
-- Import failed on Hemma ROCm with `ImportError: libcuda.so.1: cannot open
-  shared object file`.
+- Import failed on Hemma ROCm with `ImportError: libcuda.so.1: cannot open shared object file`.
 - This proves only that the tested pip CUDA wheel path is blocked on Hemma
   ROCm. It does not prove that PaddleOCR formula recognition cannot run through
   a native AMD/ROCm PaddleOCR/PaddleX runtime.
@@ -253,20 +252,20 @@ Root-cause conclusion from this task:
 ## Validation Evidence
 
 - Local focused gates:
-  - `pdm run pytest-root tests/sir_convert_a_lot/test_task347_deepseek_ocr2_vllm_batch.py`
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_deepseek_ocr2_vllm_batch.py`
     -> `3 passed`.
-  - `pdm run ruff check scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_vllm_batch.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_vllm_batch.py`
+  - `pdm run ruff check scripts/sir_convert_a_lot/devops/deepseek_ocr2_vllm_batch.py tests/sir_convert_a_lot/test_deepseek_ocr2_vllm_batch.py`
     -> passed.
-  - `pdm run mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_vllm_batch.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_vllm_batch.py`
+  - `pdm run mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/devops/deepseek_ocr2_vllm_batch.py tests/sir_convert_a_lot/test_deepseek_ocr2_vllm_batch.py`
     -> no issues.
-  - `pdm run ruff check scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_hf_command.py`
+  - `pdm run ruff check scripts/sir_convert_a_lot/devops/deepseek_ocr2_hf_command.py`
     -> passed.
-  - `pdm run mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_hf_command.py`
+  - `pdm run mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/devops/deepseek_ocr2_hf_command.py`
     -> no issues.
 - Hemma focused gates after sync:
-  - `pdm run run-hemma --shell '/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_task347_deepseek_ocr2_vllm_batch.py'`
+  - `pdm run run-hemma --shell '/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_deepseek_ocr2_vllm_batch.py'`
     -> `3 passed`.
-  - `pdm run run-hemma --shell '/home/paunchygent/.local/bin/pdm run ruff check scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_vllm_batch.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_vllm_batch.py'`
+  - `pdm run run-hemma --shell '/home/paunchygent/.local/bin/pdm run ruff check scripts/sir_convert_a_lot/devops/deepseek_ocr2_vllm_batch.py tests/sir_convert_a_lot/test_deepseek_ocr2_vllm_batch.py'`
     -> passed.
 
 ## Checklist

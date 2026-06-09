@@ -3,8 +3,8 @@ type: reference
 id: REF-reference-index
 title: Reference Index
 status: active
-created: 2026-06-09
-last_updated: 2026-06-09
+created: 2026-06-10
+last_updated: 2026-06-10
 owners:
   - platform
 labels:
@@ -22,6 +22,7 @@ Generated index for reference, research, review, and roadmap documents.
 
 | ID | Title | Type | Status |
 |---|---|---|---|
+| REF-consumer-integration-handoff | [Consumer Integration Handoff](ref-consumer-integration-handoff.md) | reference | active |
 | REF-digiexam-exam-artifact-item-type-evidence | [DigiExam Exam Artifact Item Type Evidence](ref-digiexam-exam-artifact-item-type-evidence.md) | reference | active |
 | REF-digiexam-jspdf-export-shape-and-examnet-migration-research | [DigiExam jsPDF Export Shape And Exam.net Migration Research](ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md) | reference | active |
 | REF-digiexam-machine-marked-answer-key-completion-architecture | [DigiExam Machine-marked Answer-key Completion Architecture](ref-digiexam-machine-marked-answer-key-completion-architecture.md) | reference | active |
@@ -31,10 +32,15 @@ Generated index for reference, research, review, and roadmap documents.
 | REF-exam-converter-solid-domain-coupling-audit | [Exam Converter SOLID Domain Coupling Audit](ref-exam-converter-solid-domain-coupling-audit.md) | reference | active |
 | REF-examnet-pdf-to-exam-swedish-renderer-profile | [Exam.net PDF-to-Exam Swedish Renderer Profile](ref-examnet-pdf-to-exam-swedish-renderer-profile.md) | reference | active |
 | REF-examnet-qti-import-contract-and-validation-strategy | [Exam.net QTI Import Contract And Validation Strategy](ref-examnet-qti-import-contract-and-validation-strategy.md) | reference | active |
+| REF-gpu-governance-benchmark-evidence | [GPU Governance Benchmark Evidence](ref-gpu-governance-benchmark-evidence.md) | reference | active |
 | REF-hemma-sidecar-tts-md-to-wav-contract-outline | [Hemma Sidecar TTS md to wav Contract Outline](ref-hemma-sidecar-tts-md-to-wav-contract-outline.md) | reference | active |
 | REF-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18 | [html_to_pdf_handout_templates conversion capability matrix](ref-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18.md) | reference | active |
 | REF-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan | [Local Model Answer-key Completion Runtime And Benchmark Plan](ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md) | reference | active |
 | REF-machine-marked-answer-key-completion-implementation-roadmap | [Machine-marked Answer-key Completion Implementation Roadmap](ref-machine-marked-answer-key-completion-implementation-roadmap.md) | reference | active |
+| REF-pdf-parallel-throughput-evidence | [PDF Parallel Throughput Evidence](ref-pdf-parallel-throughput-evidence.md) | reference | active |
+| REF-pdf-telemetry-overhead-evidence | [PDF Telemetry Overhead Evidence](ref-pdf-telemetry-overhead-evidence.md) | reference | active |
+| REF-qwen-live-training-pipeline-analysis-2026-03-13 | [Qwen Live Training Pipeline Analysis and Monitoring Evidence (2026-03-13)](ref-qwen-live-training-pipeline-analysis-2026-03-13.md) | reference | active |
+| REF-qwen-training-eval-pilot-progress-2026-03-15 | [Qwen Training/Eval Pilot Progress Ledger (2026-03-15)](ref-qwen-training-eval-pilot-progress-2026-03-15.md) | reference | active |
 | REF-qwen3-tts-colab-portable-slice-preprocessing | [Qwen3-TTS Colab Portable Slice Preprocessing Reference](ref-qwen3-tts-colab-portable-slice-preprocessing.md) | reference | active |
 | REF-qwen3-tts-swedish-corpus-curation-policy | [Qwen3-TTS Swedish Corpus Curation Policy](ref-qwen3-tts-swedish-corpus-curation-policy.md) | reference | active |
 | REF-qwen3-tts-swedish-finetuning-guide | [Qwen3-TTS Swedish Finetuning Guide for General Language Support](ref-qwen3-tts-swedish-finetuning-guide.md) | reference | active |
@@ -47,9 +53,3 @@ Generated index for reference, research, review, and roadmap documents.
 | REF-review-02-qwen-ungraceful-detached-shutdown-evidence | [Review 02 Qwen Ungraceful Detached Shutdown Evidence](ref-review-02-qwen-ungraceful-detached-shutdown-evidence.md) | reference | active |
 | REF-sir-convert-gateway-cutover-caller-inventory | [Sir Convert Gateway Cutover Caller Inventory](ref-sir-convert-gateway-cutover-caller-inventory.md) | reference | active |
 | REF-sir-convert-internalidentitycontextv1-authorization-profile | [Sir Convert InternalIdentityContextV1 Authorization Profile](ref-sir-convert-internalidentitycontextv1-authorization-profile.md) | reference | active |
-| REF-story-003b-gpu-governance-benchmark-evidence | [Story 003b GPU Governance Benchmark Evidence](ref-story-003b-gpu-governance-benchmark-evidence.md) | reference | active |
-| REF-story-003c-consumer-integration-handoff | [Story 003c Consumer Integration Handoff](ref-story-003c-consumer-integration-handoff.md) | reference | active |
-| REF-task-72-parallel-throughput-evidence | [Task 72 Parallel Throughput Evidence](ref-task-72-parallel-throughput-evidence.md) | reference | active |
-| REF-task-73-telemetry-overhead-evidence | [Task 73 Telemetry Overhead Evidence](ref-task-73-telemetry-overhead-evidence.md) | reference | active |
-| REF-task101-live-qwen-training-pipeline-analysis-2026-03-13 | [Task 101 Live Qwen Training Pipeline Analysis and Monitoring Evidence (2026-03-13)](ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md) | reference | active |
-| REF-task101-training-eval-pilot-progress-2026-03-15 | [Task 101 Training/Eval Pilot Progress Ledger (2026-03-15)](ref-task101-training-eval-pilot-progress-2026-03-15.md) | reference | active |

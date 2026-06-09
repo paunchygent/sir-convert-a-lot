@@ -51,7 +51,7 @@ def launch_detached_non_finite_diagnosis(
     end_optimizer_step: int,
     dockerfile_path: Path | None = None,
 ) -> DetachedLaunch:
-    """Launch one detached bounded diagnostic replay for Task 101."""
+    """Launch one detached bounded diagnostic replay for Qwen pilot training."""
     if start_optimizer_step <= 0:
         raise ValueError("`start_optimizer_step` must be positive.")
     if end_optimizer_step < start_optimizer_step:

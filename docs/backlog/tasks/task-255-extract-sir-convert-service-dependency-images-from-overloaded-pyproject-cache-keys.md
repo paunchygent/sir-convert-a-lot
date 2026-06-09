@@ -128,7 +128,7 @@ Out of scope:
     dependency work, and `prod-recreate` restarted `sir_convert_a_lot_prod`
     healthy.
   - Final durable proof artifacts are present under
-    `build/verification/task-255-service-deps-image-cache/`.
+    `build/verification/service-dependency-image-cache/`.
   - Review 05 found that the first hash-tagged image identity could stay stale
     when the dependency-image build recipe changed. The fix adds a separate
     build-recipe hash and combined dependency-image hash, labels images with
@@ -200,7 +200,7 @@ validation.
 
 Hemma proof commands must run through detached command surfaces when they can
 outlive a local terminal session. The live proof must capture these artifacts
-under `build/verification/task-255-service-deps-image-cache/`:
+under `build/verification/service-dependency-image-cache/`:
 
 - `dependency-inputs-before.json`: selected dependency input files, runtime
   pins, and computed dependency hash before the script-only change.

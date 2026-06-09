@@ -45,7 +45,7 @@ curated documentation.
 ## Acceptance Criteria
 
 - [x] `benchmark:task-12` default outputs no longer target `docs/reference`.
-- [x] `benchmark:story-003b` default outputs no longer target `docs/reference`.
+- [x] `benchmark:gpu-governance` default outputs no longer target `docs/reference`.
 - [x] Benchmark runners fail fast if generated output paths target `docs/reference`.
 - [x] `docs/reference` no longer stores high-churn generated benchmark/test artifacts.
 - [x] Runtime processing output policy remains deterministic (`CONVERTER_STORAGE_ROOT` /

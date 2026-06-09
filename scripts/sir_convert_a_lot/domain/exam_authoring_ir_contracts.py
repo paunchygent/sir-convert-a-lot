@@ -5,7 +5,7 @@ Purpose:
     target validators/exporters, beginning with matching interactions.
 
 Relationships:
-    - Owns the Task 307 first-slice matching contract extracted from
+    - Owns the Markdown to DOCX route7 first-slice matching contract extracted from
       DigiExam-named adapter contracts.
     - Feeds future Exam.net PDF, teacher-authored DOCX/Markdown, QTI, and
       Exam.net PDF target-profile validators without depending on DigiExam

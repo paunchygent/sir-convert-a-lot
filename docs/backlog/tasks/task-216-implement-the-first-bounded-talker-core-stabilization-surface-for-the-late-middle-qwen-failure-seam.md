@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -48,10 +48,10 @@ exploration vehicle, not a one-off proof wrapper.
   is local to the late-middle talker-core seam and can be enabled without
   rewriting the whole decoder contract.
 - Reuse existing surfaces instead of building a new proof stack:
-  - mini-bundle truth from `story30_freshstart_bundle.py` and
-    `story30_backward_lineage_bundle.py`
+  - mini-bundle truth from `qwen_freshstart_bundle.py` and
+    `qwen_backward_lineage_bundle.py`
   - forward/backward kernel from `backward_lineage_probe.py`
-  - hook plumbing from `story30_backward_lineage_hooks.py`
+  - hook plumbing from `qwen_backward_lineage_hooks.py`
   - layer targeting from `sft_12hz_talker_core_trace.py`
 - Emit one compact machine-readable results table per matrix run under a single
   output root, not one full proof package per experiment.
@@ -107,7 +107,7 @@ exploration vehicle, not a one-off proof wrapper.
   talker forward pass without changing the semantic-only text contract or the
   no-projection graph.
 - Added the lightweight Story 31 exploration surface:
-  `pdm run qwen-story31-stability-lab run`
+  `pdm run qwen-stability-lab run`
 - The lab reuses the exact failing-row mini-bundle plus the existing
   backward-lineage probe and writes one compact matrix artifact set under a
   single output root:

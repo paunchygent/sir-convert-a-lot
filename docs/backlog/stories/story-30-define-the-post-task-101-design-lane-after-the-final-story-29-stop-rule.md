@@ -19,7 +19,7 @@ related:
   - docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/reviews/review-03-architect-review-of-post-task-101-qwen-stabilization-candidates-after-story-29.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -32,7 +32,7 @@ Implementation slice with acceptance-driven scope.
 
 ## Objective
 
-Execute the chosen post-Story-29 design lane for the preserved Task 101 Qwen
+Execute the chosen post-Story-29 design lane for the preserved Qwen
 series after bounded RCA closed on the current no-projection lane.
 
 The architect verdict is now fixed:

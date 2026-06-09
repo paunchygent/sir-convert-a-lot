@@ -1,6 +1,6 @@
 ---
 id: task-161-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-task-101-qwen-reference-mels
-title: Add ref-mel caching and a promotion decision for precomputed Task 101 Qwen reference mels
+title: Add ref-mel caching and a promotion decision for precomputed Qwen reference mels
 type: task
 status: in_progress
 priority: high
@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md
   - docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md
   - docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
 labels:
   - qwen
   - finetuning

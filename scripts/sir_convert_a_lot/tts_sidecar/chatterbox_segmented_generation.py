@@ -263,7 +263,7 @@ def _stitch_waveforms_simple(
     cross_fade_ms: int,
     segment_texts: list[str],
 ) -> StitchResult:
-    """Preserve the original Task 90 waveform-only stitcher as a baseline."""
+    """Stitch Chatterbox segment waveforms with waveform-only cross-fading."""
     cross_fade_samples = max(int(round(sample_rate_hz * (cross_fade_ms / 1000.0))), 0)
     processed_waveforms = [
         _tensor_to_numpy(_normalize_waveform_tensor(waveform)) for waveform in waveforms

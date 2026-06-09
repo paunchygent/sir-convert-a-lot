@@ -1,7 +1,7 @@
 """Training-manifest helpers for the patched Qwen `sft_12hz.py` trainer.
 
 Purpose:
-    Resolve Task 101 training JSONL rows into validated `TrainingRow` payloads
+    Resolve Qwen pilot training training JSONL rows into validated `TrainingRow` payloads
     with absolute manifest-relative paths before the trainer constructs the
     dataset.
 
@@ -28,7 +28,7 @@ def _load_training_rows(
     *,
     require_precomputed_ref_inputs: bool = False,
 ) -> list[TrainingRow]:
-    """Load and validate one Task 101 training JSONL manifest."""
+    """Load and validate one Qwen pilot training training JSONL manifest."""
     rows: list[TrainingRow] = []
     with train_jsonl_path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):

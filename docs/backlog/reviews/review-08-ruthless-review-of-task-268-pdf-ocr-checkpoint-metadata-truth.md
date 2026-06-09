@@ -17,7 +17,7 @@ related:
   - scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpointed_executor.py
   - scripts/sir_convert_a_lot/infrastructure/pdf_checkpoints_v2.py
   - scripts/sir_convert_a_lot/infrastructure/pdf_checkpoint_metadata_v2.py
-  - tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py
+  - tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py
 labels:
   - review
   - task-268
@@ -48,7 +48,7 @@ Structured review artifact for implementation or readiness checks.
   - `scripts/sir_convert_a_lot/infrastructure/conversion_backend.py`
   - `scripts/sir_convert_a_lot/infrastructure/runtime_conversion.py`
   - `scripts/sir_convert_a_lot/infrastructure/docling_backend.py`
-  - `tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py`
+  - `tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py`
   - `tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py`
   - `tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py`
   - `docs/backlog/tasks/task-268-preserve-pdf-ocr-checkpoint-resume-metadata-truth.md`
@@ -67,7 +67,7 @@ Structured review artifact for implementation or readiness checks.
   - Task 268 records successful local validation for format, lint, typecheck,
     focused checkpoint/OCR tests, and coverage.
   - This review reran the narrow Task 268 checkpoint tests:
-    `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`.
+    `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`.
     The command failed with one Task 268 regression-test failure and four
     passing tests.
 
@@ -77,8 +77,8 @@ Structured review artifact for implementation or readiness checks.
    the parallel executor it enables.
 
    - Evidence:
-     `tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py:161`
-     uses `_task268_config`, which enables parallel PDF chunks with
+     `tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py:161`
+     uses `_pdf_checkpoint_metadata_config`, which enables parallel PDF chunks with
      `max_chunk_workers=2`, then line 169 asserts `conversion_calls == [(1,), (2,)]`. On this review run, the same focused command listed in Task 268
      failed because the executor legitimately converted page 2 before page 1:
      `assert [(2,), (1,)] == [(1,), (2,)]`.
@@ -95,7 +95,7 @@ Structured review artifact for implementation or readiness checks.
      on the zero-new-chunk pass without depending on thread scheduling order.
    - Proof requirement:
      Rerun
-     `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`
+     `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`
      repeatedly enough to show the focused proof is stable.
 
 1. `high` - Missing checkpoint chunk artifacts are silently skipped, so a
@@ -128,7 +128,7 @@ Structured review artifact for implementation or readiness checks.
      with two succeeded chunks, removes or corrupts one chunk artifact, reruns
      zero-new-chunk finalization, and asserts a non-retryable checkpoint error
      rather than a successful truncated artifact. Run:
-     `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`.
+     `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py -q`.
 
 1. `high` - `ocr_engine_used` and `ocr_languages_used` are persisted from the
    resolved request/configuration, not from backend-observed chunk output.
@@ -144,7 +144,7 @@ Structured review artifact for implementation or readiness checks.
      in
      `scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpointed_executor.py:740`
      and lines 744-745. The focused Task 268 test discards the OCR arguments
-     in `tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py:125`
+     in `tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py:125`
      through line 134 and then asserts config-derived values at lines 197-198.
    - Why it matters:
      Task 268's acceptance criteria require truthful per-chunk
@@ -167,7 +167,7 @@ Structured review artifact for implementation or readiness checks.
      configuration but returns a different observed OCR engine/language set,
      then assert the checkpoint and terminal result use the observed values or
      fail closed. Run:
-     `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py -q`
+     `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py -q`
      plus `pdm run typecheck-all`.
 
 1. `medium` - The public checkpoint endpoint now exposes a new raw schema, but
@@ -245,7 +245,7 @@ selection, and byte-identical resume finalization.
   checkpoint endpoint contract test to assert schema version plus per-chunk
   metadata fields.
 - Focused proof after fixes:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+  `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py -q`
   passed with `20 passed`.
 - `pdm run typecheck-all` passed with
   `Success: no issues found in 574 source files`.
@@ -278,7 +278,7 @@ Disposition:
 
 Verification run during re-review:
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py -q`
   passed with `20 passed`.
 - `pdm run typecheck-all` passed with
   `Success: no issues found in 574 source files`.

@@ -41,7 +41,7 @@ _TRAIN_ROW = {
     "ref_audio": "refs/speaker-a/ref.wav",
     "precomputed_ref_input_path": "precomputed/ref_mel/swedish_pilot_train/speaker-a/ref_mel.pt",
     "precomputed_ref_input_kind": "ref_mel",
-    "precomputed_ref_input_version": "task101_ref_mel_v1",
+    "precomputed_ref_input_version": "qwen_reference_mel_v1",
     "precomputed_ref_input_source_audio": "refs/speaker-a/ref.wav",
     "speaker_id": "speaker-a",
 }
@@ -159,7 +159,7 @@ def test_train_with_args_writes_final_durable_checkpoint_on_stop_request(
     assert summary.ref_mel_cache["max_items"] == 2048
     assert summary.durable_checkpoint_paths == [summary.latest_durable_checkpoint_path]
     assert summary.tracking is not None
-    assert summary.tracking.project_name == "task101-qwen-pilot"
+    assert summary.tracking.project_name == "qwen-swedish-finetune"
     assert summary.tracking.run_name == output_model_path.parent.name
     assert summary.tracking.mlflow_run_id == "fake-mlflow-run-id"
     assert latest_checkpoint["reason"] == "signal-stop"

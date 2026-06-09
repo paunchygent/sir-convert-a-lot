@@ -1,7 +1,7 @@
 """Focused tests for Qwen dataloader tuning helpers.
 
 Purpose:
-    Validate Task 101 dataloader tuning normalization and DataLoader kwargs
+    Validate Qwen pilot training dataloader tuning normalization and DataLoader kwargs
     shaping without requiring a real GPU run.
 
 Relationships:

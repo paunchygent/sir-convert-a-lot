@@ -13,7 +13,7 @@ related:
   - docs/backlog/tasks/task-222-define-the-qwen-experiment-taxonomy-surface-status-matrix-and-short-freeze-rule.md
   - docs/backlog/tasks/task-223-publish-the-canonical-qwen-experiment-spec-and-single-ledger-update-contract.md
   - docs/backlog/tasks/task-224-reroute-qwen-operator-docs-through-the-active-surface-matrix-and-demote-legacy-proof-workflows.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - .codex/rules/096-qwen-experiment-governance.md
 labels:
@@ -28,7 +28,7 @@ Implementation slice with acceptance-driven scope.
 
 ## Objective
 
-Consolidate the Qwen Task 101 experiment program behind one explicit
+Consolidate the Qwen Qwen experiment program behind one explicit
 governance model so operators stop mixing historical-control, mechanism, and
 recovery answers across non-equivalent runs.
 
@@ -53,7 +53,7 @@ This story is the short docs/control-plane consolidation slice that:
 - Keep the existing CLI surfaces callable in this slice; do not rename or
   remove commands.
 - Reuse
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+  `docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`
   as the single live result ledger.
 - Add one normative experiment-spec contract that future active runs must
   record before causal claims are made.
@@ -68,13 +68,13 @@ This story is the short docs/control-plane consolidation slice that:
 - [x] Story 32 records the one-question-per-run rule and the promotion ladder:
   local gate -> short bounded fresh-start run -> longer governed proof.
 - [x] The package marks:
-  - `qwen-t221-historical-control` as `provenance` / `active`
-  - `qwen-story31-stability-lab` as `mechanism` / `active`
+  - `qwen-historical-pilot-control` as `provenance` / `active`
+  - `qwen-stability-lab` as `mechanism` / `active`
   - the governed `qwen-train launch/status` proof lane as
     `recovery` / `active but blocked until promotion`
-  - `qwen-story30-freshstart-proof` and
-    `qwen-story30-backward-lineage` as `legacy-readonly`
-  - `qwen-t197-proof` and `qwen-t198-proof` as `deprecated` for new work
+  - `qwen-freshstart-proof` and
+    `qwen-backward-lineage` as `legacy-readonly`
+  - `qwen-fallback-proof` and `qwen-fallback-accumulation-proof` as `deprecated` for new work
 - [x] The Task 101 progress reference is explicitly documented as the single
   live result ledger for active Qwen experiment work.
 - [x] The runbook, skill, Story 31, Epic 08, and `current.md` all point to

@@ -73,7 +73,7 @@ contract, not a redesign of pilot ownership or bundle semantics.
 
 ## Acceptance Criteria
 
-- [x] `pdm run task-101-pilot-bundle build` no longer requires read access to
+- [x] `pdm run qwen-pilot-bundle build` no longer requires read access to
   `canonical_processed_root_freeze.json` when the canonical owned/conflict
   ledgers are readable.
 - [x] The builder still fails closed if the canonical row-key ledgers are

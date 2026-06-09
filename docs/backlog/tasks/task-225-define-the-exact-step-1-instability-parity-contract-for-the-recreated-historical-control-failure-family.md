@@ -12,8 +12,8 @@ related:
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md
   - docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -96,7 +96,7 @@ The parity slice must compare these two surfaces and no others:
 
 | Surface | Meaning | Repo anchor |
 | --- | --- | --- |
-| current patched path | The exact current trainer/runtime path that produced the `T221` recreated-control failure | `pdm run qwen-t221-historical-control`, `scripts/sir_convert_a_lot/ml/qwen/training/t221_historical_control.py`, `scripts/devops/qwen_finetuning_patches/sft_12hz.py`, `scripts/devops/qwen_finetuning_patches/dataset.py` |
+| current patched path | The exact current trainer/runtime path that produced the `T221` recreated-control failure | `pdm run qwen-historical-pilot-control`, `scripts/sir_convert_a_lot/ml/qwen/training/qwen_historical_pilot_control.py`, `scripts/devops/qwen_finetuning_patches/sft_12hz.py`, `scripts/devops/qwen_finetuning_patches/dataset.py` |
 | intended upstream-compatible path | A repo-owned parity reconstruction of the no-projection fine-tuning contract restored in `T193`, stripped down to the exact early failure family with explicit checkpoint captures | `T193` no-projection contract plus the deterministic parity probe required by `T226` |
 
 The intended path must preserve these truths:

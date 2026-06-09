@@ -1,7 +1,7 @@
-"""Offline batch-plan analysis for Task 101 throughput experiments.
+"""Offline batch-plan analysis for Qwen pilot training throughput experiments.
 
 Purpose:
-    Compute faithful Task 101 batch-occupancy comparisons for multiple
+    Compute faithful Qwen pilot training batch-occupancy comparisons for multiple
     throughput profiles without launching a live training run so bounded
     occupancy experiments can be promoted before Hemma GPU time is spent.
 
@@ -137,7 +137,7 @@ class SingletonFitAuditSummary:
 def build_parser() -> argparse.ArgumentParser:
     """Build the committed parser for batch-plan analysis."""
     parser = argparse.ArgumentParser(
-        description="Analyze Task 101 batch occupancy for one or more throughput profiles."
+        description="Analyze Qwen batch occupancy for one or more throughput profiles."
     )
     parser.add_argument("--model-id", required=True)
     parser.add_argument("--train-jsonl", type=Path, required=True)
@@ -477,7 +477,7 @@ def _report_markdown(
 ) -> str:
     """Render one concise Markdown summary for the batch-plan analysis."""
     lines = [
-        "# Task 172 Batch Plan Analysis",
+        "# Qwen batch-plan analysis Batch Plan Analysis",
         "",
         f"- train_jsonl: `{train_jsonl.as_posix()}`",
         f"- model_id: `{model_id}`",

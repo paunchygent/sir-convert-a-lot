@@ -1,19 +1,18 @@
 """Transcript formatter blocked-state governance evidence.
 
 Purpose:
-    Prove Story 54 remains a governed blocked formatter slice while the
+    Prove transcript formatter remains a governed blocked formatter slice while the
     canonical transcript JSON route and persistence contract are not accepted.
 
 Relationships:
-    - Reads Story 54 and the retained Story 53 review as docs-as-code
+    - Reads transcript formatter and the retained audio-transcription route execution review as
+      docs-as-code
       authority for the current blocked implementation decision.
     - Exercises the v2 route/spec and audio public-options boundaries to ensure
       formatter artifact requests are not exposed as runtime behavior.
 """
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -28,25 +27,18 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     build_create_job_route_registry_v2,
 )
+from tests.sir_convert_a_lot.backlog_document_test_support import (
+    backlog_document_path,
+    repo_relative_path,
+)
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-STORY_54_PATH = (
-    REPO_ROOT
-    / "docs/backlog/stories/"
-    / "story-54-transcript-formatter-strategies-over-canonical-json.md"
+TRANSCRIPT_FORMATTER_STORY_PATH = backlog_document_path(
+    category="stories",
+    title_slug="transcript-formatter-strategies-over-canonical-json",
 )
-STORY_53_REVIEW_PATH = (
-    REPO_ROOT
-    / "docs/backlog/reviews/"
-    / (
-        "review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-"
-        "execution-and-json-artifact-persistence.md"
-    )
-)
-STORY_53_REVIEW_RELATED_PATH = (
-    "docs/backlog/reviews/"
-    "review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-"
-    "execution-and-json-artifact-persistence.md"
+TRANSCRIPT_ROUTE_REVIEW_PATH = backlog_document_path(
+    category="reviews",
+    title_slug="audio-transcript-bundle-route-execution-and-json-artifact-persistence",
 )
 
 
@@ -78,7 +70,7 @@ def test_transcript_formatters_stay_blocked_without_canonical_json_runtime() -> 
     "formatter_artifact",
     ["transcript_txt", "transcript_md", "transcript_vtt", "transcript_srt"],
 )
-def test_formatter_artifact_requests_are_rejected_while_story_53_is_blocked(
+def test_formatter_artifact_requests_are_rejected_while_audio_transcript_route_is_blocked(
     formatter_artifact: str,
 ) -> None:
     options = AudioTranscriptionPublicOptions(
@@ -97,23 +89,23 @@ def test_formatter_artifact_requests_are_rejected_while_story_53_is_blocked(
     )
 
 
-def test_story_54_records_blocked_decision_without_runtime_completion() -> None:
-    story_source = STORY_54_PATH.read_text(encoding="utf-8")
+def test_transcript_formatter_records_blocked_decision_without_runtime_completion() -> None:
+    story_source = TRANSCRIPT_FORMATTER_STORY_PATH.read_text(encoding="utf-8")
     story_frontmatter = _frontmatter(story_source)
     story_text = _single_line(story_source)
-    story_53_review_text = _single_line(STORY_53_REVIEW_PATH.read_text(encoding="utf-8"))
+    route_review_text = _single_line(TRANSCRIPT_ROUTE_REVIEW_PATH.read_text(encoding="utf-8"))
 
     assert "status: proposed" in story_text
-    assert f"  - {STORY_53_REVIEW_RELATED_PATH}" in story_frontmatter
+    assert f"  - {repo_relative_path(TRANSCRIPT_ROUTE_REVIEW_PATH)}" in story_frontmatter
     assert "## Blocked Implementation Decision" in story_text
-    assert "Story 54 remains `proposed`" in story_text
+    assert "remains `proposed`" in story_text
     assert "canonical `transcript_json` persistence" in story_text
     assert "Do not implement formatter strategies" in story_text
     assert "- [x] Blocked implementation decision recorded" in story_text
     assert "- [x] Formatter runtime remains unimplemented" in story_text
     assert "- [ ] Runtime formatter implementation complete" in story_text
-    assert "This review does not authorize route registration" in story_53_review_text
-    assert "transcript artifact persistence" in story_53_review_text
+    assert "This review does not authorize route registration" in route_review_text
+    assert "transcript artifact persistence" in route_review_text
 
 
 def _single_line(value: str) -> str:

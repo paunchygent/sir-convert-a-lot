@@ -1,7 +1,7 @@
-"""Host-side batch-plan analysis launcher for Task 172 Qwen experiments.
+"""Host-side batch-plan analysis launcher for Qwen batch-plan experiments.
 
 Purpose:
-    Run the committed Task 172 batch-plan occupancy analysis inside the
+    Run the committed Qwen batch-plan analysis batch-plan occupancy analysis inside the
     governed Qwen training image so candidate batching profiles can be compared
     faithfully before bounded Hemma proofs are promoted.
 
@@ -39,7 +39,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.control_plane.defaults import (
 )
 
 CONTAINER_BUILD_ROOT = Path("/app/build")
-DEFAULT_OUTPUT_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "verification/task-172-batch-plan-analysis"
+DEFAULT_OUTPUT_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "verification/qwen-batch-plan-analysis"
 DEFAULT_PROFILE_LABELS = (
     "hemma-throughput-balanced-v1",
     "hemma-throughput-balanced-quarantine-v1",
@@ -50,9 +50,9 @@ DEFAULT_FIT_AUDIT_CODEC_FRAME_BAND_MAX = 375
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the committed parser for Task 172 batch-plan analysis."""
+    """Build the committed parser for Qwen batch-plan analysis batch-plan analysis."""
     parser = argparse.ArgumentParser(
-        description="Analyze Task 172 Qwen batch plans inside the governed training image."
+        description="Analyze Qwen batch-plan batch plans inside the governed training image."
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--pilot-bundle-root", type=Path, default=DEFAULT_PILOT_BUNDLE_ROOT)
@@ -88,7 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         dest="profile_labels",
         default=None,
-        help="Repeat for each profile to analyze. Defaults to the Task 172 experiment matrix.",
+        help="Repeat for each profile. Defaults to the Qwen batch-plan matrix.",
     )
     parser.add_argument("--skip-build", action="store_true")
     return parser
@@ -111,7 +111,7 @@ def _write_json(path: Path, payload: dict[str, object]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Launch one governed Task 172 batch-plan analysis run."""
+    """Launch one governed Qwen batch-plan analysis batch-plan analysis run."""
     parser = build_parser()
     args = parser.parse_args(argv)
     output_root = Path(args.output_root)

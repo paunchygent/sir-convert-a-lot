@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Exercises service API v2 through FastAPI `TestClient`.
-    - Covers Task 292 public grant verifier and read-lease runtime behavior.
+    - Covers public Exam Converter grant public grant verifier and read-lease runtime behavior.
 """
 
 from __future__ import annotations

@@ -1,9 +1,9 @@
 ---
-id: 'task-349-probe-official-amd-paddlex-paddle-vllm-container-for-paddleocr-formula-recognition-on-hemma'
-title: 'Probe official AMD PaddleX Paddle/vLLM container for PaddleOCR formula recognition on Hemma'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-349-probe-official-amd-paddlex-paddle-vllm-container-for-paddleocr-formula-recognition-on-hemma
+title: Probe official AMD PaddleX Paddle/vLLM container for PaddleOCR formula recognition on Hemma
+type: task
+status: completed
+priority: high
 created: '2026-06-06'
 last_updated: '2026-06-06'
 related:
@@ -20,6 +20,7 @@ labels:
   - rocm
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

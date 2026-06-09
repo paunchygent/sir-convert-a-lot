@@ -11,7 +11,7 @@ Relationships:
       `application.exam_authoring_corrections_apply_contracts`.
     - Delegates source-state bundle issuance to
       `application.exam_authoring_correction_source_state_issuer`.
-    - Replaces the superseded Task 324 matching-specific apply route.
+    - Replaces the superseded HTML to PDF route4 matching-specific apply route.
 """
 
 from __future__ import annotations

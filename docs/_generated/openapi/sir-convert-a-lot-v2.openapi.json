@@ -2279,7 +2279,7 @@
       },
       "DigiExamOverlayReviewedChoiceAnswerPayload": {
         "additionalProperties": false,
-        "description": "Reviewed choice answer payload using Task 297 candidate semantics.",
+        "description": "Reviewed choice answer payload using reviewed choice candidate candidate semantics.",
         "properties": {
           "correct_alternative_ids": {
             "items": {
@@ -2429,7 +2429,7 @@
       },
       "DigiExamOverlayReviewedGapFillAnswerPayload": {
         "additionalProperties": false,
-        "description": "Reviewed gap-fill answer payload using Task 305 candidate semantics.",
+        "description": "Reviewed gap-fill answer payload using gap-fill candidate candidate semantics.",
         "properties": {
           "gap_answers": {
             "items": {
@@ -4095,7 +4095,7 @@
       },
       "ExamAuthoringManualMatchingAnswerKeyCorrectionV1": {
         "additionalProperties": false,
-        "description": "Manual matching answer-key correction implemented by Task 330.",
+        "description": "Manual matching answer-key correction for teacher-authored answer keys.",
         "properties": {
           "candidate_lineage": {
             "anyOf": [

@@ -1,4 +1,4 @@
-"""Focused tests for Task 101 codebook fusion.
+"""Focused tests for Qwen pilot training codebook fusion.
 
 Purpose:
     Validate that the auxiliary-codebook fusion helper preserves the summed

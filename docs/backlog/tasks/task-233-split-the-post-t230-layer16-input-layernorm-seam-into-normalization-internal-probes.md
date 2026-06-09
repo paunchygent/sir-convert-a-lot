@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md
   - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
   - docs/backlog/tasks/task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -37,7 +37,7 @@ question:
 
 - Treat `T230` as closed negative evidence:
   - truthful bounded rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task230-20260318t082049z-a1`
   - all three normalization-entry variants reproduced the same failure matrix
   - no bounded entry-rescale winner exists
 - Reuse the exact Story 31 lab and keep all non-diagnostic factors fixed:
@@ -64,8 +64,8 @@ question:
   hook profile; no multi-variant family is allowed in `T233`.
 - Add one focused `T233` assessment payload that identifies the earliest
   internal normalization sub-surface across the three required cases.
-- If the existing `story31_sub_boundary_assessment.py` would become mixed-purpose
-  or oversized, add a separate bounded `story31_input_layernorm_internal_assessment.py`
+- If the existing `qwen_sub_boundary_assessment.py` would become mixed-purpose
+  or oversized, add a separate bounded `qwen_input_layernorm_internal_assessment.py`
   module instead of bloating the `T229/T230` assessment path.
 - Do not mix in new stabilizers, optimizer changes, bundle changes, or recovery
   launches.
@@ -93,7 +93,7 @@ question:
 ## Result
 
 - Truthful bounded rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task233-20260318t112544z-a1`
 - The new `talker_core_input_layernorm_internal` profile landed and traced the
   committed internal RMSNorm chain:
   - `talker_core.layer_16.input_layernorm.residual_input`
@@ -139,8 +139,8 @@ question:
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_hooks.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_input_layernorm_internal_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
-- [x] `pdm run qwen-story31-stability-lab --help`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_backward_lineage_hooks.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_input_layernorm_internal_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_stability_lab.py -q`
+- [x] `pdm run qwen-stability-lab --help`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run typecheck-all`
@@ -149,7 +149,7 @@ question:
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1 --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task233-20260318t112544z-a1 --skip-build --hook-profile talker_core_input_layernorm_internal --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
 
 ## Checklist
 

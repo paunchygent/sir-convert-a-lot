@@ -1,8 +1,8 @@
-"""Task 309 provider exchange capture.
+"""answer-key live validation provider exchange capture.
 
 Purpose:
     Capture validation-only structured-provider requests and responses for
-    Task 309 live runs while preserving the normal provider decoding contract.
+    answer-key live validation live runs while preserving the normal provider decoding contract.
 
 Relationships:
     - Used by `answer_key_live_corpus_execution` for advisory corpus evidence.
@@ -42,7 +42,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_responses import (
 
 
 @dataclass(frozen=True)
-class Task309ProviderExchange:
+class AnswerKeyProviderExchange:
     """One validation-only provider request/response exchange."""
 
     job_id: str
@@ -65,7 +65,7 @@ class Task309ProviderExchange:
         return _json_object(asdict(self))
 
 
-class Task309CapturingStructuredChatProvider:
+class CapturingAnswerKeyStructuredChatProvider:
     """HTTP provider adapter that keeps validation-only raw exchanges."""
 
     def __init__(
@@ -76,7 +76,7 @@ class Task309CapturingStructuredChatProvider:
     ) -> None:
         self._client = client
         self._connections = connections
-        self._exchanges: dict[tuple[str, str], Task309ProviderExchange] = {}
+        self._exchanges: dict[tuple[str, str], AnswerKeyProviderExchange] = {}
 
     async def complete_structured_chat(
         self,
@@ -159,7 +159,7 @@ class Task309CapturingStructuredChatProvider:
             response_payload_json=response_payload_json,
         )
 
-    def exchanges_for_job(self, job_id: str) -> dict[str, Task309ProviderExchange]:
+    def exchanges_for_job(self, job_id: str) -> dict[str, AnswerKeyProviderExchange]:
         """Return captured exchanges for one source-file job id."""
 
         return {
@@ -262,7 +262,7 @@ class Task309CapturingStructuredChatProvider:
         decoded_content_json: str | None,
         failure_code: str | None,
     ) -> None:
-        self._exchanges[(request.job_id, request.item_id)] = Task309ProviderExchange(
+        self._exchanges[(request.job_id, request.item_id)] = AnswerKeyProviderExchange(
             job_id=request.job_id,
             item_id=request.item_id,
             provider_profile_id=profile.provider_id,
@@ -302,7 +302,7 @@ def _canonical_json(payload: object) -> str:
 
 def _json_object(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise TypeError("Task 309 provider exchange must serialize to an object.")
+        raise TypeError("answer-key live validation provider exchange must serialize to an object.")
     return {str(key): _json_payload_value(child) for key, child in value.items()}
 
 
@@ -313,4 +313,6 @@ def _json_payload_value(value: object) -> JsonValue:
         return [_json_payload_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 exchange JSON value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation exchange JSON value: {type(value).__name__}"
+    )

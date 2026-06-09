@@ -27,9 +27,6 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import StoredJobRecordV2
-from scripts.sir_convert_a_lot.infrastructure.job_store_spec_compat_v2 import (
-    normalize_stored_job_spec_payload_v2,
-)
 from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
     TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
     normalize_phase_timings_map,
@@ -39,6 +36,9 @@ from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
 )
 from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
     parse_progress_page_fields,
+)
+from scripts.sir_convert_a_lot.infrastructure.stored_job_spec_normalization_v2 import (
+    normalize_stored_job_spec_payload_v2,
 )
 
 

@@ -10,10 +10,10 @@ related:
   - docs/backlog/epics/epic-03-unified-conversion-service.md
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/converters/internal_adapter_contract_v1.md
-  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
-  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md
-  - docs/backlog/tasks/task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md
-  - docs/reference/ref-story-003c-consumer-integration-handoff.md
+  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-consumer-integration.md
+  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-consumer-integration.md
+  - docs/backlog/tasks/task-08-adopt-consumer-integration-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md
+  - docs/reference/ref-consumer-integration-handoff.md
 labels:
   - integration
   - huledu

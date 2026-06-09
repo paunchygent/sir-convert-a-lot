@@ -160,7 +160,7 @@ Inventory checked in this slice:
 
 Focused regression coverage:
 
-- `tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py` proves
+- `tests/sir_convert_a_lot/test_ocr_metadata_contract.py` proves
   `ConversionMetadataV2` accepts the active OCR result fields and rejects the
   deferred legacy result fields.
 - `tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py`
@@ -176,7 +176,7 @@ the repair.
 - `pdm run format-all` (pass)
 - `pdm run lint-fix` (pass)
 - `pdm run typecheck-all` (pass)
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q` (pass; includes no-OCR PDF `ocr_languages_used=[]` contract)
+- `pdm run pytest-root tests/sir_convert_a_lot/test_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q` (pass; includes no-OCR PDF `ocr_languages_used=[]` contract)
 - `pdm run docs-sync` (pass)
 - `pdm run docs-validate` (pass)
 - `pdm run skills-validate` (pass)

@@ -1,4 +1,4 @@
-"""Utility functions for the Task 12 scientific-corpus harness.
+"""Utility functions for the scientific-corpus benchmark scientific-corpus harness.
 
 Purpose:
     Provide deterministic helpers for corpus discovery, job spec generation,
@@ -183,7 +183,7 @@ def idempotency_key(pdf_path: Path, job_spec: dict[str, object], *, scope: str) 
     digest = hashlib.sha256(
         f"{scope}:{pdf_path.name}:{file_sha}:{spec_sha}".encode("utf-8")
     ).hexdigest()
-    return f"task12_{digest[:48]}"
+    return f"scientific_corpus_{digest[:48]}"
 
 
 def artifact_paths(

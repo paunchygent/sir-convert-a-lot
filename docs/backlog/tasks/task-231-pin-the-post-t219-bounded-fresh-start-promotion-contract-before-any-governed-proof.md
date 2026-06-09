@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -56,7 +56,7 @@ local gate -> bounded fresh-start promotion contract -> governed proof.
 ## Result
 
 - `T230` closed negative under:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task230-20260318t082049z-a1`
 - Explicit promotion decision: no winner.
 - Operator rule:
   - `T217` remains blocked

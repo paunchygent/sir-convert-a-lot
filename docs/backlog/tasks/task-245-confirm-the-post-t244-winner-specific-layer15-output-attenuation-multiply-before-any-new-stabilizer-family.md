@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-244-split-the-post-t243-layer15-output-return-path-before-any-new-stabilizer-family.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -33,7 +33,7 @@ rather than in a broader layer-15 seam.
 
 - Treat `T244` as closed truth:
   - truthful rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task244-20260318t193736z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task244-20260318t193736z-a1`
   - resolved classification:
     `converged_output_return`
   - dominant surface:
@@ -91,7 +91,7 @@ rather than in a broader layer-15 seam.
 ## Result
 
 - Live Hemma rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task245-20260318t202916z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task245-20260318t202916z-a1`
 - Fixed confirmation variant:
   `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3_layer15_output_scale_fp32`
 - Resolved classification:
@@ -114,7 +114,7 @@ rather than in a broader layer-15 seam.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_stabilization.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t243_layer15_output_return_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t244_layer15_output_multiply_confirmation_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_stabilization.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_layer15_output_return_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_layer15_output_multiply_confirmation_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_stability_lab.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run typecheck-all`
@@ -123,8 +123,8 @@ rather than in a broader layer-15 seam.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story31-stability-lab --help`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task245-20260318t202916z-a1 --skip-build --hook-profile talker_core_post_t243_layer15_output_return --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3_layer15_output_scale_fp32`
+- [x] `pdm run qwen-stability-lab --help`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task245-20260318t202916z-a1 --skip-build --hook-profile talker_core_post_t243_layer15_output_return --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3_layer15_output_scale_fp32`
 
 ## Checklist
 

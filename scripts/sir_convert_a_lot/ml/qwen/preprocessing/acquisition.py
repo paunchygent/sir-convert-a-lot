@@ -52,7 +52,7 @@ class AcquisitionSettings:
 
 @dataclass(frozen=True)
 class DownloadedFileRecord:
-    """One staged dataset asset in the Task 106 acquisition report."""
+    """One staged dataset asset in the Qwen dataset acquisition acquisition report."""
 
     dataset: str
     revision: str
@@ -322,8 +322,8 @@ def acquire_waxholm_assets(
 
 def run_acquisition(settings: AcquisitionSettings) -> AcquisitionReport:
     """Run one bounded Hemma-hosted raw-corpus acquisition pass."""
-    ensure_bulk_data_storage_path(settings.data_root, label="Task 106 data_root")
-    ensure_data_disk_path(settings.hf_cache_dir, label="Task 106 hf_cache_dir")
+    ensure_bulk_data_storage_path(settings.data_root, label="Qwen dataset acquisition data_root")
+    ensure_data_disk_path(settings.hf_cache_dir, label="Qwen dataset acquisition hf_cache_dir")
     settings.data_root.mkdir(parents=True, exist_ok=True)
     settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)
 

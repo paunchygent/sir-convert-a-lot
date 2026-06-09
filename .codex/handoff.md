@@ -22,7 +22,9 @@ durable implementation authority lives in governed docs.
   `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active Gateway cutover lane:
   `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
-- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in Review 26; Story 52 accepted in Review 27 as governed profile rejection; Story 53 route registration remains blocked until a governed STT sidecar benchmark runner proves the Hemma backend profile.
+- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in
+  Review 26; Story 52 accepted in Review 27 as governed profile rejection; Task
+  351 adds the preflight runner; Story 53 remains blocked until live Hemma proof.
 - Active exam artifact conversion/authoring lane:
   `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks:
@@ -118,7 +120,7 @@ DeepSeek-OCR-2 vLLM is rejected for the current Hemma ROCm lane: it loads only
 after adapter fixes but finishes pages `13-16` by length with repeated
 impossible tokens. Task 350 replaced the default Task 346 DeepSeek candidate
 with HF eager and reran pages `13-16` on Hemma:
-`build/verification/task-350-deepseek-hf-eager-task346-replay/task346-formula-candidate-eval-20260606T201448Z/report.json`.
+`build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/report.json`.
 HF eager succeeded on four pages in `676555 ms`, wrote `result.mmd` and
 `result_with_boxes.jpg`, recorded eager attention in host/inner metadata, and
 had no observed vLLM markers or Task 344 malformed markers. Manual review found
@@ -159,8 +161,9 @@ formula evidence with VLM output.
 
 - STT Story 51 implementation: focused pytest `35 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed.
 - STT Story 52 governed rejection: focused pytest `7 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed; Review 27 approved the rejection outcome.
+- STT Task 351 preflight runner: focused pytest passed with `4 passed`; `benchmark:stt-sidecar-preflight` wrote sanitized report artifacts.
 - Task 344 focused local tests passed:
-  `pdm run test tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_task344_page_window_replay.py`
+  `pdm run test tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_docling_page_window_replay.py`
   -> `20 passed`.
 - Task 344 live Hemma GPU replays:
   page/window `14`
@@ -179,7 +182,7 @@ formula evidence with VLM output.
   `/app/build/verification/task-344-page-window-replay/task344-page-window-replay-20260605T112725Z/report.json`.
 - Task 348/349 validation and artifacts are recorded in their task docs.
 - Task 350 local and Hemma focused tests passed:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_hf_command.py`
+  `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
   -> `9 passed`.
 - Task 345 red/green local validation:
   `pdm run pytest tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py`
@@ -193,6 +196,5 @@ formula evidence with VLM output.
 ## Stop Conditions
 
 - Stop before deleting durable Qwen/service/Hemma evidence.
-- Stop before changing service runtime, Hemma deploy, artifact retention, or
-  provider experiment semantics without governed task authority.
+- Stop before changing service runtime, Hemma deploy, artifact retention, or provider experiment semantics without governed task authority.
 - Do not cancel or abort live conversions as part of formula-quality work.

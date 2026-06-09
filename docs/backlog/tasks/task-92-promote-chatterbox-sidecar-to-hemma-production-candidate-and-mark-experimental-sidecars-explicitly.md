@@ -81,7 +81,7 @@ repo stops treating all TTS images as equally deployable.
 
 ## Validation
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task91_chatterbox_speech_aware_stitching_experiment.py tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_chatterbox_speech_aware_stitching_experiment.py tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py`
 - `pdm run typecheck-all`
 - `pdm run validate-tasks`
 - `pdm run validate-docs`

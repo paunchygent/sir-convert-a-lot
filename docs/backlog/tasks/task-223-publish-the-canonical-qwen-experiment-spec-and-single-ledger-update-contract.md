@@ -8,7 +8,7 @@ created: '2026-03-17'
 last_updated: '2026-03-17'
 related:
   - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - .codex/rules/096-qwen-experiment-governance.md

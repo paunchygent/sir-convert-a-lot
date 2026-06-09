@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-235-resolve-the-post-t234-sub-talker-loss-disagreement-between-layer16-input-layernorm-and-layer15-output.md
   - docs/backlog/tasks/task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -37,7 +37,7 @@ Resolve the repeatable `line-4` row-local outlier exposed by `T235` so Story
 
 - Treat `T235` as closed truth:
   - truthful disagreement probe:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task235-20260318t140352z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task235-20260318t140352z-a1`
   - strongest fixed member:
     `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
   - pair and `line-13` first broke at `talker_core.layer_15.output`
@@ -74,16 +74,16 @@ Resolve the repeatable `line-4` row-local outlier exposed by `T235` so Story
     `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
 - Landed code surfaces:
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_trace.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story30_backward_lineage_hooks.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_row_local_outlier_assessment.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_contracts.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_runner.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_markdown.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_hooks.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_row_local_outlier_assessment.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_contracts.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_runner.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_markdown.py`
 
 ## Result
 
 - Truthful bounded rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task236-20260318t145434z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task236-20260318t145434z-a1`
 - The pair and `line-13` `sub_talker_loss` cases stayed at:
   `talker_core.layer_15.output`
 - `line-4-sub-talker-loss` stayed at:
@@ -131,7 +131,7 @@ Resolve the repeatable `line-4` row-local outlier exposed by `T235` so Story
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_row_local_outlier_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_row_local_outlier_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_stability_lab.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run format-all`
@@ -139,7 +139,7 @@ Resolve the repeatable `line-4` row-local outlier exposed by `T235` so Story
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task236-20260318t145434z-a1 --skip-build --hook-profile talker_core_post_t235_row_local_outlier --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task236-20260318t145434z-a1 --skip-build --hook-profile talker_core_post_t235_row_local_outlier --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
 
 ## Checklist
 

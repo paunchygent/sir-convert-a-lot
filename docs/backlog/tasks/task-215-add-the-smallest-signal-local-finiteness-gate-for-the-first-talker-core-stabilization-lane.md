@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -96,7 +96,7 @@ the governed proof lane.
 ## Outcome
 
 - Added a committed Story 31 promotion gate on top of the compact lab results:
-  `pdm run qwen-story31-stability-lab gate`
+  `pdm run qwen-stability-lab gate`
 - The gate consumes one existing `results.json` artifact and writes:
   - `gate.json`
   - `gate.md`

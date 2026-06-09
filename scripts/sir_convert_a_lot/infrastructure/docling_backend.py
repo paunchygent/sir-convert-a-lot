@@ -51,11 +51,11 @@ from scripts.sir_convert_a_lot.infrastructure.docling_formula_diagnostics import
 from scripts.sir_convert_a_lot.infrastructure.docling_formula_diagnostics_events import (
     emit_docling_formula_diagnostic_event,
 )
-from scripts.sir_convert_a_lot.infrastructure.docling_formula_fallback import (
-    convert_once_guarded_formula,
-)
 from scripts.sir_convert_a_lot.infrastructure.docling_formula_duplicate_guard import (
     clear_formula_batch_doc_state,
+)
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_fallback import (
+    convert_once_guarded_formula,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_layout_models import (
     DEFAULT_LAYOUT_MODEL_KEY as _DEFAULT_LAYOUT_MODEL_KEY,

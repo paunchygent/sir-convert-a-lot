@@ -46,7 +46,7 @@ services:
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID:-}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED:-0}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED:-0}
-      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - SIR_CONVERT_A_LOT_OPENAI_API_KEY=${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
     command:
@@ -61,7 +61,7 @@ services:
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
-      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network
@@ -121,7 +121,7 @@ services:
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID:-}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED:-0}
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED:-0}
-      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - SIR_CONVERT_A_LOT_OPENAI_API_KEY=${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
     command:
@@ -142,7 +142,7 @@ services:
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
-      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
     networks:
       - hule-network
@@ -206,9 +206,9 @@ services:
       - --spec-draft-n-max
       - "2"
       - --media-path
-      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets}
+      - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - --log-file
-      - /srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/qwen3.6-27b-q6k-mtp-llama-server.log
+      - /srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/qwen3.6-27b-q6k-mtp-llama-server.log
     expose:
       - "8082"
     devices:

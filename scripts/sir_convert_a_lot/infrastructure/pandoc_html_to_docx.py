@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Called by `scripts.sir_convert_a_lot.interfaces.cli_app` for the
-      `md -> docx` route (Task 30).
+      `md -> docx` route (Markdown to DOCX route).
     - Depends on the local `pandoc` binary; missing Pandoc must be mapped to a
       deterministic error code.
 """

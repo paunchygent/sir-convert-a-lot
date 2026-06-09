@@ -12,7 +12,7 @@ related:
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -63,7 +63,7 @@ one clean handoff from `T219` into the next mechanism question.
 `T228` is now completed using the recovered `T219` Hemma artifact root:
 
 - output root:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1`
 - surviving artifacts:
   - `results.json`
   - `results.md`
@@ -135,8 +135,8 @@ Evidence limit:
 
 ## Validation
 
-- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1/results.json`
-- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1/results.md`
+- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1/results.json`
+- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1/results.md`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

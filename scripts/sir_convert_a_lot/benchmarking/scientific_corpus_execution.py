@@ -1,4 +1,4 @@
-"""Execution engine for Task 12 scientific-corpus lanes and profiles.
+"""Execution engine for scientific-corpus benchmark scientific-corpus lanes and profiles.
 
 Purpose:
     Execute deterministic submit/poll/result flows for acceptance/evaluation
@@ -60,7 +60,7 @@ def run_profile(
             job_spec,
             scope=f"{run_scope}:{lane}:{profile.profile_name}:{index:03d}",
         )
-        correlation_id = f"corr_task12_{lane}_{profile.profile_name}_{index:03d}"
+        correlation_id = f"corr_scientific_corpus_{lane}_{profile.profile_name}_{index:03d}"
         markdown_path, metadata_path = artifact_paths(
             artifacts_root=artifacts_root,
             lane=lane,

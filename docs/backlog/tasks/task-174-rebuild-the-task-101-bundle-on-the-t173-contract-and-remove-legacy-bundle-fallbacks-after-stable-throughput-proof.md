@@ -44,7 +44,7 @@ This task has two phases:
 
 ## Current Progress
 
-- The public `task-101-pilot-bundle` surface is being restored to the governed
+- The public `qwen-pilot-bundle` surface is being restored to the governed
   service/container runtime so bundle batch finalization no longer executes in
   host Python.
 - Hemma scratch-capacity remediation is in progress:

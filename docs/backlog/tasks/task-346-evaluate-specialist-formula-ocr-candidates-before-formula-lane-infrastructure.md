@@ -16,13 +16,13 @@ related:
   - docs/runbooks/runbook-hemma-conversion-benchmarks.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/runbooks/runbook-hemma-gpu-runtime.md
-  - scripts/sir_convert_a_lot/devops/task344_page_window_replay.py
+  - scripts/sir_convert_a_lot/devops/docling_page_window_replay.py
   - scripts/sir_convert_a_lot/devops/render_pdf_bbox_crop.py
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_inputs.py
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_candidates.py
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_reporting.py
-  - tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval_inputs.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval_reporting.py
+  - tests/sir_convert_a_lot/test_formula_candidate_eval.py
   - docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md
 labels:
   - pdf
@@ -85,7 +85,7 @@ The result must be a local evidence bundle and concise task update that answer:
 
 ## PR Scope
 
-- Add `scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py` as a
+- Add `scripts/sir_convert_a_lot/devops/formula_candidate_eval.py` as a
   simple devops/evaluation script.
 - Reuse the established Task 344 input pages and replay artifacts. The default
   input must be the pages `13-16` incident source used by
@@ -176,7 +176,7 @@ production acceptance heuristic.
 
 ## Deliverables
 
-- [x] A simple `task346_formula_candidate_eval.py` evaluation script.
+- [x] A simple `formula_candidate_eval.py` evaluation script.
 - [x] Candidate adapters for current baseline evidence, source-layer baseline,
   UniMERNet, PP-FormulaNet family, and DeepSeek-OCR-2.
 - [x] Local generated evidence bundle under
@@ -193,31 +193,31 @@ production acceptance heuristic.
 
 Implemented 2026-06-06:
 
-- `scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py`
+- `scripts/sir_convert_a_lot/devops/formula_candidate_eval.py`
   provides the thin Task 346 command surface.
-- `task346_formula_candidate_eval_inputs.py` harvests Task 344 formula crop
+- `formula_candidate_eval_inputs.py` harvests Task 344 formula crop
   metadata and renders page/crop source images.
-- `task346_formula_candidate_eval_candidates.py` records the current
+- `formula_candidate_eval_candidates.py` records the current
   Granite/Docling baseline, PyMuPDF source-layer baseline, PaddleOCR formula
   candidates, and DeepSeek-OCR-2 configured-command candidate.
-- `task346_formula_candidate_eval_reporting.py` writes `report.json`,
+- `formula_candidate_eval_reporting.py` writes `report.json`,
   `report.md`, and `visual-review.html`.
-- `tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py` proves crop
+- `tests/sir_convert_a_lot/test_formula_candidate_eval.py` proves crop
   harvesting, known-marker counting, blocker recording, and visual-review
   output.
 
 Run command:
 
 ```bash
-pdm run run-local-pdm python -m scripts.sir_convert_a_lot.devops.task346_formula_candidate_eval
+pdm run run-local-pdm python -m scripts.sir_convert_a_lot.devops.formula_candidate_eval
 ```
 
 Generated evidence:
 
 ```text
-build/verification/task-346-formula-candidate-eval/task346-formula-candidate-eval-20260606T160734Z/report.json
-build/verification/task-346-formula-candidate-eval/task346-formula-candidate-eval-20260606T160734Z/report.md
-build/verification/task-346-formula-candidate-eval/task346-formula-candidate-eval-20260606T160734Z/visual-review.html
+build/verification/task-346-formula-candidate-eval/formula-candidate-eval-20260606T160734Z/report.json
+build/verification/task-346-formula-candidate-eval/formula-candidate-eval-20260606T160734Z/report.md
+build/verification/task-346-formula-candidate-eval/formula-candidate-eval-20260606T160734Z/visual-review.html
 ```
 
 Result summary:
@@ -298,7 +298,7 @@ Task 350 follow-up result, 2026-06-06:
   `deepseek_ocr2_hf_eager`, a page-image, single-command-template candidate
   that invokes the proven Hugging Face eager adapter.
 - Hemma replay evidence:
-  `build/verification/task-350-deepseek-hf-eager-task346-replay/task346-formula-candidate-eval-20260606T201448Z/report.json`.
+  `build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/report.json`.
 - The DeepSeek-OCR-2 HF eager candidate succeeded on pages `13-16` in
   `676555 ms` total. Per-page elapsed times were `211817 ms`, `183691 ms`,
   `140573 ms`, and `140461 ms`.
@@ -342,17 +342,17 @@ Validation evidence:
 
 - Red-first focused test before implementation failed with
   `ModuleNotFoundError` for
-  `scripts.sir_convert_a_lot.devops.task346_formula_candidate_eval`.
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py`
+  `scripts.sir_convert_a_lot.devops.formula_candidate_eval`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py`
   -> `4 passed`.
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_hf_command.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
   -> `9 passed` after Task 350.
 - Hemma focused Task 350 tests:
-  `/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_hf_command.py`
+  `/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
   -> `9 passed`.
-- `pdm run ruff check scripts/sir_convert_a_lot/devops/render_pdf_bbox_crop.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_inputs.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_candidates.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_reporting.py tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py`
+- `pdm run ruff check scripts/sir_convert_a_lot/devops/render_pdf_bbox_crop.py scripts/sir_convert_a_lot/devops/formula_candidate_eval.py scripts/sir_convert_a_lot/devops/formula_candidate_eval_inputs.py scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py scripts/sir_convert_a_lot/devops/formula_candidate_eval_reporting.py tests/sir_convert_a_lot/test_formula_candidate_eval.py`
   -> passed.
-- `pdm run mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_inputs.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_candidates.py scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_reporting.py tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py`
+- `pdm run mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/devops/formula_candidate_eval.py scripts/sir_convert_a_lot/devops/formula_candidate_eval_inputs.py scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py scripts/sir_convert_a_lot/devops/formula_candidate_eval_reporting.py tests/sir_convert_a_lot/test_formula_candidate_eval.py`
   -> no issues.
 - `pdm run docs-sync` regenerated docs indexes.
 - `pdm run docs-validate`, `pdm run skills-validate`,

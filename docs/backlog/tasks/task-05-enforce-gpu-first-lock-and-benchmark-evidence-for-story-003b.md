@@ -69,8 +69,8 @@ execution (local deterministic run + Hemma runbook path).
   - `scripts/sir_convert_a_lot/benchmark_gpu_governance.py`
   - `tests/fixtures/benchmark_pdfs/`
 - Added benchmark evidence artifacts:
-  - `build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json`
-  - `docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md`
+  - `build/benchmarks/gpu-governance/benchmark-gpu-governance-local.json`
+  - `docs/reference/ref-gpu-governance-benchmark-evidence.md`
 - Validation evidence:
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`

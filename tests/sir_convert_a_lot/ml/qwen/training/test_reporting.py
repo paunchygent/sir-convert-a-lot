@@ -63,7 +63,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
             },
             bundle_precomputed_reference_input={
                 "kind": "ref_mel",
-                "version": "task101_ref_mel_v1",
+                "version": "qwen_reference_mel_v1",
                 "artifact_count": 2,
             },
             throughput_profile={
@@ -168,7 +168,7 @@ def test_status_reporter_persists_live_phase_history_and_tracking(tmp_path: Path
     }
     assert payload["bundle_precomputed_reference_input"] == {
         "kind": "ref_mel",
-        "version": "task101_ref_mel_v1",
+        "version": "qwen_reference_mel_v1",
         "artifact_count": 2,
     }
     assert payload["throughput_profile"] == {
@@ -223,7 +223,7 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
                 "tracking": {"mlflow_run_id": "mlflow-run-id"},
                 "bundle_precomputed_reference_input": {
                     "kind": "ref_mel",
-                    "version": "task101_ref_mel_v1",
+                    "version": "qwen_reference_mel_v1",
                     "artifact_count": 2,
                 },
                 "throughput_profile": {
@@ -266,7 +266,7 @@ def test_status_markdown_surfaces_live_training_fields() -> None:
     assert "- pilot_mlflow_run_id: `mlflow-run-id`" in markdown
     assert "- pilot_diagnostic_kind: `diagnose-non-finite`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_kind: `ref_mel`" in markdown
-    assert "- pilot_bundle_precomputed_reference_input_version: `task101_ref_mel_v1`" in markdown
+    assert "- pilot_bundle_precomputed_reference_input_version: `qwen_reference_mel_v1`" in markdown
     assert "- pilot_bundle_precomputed_reference_input_count: `2`" in markdown
     assert "- pilot_throughput_profile_label: `hemma-throughput-aggressive-v1`" in markdown
     assert "- pilot_throughput_policy_kind: `bucketed-frame-token-budget-v1`" in markdown

@@ -6,7 +6,7 @@ Purpose:
     job-spec contracts.
 
 Relationships:
-    - Supports ADR-0010 and Task 325 provider routing while staying below the
+    - Supports ADR-0010 and HTML to PDF route5 provider routing while staying below the
       conversion API contract surface.
     - Consumes provider profile IDs produced by the structured LLM catalog and
       OpenAI/local provider profile modules.

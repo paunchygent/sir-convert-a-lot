@@ -1,4 +1,4 @@
-"""Regression tests for Task 76 deploy/verification contracts.
+"""Regression tests for Hemma deploy verification deploy/verification contracts.
 
 Purpose:
     Lock expected remediation messaging and guardrail behavior for revision
@@ -7,7 +7,7 @@ Purpose:
 Relationships:
     - Exercises
       `scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts`.
-    - Required by Task 76 acceptance criteria.
+    - Required by Hemma deploy verification acceptance criteria.
 """
 
 from __future__ import annotations

@@ -14,8 +14,8 @@ related:
   - docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md
   - docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py
+  - scripts/sir_convert_a_lot/pdf_throughput_benchmark_report.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_report.py
 labels:
   - benchmarking
   - performance
@@ -48,8 +48,8 @@ conversions on Hemma.
   closely related bounded parameters) until evidence proves a different setting is both stable and
   materially faster.
 - A dedicated bounded sweep command surface now exists for that follow-up work:
-  - local smoke/schema only: `pdm run benchmark:task-74-two-worker-sweep`
-  - production Hemma evidence: `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>`
+  - local smoke/schema only: `pdm run benchmark:pdf-throughput-two-worker-sweep`
+  - production Hemma evidence: `pdm run run-hemma -- pdm run benchmark:pdf-throughput-two-worker-sweep-hemma --expected-revision <sha>`
 - Dirty real-data OCR evidence added by Story 39 must extend this Task 74 report schema and command
   surface rather than bypassing it. Story 39 evidence is not acceptance evidence for Task 74 unless it
   also preserves this task's Task 76 parity requirement, safe profile matrix, executed-source hash
@@ -142,7 +142,7 @@ Measurement rules (must be explicit in report):
 - [x] Update Task 74 acceptance commands/runbook usage to pass the parity metadata explicitly during
   the Hemma benchmark run.
 - [x] Add a canonical Hemma benchmark workflow that repairs env/runtime drift before running the
-  long OCR benchmark (`benchmark:task-74-hemma`).
+  long OCR benchmark (`benchmark:pdf-throughput-hemma`).
 - [x] Fail fast when the in-process benchmark runtime is missing required OCR dependencies/models so
   Task 74 cannot silently emit bogus all-503 benchmark output.
 
@@ -180,9 +180,9 @@ Measurement rules (must be explicit in report):
 ## Status Update (2026-03-06)
 
 - Implemented the Task 74 benchmark/report command surface:
-  - `pdm run benchmark:task-74`
-  - benchmark harness: `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
-  - markdown report writer: `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
+  - `pdm run benchmark:pdf-throughput`
+  - benchmark harness: `scripts/sir_convert_a_lot/pdf_throughput_benchmark_report.py`
+  - markdown report writer: `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_report.py`
 - The harness now:
   - generates deterministic scanned-PDF corpus files for command-surface smoke and regression
     checks,
@@ -191,7 +191,7 @@ Measurement rules (must be explicit in report):
 - Performance fields in local smoke artifacts are diagnostic byproducts only; they are not
   acceptance, tuning, throughput, or production default evidence.
 - Added regression coverage:
-  - `tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py`
+  - `tests/sir_convert_a_lot/test_pdf_throughput_benchmark_report.py`
 - Started the first closeout blocker for final evidence integrity:
   - benchmark payload/report now embed explicit runtime-surface declaration,
   - Task 76 parity metadata can be loaded from `report.json` or explicit CLI flags,
@@ -245,17 +245,17 @@ Measurement rules (must be explicit in report):
 ## Validation Evidence
 
 - `pdm run typecheck-all` (pass: `Success: no issues found in 211 source files`)
-- `pdm run pytest-root tests/sir_convert_a_lot/test_benchmark_story20_parallel_throughput.py tests/sir_convert_a_lot/test_benchmark_story20_telemetry_overhead.py tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py -q` (pass: `9 passed`)
+- `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_parallel_throughput_benchmark.py tests/sir_convert_a_lot/test_pdf_telemetry_overhead_benchmark.py tests/sir_convert_a_lot/test_pdf_throughput_benchmark_report.py -q` (pass: `9 passed`)
 - Local smoke command (pass for command surface/schema only; not performance, throughput, tuning, or
   acceptance evidence):
-  - `pdm run benchmark:task-74 --page-counts 2,3 --acceleration-policy cpu_only --ocr-mode off --ocr-engine auto --ocr-languages en --no-gpu-available --max-poll-seconds 120 --output-json build/benchmarks/story-20/task-74-throughput-smoke-local.json --output-report build/benchmarks/story-20/task-74-throughput-smoke-local.md --corpus-root build/benchmarks/story-20/task-74-smoke-corpus --data-root build/benchmarks/story-20/task-74-smoke-runtime`
+  - `pdm run benchmark:pdf-throughput --page-counts 2,3 --acceleration-policy cpu_only --ocr-mode off --ocr-engine auto --ocr-languages en --no-gpu-available --max-poll-seconds 120 --output-json build/benchmarks/story-20/task-74-throughput-smoke-local.json --output-report build/benchmarks/story-20/task-74-throughput-smoke-local.md --corpus-root build/benchmarks/story-20/task-74-smoke-corpus --data-root build/benchmarks/story-20/task-74-smoke-runtime`
 
 ## Planned Acceptance Commands
 
 - Deploy parity preflight:
   - `pdm run hemma-deploy-and-verify --expected-revision "$(git rev-parse HEAD)" --lane host`
 - Hemma benchmark run:
-  - `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha>`
+  - `pdm run run-hemma -- pdm run benchmark:pdf-throughput-hemma --expected-revision <sha>`
 - Required closeout gates after evidence capture:
   - `pdm run format-all`
   - `pdm run lint-fix`

@@ -1,4 +1,4 @@
-"""Public CLI entrypoint for the canonical Task 203 codebook-fusion proof.
+"""Public CLI entrypoint for the canonical Qwen codebook-fusion proof codebook-fusion proof.
 
 Purpose:
     Keep the public command surface small while delegating implementation to

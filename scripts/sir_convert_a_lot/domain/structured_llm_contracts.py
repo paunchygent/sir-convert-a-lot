@@ -6,7 +6,7 @@ Purpose:
     renderer inputs, or target exporters.
 
 Relationships:
-    - Implements the Task 296 first slice for local-first provider routing,
+    - Implements the structured LLM provider harness first slice for local-first provider routing,
       prompt budget preflight, and metadata-only capture.
     - Feeds later advisory answer-key completion services that consume
       `ExamAuthoringIR v1` item contracts.

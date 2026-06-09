@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `sft_12hz_ref_mel_cache.py`.
-    - Provides focused coverage for Story 26 `T161`.
+    - Provides focused coverage for Qwen reference-mel cache `ref-mel cache`.
 """
 
 from __future__ import annotations

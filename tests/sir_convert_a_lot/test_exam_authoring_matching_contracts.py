@@ -1,7 +1,7 @@
 """Tests for source-neutral ExamAuthoringIR matching contracts.
 
 Purpose:
-    Prove that Task 307 extracts matching interaction semantics into a
+    Prove that Markdown to DOCX route7 extracts matching interaction semantics into a
     source-neutral authoring contract without requiring DigiExam matching
     parser fixtures.
 

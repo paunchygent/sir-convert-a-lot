@@ -2,7 +2,7 @@
 
 Purpose:
     Expose the canonical detached launch, inspect, stop, id, snapshot, and
-    command-building surfaces after the Story 28 god-file split.
+    command-building surfaces after the Qwen architecture boundary god-file split.
 
 Relationships:
     - Imported by control-plane use cases, schedule control, and diagnostics.

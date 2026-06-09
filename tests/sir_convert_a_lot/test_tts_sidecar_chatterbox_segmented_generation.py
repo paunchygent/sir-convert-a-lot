@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Exercises `chatterbox_segmented_generation.py`.
-    - Supports Task 90 quality work without requiring live model downloads.
+    - Supports Chatterbox segmented experiment quality work without requiring live model downloads.
 """
 
 from __future__ import annotations

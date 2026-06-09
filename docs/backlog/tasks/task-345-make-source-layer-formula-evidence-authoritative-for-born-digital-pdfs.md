@@ -30,6 +30,7 @@ labels:
   - cli-progress
   - conversion-decision
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## User Intent and Alignment
@@ -273,8 +274,8 @@ Completed 2026-06-06 scrutiny evidence:
   - page `14`: `561` words, `50` raw blocks, `2664` raw characters,
   - page `15`: `369` words, `37` raw blocks, `2161` raw characters,
   - page `16`: `358` words, `20` raw blocks, `2340` raw characters.
-  The first extracted word on every page carried a bounding box, e.g. page `14`
-  returned `(70.3435, 71.7245, 99.4286, 84.8707, "Which")`.
+    The first extracted word on every page carried a bounding box, e.g. page `14`
+    returned `(70.3435, 71.7245, 99.4286, 84.8707, "Which")`.
 - Poppler `pdftotext -bbox` and `-bbox-layout` crash on incident page `14` with
   `std::out_of_range` and return `-1`, so the implementation must not rely on a
   single brittle extractor path or treat coordinate extraction as guaranteed.

@@ -2,9 +2,10 @@
 
 Purpose:
     Build the trainable text contribution for one collated batch while keeping
-    the active assembly contract explicit: either the Story 30 semantic-only
+    the active assembly contract explicit: either the Qwen backward-lineage and fresh-start proof
+    lane semantic-only
     lookup path or the original masked full-channel lookup path used by the
-    exact T220 control lane.
+    exact historical-control approximation control lane.
 
 Relationships:
     - Imported by `sft_12hz_forward_surfaces.py`.

@@ -1,4 +1,4 @@
-"""Tests for the detached Task 203 codebook-fusion proof surface."""
+"""Tests for the detached Qwen codebook-fusion proof codebook-fusion proof surface."""
 
 from __future__ import annotations
 
@@ -86,10 +86,10 @@ def test_launch_detached_codebook_fusion_proof_records_background_command(
         output_root=tmp_path,
         repo_root=Path("/repo/root"),
         proof_args=["--", "--skip-build", "--benchmark-iterations", "7"],
-        launch_id="task203-test",
+        launch_id="codebook-fusion-test",
     )
 
-    assert launch.launch_id == "task203-test"
+    assert launch.launch_id == "codebook-fusion-test"
     assert launch.pid == 4321
     assert captured["cwd"] == Path("/repo/root")
     assert captured["start_new_session"] is True
@@ -108,7 +108,7 @@ def test_inspect_detached_codebook_fusion_proof_reads_worker_and_report_artifact
     """Detached status inspection should project the worker/report artifacts."""
     launch = DetachedCodebookFusionLaunch(
         generated_at="2026-03-16T20:00:00Z",
-        launch_id="task203-test",
+        launch_id="codebook-fusion-test",
         pid=4321,
         repo_root="/repo/root",
         output_root=tmp_path.as_posix(),
@@ -148,7 +148,7 @@ def test_detached_cli_writes_launch_and_status_artifacts(
     """The detached CLI should persist launch and status artifacts deterministically."""
     launch = DetachedCodebookFusionLaunch(
         generated_at="2026-03-16T20:00:00Z",
-        launch_id="task203-test",
+        launch_id="codebook-fusion-test",
         pid=4321,
         repo_root="/repo/root",
         output_root=tmp_path.as_posix(),
@@ -161,7 +161,7 @@ def test_detached_cli_writes_launch_and_status_artifacts(
     )
     status = DetachedCodebookFusionStatus(
         checked_at="2026-03-16T20:06:00Z",
-        launch_id="task203-test",
+        launch_id="codebook-fusion-test",
         pid=4321,
         running=False,
         exit_code=0,

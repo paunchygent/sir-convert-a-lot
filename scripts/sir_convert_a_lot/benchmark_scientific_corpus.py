@@ -1,7 +1,7 @@
-"""Scientific-corpus evidence harness for Task 12.
+"""Scientific-corpus evidence harness for scientific-corpus benchmark.
 
 Purpose:
-    Execute the dual-lane Task 12 benchmark over the scientific-paper corpus
+    Execute the dual-lane scientific-corpus benchmark over the scientific-paper corpus
     and generate deterministic machine-readable and human-readable artifacts.
 
 Relationships:
@@ -41,7 +41,7 @@ from scripts.sir_convert_a_lot.interfaces.http_client_v2 import SirConvertALotCl
 DEFAULT_CORPUS_DIR = Path(
     "/Users/olofs_mba/Documents/Repos/huledu-reboot/docs/research/research_papers/llm_as_a_annotater"
 )
-DEFAULT_OUTPUT_ROOT = Path("build/benchmarks/task-12-scientific-corpus")
+DEFAULT_OUTPUT_ROOT = Path("build/benchmarks/scientific-corpus-benchmark")
 DEFAULT_OUTPUT_JSON = DEFAULT_OUTPUT_ROOT / "benchmark-pdf-md-scientific-corpus-hemma.json"
 DEFAULT_OUTPUT_REPORT = (
     DEFAULT_OUTPUT_ROOT / "ref-production-pdf-md-scientific-corpus-validation.md"
@@ -106,7 +106,7 @@ def run_benchmark(
     run_scope: str | None = None,
     client_factory: BenchmarkClientFactory = _default_client_factory,
 ) -> BenchmarkPayload:
-    """Run Task 12 dual-lane evidence benchmark and return payload."""
+    """Run scientific-corpus benchmark dual-lane evidence benchmark and return payload."""
     enforce_generated_output_path(output_json, label="output_json")
     enforce_generated_output_path(output_report, label="output_report")
     enforce_generated_output_path(artifacts_root, label="artifacts_root")
@@ -161,7 +161,7 @@ def run_benchmark(
         hemma_sha if hemma_sha is not None and hemma_sha != "" else resolved_local_sha
     )
     payload: BenchmarkPayload = {
-        "benchmark_id": "task-12-scientific-corpus",
+        "benchmark_id": "scientific-corpus-benchmark",
         "generated_at": utc_now_iso(),
         "service_revision": {"local_sha": resolved_local_sha, "hemma_sha": resolved_hemma_sha},
         "corpus": corpus_summary,
@@ -180,9 +180,9 @@ def run_benchmark(
 
 
 def main() -> None:
-    """Parse CLI arguments and run Task 12 evidence harness."""
+    """Parse CLI arguments and run scientific-corpus benchmark evidence harness."""
     parser = argparse.ArgumentParser(
-        description="Run Task 12 scientific-corpus evidence benchmark."
+        description="Run scientific-corpus benchmark scientific-corpus evidence benchmark."
     )
     parser.add_argument("--corpus-dir", type=Path, default=DEFAULT_CORPUS_DIR)
     parser.add_argument("--acceptance-service-url", default=DEFAULT_ACCEPTANCE_URL)
@@ -219,7 +219,7 @@ def main() -> None:
     acceptance = payload["acceptance_lane"]["summary"]
     decision = payload["decision"]
     print(
-        "task12-benchmark-written",
+        "scientific-corpus-benchmark-written",
         args.output_json,
         f"acceptance_success={acceptance['succeeded_jobs']}/{acceptance['total_jobs']}",
         f"manual_review_completed={decision['manual_review_completed']}",

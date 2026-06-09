@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-233-split-the-post-t230-layer16-input-layernorm-seam-into-normalization-internal-probes.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -32,7 +32,7 @@ instead of widening back into another mixed stabilizer sweep.
 
 - Treat `T233` as closed truth:
   - truthful narrowed rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task233-20260318t112544z-a1`
   - the pair and both single-row `sub_talker_loss` cases agreed on:
     `talker_core.layer_16.input_layernorm.output`
   - the broader nine-row matrix also first broke at that same output surface
@@ -72,7 +72,7 @@ instead of widening back into another mixed stabilizer sweep.
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization_specs.py`
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization_input_layernorm.py`
 - Result is now closed truth under:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task234-20260318t123644z-a1`
 - Outcome:
   - no variant stayed finite
   - no variant earned promotion
@@ -116,7 +116,7 @@ instead of widening back into another mixed stabilizer sweep.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1 --skip-build --hook-profile talker_core_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task234-20260318t123644z-a1 --skip-build --hook-profile talker_core_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p75,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5`
 
 ## Checklist
 

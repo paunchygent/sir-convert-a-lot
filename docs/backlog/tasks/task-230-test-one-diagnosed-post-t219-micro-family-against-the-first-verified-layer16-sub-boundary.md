@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -32,7 +32,7 @@ launching another mixed stabilizer sweep.
 
 - Treat `T229` as closed truth:
   - truthful narrowed rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task229-20260318t064712z-a1`
   - target loss family:
     `sub_talker_loss`
   - pair and both single-row cases agreed on:
@@ -73,7 +73,7 @@ launching another mixed stabilizer sweep.
 ## Result
 
 - Truthful bounded rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task230-20260318t082049z-a1`
 - Compared family:
   - baseline:
     `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
@@ -121,7 +121,7 @@ launching another mixed stabilizer sweep.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e3,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e2`
+- [x] `pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task230-20260318t082049z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e3,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_pre_input_ln_rescale_1e2`
 
 ## Checklist
 

@@ -1,9 +1,9 @@
 ---
-id: 'review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence'
-title: 'Ruthless review of Story 53 audio transcript bundle route execution and JSON artifact persistence'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence
+title: Ruthless review of Story 53 audio transcript bundle route execution and JSON artifact persistence
+type: review
+status: completed
+priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
 related:
@@ -21,6 +21,7 @@ labels:
   - audio
   - route-gating
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

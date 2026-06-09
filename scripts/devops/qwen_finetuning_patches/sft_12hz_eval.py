@@ -237,7 +237,7 @@ def _run_eval_batches(prepared: EvalPreparedRuntime) -> tuple[float, int]:
     model = prepared.model
     total_eval_loss = 0.0
     completed_batches = 0
-    with torch.no_grad(), prepared.torch_profiler_session.phase("task101.eval"):
+    with torch.no_grad(), prepared.torch_profiler_session.phase("qwen-swedish-finetune.eval"):
         for batch in prepared.eval_dataloader:
             resolved_batch = require_batch_tensors(batch)
             input_ids = resolved_batch["input_ids"]

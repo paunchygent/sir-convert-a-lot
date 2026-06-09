@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class ChatterboxSidecarSettings:
-    """Environment-driven settings for the Task 86 Chatterbox sidecar."""
+    """Environment-driven settings for the Chatterbox benchmark Chatterbox sidecar."""
 
     backend_id: str
     backend_version: str
@@ -281,19 +281,19 @@ class ChatterboxSidecarBackend:
         if request.output_format is not OutputFormat.WAV:
             raise SidecarRequestError(
                 code="unsupported_output_format",
-                message="Chatterbox Task 86 currently supports `wav` output only.",
+                message="Chatterbox Chatterbox benchmark currently supports `wav` output only.",
                 status_code=422,
             )
         if request.style_instructions is not None:
             raise SidecarRequestError(
                 code="unsupported_style_instructions",
-                message="Chatterbox Task 86 does not expose style-instruction overrides.",
+                message="Chatterbox does not expose style-instruction overrides.",
                 status_code=422,
             )
         if request.reference_transcript is not None:
             raise SidecarRequestError(
                 code="reference_transcript_not_supported",
-                message="Chatterbox Task 86 does not use reference transcripts.",
+                message="Chatterbox Chatterbox benchmark does not use reference transcripts.",
                 status_code=422,
             )
         normalized_text = _normalize_text(request.text, profile=request.normalization_profile)

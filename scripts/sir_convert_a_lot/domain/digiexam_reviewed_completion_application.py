@@ -5,9 +5,9 @@ Purpose:
     summaries while keeping source parser provenance immutable.
 
 Relationships:
-    - Consumes Task 297 candidate payload digest semantics from
+    - Consumes reviewed choice candidate candidate payload digest semantics from
       `domain.digiexam_answer_key_completion_contracts`.
-    - Consumes Task 306 reviewed overlay fields from
+    - Consumes Markdown to DOCX route6 reviewed overlay fields from
       `domain.digiexam_ingestion_overlay_contracts`.
     - Called by `domain.digiexam_ingestion_overlay` after source binding and
       item binding have already been validated.

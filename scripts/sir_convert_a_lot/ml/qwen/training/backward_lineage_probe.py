@@ -1,4 +1,6 @@
-"""In-container backward-lineage probe for Story 30 fresh-start failures.
+"""
+In-container backward-lineage probe for Qwen backward-lineage and fresh-start proof lane fresh-start
+failures.
 
 Purpose:
     Reproduce the exact fresh-start failing row pair from the Candidate 1 lane,
@@ -8,10 +10,11 @@ Purpose:
 
 Relationships:
     - Executed inside the Qwen training image by
-      `story30_backward_lineage_runner.py`.
+      `qwen_backward_lineage_runner.py`.
     - Reuses the patched dataset, semantic-only assembly, shared forward
       surfaces, and gradient RCA helpers from the live training lane.
-    - Delegates case sequencing and hook plumbing to smaller Story 30 lineage
+    - Delegates case sequencing and hook plumbing to smaller Qwen backward-lineage and fresh-start
+    proof lane lineage
       helper modules.
 """
 
@@ -49,22 +52,22 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
     TALKER_CORE_STABILIZATION_OFF,
 )
 from scripts.devops.qwen_finetuning_patches.sft_12hz_training_rows import _load_training_rows
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_cases import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_cases import (
     build_branch_summaries as _branch_summaries,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_cases import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_cases import (
     build_case_specs as _case_specs,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_cases import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_cases import (
     build_report,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_cases import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_cases import (
     load_source_line_numbers as _load_source_line_numbers,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_cases import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_cases import (
     parse_source_lines as _parse_source_lines,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contracts import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_contracts import (
     BackwardLineageProbeReport,
     BranchInteractionSummary,
     FirstNonFiniteHookObservation,
@@ -72,7 +75,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_contrac
     ProbeCaseSpec,
     TensorGradientObservation,
 )
-from scripts.sir_convert_a_lot.ml.qwen.training.story30_backward_lineage_hooks import (
+from scripts.sir_convert_a_lot.ml.qwen.training.qwen_backward_lineage_hooks import (
     BASELINE_HOOK_PROFILE,
     HOOK_PROFILE_CHOICES,
     build_gradient_hook_session,
@@ -83,7 +86,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy impor
     TEXT_EMBEDDING_MASK_POLICY_CHOICES,
 )
 
-_SOURCE_LINE_FIELD = "story30_source_manifest_line_number"
+_SOURCE_LINE_FIELD = "qwen_lineage_source_manifest_line_number"
 
 __all__ = [
     "BackwardLineageProbeReport",
@@ -102,7 +105,7 @@ __all__ = [
 
 def _build_parser() -> argparse.ArgumentParser:
     """Build the in-container backward-lineage probe parser."""
-    parser = argparse.ArgumentParser(description="Run the Story 30 backward-lineage probe.")
+    parser = argparse.ArgumentParser(description="Run the Qwen backward-lineage probe.")
     parser.add_argument("--model-id", default="Qwen/Qwen3-TTS-12Hz-1.7B-Base")
     parser.add_argument("--train-jsonl", type=Path, required=True)
     parser.add_argument(
@@ -272,7 +275,10 @@ def _run_case_with_detect_anomaly(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the in-container Story 30 backward-lineage probe and emit JSON."""
+    """
+    Run the in-container Qwen backward-lineage and fresh-start proof lane backward-lineage probe and
+    emit JSON.
+    """
     parser = _build_parser()
     args = parser.parse_args(argv)
     source_line_numbers = _parse_source_lines(str(args.source_lines))

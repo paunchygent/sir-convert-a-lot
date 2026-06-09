@@ -1,7 +1,7 @@
 """Gradient-accumulation contracts for bounded Qwen proof runs.
 
 Purpose:
-    Centralize the Task 101 gradient-accumulation defaults, supported proof
+    Centralize the Qwen pilot training gradient-accumulation defaults, supported proof
     overrides, and validation logic so control-plane, detached-runtime, and
     patched trainer modules can share one truthful contract.
 
@@ -28,7 +28,7 @@ def resolve_gradient_accumulation_steps(
     *,
     default: GradientAccumulationSteps,
 ) -> GradientAccumulationSteps:
-    """Return one validated accumulation value for the Task 101 lane."""
+    """Return one validated accumulation value for the Qwen pilot training lane."""
     if value is None:
         return default
     if value == 1:

@@ -1,16 +1,16 @@
 ---
-id: 'task-348-probe-paddleocr-vl-and-paddlex-amd-gpu-container-support-for-formula-recognition-on-hemma'
-title: 'Probe PaddleOCR-VL and PaddleX AMD GPU container support for formula recognition on Hemma'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-348-probe-paddleocr-vl-and-paddlex-amd-gpu-container-support-for-formula-recognition-on-hemma
+title: Probe PaddleOCR-VL and PaddleX AMD GPU container support for formula recognition on Hemma
+type: task
+status: completed
+priority: high
 created: '2026-06-06'
 last_updated: '2026-06-06'
 related:
   - docs/backlog/tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md
   - docs/backlog/tasks/task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay.md
   - docs/runbooks/runbook-hemma-gpu-runtime.md
-  - scripts/sir_convert_a_lot/devops/task347_paddle_formula_command.py
+  - scripts/sir_convert_a_lot/devops/paddle_formula_command.py
 labels:
   - pdf
   - formula
@@ -20,6 +20,7 @@ labels:
   - rocm
   - hemma
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## User Intent and Boundary

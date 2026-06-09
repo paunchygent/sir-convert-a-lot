@@ -157,7 +157,7 @@ def json_default(value: object) -> object:
 
 
 class JsonlAtomicWriter:
-    """Write one JSONL artifact through a temp file and atomic rename."""
+    """Write one JSONL artifact through a temp file and atomic replacement."""
 
     def __init__(self, path: Path) -> None:
         self._path = path
@@ -203,7 +203,7 @@ class JsonlAtomicWriter:
 
 
 def _atomic_write_text(path: Path, rendered_text: str) -> None:
-    """Write one text artifact through a temp file and atomic rename."""
+    """Write one text artifact through a temp file and atomic replacement."""
     enforce_generated_output_path(path, label=path.name)
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(

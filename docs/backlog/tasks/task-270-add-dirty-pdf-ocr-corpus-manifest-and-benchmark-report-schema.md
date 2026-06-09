@@ -12,16 +12,16 @@ related:
   - docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py
+  - scripts/sir_convert_a_lot/pdf_throughput_benchmark_report.py
   - scripts/sir_convert_a_lot/benchmarking/dirty_pdf_corpus.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_http_profile.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_profile_runner.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_profiles.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_runtime_parity.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_throughput_cli.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py
-  - tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py
-  - tests/sir_convert_a_lot/test_task270_dirty_pdf_ocr_corpus_schema.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_http_profile.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profile_runner.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profiles.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_runtime_parity.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_cli.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_report.py
+  - tests/sir_convert_a_lot/test_pdf_throughput_benchmark_report.py
+  - tests/sir_convert_a_lot/test_dirty_pdf_ocr_corpus_schema.py
 labels:
   - ocr
   - corpus
@@ -113,7 +113,7 @@ private/PII-bearing PDFs.
   resolved profile leaves Task 74's safe 2-worker boundary or matches the
   removed 4-worker OOM profile family.
 - Operators can validate a metadata-only manifest without private PDFs via:
-  `pdm run benchmark:task-270-validate-dirty-corpus-manifest --manifest <manifest.json>`.
+  `pdm run benchmark:dirty-pdf-corpus-manifest --manifest <manifest.json>`.
 
 ## Deliverables
 
@@ -145,14 +145,14 @@ private/PII-bearing PDFs.
 
 ## Entry Points
 
-- `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
+- `scripts/sir_convert_a_lot/pdf_throughput_benchmark_report.py`
 - `scripts/sir_convert_a_lot/benchmarking/dirty_pdf_corpus.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_profile_runner.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_http_profile.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_profiles.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
-- `tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py`
-- `tests/sir_convert_a_lot/test_task270_dirty_pdf_ocr_corpus_schema.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profile_runner.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_http_profile.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profiles.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_report.py`
+- `tests/sir_convert_a_lot/test_pdf_throughput_benchmark_report.py`
+- `tests/sir_convert_a_lot/test_dirty_pdf_ocr_corpus_schema.py`
 - `docs/backlog/tasks/task-74-run-throughput-benchmark-and-publish-performance-tuning-report.md`
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
@@ -178,7 +178,7 @@ private/PII-bearing PDFs.
 
 ## Validation Evidence
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py tests/sir_convert_a_lot/test_task270_dirty_pdf_ocr_corpus_schema.py tests/sir_convert_a_lot/test_run_task74_hemma_benchmark.py -q`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_throughput_benchmark_report.py tests/sir_convert_a_lot/test_dirty_pdf_ocr_corpus_schema.py tests/sir_convert_a_lot/test_pdf_throughput_hemma_benchmark.py -q`
   (pass)
 - `pdm run typecheck-all` (pass: `Success: no issues found in 584 source files`)
 - `pdm run docs-sync` (pass)
@@ -192,7 +192,7 @@ private/PII-bearing PDFs.
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`
-- focused `pdm run pytest-root tests/sir_convert_a_lot/test_benchmark_story20_throughput_report.py -q`
+- focused `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_throughput_benchmark_report.py -q`
 - `pdm run docs-sync`
 - `pdm run docs-validate`
 - `pdm run skills-validate`

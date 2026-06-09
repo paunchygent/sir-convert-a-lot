@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Imported by `sft_12hz.py`.
     - Delegates resume, train-step, phase, loss, and summary work to bounded
-      patch modules introduced by Story 28.
+      patch modules introduced by Qwen architecture boundary.
 """
 
 from __future__ import annotations
@@ -79,8 +79,8 @@ def execute_training_loop(
         tracker_config=prepared.tracker_config,
         config=tracker_config_payload(args),
         tags={
-            "task": "task-101",
-            "story": "story-26",
+            "programme": "qwen-swedish-finetune",
+            "artifact_lane": "qwen-reference-mel",
             "lane": "qwen-finetune",
             "run_name": prepared.tracker_config.run_name,
         },

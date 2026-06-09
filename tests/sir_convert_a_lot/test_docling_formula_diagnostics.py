@@ -1,12 +1,12 @@
 """Tests for Docling formula/code VLM diagnostics.
 
 Purpose:
-    Prove the low-level diagnostics used for Task 344 expose batching,
+    Prove the low-level diagnostics used for Docling page-window replay expose batching,
     generation, device, token, and converter-cache facts without document text.
 
 Relationships:
     - Exercises `infrastructure.docling_formula_diagnostics`.
-    - Complements `test_task344_page_window_replay` replay-boundary tests.
+    - Complements `test_docling_page_window_replay` replay-boundary tests.
 """
 
 from __future__ import annotations

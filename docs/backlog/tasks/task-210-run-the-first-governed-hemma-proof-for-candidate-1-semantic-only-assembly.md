@@ -13,7 +13,7 @@ related:
   - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -34,7 +34,7 @@ authorizes the first clean restart or fails as an inherited-state rescue lane.
 ## PR Scope
 
 - Use the existing detached proof surface; do not invent a new ad hoc replay
-  command if `qwen-t198-proof` already satisfies the governed proof contract.
+  command if `qwen-fallback-accumulation-proof` already satisfies the governed proof contract.
 - Use the canonical RCA checkpoint:
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task194-20260316t-1405-rca-a1/diagnostic-run/checkpoints/state-step-00001406`
 - Hold the preserved no-projection fine-tuning lane fixed.
@@ -88,12 +88,12 @@ authorizes the first clean restart or fails as an inherited-state rescue lane.
 - [ ] `pdm run validate-tasks`
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [ ] `pdm run qwen-t198-proof prepare --proof-id <proof-id> --gradient-accumulation-steps 1 --skip-build`
-- [ ] `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
-- [ ] `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
-- [ ] `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>` only
+- [ ] `pdm run qwen-fallback-accumulation-proof prepare --proof-id <proof-id> --gradient-accumulation-steps 1 --skip-build`
+- [ ] `pdm run qwen-fallback-accumulation-proof launch-fallback1470 --proof-id <proof-id>`
+- [ ] `pdm run qwen-fallback-accumulation-proof status-fallback1470 --proof-id <proof-id>`
+- [ ] `pdm run qwen-fallback-accumulation-proof launch-fallback-eval --proof-id <proof-id>` only
   after a truthful `1470` checkpoint exists
-- [ ] `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>` only
+- [ ] `pdm run qwen-fallback-accumulation-proof status-fallback-eval --proof-id <proof-id>` only
   when fallback eval was launched
 
 ## Current Prepared Package
@@ -101,18 +101,18 @@ authorizes the first clean restart or fails as an inherited-state rescue lane.
 - Prepared proof id:
   `task210-20260317t104600z-candidate1-a1`
 - Local proof root:
-  `build/verification/qwen-t198-proof/task210-20260317t104600z-candidate1-a1`
+  `build/verification/qwen-fallback-accumulation-proof/task210-20260317t104600z-candidate1-a1`
 - Prepared command:
-  `pdm run qwen-t198-proof prepare --proof-id task210-20260317t104600z-candidate1-a1 --gradient-accumulation-steps 1 --skip-build`
+  `pdm run qwen-fallback-accumulation-proof prepare --proof-id task210-20260317t104600z-candidate1-a1 --gradient-accumulation-steps 1 --skip-build`
 - Exact detached launch surface now ready:
   - bounded replay:
-    `pdm run qwen-t198-proof launch-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
+    `pdm run qwen-fallback-accumulation-proof launch-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
   - bounded replay status:
-    `pdm run qwen-t198-proof status-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
+    `pdm run qwen-fallback-accumulation-proof status-fallback1470 --proof-id task210-20260317t104600z-candidate1-a1`
   - detached fallback eval launch, only after truthful `1470`:
-    `pdm run qwen-t198-proof launch-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
+    `pdm run qwen-fallback-accumulation-proof launch-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
   - detached fallback eval status:
-    `pdm run qwen-t198-proof status-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
+    `pdm run qwen-fallback-accumulation-proof status-fallback-eval --proof-id task210-20260317t104600z-candidate1-a1`
 
 ## Outcome
 

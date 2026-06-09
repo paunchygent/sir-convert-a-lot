@@ -1,8 +1,8 @@
-"""Task 309 provider-run metadata contract.
+"""answer-key live validation provider-run metadata contract.
 
 Purpose:
     Preserve the provider profile, runtime, request settings, launch settings,
-    capabilities, and artifact paths that produced one Task 309 live-validation
+    capabilities, and artifact paths that produced one answer-key live validation live-validation
     run.
 
 Relationships:
@@ -36,12 +36,14 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles im
     build_answer_key_provider_profile,
 )
 
-ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION = "task309_provider_run_metadata_v1"
+ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION = (
+    "answer-key-live-validation_provider_run_metadata_v1"
+)
 
 
 @dataclass(frozen=True)
-class Task309ProviderRunMetadata:
-    """Serializable provider metadata for one Task 309 live-validation run."""
+class AnswerKeyProviderRunMetadata:
+    """Serializable provider metadata for one answer-key live validation live-validation run."""
 
     schema_version: str
     available: bool
@@ -105,8 +107,8 @@ def build_answer_key_provider_run_metadata(
     profile: StructuredLLMProviderProfile,
     reports_root: Path,
     vision_media_path: Path | None,
-    metadata_source: str = "task309_run_report",
-) -> Task309ProviderRunMetadata:
+    metadata_source: str = "answer_key_run_report",
+) -> AnswerKeyProviderRunMetadata:
     """Build provider-run metadata from selected profile values."""
 
     artifact_paths: dict[str, object] = {"reports_root": reports_root.as_posix()}
@@ -115,7 +117,7 @@ def build_answer_key_provider_run_metadata(
     launch_settings = _settings_payload(defaults.launch_settings)
     if vision_media_path is not None:
         launch_settings["vision_media_path"] = vision_media_path.as_posix()
-    return Task309ProviderRunMetadata(
+    return AnswerKeyProviderRunMetadata(
         schema_version=ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION,
         available=True,
         metadata_source=metadata_source,
@@ -142,10 +144,10 @@ def build_answer_key_provider_run_metadata(
 def unavailable_answer_key_provider_run_metadata(
     *,
     metadata_source: str,
-) -> Task309ProviderRunMetadata:
-    """Return explicit unavailable metadata for legacy report-only evaluation."""
+) -> AnswerKeyProviderRunMetadata:
+    """Return explicit unavailable metadata for report-only evaluation."""
 
-    return Task309ProviderRunMetadata(
+    return AnswerKeyProviderRunMetadata(
         schema_version=ANSWER_KEY_PROVIDER_RUN_METADATA_SCHEMA_VERSION,
         available=False,
         metadata_source=metadata_source,
@@ -172,7 +174,7 @@ def unavailable_answer_key_provider_run_metadata(
 def load_answer_key_provider_run_metadata_from_report(
     *,
     run_report_path: Path | None,
-) -> Task309ProviderRunMetadata:
+) -> AnswerKeyProviderRunMetadata:
     """Load provider metadata from a retained run report path when available."""
 
     if run_report_path is None:
@@ -185,7 +187,9 @@ def load_answer_key_provider_run_metadata_from_report(
         )
     payload = json.loads(run_report_path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError(f"Task 309 run report must be a JSON object: {run_report_path}")
+        raise ValueError(
+            f"answer-key live validation run report must be a JSON object: {run_report_path}"
+        )
     metadata = payload.get("provider_run_metadata")
     if metadata is None:
         return _metadata_from_legacy_run_report(
@@ -193,7 +197,7 @@ def load_answer_key_provider_run_metadata_from_report(
             run_report_path=run_report_path,
         )
     if not isinstance(metadata, dict):
-        raise ValueError("Task 309 provider_run_metadata must be an object.")
+        raise ValueError("answer-key live validation provider_run_metadata must be an object.")
     return answer_key_provider_run_metadata_from_payload(metadata)
 
 
@@ -201,7 +205,7 @@ def _metadata_from_legacy_run_report(
     *,
     payload: dict[str, object],
     run_report_path: Path,
-) -> Task309ProviderRunMetadata:
+) -> AnswerKeyProviderRunMetadata:
     model = _optional_str(payload, "model")
     provider_url = _optional_str(payload, "provider_url")
     provider_runtime = _optional_str(payload, "provider_runtime")
@@ -237,7 +241,7 @@ def _metadata_from_legacy_run_report(
         profile=profile,
         reports_root=reports_root,
         vision_media_path=vision_media_path,
-        metadata_source="legacy_task309_run_report_profile_match",
+        metadata_source="legacy_answer_key_run_report_profile_match",
     )
 
 
@@ -273,10 +277,10 @@ def _legacy_reports_root(
 
 def answer_key_provider_run_metadata_from_payload(
     payload: dict[str, object],
-) -> Task309ProviderRunMetadata:
+) -> AnswerKeyProviderRunMetadata:
     """Parse provider metadata from a JSON object."""
 
-    return Task309ProviderRunMetadata(
+    return AnswerKeyProviderRunMetadata(
         schema_version=_required_str(payload, "schema_version"),
         available=_required_bool(payload, "available"),
         metadata_source=_required_str(payload, "metadata_source"),
@@ -301,7 +305,7 @@ def answer_key_provider_run_metadata_from_payload(
 
 
 def structured_profile_from_answer_key_provider_run_metadata(
-    metadata: Task309ProviderRunMetadata,
+    metadata: AnswerKeyProviderRunMetadata,
 ) -> StructuredLLMProviderProfile | None:
     """Rehydrate a generic provider profile from metadata for diagnostics."""
 
@@ -406,20 +410,22 @@ def _json_value(value: object) -> object:
         return [_json_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 provider metadata value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation provider metadata value: {type(value).__name__}"
+    )
 
 
 def _required_str(payload: dict[str, object], key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str):
-        raise ValueError(f"Task 309 provider metadata {key} must be a string.")
+        raise ValueError(f"answer-key live validation provider metadata {key} must be a string.")
     return value
 
 
 def _required_bool(payload: dict[str, object], key: str) -> bool:
     value = payload.get(key)
     if not isinstance(value, bool):
-        raise ValueError(f"Task 309 provider metadata {key} must be a boolean.")
+        raise ValueError(f"answer-key live validation provider metadata {key} must be a boolean.")
     return value
 
 
@@ -428,7 +434,9 @@ def _optional_str(payload: dict[str, object], key: str) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str):
-        raise ValueError(f"Task 309 provider metadata {key} must be a string or null.")
+        raise ValueError(
+            f"answer-key live validation provider metadata {key} must be a string or null."
+        )
     return value
 
 
@@ -437,7 +445,9 @@ def _optional_bool(payload: dict[str, object], key: str) -> bool | None:
     if value is None:
         return None
     if not isinstance(value, bool):
-        raise ValueError(f"Task 309 provider metadata {key} must be a boolean or null.")
+        raise ValueError(
+            f"answer-key live validation provider metadata {key} must be a boolean or null."
+        )
     return value
 
 
@@ -446,7 +456,9 @@ def _optional_int(payload: dict[str, object], key: str) -> int | None:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError(f"Task 309 provider metadata {key} must be an integer or null.")
+        raise ValueError(
+            f"answer-key live validation provider metadata {key} must be an integer or null."
+        )
     return value
 
 
@@ -455,7 +467,9 @@ def _optional_float(payload: dict[str, object], key: str) -> float | None:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int | float):
-        raise ValueError(f"Task 309 provider metadata {key} must be a number or null.")
+        raise ValueError(
+            f"answer-key live validation provider metadata {key} must be a number or null."
+        )
     return float(value)
 
 
@@ -464,56 +478,58 @@ def _optional_object(payload: dict[str, object], key: str) -> dict[str, object]:
     if value is None:
         return {}
     if not isinstance(value, dict):
-        raise ValueError(f"Task 309 provider metadata {key} must be an object.")
+        raise ValueError(f"answer-key live validation provider metadata {key} must be an object.")
     return {str(child_key): _json_value(child) for child_key, child in value.items()}
 
 
 def _required_metadata_str(value: str | None, key: str) -> str:
     if value is None:
-        raise ValueError(f"Task 309 provider metadata missing {key}.")
+        raise ValueError(f"answer-key live validation provider metadata missing {key}.")
     return value
 
 
 def _required_metadata_bool(value: bool | None, key: str) -> bool:
     if value is None:
-        raise ValueError(f"Task 309 provider metadata missing {key}.")
+        raise ValueError(f"answer-key live validation provider metadata missing {key}.")
     return value
 
 
 def _required_metadata_int(value: int | None, key: str) -> int:
     if value is None:
-        raise ValueError(f"Task 309 provider metadata missing {key}.")
+        raise ValueError(f"answer-key live validation provider metadata missing {key}.")
     return value
 
 
 def _required_metadata_float(value: float | None, key: str) -> float:
     if value is None:
-        raise ValueError(f"Task 309 provider metadata missing {key}.")
+        raise ValueError(f"answer-key live validation provider metadata missing {key}.")
     return value
 
 
 def _optional_thinking_mode(
-    metadata: Task309ProviderRunMetadata,
+    metadata: AnswerKeyProviderRunMetadata,
 ) -> StructuredLLMThinkingMode | None:
     value = metadata.request_settings.get("thinking_mode")
     if value is None:
         return None
     if not isinstance(value, str):
-        raise ValueError("Task 309 provider metadata thinking_mode must be a string.")
+        raise ValueError(
+            "answer-key live validation provider metadata thinking_mode must be a string."
+        )
     return StructuredLLMThinkingMode(value)
 
 
-def _bool_capability(metadata: Task309ProviderRunMetadata, key: str) -> bool:
+def _bool_capability(metadata: AnswerKeyProviderRunMetadata, key: str) -> bool:
     value = metadata.capabilities.get(key)
     if not isinstance(value, bool):
-        raise ValueError(f"Task 309 provider capability {key} must be a boolean.")
+        raise ValueError(f"answer-key live validation provider capability {key} must be a boolean.")
     return value
 
 
-def _optional_bool_capability(metadata: Task309ProviderRunMetadata, key: str) -> bool:
+def _optional_bool_capability(metadata: AnswerKeyProviderRunMetadata, key: str) -> bool:
     value = metadata.capabilities.get(key)
     if value is None:
         return False
     if not isinstance(value, bool):
-        raise ValueError(f"Task 309 provider capability {key} must be a boolean.")
+        raise ValueError(f"answer-key live validation provider capability {key} must be a boolean.")
     return value

@@ -6,7 +6,7 @@ Purpose:
     and warning provenance.
 
 Relationships:
-    - Used by `domain.digiexam_parser` for legacy PDF fallback parser output.
+    - Used by `domain.digiexam_parser` for PDF text fallback parser output.
     - Used by `domain.digiexam_dxe_parser` for canonical `.dxe` parser output.
     - Used by `infrastructure.digiexam_pdf_text` for source-line and metadata
       handoff from PyMuPDF extraction.

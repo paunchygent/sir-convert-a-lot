@@ -18,13 +18,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Mapping, Sequence
 
-# Note: These refer to the existing task116 infrastructure which is not yet moved
-from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_models import (
+# Note: These refer to the existing Hemma resource monitor infrastructure which is not yet moved
+from scripts.sir_convert_a_lot.devops.hemma_resource_monitor_models import (
+    HemmaResourceMonitorLaunch,
+    HemmaResourceSample,
     RuntimeKind,
-    Task116ResourceMonitorLaunch,
-    Task116ResourceSample,
 )
-from scripts.sir_convert_a_lot.devops.task116_hemma_resource_monitor_runtime import (
+from scripts.sir_convert_a_lot.devops.hemma_resource_monitor_runtime import (
     build_status,
     launch_metadata_path,
     load_samples,
@@ -73,7 +73,7 @@ def launch_resource_monitor(
     command = [
         sys.executable,
         "-m",
-        "scripts.sir_convert_a_lot.devops.run_task116_hemma_resource_monitor",
+        "scripts.sir_convert_a_lot.devops.run_hemma_resource_monitor",
         "run",
         "--launch-root",
         monitor_launch_root.as_posix(),
@@ -93,7 +93,7 @@ def launch_resource_monitor(
         stdout_path=stdout_log_path(monitor_launch_root),
         stderr_path=stderr_log_path(monitor_launch_root),
     )
-    launch = Task116ResourceMonitorLaunch(
+    launch = HemmaResourceMonitorLaunch(
         generated_at=started_at,
         launch_id=monitor_launch_id,
         repo_root=Path.cwd().resolve().as_posix(),
@@ -182,11 +182,11 @@ def inspect_resource_monitor(
 
 def _group_samples_by_phase(
     *,
-    samples: Sequence[Task116ResourceSample],
+    samples: Sequence[HemmaResourceSample],
     phase_history: Sequence[Mapping[str, object]] | None,
-) -> dict[str, list[Task116ResourceSample]]:
+) -> dict[str, list[HemmaResourceSample]]:
     """Group monitor samples by training phase-history timestamps."""
-    grouped: dict[str, list[Task116ResourceSample]] = {
+    grouped: dict[str, list[HemmaResourceSample]] = {
         "train": [],
         "checkpoint-save": [],
         "durable-checkpoint-save": [],

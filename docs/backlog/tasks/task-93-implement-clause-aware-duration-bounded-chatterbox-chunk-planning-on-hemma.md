@@ -109,7 +109,7 @@ Local validation completed:
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py tests/sir_convert_a_lot/test_task90_chatterbox_segmented_experiment.py tests/sir_convert_a_lot/test_task91_chatterbox_speech_aware_stitching_experiment.py tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py tests/sir_convert_a_lot/test_chatterbox_segmented_experiment.py tests/sir_convert_a_lot/test_chatterbox_speech_aware_stitching_experiment.py tests/sir_convert_a_lot/test_chatterbox_benchmark.py`
 - `pdm run validate-tasks`
 - `pdm run validate-docs`
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

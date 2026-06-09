@@ -39,7 +39,7 @@ inputs.
 Right now the repo has:
 
 - one frozen pilot ownership root,
-- one detached Task 101 runner,
+- one detached Qwen pilot runner,
 - one rule that the pilot may not launch from the generic promoted Task 103
   corpus view.
 
@@ -58,7 +58,7 @@ three things line up operationally.
   - stable per-speaker `refs/`
   - machine-readable bundle metadata describing source freeze, row counts, and
     manifest families
-- Update the Task 101 runner contract so it targets the deterministic pilot
+- Update the Qwen pilot runner contract so it targets the deterministic pilot
   bundle root instead of the generic promoted preprocessing root.
 - Keep the bundle immutable and fail-closed:
   - every manifest row must resolve to retained owned pilot rows
@@ -104,7 +104,7 @@ three things line up operationally.
 
 ### Runner Contract
 
-- The detached Task 101 runner must point at the pilot bundle root directly.
+- The detached Qwen pilot runner must point at the pilot bundle root directly.
 - The runner must fail closed if either required prepared manifest is missing.
 - The runner must not accept the generic promoted preprocessing root as the
   canonical pilot input once this task lands.
@@ -113,7 +113,7 @@ three things line up operationally.
 
 1. Add one repo-owned materializer surface for the Task 101 pilot bundle.
 1. Emit deterministic bundle metadata and reports.
-1. Update the Task 101 runner to target the new pilot bundle root contract.
+1. Update the Qwen pilot runner to target the new pilot bundle root contract.
 1. Add focused tests for:
    - retained-row projection,
    - conflict exclusion,
@@ -126,7 +126,7 @@ three things line up operationally.
 - [x] Repo-owned surface that materializes the frozen pilot training bundle.
 - [x] Deterministic pilot bundle metadata/report written with the materialized
   root.
-- [x] Task 101 runner updated to consume the pilot bundle root canonically.
+- [x] Qwen pilot runner updated to consume the pilot bundle root canonically.
 - [x] Tests covering row ownership, manifest family projection, and reference
   integrity.
 
@@ -165,7 +165,7 @@ Implementation order is intentional:
 
 `T142` is now implemented through one canonical repo-owned surface:
 
-- `pdm run task-101-pilot-bundle build`
+- `pdm run qwen-pilot-bundle build`
 
 The committed bundle materializer now:
 
@@ -175,7 +175,7 @@ The committed bundle materializer now:
   - `manifests/swedish_checkpoint_dev.prepared.jsonl`
   - stable bundle-local `refs/`
   - `reports/task101_pilot_bundle_report.json`
-- retargets the detached Task 101 runner to the pilot bundle root through the
+- retargets the detached Qwen pilot runner to the pilot bundle root through the
   `--pilot-bundle-root` contract
 - fails closed when required train/eval manifests or bundle metadata are missing
 

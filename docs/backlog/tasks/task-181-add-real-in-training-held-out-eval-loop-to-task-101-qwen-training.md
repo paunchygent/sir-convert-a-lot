@@ -1,6 +1,6 @@
 ---
 id: task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training
-title: Add real in-training held-out eval loop to Task 101 Qwen training
+title: Add real in-training held-out eval loop to Qwen training
 type: task
 status: in_progress
 priority: critical

@@ -10,7 +10,7 @@ Relationships:
     - Uses `ml.qwen.preprocessing.rixvox_train_staging`.
     - Writes deterministic evidence under
       `build/reference/qwen3-tts-swedish-corpus/rixvox-train-staging/`.
-    - Supplies raw train assets for the next Task 108 preprocessing slice.
+    - Supplies raw train assets for the next Rixvox staging preprocessing slice.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ DEFAULT_TRAIN_AUDIO_SHARDS = (0,)
 def _parse_args(argv: list[str] | None) -> RixvoxTrainStagingSettings:
     """Parse CLI arguments into normalized RixVox staging settings."""
     parser = argparse.ArgumentParser(
-        description="Run the bounded Task 108 RixVox train staging surface on Hemma."
+        description="Run the bounded Rixvox staging RixVox train staging surface on Hemma."
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--data-root", type=Path, default=default_data_root())

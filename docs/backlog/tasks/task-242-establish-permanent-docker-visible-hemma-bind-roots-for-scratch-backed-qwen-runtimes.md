@@ -142,7 +142,7 @@ operational tax:
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_runtime.py tests/sir_convert_a_lot/test_task242_hemma_qwen_docker_bind_roots.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_runtime.py tests/sir_convert_a_lot/test_qwen_docker_bind_roots.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run typecheck-all`

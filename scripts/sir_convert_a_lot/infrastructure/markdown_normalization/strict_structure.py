@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Called by `markdown_normalization.strict_reflow.strict_reflow`.
-    - Implements target-specific hardening from Task 25 while remaining
+    - Implements target-specific hardening from strict markdown hardening while remaining
       section-scoped and fail-safe.
 """
 

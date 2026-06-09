@@ -18,9 +18,9 @@ related:
   - scripts/sir_convert_a_lot/infrastructure/pdf_checkpoint_metadata_v2.py
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py
   - scripts/sir_convert_a_lot/infrastructure/job_store_v2.py
-  - tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py
+  - tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py
   - tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py
-  - tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py
+  - tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py
 labels:
   - ocr
   - pdf
@@ -73,8 +73,8 @@ OCR.
 - `scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py`
 - `scripts/sir_convert_a_lot/infrastructure/job_store_v2.py`
 - `scripts/sir_convert_a_lot/infrastructure/job_store_manifest_v2.py`
-- `tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py`
-- Add a focused regression test module if keeping this out of the Task 72 suite
+- `tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py`
+- Add a focused regression test module if keeping this out of the PDF parallel throughput suite
   makes the proof clearer.
 
 ## Deliverables
@@ -109,9 +109,9 @@ OCR.
 
 - [x] Focused unit/contract test for zero-new-chunk resume finalization.
 - [x] Resume artifact digest proof remains byte-identical to the baseline.
-- [x] Existing Task 72 parallel/cancel/resume regression suite remains green.
+- [x] Existing PDF parallel throughput parallel/cancel/resume regression suite remains green.
 - [x] Focused command:
-  - `pdm run pytest-root tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py -q`
 
 ## Checklist
 
@@ -145,10 +145,10 @@ OCR.
 - `pdm run lint-fix` passed.
 - `pdm run typecheck-all` passed: `Success: no issues found in 574 source files`.
 - Review 08 follow-up focused regression command passed:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+  `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py -q`
   (`20 passed`).
 - 2026-04-29 Review 08 re-review focused command passed:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py -q`
+  `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_pdf_checkpoints_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py -q`
   (`20 passed`).
 - 2026-04-29 Review 08 re-review typecheck passed:
   `pdm run typecheck-all` (`Success: no issues found in 574 source files`).

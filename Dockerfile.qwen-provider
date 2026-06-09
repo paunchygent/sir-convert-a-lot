@@ -28,7 +28,7 @@ RUN mkdir -p \
     /srv/scratch/sir-convert-a-lot/bin \
     /srv/scratch/sir-convert-a-lot/build \
     /srv/scratch/sir-convert-a-lot/cache \
-    /srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets
+    /srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets
 
 ENV LLAMA_CACHE=/srv/scratch/sir-convert-a-lot/cache/llama.cpp
 ENV XDG_CACHE_HOME=/srv/scratch/sir-convert-a-lot/cache

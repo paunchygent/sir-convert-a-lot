@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training.md
   - docs/backlog/tasks/task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - hemma
@@ -102,7 +102,7 @@ Bad or unsafe behavior observed on the same recovery attempt:
 - Use the newer durable checkpoint `state-step-00001238` as the canonical next
   strict resume target instead of rolling back to `1236`.
 - Track live recovery and future train/eval progress in
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+  `docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`
   rather than in skill-doc operational notes.
 
 ## Deliverables

@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/epics/epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - .codex/handoff.md
   - .codex/rules/096-qwen-experiment-governance.md
@@ -32,14 +32,14 @@ the active workflow only shows the active surfaces, while historical Story
 ## PR Scope
 
 - Update the runbook to show only active surfaces in the primary operator flow:
-  - `qwen-t221-historical-control`
-  - `qwen-story31-stability-lab`
+  - `qwen-historical-pilot-control`
+  - `qwen-stability-lab`
   - governed `qwen-train launch/status` recovery proof after promotion
 - Demote Story 29/30 proof wrappers from the primary flow:
-  - `qwen-story30-freshstart-proof`
-  - `qwen-story30-backward-lineage`
-  - `qwen-t197-proof`
-  - `qwen-t198-proof`
+  - `qwen-freshstart-proof`
+  - `qwen-backward-lineage`
+  - `qwen-fallback-proof`
+  - `qwen-fallback-accumulation-proof`
 - Update the Qwen finetuning skill, Epic 08 entrypoint, Story 31, and
   `current.md` to use the same matrix and lane vocabulary.
 - Keep all existing CLI commands callable; this task is docs/status-only

@@ -9,7 +9,7 @@ Relationships:
       changing local Qwen routing defaults.
     - Produces source-neutral `StructuredLLMProviderProfile` values consumed by
       the existing structured-provider harness.
-    - Supplies provider JSON fragments for operator settings and Task 326 eval
+    - Supplies provider JSON fragments for operator settings and OpenAI answer-key evaluation eval
       runs while keeping raw OpenAI secrets outside persisted configuration.
 """
 

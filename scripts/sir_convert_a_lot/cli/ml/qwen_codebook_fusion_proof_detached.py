@@ -1,7 +1,7 @@
-"""Launch and inspect the detached Task 203 codebook-fusion proof on Hemma.
+"""Launch and inspect the detached Qwen codebook-fusion proof codebook-fusion proof on Hemma.
 
 Purpose:
-    Provide the committed detached execution surface for the Task 203
+    Provide the committed detached execution surface for the Qwen codebook-fusion proof
     codebook-fusion proof so Hemma GPU evidence collection survives the local
     client session.
 
@@ -29,18 +29,22 @@ from scripts.sir_convert_a_lot.ml.qwen.training.codebook_fusion_detached import 
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the committed CLI parser for detached Task 203 proof workflows."""
+    """Build the committed CLI parser for detached Qwen codebook-fusion workflows."""
     parser = argparse.ArgumentParser(
-        description="Launch and inspect the detached Task 203 codebook-fusion proof on Hemma."
+        description="Launch and inspect the detached Qwen codebook-fusion proof on Hemma."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    launch = subparsers.add_parser("launch", help="Launch one detached Task 203 proof worker.")
+    launch = subparsers.add_parser(
+        "launch", help="Launch one detached Qwen codebook-fusion proof proof worker."
+    )
     launch.add_argument("--output-root", type=Path, default=default_output_root())
     launch.add_argument("--launch-id", default=None)
     launch.add_argument("proof_args", nargs=argparse.REMAINDER)
 
-    status = subparsers.add_parser("status", help="Inspect one detached Task 203 proof worker.")
+    status = subparsers.add_parser(
+        "status", help="Inspect one detached Qwen codebook-fusion proof proof worker."
+    )
     status.add_argument("--output-root", type=Path, default=default_output_root())
     return parser
 
@@ -75,7 +79,7 @@ def _write_markdown(path: Path, markdown: str) -> None:
 
 
 def _status_markdown(status_payload: dict[str, object]) -> str:
-    """Render one concise Markdown summary for detached Task 203 status."""
+    """Render one concise Markdown summary for detached Qwen codebook-fusion proof status."""
     lines = [
         "# Detached Qwen Codebook Fusion Proof Status",
         "",
@@ -123,10 +127,10 @@ def _status_markdown(status_payload: dict[str, object]) -> str:
 
 
 def _load_launch(output_root: Path) -> DetachedCodebookFusionLaunch:
-    """Load one persisted detached Task 203 launch payload."""
+    """Load one persisted detached Qwen codebook-fusion proof launch payload."""
     payload = json.loads(_launch_metadata_path(output_root).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise SystemExit("Detached Task 203 launch metadata was malformed.")
+        raise SystemExit("Detached Qwen codebook-fusion proof launch metadata was malformed.")
     return DetachedCodebookFusionLaunch(
         generated_at=_required_str(payload, "generated_at"),
         launch_id=_required_str(payload, "launch_id"),
@@ -146,7 +150,9 @@ def _required_str(payload: dict[str, object], key: str) -> str:
     """Return one required string value from a JSON payload."""
     value = payload.get(key)
     if not isinstance(value, str):
-        raise SystemExit(f"Detached Task 203 metadata returned malformed `{key}`.")
+        raise SystemExit(
+            f"Detached Qwen codebook-fusion proof metadata returned malformed `{key}`."
+        )
     return value
 
 
@@ -154,7 +160,9 @@ def _required_int(payload: dict[str, object], key: str) -> int:
     """Return one required integer value from a JSON payload."""
     value = payload.get(key)
     if not isinstance(value, int):
-        raise SystemExit(f"Detached Task 203 metadata returned malformed `{key}`.")
+        raise SystemExit(
+            f"Detached Qwen codebook-fusion proof metadata returned malformed `{key}`."
+        )
     return value
 
 
@@ -162,12 +170,14 @@ def _required_str_list(payload: dict[str, object], key: str) -> list[str]:
     """Return one required string list from a JSON payload."""
     value = payload.get(key)
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
-        raise SystemExit(f"Detached Task 203 metadata returned malformed `{key}`.")
+        raise SystemExit(
+            f"Detached Qwen codebook-fusion proof metadata returned malformed `{key}`."
+        )
     return list(value)
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Launch or inspect the detached Task 203 proof worker on Hemma."""
+    """Launch or inspect the detached Qwen codebook-fusion proof proof worker on Hemma."""
     parser = _build_parser()
     args = parser.parse_args(argv)
     output_root = Path(args.output_root)
@@ -203,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True))
         return 0
 
-    raise SystemExit(f"Unsupported detached Task 203 command: {args.command}")
+    raise SystemExit(f"Unsupported detached Qwen codebook-fusion proof command: {args.command}")
 
 
 if __name__ == "__main__":

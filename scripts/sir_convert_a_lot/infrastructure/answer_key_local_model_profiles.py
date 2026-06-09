@@ -74,9 +74,9 @@ class AnswerKeyProviderDefaults:
 
 
 DEFAULT_ANSWER_KEY_PROVIDER_RUNTIME = AnswerKeyStructuredProviderRuntime.GRANITE_VLLM
-GRANITE_VLLM_PROVIDER_ID = "task309-granite-vllm"
-LLAMA_CPP_PROVIDER_ID = "task309-llama-cpp"
-GRANITE_ANSWER_KEY_EVAL_OUTPUT_ROOT = Path("build/verification/task-309-granite-answer-key-live")
+GRANITE_VLLM_PROVIDER_ID = "answer-key-live-validation-granite-vllm"
+LLAMA_CPP_PROVIDER_ID = "answer-key-live-validation-llama-cpp"
+GRANITE_ANSWER_KEY_EVAL_OUTPUT_ROOT = Path("build/verification/digiexam-granite-answer-key-live")
 GRANITE_ANSWER_KEY_EVAL_REPORTS_ROOT = (
     GRANITE_ANSWER_KEY_EVAL_OUTPUT_ROOT / "advisory-corpus-reports"
 )
@@ -86,13 +86,13 @@ GRANITE_ANSWER_KEY_MODEL = "ibm-granite/granite-4.1-8b-fp8"
 GRANITE_ANSWER_KEY_CONTEXT_WINDOW_TOKENS = 4096
 GRANITE_ANSWER_KEY_TEMPERATURE = 0.0
 GRANITE_ANSWER_KEY_MAX_OUTPUT_TOKENS = 512
-GRANITE_ANSWER_KEY_CONTAINER_NAME = "sir-convert-task309-granite-vllm"
+GRANITE_ANSWER_KEY_CONTAINER_NAME = "sir-convert-answer-key-live-validation-granite-vllm"
 GRANITE_ANSWER_KEY_CACHE_PATHS = (
     "/srv/scratch/sir-convert-a-lot/cache/huggingface",
     "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
 )
 QWEN36_LLAMA_CPP_EVAL_OUTPUT_ROOT = Path(
-    "/srv/scratch/sir-convert-a-lot/build/verification/task-309-qwen36-27b-q6k-hemma-local"
+    "/srv/scratch/sir-convert-a-lot/build/verification/digiexam-qwen36-27b-q6k-answer-key-local"
 )
 QWEN36_LLAMA_CPP_EVAL_REPORTS_ROOT = QWEN36_LLAMA_CPP_EVAL_OUTPUT_ROOT / "advisory-corpus-reports"
 QWEN36_LLAMA_CPP_PROVIDER_URL = "http://127.0.0.1:8082"
@@ -101,7 +101,7 @@ QWEN36_LLAMA_CPP_MODEL = "qwen3.6-27b-q6k"
 QWEN36_LLAMA_CPP_CONTEXT_WINDOW_TOKENS = 16384
 QWEN36_LLAMA_CPP_MAX_OUTPUT_TOKENS = 4096
 QWEN36_LLAMA_CPP_TEMPERATURE = 0.15
-QWEN36_LLAMA_CPP_CONTAINER_NAME = "task309-qwen36-llama-cpp-local"
+QWEN36_LLAMA_CPP_CONTAINER_NAME = "answer-key-live-validation-qwen36-llama-cpp-local"
 QWEN36_LLAMA_CPP_CACHE_PATH = "/srv/scratch/sir-convert-a-lot/cache/llama.cpp"
 QWEN36_LLAMA_CPP_SERVER_BINARY = "/srv/scratch/sir-convert-a-lot/bin/llama-server"
 QWEN36_LLAMA_CPP_HF_REPO = "unsloth/Qwen3.6-27B-GGUF:default"

@@ -61,7 +61,7 @@ def next_prefixed_index(directory: Path, prefix: str, width: int = 4) -> str:
     """Return next index for entries named `<prefix>-<number>-...` in a directory.
 
     This supports flat backlog items stored directly as markdown files
-    (example: `task-01-...md` or `review-01-...md`).
+    (example: `...md` or `review-01-...md`).
     """
     max_id = 0
     pattern = re.compile(rf"^{re.escape(prefix)}-(\d+)(?:-|\.|$)")

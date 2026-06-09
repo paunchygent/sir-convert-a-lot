@@ -94,12 +94,12 @@ explicitly narrow the scope.
   bundle projected from the frozen pilot root, not the generic promoted Task
   103 preprocessing root.
 - The canonical repo-owned materialization surface for that bundle is:
-  - `pdm run task-101-pilot-bundle build`
-- The detached Task 101 runtime must record both the train and held-out eval
+  - `pdm run qwen-pilot-bundle build`
+- The detached Qwen pilot runtime must record both the train and held-out eval
   manifest paths in launch/status/report metadata while staying explicit that
   upstream `sft_12hz.py` is still train-only and does not perform in-training
   evaluation.
-- Scheduled Task 101 runs now use the canonical `500/100/3` posture:
+- Scheduled Qwen pilot runs now use the canonical `500/100/3` posture:
   durable checkpoint every `500` optimizer steps, held-out eval every `100`
   steps, retain newest `3` durable trainer-state checkpoints.
 - For older pre-schedule checkpoints, the canonical recovery order is:
@@ -117,7 +117,7 @@ explicitly narrow the scope.
 - If a resumed Task 101 lane fails with repeated non-finite behavior, do not
   keep retrying blind full training runs. The canonical next step is:
   `status -> diagnose-non-finite -> fix -> bounded retry`.
-- Story 32 is now the governing protocol for active Qwen Task 101 experiment
+- Story 32 is now the governing protocol for active Qwen Qwen experiment
   work:
   - classify every active run as `provenance`, `mechanism`, or `recovery`
   - keep one question per run
@@ -126,23 +126,23 @@ explicitly narrow the scope.
   - use the promotion ladder:
     local gate -> short bounded fresh-start run -> longer governed proof
 - Current active surface matrix:
-  - `qwen-t221-historical-control`: `provenance`
-  - `qwen-story31-stability-lab`: `mechanism`
+  - `qwen-historical-pilot-control`: `provenance`
+  - `qwen-stability-lab`: `mechanism`
   - governed `qwen-train launch/status` fresh-start proof lane:
     `recovery`, blocked until promotion
-  - `qwen-story30-freshstart-proof` and
-    `qwen-story30-backward-lineage`: `legacy-readonly`
-  - `qwen-t197-proof` and `qwen-t198-proof`: `deprecated` for new work
+  - `qwen-freshstart-proof` and
+    `qwen-backward-lineage`: `legacy-readonly`
+  - `qwen-fallback-proof` and `qwen-fallback-accumulation-proof`: `deprecated` for new work
 - Current operator truth:
   - `T221` is now resolved as negative recreated-control evidence:
     the recreated original-recipe shape plus only the `T206` token-span fix
     still fails immediately under the current trainer/runtime
   - treat that as provenance evidence only, not as a mechanism or recovery
     answer
-  - Story 31 remains the active mechanism lane
+  - Qwen stability lab remains the active mechanism lane
   - `T225` is complete as the exact parity contract
   - `T226` is now complete as the committed local parity-probe surface:
-    `pdm run qwen-story31-parity-probe run`
+    `pdm run qwen-parity-probe run`
   - the live in-image historical-bundle run under
     `task226-20260317t224307Z` found no meaningful checkpoint divergence
     between the current and intended paths

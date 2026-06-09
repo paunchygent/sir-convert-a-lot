@@ -1,4 +1,4 @@
-"""Resolved Story 31 talker-core stabilization specs and variant constants.
+"""Resolved Qwen stability lab talker-core stabilization specs and variant constants.
 
 Purpose:
     Keep the bounded variant taxonomy and concrete spec resolution separate
@@ -7,7 +7,8 @@ Purpose:
 
 Relationships:
     - Imported by `sft_12hz_talker_core_stabilization.py`.
-    - Reuses the input-layernorm helper contracts for the T230 and T234
+    - Reuses the input-layernorm helper contracts for the input-layernorm family and input-layernorm
+      output
       families.
 """
 

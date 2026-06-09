@@ -1,5 +1,5 @@
 {
-  "corpus_id": "task-309-2026-05-12-onedrive-pure-dxe",
+  "corpus_id": "digiexam-answer-key-2026-05-12-onedrive-pure-dxe",
   "entries": [
     {
       "adjudication_required": false,
@@ -128,7 +128,7 @@
       "source_filename": "1776888013-ak7-lag-och-ratt.dxe",
       "source_item_fingerprint": "sha256:1472ea69adc2b872bde6fcc0538a48c8d4ddd44d25a48beb3c4e973a66462660",
       "source_sha256": "sha256:ab39bbee54ec9004ce733e0942caa3c4934c37f87c7d35d59c9a16eca4f3839a",
-      "verification_note": "teacher_verified_task309_vision_asset_eval",
+      "verification_note": "teacher_verified_answer_key_vision_asset_eval",
       "verification_state": "teacher_verified"
     },
     {
@@ -771,7 +771,7 @@
       "source_filename": "1811577114-ekologiprov-v-49-25d-e.dxe",
       "source_item_fingerprint": "sha256:20af208f8ae28bd2b73ae5e27c9f1a83e761578bb23e370c229ea3a6ea0aa591",
       "source_sha256": "sha256:6653c581672de98c09a501e4247e45faaa61bee309f88409d0b6d0525afaa57b",
-      "verification_note": "teacher_verified_task309_vision_asset_eval",
+      "verification_note": "teacher_verified_answer_key_vision_asset_eval",
       "verification_state": "teacher_verified"
     },
     {

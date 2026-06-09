@@ -63,7 +63,7 @@ from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import (
 )
 
 
-def test_task103_parse_args_defaults() -> None:
+def test_parse_args_defaults() -> None:
     """The preprocessing runner should expose deterministic defaults."""
     runner_settings = _parse_args([])
 
@@ -87,13 +87,13 @@ def test_task103_parse_args_defaults() -> None:
     assert runner_settings.promote_on_success is False
 
 
-def test_task103_parse_args_rejects_stage_all_without_explicit_override() -> None:
+def test_parse_args_rejects_stage_all_without_explicit_override() -> None:
     """The public preprocessing runner should reject non-canonical `stage=all` use."""
     with pytest.raises(SystemExit, match="no longer treats `stage=all` as canonical"):
         _parse_args(["--stage", "all"])
 
 
-def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
+def test_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
     """The runner should parse the staged public-corpus settings explicitly."""
     runner_settings = _parse_args(
         [
@@ -122,7 +122,7 @@ def test_task103_parse_args_staged_public_corpus_mode(tmp_path: Path) -> None:
     assert runner_settings.run_root is None
 
 
-def test_task103_parse_args_selected_source_records_mode(tmp_path: Path) -> None:
+def test_parse_args_selected_source_records_mode(tmp_path: Path) -> None:
     """The runner should parse the portable selected-source mode explicitly."""
     records_path = tmp_path / "selected_source_records.jsonl"
     runner_settings = _parse_args(
@@ -138,7 +138,7 @@ def test_task103_parse_args_selected_source_records_mode(tmp_path: Path) -> None
     assert runner_settings.selected_source_records_path == records_path
 
 
-def test_task103_parse_args_resume_row_processing_flag() -> None:
+def test_parse_args_resume_row_processing_flag() -> None:
     """The runner should parse explicit row-processing resume control."""
     runner_settings = _parse_args(
         [
@@ -151,7 +151,7 @@ def test_task103_parse_args_resume_row_processing_flag() -> None:
     assert runner_settings.preprocessing.resume_row_processing is True
 
 
-def test_task103_parse_args_rejects_resume_outside_row_processing() -> None:
+def test_parse_args_rejects_resume_outside_row_processing() -> None:
     """Resume-row-processing must only be legal for the row-processing stage."""
     with pytest.raises(SystemExit, match="only valid for the `row-processing` stage"):
         _parse_args(
@@ -163,7 +163,7 @@ def test_task103_parse_args_rejects_resume_outside_row_processing() -> None:
         )
 
 
-def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
+def test_parse_args_run_scoped_controls(tmp_path: Path) -> None:
     """The runner should parse explicit run-root and promotion controls."""
     runner_settings = _parse_args(
         [
@@ -184,7 +184,7 @@ def test_task103_parse_args_run_scoped_controls(tmp_path: Path) -> None:
     assert runner_settings.promote_on_success is True
 
 
-def test_task103_selected_source_records_mode_resolves_portable_rixvox_locators(
+def test_selected_source_records_mode_resolves_portable_rixvox_locators(
     tmp_path: Path,
 ) -> None:
     """Portable selected-source rows should resolve local RixVox locators before row-processing."""
@@ -249,7 +249,7 @@ def test_task103_selected_source_records_mode_resolves_portable_rixvox_locators(
     assert source_records[0].source_audio_locator.archive_member == "GR01KRU1/needed.wav"
 
 
-def test_task103_runner_main_prints_report_summary(
+def test_runner_main_prints_report_summary(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -284,7 +284,7 @@ def test_task103_runner_main_prints_report_summary(
     assert stdout_payload["prepared_rows"] == 2
 
 
-def test_task103_runner_main_uses_run_root_for_staged_public_corpus(
+def test_runner_main_uses_run_root_for_staged_public_corpus(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -351,7 +351,7 @@ def test_task103_runner_main_uses_run_root_for_staged_public_corpus(
     assert stdout_payload["output_root"] == expected_report.output_root
 
 
-def test_task103_runner_main_persists_row_processing_heartbeat(
+def test_runner_main_persists_row_processing_heartbeat(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -420,7 +420,7 @@ def test_task103_runner_main_persists_row_processing_heartbeat(
     assert status_payload["current_dataset_row_id"] == "rixvox-train-0002"
 
 
-def test_task103_runner_main_rejects_promotion_outside_reports_stage(
+def test_runner_main_rejects_promotion_outside_reports_stage(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -467,7 +467,7 @@ def test_task103_runner_main_rejects_promotion_outside_reports_stage(
         )
 
 
-def test_task103_runner_main_promotes_successful_reports_stage(
+def test_runner_main_promotes_successful_reports_stage(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -522,7 +522,7 @@ def test_task103_runner_main_promotes_successful_reports_stage(
     assert status_payload["status"] == "promoted"
 
 
-def test_task103_runner_main_persists_traceback_on_failure(
+def test_runner_main_persists_traceback_on_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -571,7 +571,7 @@ def test_task103_runner_main_persists_traceback_on_failure(
     assert "Traceback" in status_payload["error"]
 
 
-def test_task103_source_selection_stage_persists_selected_source_records(
+def test_source_selection_stage_persists_selected_source_records(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -649,7 +649,7 @@ def test_task103_source_selection_stage_persists_selected_source_records(
     assert status_payload["current_split"] == "train"
 
 
-def test_task103_row_processing_reuses_selected_source_records(
+def test_row_processing_reuses_selected_source_records(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -745,7 +745,7 @@ def test_task103_row_processing_reuses_selected_source_records(
     assert captured_dataset_row_ids == ["GR01KRU1-1-0"]
 
 
-def test_task103_runner_main_staged_public_corpus_passes_source_records(
+def test_runner_main_staged_public_corpus_passes_source_records(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

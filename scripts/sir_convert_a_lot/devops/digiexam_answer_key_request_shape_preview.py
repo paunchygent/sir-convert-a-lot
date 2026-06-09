@@ -1,13 +1,13 @@
-"""Task 309 provider-free request-shape preview artifacts.
+"""answer-key live validation provider-free request-shape preview artifacts.
 
 Purpose:
     Build local evidence for the exact model-facing request shape before any
     live Granite/vLLM validation run is launched.
 
 Relationships:
-    - Reuses the Task 312 answer-key candidate planner and provider payload
+    - Reuses the answer-key provider protocol answer-key candidate planner and provider payload
       builder so previewed requests match the live advisory path.
-    - Complements Task 309 live execution by catching bad prompt projection,
+    - Complements answer-key live validation live execution by catching bad prompt projection,
       missing item-type instructions, and provider-mode mismatches without
       calling Hemma.
 """
@@ -28,9 +28,9 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates 
     answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    Task309AssetEvalPolicy,
-    build_task309_live_validation_manifest,
-    write_task309_json,
+    AnswerKeyAssetEvalPolicy,
+    build_answer_key_live_validation_manifest,
+    write_answer_key_json,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamItemType
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
@@ -55,11 +55,11 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
     build_structured_llm_payload,
 )
 
-ANSWER_KEY_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION = "task309_request_shape_preview_v1"
+ANSWER_KEY_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION = "answer_key_request_shape_preview_v1"
 
 
 @dataclass(frozen=True)
-class Task309RequestShapeItem:
+class AnswerKeyRequestShapeItem:
     """One provider-free request-shape preview row."""
 
     source_filename: str
@@ -85,8 +85,8 @@ class Task309RequestShapeItem:
 
 
 @dataclass(frozen=True)
-class Task309RequestShapePreview:
-    """Provider-free preview for all Task 309 model-facing requests."""
+class AnswerKeyRequestShapePreview:
+    """Provider-free preview for all answer-key live validation model-facing requests."""
 
     schema_version: str
     corpus_root: str
@@ -99,7 +99,7 @@ class Task309RequestShapePreview:
     ok: bool
     issue_count: int
     issue_counts: tuple[dict[str, object], ...]
-    items: tuple[Task309RequestShapeItem, ...]
+    items: tuple[AnswerKeyRequestShapeItem, ...]
 
     def to_payload(self) -> dict[str, object]:
         """Return JSON-safe preview payload."""
@@ -118,9 +118,9 @@ def build_answer_key_request_shape_preview(
     temperature: float = DEFAULT_ANSWER_KEY_TEMPERATURE,
     supports_multimodal_vision: bool = False,
     vision_media_path: Path = Path(
-        "build/verification/task-309-request-shape-preview/vision-assets"
+        "build/verification/digiexam-answer-key-request-shape-preview/vision-assets"
     ),
-) -> Task309RequestShapePreview:
+) -> AnswerKeyRequestShapePreview:
     """Build a provider-free preview of the exact live request shape."""
 
     profile = build_answer_key_provider_profile(
@@ -132,10 +132,10 @@ def build_answer_key_request_shape_preview(
         supports_multimodal_vision=supports_multimodal_vision,
     )
     base_planner = answer_key_candidate_planner_for_profile(profile)
-    vision_policy = Task309AssetEvalPolicy(
+    vision_policy = AnswerKeyAssetEvalPolicy(
         allow_supported_embedded_assets=profile.capabilities.supports_multimodal_vision
     )
-    manifest = build_task309_live_validation_manifest(
+    manifest = build_answer_key_live_validation_manifest(
         corpus_root,
         asset_eval_policy=vision_policy,
     )
@@ -146,7 +146,7 @@ def build_answer_key_request_shape_preview(
         if item.eligible
     }
     parser = DigiExamDxeParser()
-    rows: list[Task309RequestShapeItem] = []
+    rows: list[AnswerKeyRequestShapeItem] = []
     item_count = 0
     for source_path in sorted(corpus_root.glob("*.dxe")):
         exam = build_digiexam_intermediate_exam(parser.parse_file(source_path))
@@ -165,14 +165,14 @@ def build_answer_key_request_shape_preview(
         item_count += len(exam.items)
         for item in exam.items:
             plan = planner.plan_candidate(
-                job_id=f"task309-preview:{source_path.stem}",
+                job_id=f"answer-key-live-validation-preview:{source_path.stem}",
                 item=item,
                 profile=profile,
             )
             if plan is None:
                 if (source_path.name, item.item_id) in eligible_keys:
                     rows.append(
-                        Task309RequestShapeItem(
+                        AnswerKeyRequestShapeItem(
                             source_filename=source_path.name,
                             item_id=item.item_id,
                             sequence=item.sequence,
@@ -217,7 +217,7 @@ def build_answer_key_request_shape_preview(
                 "choice_values": plan.request.output_spec.choice_values,
             }
             rows.append(
-                Task309RequestShapeItem(
+                AnswerKeyRequestShapeItem(
                     source_filename=source_path.name,
                     item_id=item.item_id,
                     sequence=item.sequence,
@@ -240,7 +240,7 @@ def build_answer_key_request_shape_preview(
                 )
             )
     issue_counts = Counter(issue for row in rows for issue in row.issues)
-    return Task309RequestShapePreview(
+    return AnswerKeyRequestShapePreview(
         schema_version=ANSWER_KEY_REQUEST_SHAPE_PREVIEW_SCHEMA_VERSION,
         corpus_root=corpus_root.as_posix(),
         provider_url=provider_url,
@@ -261,14 +261,14 @@ def build_answer_key_request_shape_preview(
 def write_answer_key_request_shape_preview(
     *,
     output_root: Path,
-    preview: Task309RequestShapePreview,
+    preview: AnswerKeyRequestShapePreview,
 ) -> tuple[Path, Path]:
     """Write JSON and Markdown request-shape preview artifacts."""
 
     output_root.mkdir(parents=True, exist_ok=True)
     json_path = output_root / "request-shape-preview.json"
     markdown_path = output_root / "request-shape-preview.md"
-    write_task309_json(preview.to_payload(), json_path)
+    write_answer_key_json(preview.to_payload(), json_path)
     markdown_path.write_text(_markdown(preview).rstrip() + "\n", encoding="utf-8")
     return json_path, markdown_path
 
@@ -403,9 +403,9 @@ def _raw_item_context_json(item: DigiExamIrItem) -> str:
     )
 
 
-def _markdown(preview: Task309RequestShapePreview) -> str:
+def _markdown(preview: AnswerKeyRequestShapePreview) -> str:
     lines = [
-        "# Task 309 Request Shape Preview",
+        "# answer-key live validation Request Shape Preview",
         "",
         f"- corpus_root: `{preview.corpus_root}`",
         f"- provider_url: `{preview.provider_url}`",
@@ -452,7 +452,7 @@ def _append_block(lines: list[str], title: str, language: str, value: str | None
 def _load_user_payload(payload: str) -> dict[str, object]:
     decoded = json.loads(payload)
     if not isinstance(decoded, dict):
-        raise ValueError("Task 309 user payload must decode to an object.")
+        raise ValueError("answer-key live validation user payload must decode to an object.")
     return {str(key): value for key, value in decoded.items()}
 
 
@@ -462,7 +462,9 @@ def _canonical_json(payload: object) -> str:
 
 def _json_object(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise TypeError("Task 309 request-shape preview must serialize to an object.")
+        raise TypeError(
+            "answer-key live validation request-shape preview must serialize to an object."
+        )
     return {str(key): _json_value(child) for key, child in value.items()}
 
 
@@ -473,7 +475,9 @@ def _json_value(value: object) -> object:
         return [_json_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 request-shape value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation request-shape value: {type(value).__name__}"
+    )
 
 
 _CHOICE_TYPES = frozenset(

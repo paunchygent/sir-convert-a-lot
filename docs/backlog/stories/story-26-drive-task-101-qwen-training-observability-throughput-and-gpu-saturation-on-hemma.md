@@ -1,6 +1,6 @@
 ---
 id: story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma
-title: Drive Task 101 Qwen training observability throughput and GPU saturation on Hemma
+title: Drive Qwen training observability throughput and GPU saturation on Hemma
 type: story
 status: in_progress
 priority: critical
@@ -43,7 +43,7 @@ related:
   - docs/backlog/tasks/task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md
   - docs/backlog/tasks/task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training.md
   - docs/backlog/tasks/task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - https://huggingface.co/docs/accelerate/en/usage_guides/tracking
@@ -66,7 +66,7 @@ Implementation slice with acceptance-driven scope.
 
 ## Objective
 
-Turn the live Task 101 Qwen Hemma lane from an operationally stable but
+Turn the live Qwen Hemma lane from an operationally stable but
 under-observed and GPU-starved baseline into a truthfully monitored,
 throughput-optimized, saturation-oriented training pipeline.
 
@@ -83,7 +83,7 @@ The formal performance gate for this story is:
   and TensorBoard as the secondary classical curve surface.
 - Make `status.json` and related Task 101 inspection output truthful during a
   live run instead of mostly launch-time metadata.
-- Make high-resolution resource monitoring default for long Task 101 runs so
+- Make high-resolution resource monitoring default for long Qwen pilot runs so
   GPU, VRAM, CPU, and RAM evidence no longer depends on operator memory.
 - Remove the current throughput tax from over-aggressive durable-checkpoint
   cadence and ambiguous step semantics.
@@ -157,7 +157,7 @@ Planned module ownership:
     `scripts/sir_convert_a_lot/devops/run_task161_hemma_ref_mel_cache_comparison.py`
 - `T162`:
   - add `scripts/devops/qwen_finetuning_patches/sft_12hz_profiling.py`
-  - add Task 101 runtime profiling orchestration module(s)
+  - add Qwen pilot runtime profiling orchestration module(s)
   - add bounded profiling surface
     `scripts/sir_convert_a_lot/devops/run_task162_hemma_task101_profiling.py`
 - `T163`:
@@ -259,13 +259,13 @@ Root-cause conclusion from this evidence:
 
 ## Acceptance Criteria
 
-- [x] The Task 101 runtime emits first-class tracker artifacts during live
+- [x] The Qwen pilot runtime emits first-class tracker artifacts during live
   training, with MLflow as the primary run record and TensorBoard event files
   available for classical loss-curve inspection.
 - [x] The Task 101 live status surface updates during training and exposes
   truthful current-step, current-phase, latest-checkpoint, and tracker-run
   metadata instead of behaving like launch-only state.
-- [x] Long Task 101 runs automatically emit high-resolution resource evidence
+- [x] Long Qwen pilot runs automatically emit high-resolution resource evidence
   with `<= 1.0` second sampling, and the resulting summary can distinguish
   steady-state training windows from checkpoint-save windows.
 - [x] Long-run durable checkpoint cadence is no longer `2` steps by default,
@@ -278,7 +278,7 @@ Root-cause conclusion from this evidence:
   hot path, and the team has an explicit documented decision on whether
   precomputed bundle-level mels are still required.
 - [x] Bounded PyTorch and ROCm profiling surfaces exist and produce reviewable
-  traces for one Task 101 run without requiring ad hoc shell payloads.
+  traces for one Qwen pilot run without requiring ad hoc shell payloads.
 - [ ] The canonical Task 101 lane performs real in-training held-out eval
   against `swedish_checkpoint_dev` and persists eval loss in tracker, status,
   and terminal report artifacts.

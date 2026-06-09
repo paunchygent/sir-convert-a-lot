@@ -13,8 +13,8 @@ related:
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
   - docs/backlog/reviews/review-10-ruthless-review-of-story-39-follow-up-task-272-and-task-273-drafts.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - scripts/sir_convert_a_lot/devops/run_task74_hemma_benchmark.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_profile_runner.py
+  - scripts/sir_convert_a_lot/devops/run_pdf_throughput_hemma_benchmark.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profile_runner.py
 labels:
   - ocr
   - benchmark
@@ -165,10 +165,10 @@ already captured Task 271 production-service proof:
 
 ## Entry Points
 
-- `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha> --dirty-corpus-manifest <manifest> --dirty-corpus-source-root <source-root>`
-- `scripts/sir_convert_a_lot/devops/run_task74_hemma_benchmark.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_profile_runner.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_service_profile.py`
+- `pdm run run-hemma -- pdm run benchmark:pdf-throughput-hemma --expected-revision <sha> --dirty-corpus-manifest <manifest> --dirty-corpus-source-root <source-root>`
+- `scripts/sir_convert_a_lot/devops/run_pdf_throughput_hemma_benchmark.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profile_runner.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_service_profile.py`
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
 ## Test Requirements

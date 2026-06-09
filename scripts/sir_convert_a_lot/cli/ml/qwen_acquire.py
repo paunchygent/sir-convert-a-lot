@@ -38,7 +38,7 @@ from scripts.sir_convert_a_lot.ml.qwen.preprocessing.acquisition import (
 def _parse_args(argv: list[str] | None) -> AcquisitionSettings:
     """Parse CLI arguments into normalized acquisition settings."""
     parser = argparse.ArgumentParser(
-        description="Run the Task 106 Hemma-only Qwen corpus acquisition surface."
+        description="Run the Hemma-only Qwen corpus acquisition surface."
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--data-root", type=Path, default=default_data_root())

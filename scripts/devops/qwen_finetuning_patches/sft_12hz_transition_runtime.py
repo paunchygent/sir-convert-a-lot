@@ -120,7 +120,7 @@ def handle_interval_boundaries(
             eval_runs_completed=eval_runs_completed,
             latest_durable_checkpoint=latest_durable_checkpoint,
         )
-        with prepared.torch_profiler_session.phase("task101.durable-checkpoint-save"):
+        with prepared.torch_profiler_session.phase("qwen-swedish-finetune.durable-checkpoint-save"):
             latest_durable_checkpoint = _save_durable_checkpoint(
                 accelerator=accelerator,
                 output_model_path=output_model_path,
@@ -214,7 +214,7 @@ def save_epoch_export_checkpoint(
         eval_runs_completed=eval_runs_completed,
         latest_durable_checkpoint=latest_durable_checkpoint,
     )
-    with prepared.torch_profiler_session.phase("task101.export-checkpoint-save"):
+    with prepared.torch_profiler_session.phase("qwen-swedish-finetune.export-checkpoint-save"):
         return [
             *checkpoint_paths,
             save_checkpoint(
@@ -291,7 +291,7 @@ def finalize_training_runtime(
             eval_runs_completed=eval_runs_completed,
             latest_durable_checkpoint=latest_durable_checkpoint,
         )
-        with prepared.torch_profiler_session.phase("task101.durable-checkpoint-save"):
+        with prepared.torch_profiler_session.phase("qwen-swedish-finetune.durable-checkpoint-save"):
             latest_durable_checkpoint = _save_durable_checkpoint(
                 accelerator=accelerator,
                 output_model_path=output_model_path,
@@ -368,7 +368,7 @@ def finalize_training_runtime(
             eval_runs_completed=eval_runs_completed,
             latest_durable_checkpoint=latest_durable_checkpoint,
         )
-        with prepared.torch_profiler_session.phase("task101.export-checkpoint-save"):
+        with prepared.torch_profiler_session.phase("qwen-swedish-finetune.export-checkpoint-save"):
             checkpoint_paths = [
                 *checkpoint_paths,
                 save_checkpoint(

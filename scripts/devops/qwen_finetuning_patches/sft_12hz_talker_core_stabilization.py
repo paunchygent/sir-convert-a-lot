@@ -1,7 +1,7 @@
-"""Bounded talker-core stabilization policy application for Story 31.
+"""Bounded talker-core stabilization policy application for Qwen stability lab.
 
 Purpose:
-    Apply one resolved Story 31 stabilization spec to the live patched Qwen
+    Apply one resolved Qwen stability lab stabilization spec to the live patched Qwen
     talker runtime for a single forward pass, while restoring every patched
     module afterward so experiments remain reversible and composable.
 
@@ -77,7 +77,7 @@ __all__ = [
 LayerInputLayernormEntryRescale = input_layernorm_patch.LayerInputLayernormEntryRescale
 LayerInputLayernormFp32OutputCap = input_layernorm_patch.LayerInputLayernormFp32OutputCap
 LayerInputLayernormOutputAttenuation = input_layernorm_patch.LayerInputLayernormOutputAttenuation
-LAYER_OUTPUT_FP32_TRACE_CALLBACK_ATTRIBUTE = "_story31_layer_output_fp32_trace_callback"
+LAYER_OUTPUT_FP32_TRACE_CALLBACK_ATTRIBUTE = "_qwen_stability_layer_output_fp32_trace_callback"
 
 
 @contextmanager

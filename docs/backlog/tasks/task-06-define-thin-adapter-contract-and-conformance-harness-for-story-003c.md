@@ -1,5 +1,5 @@
 ---
-id: task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c
+id: task-06-define-thin-adapter-contract-and-conformance-harness-for-consumer-integration
 title: Define thin adapter contract and conformance harness for Story 003c
 type: task
 status: completed
@@ -10,16 +10,16 @@ related:
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/converters/internal_adapter_contract_v1.md
-  - docs/reference/ref-story-003c-consumer-integration-handoff.md
+  - docs/reference/ref-consumer-integration-handoff.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md
+  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-consumer-integration.md
   - scripts/sir_convert_a_lot/integrations/adapter_profiles.py
   - tests/sir_convert_a_lot/test_integration_adapter_conformance.py
 labels:
   - integration
   - adapter
   - conformance
-  - story-003c
+  - consumer-integration
 ---
 
 PR-sized Story 003c execution slice for this repository only.
@@ -42,7 +42,7 @@ automated conformance harness, while keeping HTTP v1 contract behavior unchanged
 - [x] `docs/converters/internal_adapter_contract_v1.md` with normative requirements.
 - [x] `scripts/sir_convert_a_lot/integrations/adapter_profiles.py` thin adapter helpers.
 - [x] `tests/sir_convert_a_lot/test_integration_adapter_conformance.py` conformance harness.
-- [x] `docs/reference/ref-story-003c-consumer-integration-handoff.md` consumer handoff guidance.
+- [x] `docs/reference/ref-consumer-integration-handoff.md` consumer handoff guidance.
 - [x] Stage smoke evidence from tunnel/Hemma flow captured with execution notes.
 
 ## Acceptance Criteria
@@ -90,7 +90,7 @@ Conclusion:
 - Story 003c slice in this repo is complete.
 - Hemma deployment readiness and successful tunnel smoke completion are external operational follow-up items.
 - Follow-up task created:
-  - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md`
+  - `docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-consumer-integration.md`
 
 ## Checklist
 

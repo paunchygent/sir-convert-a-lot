@@ -68,7 +68,7 @@ installed CLI/runtime.
 
 ## Acceptance Criteria
 
-- [x] `benchmark:task-85` accepts and records `speed`, `fix_duration`,
+- [x] `benchmark:f5-tts-smoke` accepts and records `speed`, `fix_duration`,
   `cross_fade_duration`, `target_rms`, and `load_vocoder_from_local`.
 - [x] The generated F5 TOML can use file-backed prompt text (`gen_file`) while
   preserving the normalized sidecar contract.

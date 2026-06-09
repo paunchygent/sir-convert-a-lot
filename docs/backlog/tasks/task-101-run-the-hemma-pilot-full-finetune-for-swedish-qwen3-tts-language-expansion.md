@@ -28,7 +28,7 @@ related:
   - docs/backlog/tasks/task-185-backport-legacy-qwen-resume-compatibility-and-stale-bundle-override-for-task-101-checkpoint-recovery.md
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -51,7 +51,7 @@ and capture deterministic runtime and memory evidence.
 - Use the committed Hemma runtime from Task 100 plus the deterministic pilot
   training bundle materialized from the frozen pilot root owned by `T140`.
 - Materialize that deterministic bundle with:
-  - `pdm run run-hemma -- pdm run task-101-pilot-bundle build`
+  - `pdm run run-hemma -- pdm run qwen-pilot-bundle build`
   - treat the frozen `--source-root` as immutable input; the builder writes
     only to the new output root and can fall back to the canonical readable
     ownership ledgers when the freeze summary file itself is unreadable
@@ -89,7 +89,7 @@ and capture deterministic runtime and memory evidence.
     - `reports/batches/<family>/batch-xxxxx.runtime.json`
   - validated batch reuse now fails closed on legacy host-generated shards
     that do not carry the governed runtime fingerprint
-- Use the detached committed Task 101 runner surface:
+- Use the detached committed Qwen pilot runner surface:
   - `pdm run run-hemma -- pdm run task-101-pilot launch`
 - Treat the generic promoted Task 103 corpus view as insufficient for this run.
   The pilot must launch only from a deterministic bundle that contains:
@@ -185,7 +185,7 @@ and capture deterministic runtime and memory evidence.
 The original Task 101 pilot launch is complete as a delivered baseline task,
 but live recovery/eval progress for the preserved checkpoint-backed lane now
 lives in
-`docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+`docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`
 rather than in this completed task record.
 
 Current live-lane caveat after the strict `1238` relaunch:

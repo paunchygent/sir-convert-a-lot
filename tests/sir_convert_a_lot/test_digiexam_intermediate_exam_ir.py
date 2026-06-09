@@ -1,4 +1,4 @@
-"""Tests for the Task 275 DigiExam intermediate exam IR contract.
+"""Tests for the DigiExam intermediate exam IR contract.
 
 Purpose:
     Prove that completed DigiExam parser outputs map into a renderer-neutral

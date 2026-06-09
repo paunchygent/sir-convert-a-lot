@@ -80,7 +80,7 @@ def _write_completed_row_keys_index(run_root: Path, row_ids: list[str]) -> None:
     )
 
 
-def test_task121_build_portable_slice_bundle_is_disjoint(tmp_path: Path) -> None:
+def test_build_portable_slice_bundle_is_disjoint(tmp_path: Path) -> None:
     """Portable slice planning should partition one bounded source-selection deterministically."""
     run_root = tmp_path / "run"
     archive_path = tmp_path / "train_0.tar.gz"
@@ -152,7 +152,7 @@ def test_task121_build_portable_slice_bundle_is_disjoint(tmp_path: Path) -> None
     assert portable_slice_summary_path(first_slice_root).is_file()
 
 
-def test_task121_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path) -> None:
+def test_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path) -> None:
     """Guarded slice allocation should subtract completed and reserved row keys first."""
     run_root = tmp_path / "selection-run"
     archive_path = tmp_path / "train_0.tar.gz"
@@ -211,7 +211,7 @@ def test_task121_plan_remaining_unique_excludes_prior_allocations(tmp_path: Path
     assert unique_allocation_summary_path(output_root).is_file()
 
 
-def test_task121_dedupe_selected_source_records_filters_completed_rows(tmp_path: Path) -> None:
+def test_dedupe_selected_source_records_filters_completed_rows(tmp_path: Path) -> None:
     """Dedupe should emit only rows not already completed or reserved elsewhere."""
     selected_source_records_path = tmp_path / "selected_source_records.jsonl"
     archive_path = tmp_path / "train_0.tar.gz"
@@ -256,7 +256,7 @@ def test_task121_dedupe_selected_source_records_filters_completed_rows(tmp_path:
     assert deduped_selected_source_summary_path(output_path).is_file()
 
 
-def test_task121_dedupe_selected_source_records_filters_explicit_row_key_exclusions(
+def test_dedupe_selected_source_records_filters_explicit_row_key_exclusions(
     tmp_path: Path,
 ) -> None:
     """Dedupe should also subtract explicit row-key exclusion manifests."""
@@ -296,7 +296,7 @@ def test_task121_dedupe_selected_source_records_filters_explicit_row_key_exclusi
     assert summary.total_excluded_key_count == 1
 
 
-def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeypatch) -> None:
+def test_stage_required_files_for_portable_slice(tmp_path: Path, monkeypatch) -> None:
     """Portable slice staging should materialize the exact required archive."""
     slice_root = tmp_path / "slice"
     cached_archive_path = tmp_path / "cached/train_0.tar.gz"
@@ -363,7 +363,7 @@ def test_task121_stage_required_files_for_portable_slice(tmp_path: Path, monkeyp
     assert staged_paths[0].is_file()
 
 
-def test_task121_stage_required_files_emits_progress(tmp_path: Path, monkeypatch, capsys) -> None:
+def test_stage_required_files_emits_progress(tmp_path: Path, monkeypatch, capsys) -> None:
     """Portable slice staging should emit per-archive progress and elapsed timing."""
     slice_root = tmp_path / "slice"
     cached_archive_path = tmp_path / "cached/train_0.tar.gz"
@@ -436,7 +436,7 @@ def test_task121_stage_required_files_emits_progress(tmp_path: Path, monkeypatch
     assert "[qwen-portable-slice] staging required archives done count=1" in captured.out
 
 
-def test_task121_localize_portable_slice_persists_plain_file_manifest(tmp_path: Path) -> None:
+def test_localize_portable_slice_persists_plain_file_manifest(tmp_path: Path) -> None:
     """Portable slice localization should persist plain local files plus a manifest."""
     slice_root = tmp_path / "slice"
     staged_audio_path = tmp_path / "needed.wav"
@@ -496,7 +496,7 @@ def test_task121_localize_portable_slice_persists_plain_file_manifest(tmp_path: 
     assert localized_locator.path.read_bytes() == staged_audio_path.read_bytes()
 
 
-def test_task121_localize_portable_slice_emits_progress(tmp_path: Path, capsys) -> None:
+def test_localize_portable_slice_emits_progress(tmp_path: Path, capsys) -> None:
     """Portable slice localization should emit per-archive progress and timing."""
     slice_root = tmp_path / "slice"
     staged_audio_path = tmp_path / "needed.wav"

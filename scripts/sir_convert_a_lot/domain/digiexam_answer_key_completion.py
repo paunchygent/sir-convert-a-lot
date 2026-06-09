@@ -8,10 +8,11 @@ Purpose:
 Relationships:
     - Consumes candidate requests from
       `domain.digiexam_answer_key_completion_candidates`.
-    - Uses Task 296 provider contracts from `domain.structured_llm_contracts`.
+    - Uses structured LLM provider harness provider contracts from
+    `domain.structured_llm_contracts`.
     - Emits report contracts from
       `domain.digiexam_answer_key_completion_contracts` for later teacher
-      review and Task 306 application.
+      review and Markdown to DOCX route6 application.
 """
 
 from __future__ import annotations

@@ -43,7 +43,7 @@ related:
   - docs/backlog/tasks/task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md
   - docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md
   - docs/backlog/tasks/task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/reference/ref-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md
@@ -139,18 +139,18 @@ Story 32 now governs how active Qwen experiment work is classified and
 interpreted:
 
 - `provenance`
-  - active owner: `qwen-t221-historical-control`
+  - active owner: `qwen-historical-pilot-control`
 - `mechanism`
-  - active owner: Story 31 through `qwen-story31-stability-lab`
+  - active owner: Story 31 through `qwen-stability-lab`
 - `recovery`
   - active owner: the governed `qwen-train launch/status` proof lane, still
     blocked until a mechanism candidate is promoted
 - `legacy-readonly`
-  - `qwen-story30-freshstart-proof`
-  - `qwen-story30-backward-lineage`
+  - `qwen-freshstart-proof`
+  - `qwen-backward-lineage`
 - `deprecated`
-  - `qwen-t197-proof`
-  - `qwen-t198-proof`
+  - `qwen-fallback-proof`
+  - `qwen-fallback-accumulation-proof`
 
 Future Epic 08 Qwen work must use the Task 101 progress reference as the
 single live result ledger and must not mix answers across these classes.

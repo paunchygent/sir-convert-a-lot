@@ -5,7 +5,7 @@ Purpose:
     benchmark and research slices without changing the main sidecar contract.
 
 Relationships:
-    - Used by benchmark-only devops runners such as the Task 89 Chatterbox
+    - Used by benchmark-only devops runners such as the Chatterbox eSpeak experiment Chatterbox
       eSpeak preprocessing experiment.
     - Intentionally separate from the production TTS sidecar runtime package.
 """

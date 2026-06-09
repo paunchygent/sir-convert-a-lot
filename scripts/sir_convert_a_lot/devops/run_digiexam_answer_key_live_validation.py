@@ -1,7 +1,7 @@
-"""Task 309 Granite answer-key live-validation runner.
+"""answer-key live validation Granite answer-key live-validation runner.
 
 Purpose:
-    Provide the committed command surface for preparing and inspecting Task 309
+    Provide the committed command surface for preparing and inspecting answer-key live validation
     live-validation artifacts before long Hemma Granite/vLLM runs are launched.
 
 Relationships:
@@ -9,7 +9,7 @@ Relationships:
       versioned DigiExam DXE corpus manifest and expected-answer worklist.
     - Complements the Hemma detached command and resource-monitor surfaces used
       by `docs/runbooks/runbook-hemma-devops-and-gpu.md`.
-    - Feeds Task 309 reports retained under `build/verification/` or the
+    - Feeds answer-key live validation reports retained under `build/verification/` or the
       scratch-backed Hemma verification root.
 """
 
@@ -23,18 +23,18 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_launch import (
-    build_task309_provider_launch_plan,
-    launch_task309_provider,
+    build_answer_key_provider_launch_plan,
+    launch_answer_key_provider,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import (
-    build_task309_hemma_preflight,
-    build_task309_provider_status,
+    build_answer_key_hemma_preflight,
+    build_answer_key_provider_status,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_llama_provider_launch import (
     build_answer_key_llama_provider_launch_plan,
     default_hf_file_for_llama_profile,
     default_hf_repo_for_llama_profile,
-    launch_task309_llama_provider,
+    launch_answer_key_llama_provider,
     qwen36_llama_mtp_required_process_args,
     qwen36_llama_required_process_args,
 )
@@ -45,47 +45,47 @@ from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_IMAGE,
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_PORT,
-    Task309HemmaPreflight,
-    Task309LlamaProviderLaunchResult,
-    Task309ProviderLaunchResult,
-    Task309ProviderStatus,
+    AnswerKeyHemmaPreflight,
+    AnswerKeyLlamaProviderLaunchResult,
+    AnswerKeyProviderLaunchResult,
+    AnswerKeyProviderStatus,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_microprobes import (
-    Task309MicroprobeReport,
-    run_task309_microprobes,
+    AnswerKeyMicroprobeReport,
+    run_answer_key_microprobes,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_reporting import (
+    write_answer_key_hemma_preflight_artifacts,
     write_answer_key_llama_provider_launch_artifacts,
-    write_task309_hemma_preflight_artifacts,
-    write_task309_provider_launch_artifacts,
-    write_task309_provider_status_artifacts,
+    write_answer_key_provider_launch_artifacts,
+    write_answer_key_provider_status_artifacts,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_corpus_execution import (
-    Task309AdvisoryCorpusRunReport,
-    run_task309_advisory_corpus,
+    AnswerKeyAdvisoryCorpusRunReport,
+    run_answer_key_advisory_corpus,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_evaluation import (
-    evaluate_task309_advisory_reports,
-    write_task309_advisory_evaluation,
+    evaluate_answer_key_advisory_reports,
+    write_answer_key_advisory_evaluation,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_openai_eval_gate import (
-    default_task326_openai_output_root,
-    run_task326_openai_advisory_corpus,
-    write_task326_openai_advisory_corpus_run,
+    default_openai_answer_key_output_root,
+    run_openai_answer_key_advisory_corpus,
+    write_openai_answer_key_advisory_corpus_run,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_request_shape_preview import (
-    Task309RequestShapePreview,
+    AnswerKeyRequestShapePreview,
     build_answer_key_request_shape_preview,
     write_answer_key_request_shape_preview,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
-    Task309GoldenValidationReport,
-    validate_task309_expected_answer_manifest,
+    AnswerKeyGoldenValidationReport,
+    validate_expected_answer_manifest,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    build_task309_expected_answer_worklist,
-    build_task309_live_validation_manifest,
-    write_task309_json,
+    build_answer_key_expected_answer_worklist,
+    build_answer_key_live_validation_manifest,
+    write_answer_key_json,
 )
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     QWEN36_LLAMA_CPP_CACHE_PATH,
@@ -104,7 +104,7 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles i
 )
 
 DEFAULT_CORPUS_ROOT = Path("inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe")
-DEFAULT_OUTPUT_ROOT = Path("build/verification/task-309-granite-answer-key-live")
+DEFAULT_OUTPUT_ROOT = Path("build/verification/digiexam-granite-answer-key-live")
 DEFAULT_SOURCE_ROOT_HINT = DEFAULT_CORPUS_ROOT.as_posix()
 DEFAULT_EXPECTED_ANSWER_MANIFEST = DEFAULT_CORPUS_ROOT / "expected-answer-manifest.json"
 DEFAULT_VALIDATION_CORPUS_MANIFEST = DEFAULT_CORPUS_ROOT / "validation-corpus-manifest.json"
@@ -112,7 +112,7 @@ DEFAULT_CORPUS_REPORTS_ROOT = DEFAULT_OUTPUT_ROOT / "advisory-corpus-reports"
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the Task 309 operator CLI."""
+    """Run the answer-key live validation operator CLI."""
 
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -178,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return _blocked_exit_code(llama_launch_result.ok, fail_on_blocked=args.fail_on_blocked)
     if args.command == "provider-status":
-        status = build_task309_provider_status(
+        status = build_answer_key_provider_status(
             provider_url=args.provider_url,
             container_name=args.container_name,
             port=args.port,
@@ -190,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         return _blocked_exit_code(status.ready, fail_on_blocked=args.fail_on_blocked)
     if args.command == "hemma-preflight":
         cache_paths = tuple(args.cache_path or DEFAULT_CACHE_PATHS)
-        preflight = build_task309_hemma_preflight(
+        preflight = build_answer_key_hemma_preflight(
             manifest_path=args.manifest_path,
             provider_url=args.provider_url,
             container_name=args.container_name,
@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         return _blocked_exit_code(preflight.ready, fail_on_blocked=args.fail_on_blocked)
     if args.command == "microprobes":
         defaults = _provider_defaults(args)
-        microprobe_report = run_task309_microprobes(
+        microprobe_report = run_answer_key_microprobes(
             provider_url=args.provider_url,
             model=args.model,
             provider_runtime=parse_answer_key_provider_runtime(args.provider_runtime),
@@ -224,7 +224,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "run-advisory-corpus":
         defaults = _provider_defaults(args)
         reports_root = args.reports_root or (args.output_root / "advisory-corpus-reports")
-        corpus_report = run_task309_advisory_corpus(
+        corpus_report = run_answer_key_advisory_corpus(
             corpus_root=args.corpus_root,
             reports_root=reports_root,
             provider_url=args.provider_url,
@@ -249,12 +249,12 @@ def main(argv: list[str] | None = None) -> int:
         run_report_path = args.run_report_path or (
             args.output_root / "in-process-advisory-corpus-run.json"
         )
-        evaluation = evaluate_task309_advisory_reports(
+        evaluation = evaluate_answer_key_advisory_reports(
             expected_answer_manifest_path=args.expected_answer_manifest,
             reports_root=reports_root,
             run_report_path=run_report_path,
         )
-        json_path, markdown_path = write_task309_advisory_evaluation(
+        json_path, markdown_path = write_answer_key_advisory_evaluation(
             output_root=args.output_root,
             report=evaluation,
         )
@@ -267,22 +267,26 @@ def main(argv: list[str] | None = None) -> int:
             and evaluation.malformed_success_count == 0,
             fail_on_blocked=args.fail_on_blocked,
         )
-    raise SystemExit(f"Unsupported Task 309 command: {args.command}")
+    raise SystemExit(f"Unsupported answer-key live validation command: {args.command}")
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Prepare and inspect Task 309 live-validation.")
+    parser = argparse.ArgumentParser(
+        description="Prepare and inspect answer-key live validation live-validation."
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     prepare = subparsers.add_parser(
         "prepare-manifests",
-        help="Build the Task 309 corpus manifest and expected-answer worklist.",
+        help="Build the answer-key live validation corpus manifest and expected-answer worklist.",
     )
     prepare.add_argument("--corpus-root", type=Path, default=DEFAULT_CORPUS_ROOT)
     prepare.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     prepare.add_argument("--source-root-hint", default=DEFAULT_SOURCE_ROOT_HINT)
 
-    status = subparsers.add_parser("status", help="Inspect prepared Task 309 manifests.")
+    status = subparsers.add_parser(
+        "status", help="Inspect prepared answer-key live validation manifests."
+    )
     status.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
 
     goldens = subparsers.add_parser(
@@ -350,7 +354,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     preflight = subparsers.add_parser(
         "hemma-preflight",
-        help="Write Hemma GPU/cache/provider preflight evidence for Task 309.",
+        help="Write Hemma GPU/cache/provider preflight evidence for answer-key live validation.",
     )
     _add_provider_args(preflight)
     preflight.add_argument("--manifest-path", type=Path, default=DEFAULT_VALIDATION_CORPUS_MANIFEST)
@@ -364,7 +368,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     microprobes = subparsers.add_parser(
         "microprobes",
-        help="Run Task 309 provider microprobes and retain redacted reports.",
+        help="Run answer-key live validation provider microprobes and retain redacted reports.",
     )
     _add_provider_args(microprobes)
     microprobes.add_argument("--model", default=None)
@@ -375,7 +379,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     corpus = subparsers.add_parser(
         "run-advisory-corpus",
-        help="Run the in-process advisory path over the Task 309 DXE corpus.",
+        help="Run the in-process advisory path over the answer-key live validation DXE corpus.",
     )
     _add_provider_args(corpus)
     corpus.add_argument("--model", default=None)
@@ -388,7 +392,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     evaluate = subparsers.add_parser(
         "evaluate-advisory-corpus",
-        help="Evaluate retained Task 309 advisory reports against teacher goldens.",
+        help="Evaluate retained advisory reports against teacher goldens.",
     )
     evaluate.add_argument(
         "--expected-answer-manifest",
@@ -403,7 +407,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     openai_corpus = subparsers.add_parser(
         "run-openai-advisory-corpus",
-        help="Run the Task 326 raw OpenAI advisory eval corpus.",
+        help="Run the OpenAI answer-key evaluation raw OpenAI advisory eval corpus.",
     )
     openai_corpus.add_argument(
         "--openai-provider-profile",
@@ -431,13 +435,13 @@ def _add_provider_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _run_openai_advisory_corpus_command(args: argparse.Namespace) -> int:
-    output_root = args.output_root or default_task326_openai_output_root(
+    output_root = args.output_root or default_openai_answer_key_output_root(
         args.openai_provider_profile
     )
     reports_root = args.reports_root or (output_root / "advisory-corpus-reports")
     enforce_generated_output_path(output_root, label="output_root")
     enforce_generated_output_path(reports_root, label="reports_root")
-    report = run_task326_openai_advisory_corpus(
+    report = run_openai_answer_key_advisory_corpus(
         corpus_root=args.corpus_root,
         reports_root=reports_root,
         provider_profile=args.openai_provider_profile,
@@ -447,7 +451,7 @@ def _run_openai_advisory_corpus_command(args: argparse.Namespace) -> int:
         source_file=args.source_file,
         item_id=args.item_id,
     )
-    run_report_path = write_task326_openai_advisory_corpus_run(
+    run_report_path = write_openai_answer_key_advisory_corpus_run(
         output_root=output_root,
         report=report,
     )
@@ -535,17 +539,17 @@ def _prepare_manifests(
     output_root: Path,
     source_root_hint: str,
 ) -> None:
-    manifest = build_task309_live_validation_manifest(
+    manifest = build_answer_key_live_validation_manifest(
         corpus_root,
         source_root_hint=source_root_hint,
     )
-    worklist = build_task309_expected_answer_worklist(manifest)
+    worklist = build_answer_key_expected_answer_worklist(manifest)
     manifest_path = output_root / "validation-corpus-manifest.json"
     worklist_path = output_root / "expected-answer-worklist.json"
     enforce_generated_output_path(manifest_path, label=manifest_path.name)
     enforce_generated_output_path(worklist_path, label=worklist_path.name)
-    write_task309_json(manifest.to_payload(), manifest_path)
-    write_task309_json(worklist.to_payload(), worklist_path)
+    write_answer_key_json(manifest.to_payload(), manifest_path)
+    write_answer_key_json(worklist.to_payload(), worklist_path)
     print(f"Wrote {manifest_path}")
     print(f"Wrote {worklist_path}")
     print(f"Eligible items: {manifest.summary.eligible_item_count}")
@@ -555,11 +559,13 @@ def _status(*, output_root: Path) -> None:
     manifest_path = output_root / "validation-corpus-manifest.json"
     worklist_path = output_root / "expected-answer-worklist.json"
     if not manifest_path.exists():
-        raise SystemExit(f"Task 309 manifest is missing: {manifest_path}")
+        raise SystemExit(f"answer-key live validation manifest is missing: {manifest_path}")
     manifest_payload = _load_object(manifest_path)
     summary = manifest_payload.get("summary")
     if not isinstance(summary, dict):
-        raise SystemExit(f"Task 309 manifest summary is malformed: {manifest_path}")
+        raise SystemExit(
+            f"answer-key live validation manifest summary is malformed: {manifest_path}"
+        )
     print(f"Manifest: {manifest_path}")
     print(f"Expected-answer worklist: {worklist_path}")
     print(f"Files: {summary.get('file_count')}")
@@ -575,16 +581,16 @@ def _validate_goldens(
     corpus_root: Path,
     expected_answer_manifest: Path,
     output_root: Path,
-) -> Task309GoldenValidationReport:
+) -> AnswerKeyGoldenValidationReport:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
-    report = validate_task309_expected_answer_manifest(
+    report = validate_expected_answer_manifest(
         corpus_root=corpus_root,
         expected_answer_manifest_path=expected_answer_manifest,
     )
     json_path = output_root / "expected-answer-validation.json"
     markdown_path = output_root / "expected-answer-validation.md"
-    write_task309_json(report.to_payload(), json_path)
+    write_answer_key_json(report.to_payload(), json_path)
     _write_markdown(markdown_path, _golden_validation_markdown(report))
     print(f"Wrote {json_path}")
     print(f"Wrote {markdown_path}")
@@ -603,10 +609,10 @@ def _launch_provider(
     port: int,
     host_cache_path: str,
     execute: bool,
-) -> Task309ProviderLaunchResult:
+) -> AnswerKeyProviderLaunchResult:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
-    plan = build_task309_provider_launch_plan(
+    plan = build_answer_key_provider_launch_plan(
         container_name=container_name,
         image=image,
         model=model,
@@ -614,8 +620,8 @@ def _launch_provider(
         host_cache_path=host_cache_path,
         dry_run=not execute,
     )
-    result = launch_task309_provider(plan)
-    json_path, markdown_path = write_task309_provider_launch_artifacts(
+    result = launch_answer_key_provider(plan)
+    json_path, markdown_path = write_answer_key_provider_launch_artifacts(
         output_root=output_root,
         result=result,
     )
@@ -636,7 +642,7 @@ def _launch_llama_provider(
     hf_file: str,
     llama_cache_path: str,
     execute: bool,
-) -> Task309LlamaProviderLaunchResult:
+) -> AnswerKeyLlamaProviderLaunchResult:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
     plan = build_answer_key_llama_provider_launch_plan(
@@ -651,7 +657,7 @@ def _launch_llama_provider(
         llama_cache_path=llama_cache_path,
         dry_run=not execute,
     )
-    result = launch_task309_llama_provider(plan)
+    result = launch_answer_key_llama_provider(plan)
     json_path, markdown_path = write_answer_key_llama_provider_launch_artifacts(
         output_root=output_root,
         result=result,
@@ -661,10 +667,10 @@ def _launch_llama_provider(
     return result
 
 
-def _write_provider_status(*, output_root: Path, status: Task309ProviderStatus) -> None:
+def _write_provider_status(*, output_root: Path, status: AnswerKeyProviderStatus) -> None:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path = write_task309_provider_status_artifacts(
+    json_path, markdown_path = write_answer_key_provider_status_artifacts(
         output_root=output_root,
         status=status,
     )
@@ -672,10 +678,10 @@ def _write_provider_status(*, output_root: Path, status: Task309ProviderStatus) 
     print(f"Wrote {markdown_path}")
 
 
-def _write_hemma_preflight(*, output_root: Path, preflight: Task309HemmaPreflight) -> None:
+def _write_hemma_preflight(*, output_root: Path, preflight: AnswerKeyHemmaPreflight) -> None:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path = write_task309_hemma_preflight_artifacts(
+    json_path, markdown_path = write_answer_key_hemma_preflight_artifacts(
         output_root=output_root,
         preflight=preflight,
     )
@@ -683,12 +689,12 @@ def _write_hemma_preflight(*, output_root: Path, preflight: Task309HemmaPrefligh
     print(f"Wrote {markdown_path}")
 
 
-def _write_microprobes(*, output_root: Path, report: Task309MicroprobeReport) -> None:
+def _write_microprobes(*, output_root: Path, report: AnswerKeyMicroprobeReport) -> None:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
     json_path = output_root / "provider-microprobes.json"
     markdown_path = output_root / "provider-microprobes.md"
-    write_task309_json(report.to_payload(), json_path)
+    write_answer_key_json(report.to_payload(), json_path)
     _write_markdown(markdown_path, _microprobe_markdown(report))
     print(f"Wrote {json_path}")
     print(f"Wrote {markdown_path}")
@@ -697,13 +703,13 @@ def _write_microprobes(*, output_root: Path, report: Task309MicroprobeReport) ->
 def _write_advisory_corpus(
     *,
     output_root: Path,
-    report: Task309AdvisoryCorpusRunReport,
+    report: AnswerKeyAdvisoryCorpusRunReport,
 ) -> None:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
     json_path = output_root / "in-process-advisory-corpus-run.json"
     markdown_path = output_root / "in-process-advisory-corpus-run.md"
-    write_task309_json(report.to_payload(), json_path)
+    write_answer_key_json(report.to_payload(), json_path)
     _write_markdown(markdown_path, _advisory_corpus_markdown(report))
     print(f"Wrote {json_path}")
     print(f"Wrote {markdown_path}")
@@ -712,7 +718,7 @@ def _write_advisory_corpus(
 def _write_request_shape_preview(
     *,
     output_root: Path,
-    preview: Task309RequestShapePreview,
+    preview: AnswerKeyRequestShapePreview,
 ) -> None:
     enforce_generated_output_path(output_root, label="output_root")
     output_root.mkdir(parents=True, exist_ok=True)
@@ -724,9 +730,9 @@ def _write_request_shape_preview(
     print(f"Wrote {markdown_path}")
 
 
-def _golden_validation_markdown(report: Task309GoldenValidationReport) -> str:
+def _golden_validation_markdown(report: AnswerKeyGoldenValidationReport) -> str:
     lines = [
-        "# Task 309 Expected-Answer Validation",
+        "# answer-key live validation Expected-Answer Validation",
         "",
         f"- corpus_id: `{report.corpus_id}`",
         f"- expected_answer_manifest_path: `{report.expected_answer_manifest_path}`",
@@ -749,9 +755,9 @@ def _golden_validation_markdown(report: Task309GoldenValidationReport) -> str:
     return "\n".join(lines)
 
 
-def _microprobe_markdown(report: Task309MicroprobeReport) -> str:
+def _microprobe_markdown(report: AnswerKeyMicroprobeReport) -> str:
     lines = [
-        "# Task 309 Provider Microprobes",
+        "# answer-key live validation Provider Microprobes",
         "",
         f"- provider_url: `{report.provider_url}`",
         f"- model: `{report.model}`",
@@ -770,9 +776,9 @@ def _microprobe_markdown(report: Task309MicroprobeReport) -> str:
     return "\n".join(lines)
 
 
-def _advisory_corpus_markdown(report: Task309AdvisoryCorpusRunReport) -> str:
+def _advisory_corpus_markdown(report: AnswerKeyAdvisoryCorpusRunReport) -> str:
     lines = [
-        "# Task 309 In-Process Advisory Corpus Run",
+        "# answer-key live validation In-Process Advisory Corpus Run",
         "",
         f"- provider_url: `{report.provider_url}`",
         f"- model: `{report.model}`",
@@ -858,7 +864,7 @@ def _current_skill_repository() -> Path:
 def _load_object(path: Path) -> dict[str, object]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError(f"Task 309 JSON artifact must be an object: {path}")
+        raise ValueError(f"answer-key live validation JSON artifact must be an object: {path}")
     return {str(key): value for key, value in payload.items()}
 
 

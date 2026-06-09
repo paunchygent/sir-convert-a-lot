@@ -12,7 +12,7 @@ related:
   - docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md
   - docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -63,8 +63,8 @@ The intended first implementation posture is:
 ## PR Scope
 
 - Reuse the existing Story 31 exploration vehicle:
-  - `pdm run qwen-story31-stability-lab run`
-  - `pdm run qwen-story31-stability-lab gate`
+  - `pdm run qwen-stability-lab run`
+  - `pdm run qwen-stability-lab gate`
 - Reuse the exact failing-row pair, hook profile, and promotion rule from
   `T215`.
 - Extend the existing stabilization module rather than introducing a second
@@ -103,8 +103,8 @@ The intended first implementation posture is:
 The second bounded Story 31 family is now implemented and recorded as negative
 exploration evidence under:
 
-- `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1/results.json`
-- `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1/results.md`
+- `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task218-20260317t173122z-a1/results.json`
+- `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task218-20260317t173122z-a1/results.md`
 
 Implemented variants:
 
@@ -139,9 +139,9 @@ winner. `T217` remains blocked.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story31-stability-lab run --skip-build`
-- [x] `pdm run qwen-story31-stability-lab gate --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1 --candidate-variant layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
-- [x] `pdm run qwen-story31-stability-lab gate --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1 --candidate-variant layer16_gated_fp32_rescale_1e2_layer15_out_0p25`
+- [x] `pdm run qwen-stability-lab run --skip-build`
+- [x] `pdm run qwen-stability-lab gate --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task218-20260317t173122z-a1 --candidate-variant layer16_gated_fp32_rescale_1e3_layer15_out_0p5`
+- [x] `pdm run qwen-stability-lab gate --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task218-20260317t173122z-a1 --candidate-variant layer16_gated_fp32_rescale_1e2_layer15_out_0p25`
 
 ## Checklist
 

@@ -15,14 +15,14 @@ tags:
 scope: repo
 ---
 
-- Every active Qwen Task 101 run must belong to exactly one experiment class:
+- Every active Qwen Qwen pilot run must belong to exactly one experiment class:
   - `provenance`
   - `mechanism`
   - `recovery`
 - One run answers one primary question. If a planned run would answer more
   than one question, split it into separate runs and ledger entries.
 - The single live result ledger for active Qwen Task 101 work is:
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`.
+  `docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`.
 - Every future active run recorded in that ledger must declare this full state
   vector before the repo treats it as comparable evidence:
   - `experiment_class`
@@ -57,11 +57,11 @@ scope: repo
   - `legacy-readonly`
   - `deprecated`
 - Current active surface matrix:
-  - `qwen-t221-historical-control`: `provenance` / `active`
-  - `qwen-story31-stability-lab`: `mechanism` / `active`
+  - `qwen-historical-pilot-control`: `provenance` / `active`
+  - `qwen-stability-lab`: `mechanism` / `active`
   - governed `qwen-train launch/status` fresh-start proof lane:
     `recovery` / `active but blocked until promotion`
-  - `qwen-story30-freshstart-proof`: `mechanism` / `legacy-readonly`
-  - `qwen-story30-backward-lineage`: `mechanism` / `legacy-readonly`
-  - `qwen-t197-proof`: `mechanism` / `deprecated`
-  - `qwen-t198-proof`: `mechanism` / `deprecated`
+  - `qwen-freshstart-proof`: `mechanism` / `legacy-readonly`
+  - `qwen-backward-lineage`: `mechanism` / `legacy-readonly`
+  - `qwen-fallback-proof`: `mechanism` / `deprecated`
+  - `qwen-fallback-accumulation-proof`: `mechanism` / `deprecated`

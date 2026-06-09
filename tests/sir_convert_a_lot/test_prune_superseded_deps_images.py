@@ -5,8 +5,8 @@ Purpose:
     after a successful CPU or ROCm dependency-image build.
 
 Relationships:
-    - Guards Task 340's Docker storage cleanup contract.
-    - Complements Task 255 dependency-image cache contract tests.
+    - Guards dependency-image cleanup's Docker storage cleanup contract.
+    - Complements strict markdown hardening5 dependency-image cache contract tests.
 """
 
 from __future__ import annotations

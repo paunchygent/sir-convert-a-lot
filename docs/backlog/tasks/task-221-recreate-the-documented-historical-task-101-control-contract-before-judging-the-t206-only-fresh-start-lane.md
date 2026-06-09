@@ -13,8 +13,8 @@ related:
   - docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
   - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -35,7 +35,7 @@ original recipe still learns once the token-span bug is fixed.
 ## PR Scope
 
 - Treat the docs-as-code historical launch contract as normative:
-  - [ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md:344](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md:344)
+  - [ref-qwen-live-training-pipeline-analysis-2026-03-13.md:344](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md:344)
   - launch id `task101-20260313t102144z`
   - bundle root `qwen3-tts-swedish-task101-pilot-bundle-20260312h`
   - `batch_size=1`
@@ -48,7 +48,7 @@ original recipe still learns once the token-span bug is fixed.
   question.
 - Reconcile the historical docs contract with the surviving legacy launch root
   and current runnable surfaces:
-  - [ref-task101-training-eval-pilot-progress-2026-03-15.md:241](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md:241)
+  - [ref-qwen-training-eval-pilot-progress-2026-03-15.md:241](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md:241)
   - `/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot/task101-20260313t102144z`
 - Make the minimum committed runtime adjustment needed so the repo can launch a
   faithful historical-contract control instead of forcing the later
@@ -93,9 +93,9 @@ original recipe still learns once the token-span bug is fixed.
 ## Current Implementation State
 
 - Implemented committed surface:
-  - `pdm run qwen-t221-historical-control launch`
-  - `pdm run qwen-t221-historical-control status`
-  - `pdm run qwen-t221-historical-control stop`
+  - `pdm run qwen-historical-pilot-control launch`
+  - `pdm run qwen-historical-pilot-control status`
+  - `pdm run qwen-historical-pilot-control stop`
 - The new surface writes:
   - `contract-diff.json`
   - `contract-diff.md`
@@ -118,7 +118,7 @@ original recipe still learns once the token-span bug is fixed.
   - launch id: `task221-20260317t193125z-a1`
   - synced revision: `0f9d130`
   - launch root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-t221-historical-control/task221-20260317t193125z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-historical-pilot-control/task221-20260317t193125z-a1`
   - run root:
     `/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/task221-20260317t193125z-a1`
   - final status at `2026-03-17T20:36:27Z`:
@@ -147,7 +147,7 @@ original recipe still learns once the token-span bug is fixed.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_t221_historical_control_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_t221_historical_control.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_qwen_historical_pilot_control_runtime.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_historical_pilot_control.py -q`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run typecheck-all`
 - [x] `pdm run format-all`

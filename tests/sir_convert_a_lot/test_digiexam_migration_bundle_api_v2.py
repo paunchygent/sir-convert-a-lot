@@ -1,4 +1,4 @@
-"""API tests for Task 282 DigiExam migration bundle routes.
+"""API tests for DigiExam migration bundle routes.
 
 Purpose:
     Prove that the service API v2 runtime accepts authenticated DigiExam `.dxe`

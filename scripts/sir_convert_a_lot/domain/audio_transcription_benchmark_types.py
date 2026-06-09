@@ -208,9 +208,7 @@ class AudioBenchmarkEvidence:
             self,
             profiles=replace(
                 self.profiles,
-                stt_profile=stt_profile
-                if stt_profile is not None
-                else self.profiles.stt_profile,
+                stt_profile=stt_profile if stt_profile is not None else self.profiles.stt_profile,
                 diarization_profile=diarization_profile
                 if diarization_profile is not None
                 else self.profiles.diarization_profile,

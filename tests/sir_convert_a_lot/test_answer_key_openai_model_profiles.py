@@ -1,13 +1,13 @@
 """Tests for OpenAI answer-key model profile manifests.
 
 Purpose:
-    Prove Task 325's first OpenAI provider profiles are pinned, Responses-based,
+    Prove HTML to PDF route5's first OpenAI provider profiles are pinned, Responses-based,
     and secret-indirected before the hot routing implementation consumes them.
 
 Relationships:
     - Exercises `infrastructure.answer_key_openai_model_profiles`.
     - Complements structured-provider payload tests by locking the OpenAI model
-      manifest surface used by Task 326 evaluation.
+      manifest surface used by OpenAI answer-key evaluation evaluation.
 """
 
 from __future__ import annotations

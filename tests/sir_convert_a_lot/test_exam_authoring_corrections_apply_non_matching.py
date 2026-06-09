@@ -1,4 +1,4 @@
-"""Tests for Task 333 non-matching correction apply runtime.
+"""Tests for non-matching correction apply runtime non-matching correction apply runtime.
 
 Purpose:
     Prove DigiExam-backed point, choice, gap/open-cloze, and item-text
@@ -8,7 +8,7 @@ Relationships:
     - Exercises `application.exam_authoring_non_matching_corrections` through
       the FastAPI v2 route.
     - Reuses signed source-state helpers from the unified apply route fixtures.
-    - Protects PR-0332 sequencing while matching remains blocked on Task 332.
+    - Protects PR-0332 sequencing while matching remains blocked on matching correction block.
 """
 
 from __future__ import annotations

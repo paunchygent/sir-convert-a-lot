@@ -1,4 +1,4 @@
-"""Tests for the Task 277 DigiExam Exam.net-oriented PDF renderer.
+"""Tests for the DigiExam Exam.net PDF renderer.
 
 Purpose:
     Prove that DigiExam IR can render to the promoted Exam.net PDF-converter

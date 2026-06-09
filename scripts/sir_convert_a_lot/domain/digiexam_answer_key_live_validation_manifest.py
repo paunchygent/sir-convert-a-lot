@@ -1,7 +1,7 @@
 """DigiExam answer-key live-validation corpus manifests.
 
 Purpose:
-    Build item-addressable manifests for the Task 309 answer-key live-validation
+    Build item-addressable manifests for the answer-key live validation answer-key live-validation
     corpus so Hemma runs can bind every provider decision to a source file,
     source hash, item fingerprint, eligibility state, and golden-answer worklist
     without persisting prompts or provider responses.
@@ -11,7 +11,7 @@ Relationships:
       as the canonical DigiExam source and IR boundaries.
     - Uses `domain.digiexam_source_fingerprints` for answer-key independent
       item binding shared with overlay and readiness contracts.
-    - Feeds Task 309 devops runners and report evaluators.
+    - Feeds answer-key live validation devops runners and report evaluators.
 """
 
 from __future__ import annotations
@@ -37,24 +37,26 @@ from scripts.sir_convert_a_lot.domain.digiexam_source_fingerprints import (
     source_item_fingerprint,
 )
 
-TASK309_CORPUS_MANIFEST_SCHEMA_VERSION = "digiexam_answer_key_live_validation_corpus_v1"
-TASK309_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION = (
+ANSWER_KEY_LIVE_VALIDATION_CORPUS_MANIFEST_SCHEMA_VERSION = (
+    "digiexam_answer_key_live_validation_corpus_v1"
+)
+ANSWER_KEY_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION = (
     "digiexam_answer_key_live_validation_expected_answer_worklist_v1"
 )
-TASK309_CORPUS_ID = "task-309-2026-05-12-onedrive-pure-dxe"
-TASK309_FIXTURE_POLICY = "tracked_raw_dxe_fixture"
+ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID = "digiexam-answer-key-2026-05-12-onedrive-pure-dxe"
+ANSWER_KEY_LIVE_VALIDATION_FIXTURE_POLICY = "tracked_raw_dxe_fixture"
 
 
-class Task309OutputMode(StrEnum):
-    """Provider output modes selected for Task 309 manifest rows."""
+class AnswerKeyOutputMode(StrEnum):
+    """Provider output modes selected for answer-key live validation manifest rows."""
 
     VLLM_CHOICE = "vllm_choice"
     JSON_SCHEMA = "json_schema"
     NOT_APPLICABLE = "not_applicable"
 
 
-class Task309SkipReason(StrEnum):
-    """Stable Task 309 manifest skip reasons."""
+class AnswerKeySkipReason(StrEnum):
+    """Stable answer-key live validation manifest skip reasons."""
 
     NONE = "none"
     SOURCE_BOUND_ANSWER_KEY_EXISTS = "source_bound_answer_key_exists"
@@ -65,7 +67,7 @@ class Task309SkipReason(StrEnum):
 
 
 @dataclass(frozen=True)
-class Task309Count:
+class AnswerKeyCount:
     """One deterministic manifest count."""
 
     key: str
@@ -73,15 +75,15 @@ class Task309Count:
 
 
 @dataclass(frozen=True)
-class Task309AssetEvalPolicy:
-    """Eval-only embedded-asset eligibility policy for Task 309."""
+class AnswerKeyAssetEvalPolicy:
+    """Eval-only embedded-asset eligibility policy for answer-key live validation."""
 
     allow_supported_embedded_assets: bool = False
 
 
 @dataclass(frozen=True)
-class Task309LiveValidationItem:
-    """One item-addressable Task 309 validation manifest row."""
+class AnswerKeyLiveValidationItem:
+    """One item-addressable answer-key live validation validation manifest row."""
 
     source_filename: str
     source_sha256: str
@@ -100,8 +102,8 @@ class Task309LiveValidationItem:
 
 
 @dataclass(frozen=True)
-class Task309LiveValidationFile:
-    """One source-file row in the Task 309 validation corpus manifest."""
+class AnswerKeyLiveValidationFile:
+    """One source-file row in the answer-key live validation validation corpus manifest."""
 
     filename: str
     source_sha256: str
@@ -109,32 +111,32 @@ class Task309LiveValidationFile:
     parse_status: str
     renderer_ready: bool
     item_count: int
-    items: tuple[Task309LiveValidationItem, ...]
+    items: tuple[AnswerKeyLiveValidationItem, ...]
 
 
 @dataclass(frozen=True)
-class Task309LiveValidationSummary:
-    """Aggregate Task 309 validation corpus manifest summary."""
+class AnswerKeyLiveValidationSummary:
+    """Aggregate answer-key live validation validation corpus manifest summary."""
 
     file_count: int
     item_count: int
     eligible_item_count: int
-    item_type_counts: tuple[Task309Count, ...]
-    output_mode_counts: tuple[Task309Count, ...]
-    skip_reason_counts: tuple[Task309Count, ...]
-    answer_key_provenance_counts: tuple[Task309Count, ...]
+    item_type_counts: tuple[AnswerKeyCount, ...]
+    output_mode_counts: tuple[AnswerKeyCount, ...]
+    skip_reason_counts: tuple[AnswerKeyCount, ...]
+    answer_key_provenance_counts: tuple[AnswerKeyCount, ...]
 
 
 @dataclass(frozen=True)
-class Task309LiveValidationManifest:
-    """Task 309 validation corpus manifest safe to commit."""
+class AnswerKeyLiveValidationManifest:
+    """answer-key live validation validation corpus manifest safe to commit."""
 
     schema_version: str
     corpus_id: str
     source_root_hint: str
     fixture_policy: str
-    files: tuple[Task309LiveValidationFile, ...]
-    summary: Task309LiveValidationSummary
+    files: tuple[AnswerKeyLiveValidationFile, ...]
+    summary: AnswerKeyLiveValidationSummary
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload without raw exam content."""
@@ -143,7 +145,7 @@ class Task309LiveValidationManifest:
 
 
 @dataclass(frozen=True)
-class Task309ExpectedAnswerWorklistItem:
+class AnswerKeyExpectedAnswerWorklistItem:
     """One eligible item needing a teacher-verified expected answer."""
 
     source_filename: str
@@ -158,12 +160,12 @@ class Task309ExpectedAnswerWorklistItem:
 
 
 @dataclass(frozen=True)
-class Task309ExpectedAnswerWorklist:
-    """Task 309 golden-answer worklist before teacher verification is complete."""
+class AnswerKeyExpectedAnswerWorklist:
+    """answer-key live validation golden-answer worklist before teacher verification is complete."""
 
     schema_version: str
     corpus_id: str
-    items: tuple[Task309ExpectedAnswerWorklistItem, ...]
+    items: tuple[AnswerKeyExpectedAnswerWorklistItem, ...]
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload for the expected-answer worklist."""
@@ -171,43 +173,45 @@ class Task309ExpectedAnswerWorklist:
         return _json_object(asdict(self))
 
 
-def build_task309_live_validation_manifest(
+def build_answer_key_live_validation_manifest(
     corpus_root: Path,
     *,
     source_root_hint: str | None = None,
-    asset_eval_policy: Task309AssetEvalPolicy = Task309AssetEvalPolicy(),
-) -> Task309LiveValidationManifest:
-    """Build the Task 309 corpus manifest from a versioned `.dxe` fixture root."""
+    asset_eval_policy: AnswerKeyAssetEvalPolicy = AnswerKeyAssetEvalPolicy(),
+) -> AnswerKeyLiveValidationManifest:
+    """Build the answer-key live validation corpus manifest from a versioned `.dxe` fixture root."""
 
     if not corpus_root.is_dir():
-        raise ValueError(f"Task 309 corpus root does not exist: {corpus_root}")
+        raise ValueError(f"answer-key live validation corpus root does not exist: {corpus_root}")
     files = tuple(sorted(corpus_root.glob("*.dxe")))
     if not files:
-        raise ValueError(f"Task 309 corpus contains no `.dxe` files: {corpus_root}")
+        raise ValueError(
+            f"answer-key live validation corpus contains no `.dxe` files: {corpus_root}"
+        )
 
     parser = DigiExamDxeParser()
     manifest_files = tuple(
         _build_file(path, parser=parser, asset_eval_policy=asset_eval_policy) for path in files
     )
-    return Task309LiveValidationManifest(
-        schema_version=TASK309_CORPUS_MANIFEST_SCHEMA_VERSION,
-        corpus_id=TASK309_CORPUS_ID,
+    return AnswerKeyLiveValidationManifest(
+        schema_version=ANSWER_KEY_LIVE_VALIDATION_CORPUS_MANIFEST_SCHEMA_VERSION,
+        corpus_id=ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID,
         source_root_hint=source_root_hint
         if source_root_hint is not None
         else corpus_root.as_posix(),
-        fixture_policy=TASK309_FIXTURE_POLICY,
+        fixture_policy=ANSWER_KEY_LIVE_VALIDATION_FIXTURE_POLICY,
         files=manifest_files,
         summary=_build_summary(manifest_files),
     )
 
 
-def build_task309_expected_answer_worklist(
-    manifest: Task309LiveValidationManifest,
-) -> Task309ExpectedAnswerWorklist:
-    """Build the eligible-item expected-answer worklist for Task 309."""
+def build_answer_key_expected_answer_worklist(
+    manifest: AnswerKeyLiveValidationManifest,
+) -> AnswerKeyExpectedAnswerWorklist:
+    """Build the eligible-item expected-answer worklist for answer-key live validation."""
 
     items = tuple(
-        Task309ExpectedAnswerWorklistItem(
+        AnswerKeyExpectedAnswerWorklistItem(
             source_filename=item.source_filename,
             source_sha256=item.source_sha256,
             item_id=item.item_id,
@@ -222,15 +226,15 @@ def build_task309_expected_answer_worklist(
         for item in file_entry.items
         if item.eligible
     )
-    return Task309ExpectedAnswerWorklist(
-        schema_version=TASK309_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION,
+    return AnswerKeyExpectedAnswerWorklist(
+        schema_version=ANSWER_KEY_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION,
         corpus_id=manifest.corpus_id,
         items=items,
     )
 
 
-def write_task309_json(payload: dict[str, object], output_path: Path) -> None:
-    """Write one deterministic Task 309 JSON artifact."""
+def write_answer_key_json(payload: dict[str, object], output_path: Path) -> None:
+    """Write one deterministic answer-key live validation JSON artifact."""
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
@@ -243,8 +247,8 @@ def _build_file(
     path: Path,
     *,
     parser: DigiExamDxeParser,
-    asset_eval_policy: Task309AssetEvalPolicy,
-) -> Task309LiveValidationFile:
+    asset_eval_policy: AnswerKeyAssetEvalPolicy,
+) -> AnswerKeyLiveValidationFile:
     source_sha256 = _source_sha256(path)
     parse_result = parser.parse_file(path)
     exam = build_digiexam_intermediate_exam(parse_result)
@@ -252,7 +256,7 @@ def _build_file(
         _build_item(path.name, source_sha256, item, asset_eval_policy=asset_eval_policy)
         for item in exam.items
     )
-    return Task309LiveValidationFile(
+    return AnswerKeyLiveValidationFile(
         filename=path.name,
         source_sha256=source_sha256,
         byte_size=path.stat().st_size,
@@ -268,11 +272,11 @@ def _build_item(
     source_sha256: str,
     item: DigiExamIrItem,
     *,
-    asset_eval_policy: Task309AssetEvalPolicy,
-) -> Task309LiveValidationItem:
+    asset_eval_policy: AnswerKeyAssetEvalPolicy,
+) -> AnswerKeyLiveValidationItem:
     skip_reason = _skip_reason(item, asset_eval_policy=asset_eval_policy)
     output_mode = _output_mode(item, skip_reason)
-    return Task309LiveValidationItem(
+    return AnswerKeyLiveValidationItem(
         source_filename=source_filename,
         source_sha256=source_sha256,
         item_id=item.item_id,
@@ -280,7 +284,7 @@ def _build_item(
         source_item_fingerprint=source_item_fingerprint(item),
         item_type=item.item_type.value,
         answer_key_provenance=item.answer_key.provenance.value,
-        eligible=skip_reason == Task309SkipReason.NONE,
+        eligible=skip_reason == AnswerKeySkipReason.NONE,
         skip_reason=skip_reason.value,
         output_mode=output_mode.value,
         warning_codes=tuple(sorted(warning.code.value for warning in item.warnings)),
@@ -293,27 +297,27 @@ def _build_item(
 def _skip_reason(
     item: DigiExamIrItem,
     *,
-    asset_eval_policy: Task309AssetEvalPolicy,
-) -> Task309SkipReason:
+    asset_eval_policy: AnswerKeyAssetEvalPolicy,
+) -> AnswerKeySkipReason:
     if item.item_type not in {
         DigiExamItemType.SINGLE_CHOICE,
         DigiExamItemType.MULTIPLE_CHOICE,
         DigiExamItemType.MULTIPLE_RESPONSE,
         DigiExamItemType.GAP_FILL,
     }:
-        return Task309SkipReason.UNSUPPORTED_ITEM_TYPE
+        return AnswerKeySkipReason.UNSUPPORTED_ITEM_TYPE
     if item.answer_key.provenance not in {
         DigiExamAnswerKeyProvenance.ABSENT,
         DigiExamAnswerKeyProvenance.NOT_APPLICABLE,
     }:
-        return Task309SkipReason.SOURCE_BOUND_ANSWER_KEY_EXISTS
+        return AnswerKeySkipReason.SOURCE_BOUND_ANSWER_KEY_EXISTS
     if any(warning.blocking for warning in item.warnings):
-        return Task309SkipReason.UNRELIABLE_STRUCTURE
+        return AnswerKeySkipReason.UNRELIABLE_STRUCTURE
     if item.embedded_assets or item.embedded_asset_references:
         if asset_eval_policy.allow_supported_embedded_assets and _supported_asset_item(item):
             pass
         else:
-            return Task309SkipReason.UNSUPPORTED_ASSETS
+            return AnswerKeySkipReason.UNSUPPORTED_ASSETS
     if item.item_type in {
         DigiExamItemType.SINGLE_CHOICE,
         DigiExamItemType.MULTIPLE_CHOICE,
@@ -321,13 +325,13 @@ def _skip_reason(
     }:
         alternative_ids = tuple(alternative.id for alternative in item.alternatives)
         if not alternative_ids or len(set(alternative_ids)) != len(alternative_ids):
-            return Task309SkipReason.MISSING_CANDIDATE_STRUCTURE
-        return Task309SkipReason.NONE
+            return AnswerKeySkipReason.MISSING_CANDIDATE_STRUCTURE
+        return AnswerKeySkipReason.NONE
     if item.item_type == DigiExamItemType.GAP_FILL:
         if not item.gaps or any(not gap.guid.strip() for gap in item.gaps):
-            return Task309SkipReason.MISSING_CANDIDATE_STRUCTURE
-        return Task309SkipReason.NONE
-    return Task309SkipReason.UNSUPPORTED_ITEM_TYPE
+            return AnswerKeySkipReason.MISSING_CANDIDATE_STRUCTURE
+        return AnswerKeySkipReason.NONE
+    return AnswerKeySkipReason.UNSUPPORTED_ITEM_TYPE
 
 
 def _supported_asset_item(item: DigiExamIrItem) -> bool:
@@ -342,16 +346,16 @@ def _supported_asset_item(item: DigiExamIrItem) -> bool:
     )
 
 
-def _output_mode(item: DigiExamIrItem, skip_reason: Task309SkipReason) -> Task309OutputMode:
-    if skip_reason != Task309SkipReason.NONE:
-        return Task309OutputMode.NOT_APPLICABLE
+def _output_mode(item: DigiExamIrItem, skip_reason: AnswerKeySkipReason) -> AnswerKeyOutputMode:
+    if skip_reason != AnswerKeySkipReason.NONE:
+        return AnswerKeyOutputMode.NOT_APPLICABLE
     if item.item_type in {
         DigiExamItemType.SINGLE_CHOICE,
         DigiExamItemType.MULTIPLE_CHOICE,
         DigiExamItemType.MULTIPLE_RESPONSE,
     }:
-        return Task309OutputMode.VLLM_CHOICE
-    return Task309OutputMode.JSON_SCHEMA
+        return AnswerKeyOutputMode.VLLM_CHOICE
+    return AnswerKeyOutputMode.JSON_SCHEMA
 
 
 def _candidate_count(item: DigiExamIrItem) -> int:
@@ -367,10 +371,10 @@ def _candidate_count(item: DigiExamIrItem) -> int:
 
 
 def _build_summary(
-    files: tuple[Task309LiveValidationFile, ...],
-) -> Task309LiveValidationSummary:
+    files: tuple[AnswerKeyLiveValidationFile, ...],
+) -> AnswerKeyLiveValidationSummary:
     items = tuple(item for file_entry in files for item in file_entry.items)
-    return Task309LiveValidationSummary(
+    return AnswerKeyLiveValidationSummary(
         file_count=len(files),
         item_count=len(items),
         eligible_item_count=sum(1 for item in items if item.eligible),
@@ -385,14 +389,14 @@ def _source_sha256(path: Path) -> str:
     return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
 
 
-def _count_values(values: Iterable[str]) -> tuple[Task309Count, ...]:
+def _count_values(values: Iterable[str]) -> tuple[AnswerKeyCount, ...]:
     counter = Counter(values)
-    return tuple(Task309Count(key=key, count=counter[key]) for key in sorted(counter))
+    return tuple(AnswerKeyCount(key=key, count=counter[key]) for key in sorted(counter))
 
 
 def _json_object(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise TypeError("Task 309 manifest must serialize to a JSON object.")
+        raise TypeError("answer-key live validation manifest must serialize to a JSON object.")
     return {str(key): _json_value(child) for key, child in value.items()}
 
 
@@ -405,4 +409,6 @@ def _json_value(value: object) -> object:
         return [_json_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 manifest JSON value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation manifest JSON value: {type(value).__name__}"
+    )

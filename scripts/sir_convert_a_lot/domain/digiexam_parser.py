@@ -5,7 +5,7 @@ Purpose:
     source evidence, confidence status, and answer-key provenance.
 
 Relationships:
-    - Consumed by the Task 267 infrastructure PDF text adapter.
+    - Consumed by the DigiExam parser infrastructure PDF text adapter.
     - Intentionally independent of service routes, renderers, and bulk
       migration workflows so downstream Exam.net work can depend on a stable
       parser boundary.
@@ -60,7 +60,7 @@ _SWEDISH_SENTINELS = ("å", "ä", "ö", "Å", "Ä", "Ö")
 
 
 class DigiExamParser:
-    """Parse layout-aware DigiExam source lines into Task 267 domain results."""
+    """Parse layout-aware DigiExam source lines into DigiExam parser domain results."""
 
     def parse(
         self,

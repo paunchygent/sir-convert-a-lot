@@ -128,7 +128,7 @@ not using the hardware we intentionally prepared for this workload.
 
 - [x] Task 101 governed batch finalization no longer runs the tokenizer model
   on CPU by default.
-- [x] The canonical governed Task 101 runtime fails closed when GPU-backed
+- [x] The canonical governed Qwen pilot runtime fails closed when GPU-backed
   tokenizer initialization is unavailable.
 - [x] Runtime evidence proves the tokenizer model device is GPU-backed for the
   accepted path.
@@ -174,7 +174,7 @@ What changed:
   `reports/task101_pilot_bundle_audio_codes_runtime.json`
 - Task 109 containerized preprocessing now forwards the same governed GPU
   tokenizer posture into the shared Task 103 CLI
-- Task 101 runtime provenance now records the audio-code runtime posture so
+- Qwen pilot runtime provenance now records the audio-code runtime posture so
   older CPU-backed output cannot be silently treated as equivalent governed
   output
 - the stopped Hemma bundle root remains resumable from the last completed

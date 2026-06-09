@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Exercises `ml.qwen.training.bundle_runtime`.
-    - Protects the Task 149/150 governed runtime contract after the migration.
+    - Protects the training-bundle container runtime governed runtime contract after the migration.
 """
 
 from __future__ import annotations

@@ -248,7 +248,7 @@ class ServiceRuntime:
         return "conflict"
 
     def validate_backend_strategy(self, spec: JobSpec) -> None:
-        """Enforce backend compatibility constraints for the active rollout."""
+        """Enforce backend policy constraints for the active rollout."""
         violation = validate_backend_strategy_rule(spec)
         if violation is None:
             return

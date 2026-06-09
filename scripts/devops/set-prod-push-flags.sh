@@ -6,7 +6,8 @@
 # Relationships:
 #   - Reads/writes the canonical env file under ~/infrastructure/env/prod.
 #   - Intended to be invoked via the canonical wrapper:
-#       pdm run run-local-pdm run-hemma -- bash scripts/devops/set-prod-push-flags.sh --sse 1 --onboarding 1 --delivery 0
+# pdm run run-local-pdm run-hemma -- bash scripts/devops/set-prod-push-flags.sh --sse 1 --onboarding
+# 1 --delivery 0
 #   - After updating flags, the service container must be recreated to pick up env changes.
 #
 

@@ -12,7 +12,7 @@ related:
   - docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md
   - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
   - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -51,9 +51,9 @@ the preferred or fallback stability proof.
 ## Prepared Proof Surface
 
 - Local deterministic artifact root:
-  `build/verification/qwen-t198-proof/<proof-id>/`
+  `build/verification/qwen-fallback-accumulation-proof/<proof-id>/`
 - Canonical wrapper:
-  `pdm run qwen-t198-proof`
+  `pdm run qwen-fallback-accumulation-proof`
 - The first prepared lane in this task is the accumulation-`2` proof from the
   same canonical `1406` checkpoint used by `T197`.
 - Wrapper-generated artifacts:
@@ -75,7 +75,7 @@ the preferred or fallback stability proof.
 - First prepared accumulation-`2` package:
   - proof id: `task198-20260316t185616z-accum2-a1`
   - local root:
-    `build/verification/qwen-t198-proof/task198-20260316t185616z-accum2-a1/`
+    `build/verification/qwen-fallback-accumulation-proof/task198-20260316t185616z-accum2-a1/`
 - First live accumulation-`2` outcome:
   - the bounded replay reached optimizer step `1418`
   - the replay did not fail on a non-finite gradient
@@ -103,7 +103,7 @@ the preferred or fallback stability proof.
     - or run the next accumulation ablation if the story owner decides the
       preferred-gate miss still warrants it
 - Focused next lane after the failed preferred gate:
-  - use the existing `qwen-t198-proof` surface again
+  - use the existing `qwen-fallback-accumulation-proof` surface again
   - keep `text_embedding_mask_policy=text_span_only`
   - lower `gradient_accumulation_steps` from `2` to `1`
   - attempt the preferred gate again before the fallback gate is activated
@@ -112,7 +112,7 @@ the preferred or fallback stability proof.
   - prepared proof id:
     `task198-20260316t213409z-accum1-a1`
   - local root:
-    `build/verification/qwen-t198-proof/task198-20260316t213409z-accum1-a1/`
+    `build/verification/qwen-fallback-accumulation-proof/task198-20260316t213409z-accum1-a1/`
   - bounded replay outcome:
     - the detached `1406 -> 1418` replay exited cleanly with `exit_code=0`
     - `current_optimizer_step=1418`
@@ -143,7 +143,7 @@ the preferred or fallback stability proof.
     - the documented fallback `1470 + standalone eval` gate is now the
       strongest next governed lane unless a new design reason argues otherwise
 - committed fallback surface:
-  - `qwen-t198-proof` now exposes the fallback commands directly:
+  - `qwen-fallback-accumulation-proof` now exposes the fallback commands directly:
     - `launch-fallback1470`
     - `status-fallback1470`
     - `launch-fallback-eval`
@@ -151,7 +151,7 @@ the preferred or fallback stability proof.
   - the fallback replay is a direct bounded `1406 -> 1470`
     `diagnose-non-finite` run from the canonical RCA checkpoint
   - the fallback standalone eval launches through the detached Hemma helper
-    `qwen-story29-eval-detached` so the eval result no longer depends on an
+    `qwen-fallback-eval-detached` so the eval result no longer depends on an
     attached local session
   - live fallback outcome:
     - proof id:
@@ -175,31 +175,31 @@ the preferred or fallback stability proof.
 ## Exact Command Sequence
 
 1. Prepare the accumulation-`2` proof package locally:
-   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
+   `pdm run qwen-fallback-accumulation-proof prepare --proof-id <proof-id> --skip-build`
 1. Launch the detached bounded replay:
-   `pdm run qwen-t198-proof launch-window --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof launch-window --proof-id <proof-id>`
 1. Inspect the bounded replay:
-   `pdm run qwen-t198-proof status-window --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof status-window --proof-id <proof-id>`
 1. Launch the detached `1500` continuation only after the replay passes:
-   `pdm run qwen-t198-proof launch-gate1500 --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof launch-gate1500 --proof-id <proof-id>`
 1. Inspect the detached `1500` continuation:
-   `pdm run qwen-t198-proof status-gate1500 --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof status-gate1500 --proof-id <proof-id>`
 1. For the next focused ablation lane, prepare accumulation `1` explicitly:
-   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --gradient-accumulation-steps 1 --skip-build`
+   `pdm run qwen-fallback-accumulation-proof prepare --proof-id <proof-id> --gradient-accumulation-steps 1 --skip-build`
 1. If the preferred gate still fails after the planned accumulation ladder,
    launch the direct fallback replay:
-   `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof launch-fallback1470 --proof-id <proof-id>`
 1. Inspect the direct fallback replay:
-   `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof status-fallback1470 --proof-id <proof-id>`
 1. Launch detached standalone eval only after the fallback replay exits
    cleanly with a truthful `1470` checkpoint:
-   `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof launch-fallback-eval --proof-id <proof-id>`
 1. Inspect the detached fallback eval:
-   `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
+   `pdm run qwen-fallback-accumulation-proof status-fallback-eval --proof-id <proof-id>`
 
 ## Deliverables
 
-- [x] One committed `qwen-t198-proof` wrapper prepares deterministic local
+- [x] One committed `qwen-fallback-accumulation-proof` wrapper prepares deterministic local
   proof artifacts and renders the exact detached Hemma commands/checklist for
   the accumulation-`2` lane.
 - [x] One side-by-side proof record exists for accumulation values `4`, `2`,

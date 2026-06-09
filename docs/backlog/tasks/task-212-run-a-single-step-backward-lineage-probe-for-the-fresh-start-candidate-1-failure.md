@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
   - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -44,7 +44,7 @@ continuing to reason from replay or parameter-symptom surfaces.
   - `task212-20260317t141500z-lineage-a3`
   - detached worker exit code: `0`
   - report artifact:
-    `build/verification/qwen-story30-backward-lineage/task212-20260317t141500z-lineage-a3/status.json`
+    `build/verification/qwen-backward-lineage/task212-20260317t141500z-lineage-a3/status.json`
 
 What the truthful probe proved:
 
@@ -148,15 +148,15 @@ Operator conclusion:
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_bundle.py -q`
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_backward_lineage_probe.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_qwen_backward_lineage_bundle.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_qwen_backward_lineage_probe.py -q`
 - [x] `pdm run typecheck-all`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story30-backward-lineage prepare --proof-id <proof-id> --skip-build`
-- [x] `pdm run qwen-story30-backward-lineage launch --proof-id <proof-id>`
-- [x] `pdm run qwen-story30-backward-lineage status --proof-id <proof-id>`
+- [x] `pdm run qwen-backward-lineage prepare --proof-id <proof-id> --skip-build`
+- [x] `pdm run qwen-backward-lineage launch --proof-id <proof-id>`
+- [x] `pdm run qwen-backward-lineage status --proof-id <proof-id>`
 
 ## Checklist
 

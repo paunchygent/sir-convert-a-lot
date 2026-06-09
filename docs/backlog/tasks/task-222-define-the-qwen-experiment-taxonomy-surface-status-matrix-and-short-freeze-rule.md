@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - .codex/rules/096-qwen-experiment-governance.md
 labels:
@@ -36,13 +36,13 @@ before any further inference is drawn from the current Qwen surfaces.
   - `recovery`
 - Define the one-question-per-run rule for future active Qwen experiments.
 - Publish one explicit status matrix for the current public surfaces:
-  - `qwen-t221-historical-control`
-  - `qwen-story31-stability-lab`
+  - `qwen-historical-pilot-control`
+  - `qwen-stability-lab`
   - governed `qwen-train launch/status` recovery proof
-  - `qwen-story30-freshstart-proof`
-  - `qwen-story30-backward-lineage`
-  - `qwen-t197-proof`
-  - `qwen-t198-proof`
+  - `qwen-freshstart-proof`
+  - `qwen-backward-lineage`
+  - `qwen-fallback-proof`
+  - `qwen-fallback-accumulation-proof`
 - Record the Story 32 freeze posture:
   - do not start new Story 31 variants or governed recovery proofs while the
     package lands
@@ -58,15 +58,15 @@ before any further inference is drawn from the current Qwen surfaces.
 
 ## Acceptance Criteria
 
-- [x] `qwen-t221-historical-control` is documented as
+- [x] `qwen-historical-pilot-control` is documented as
   `provenance` / `active`.
-- [x] `qwen-story31-stability-lab` is documented as
+- [x] `qwen-stability-lab` is documented as
   `mechanism` / `active`.
 - [x] The governed `qwen-train` proof lane is documented as
   `recovery` / `active but blocked until promotion`.
-- [x] `qwen-story30-freshstart-proof` and
-  `qwen-story30-backward-lineage` are documented as `legacy-readonly`.
-- [x] `qwen-t197-proof` and `qwen-t198-proof` are documented as `deprecated`
+- [x] `qwen-freshstart-proof` and
+  `qwen-backward-lineage` are documented as `legacy-readonly`.
+- [x] `qwen-fallback-proof` and `qwen-fallback-accumulation-proof` are documented as `deprecated`
   for new work and preserved as historical Story 29 evidence.
 - [x] No new launch was introduced while landing the taxonomy package.
 

@@ -436,7 +436,7 @@ class TTSDataset(Dataset[DatasetItem]):
         return ref_mel
 
     def _load_ref_mel(self, item: TrainingRow) -> torch.Tensor:
-        """Load one row ref-mel from the preferred persisted or legacy fallback path."""
+        """Load one row ref-mel from persisted metadata or row audio."""
         precomputed_ref_input_path = item.get("precomputed_ref_input_path")
         if isinstance(precomputed_ref_input_path, str):
             return self._load_precomputed_ref_mel(item)

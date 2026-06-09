@@ -7,7 +7,8 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.tts_sidecar.chatterbox_runtime`.
-    - Mirrors the normalized adapter coverage style used for Task 81 and Task 85.
+    - Mirrors the normalized adapter coverage style used for OpenVoice benchmark and F5-TTS
+    benchmark.
 """
 
 from __future__ import annotations

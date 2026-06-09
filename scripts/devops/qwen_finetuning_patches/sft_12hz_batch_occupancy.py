@@ -1,7 +1,7 @@
 """Batch-occupancy helpers for the patched Qwen trainer.
 
 Purpose:
-    Summarize the actual Task 101 batch plan into machine-readable occupancy
+    Summarize the actual Qwen pilot training batch plan into machine-readable occupancy
     evidence so throughput claims can rely on concrete row/token/frame totals
     instead of only the configured profile label.
 

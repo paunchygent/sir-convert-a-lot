@@ -256,7 +256,7 @@ Canonical repo surface for the preprocessing lane:
 
 ## Fault-Tolerant Resume
 
-- Scheduled Task 101 runs use this canonical control posture:
+- Scheduled Qwen pilot runs use this canonical control posture:
   - durable checkpoint every `500` optimizer steps
   - held-out eval every `100` optimizer steps
   - retain newest `3` durable trainer-state checkpoints
@@ -349,14 +349,14 @@ Use one active question at a time:
 
 | Experiment class | Current active surface | Operator purpose |
 | --- | --- | --- |
-| `provenance` | `pdm run qwen-t221-historical-control <launch|status|stop>` | Historical-contract recreation and control evidence |
-| `mechanism` | `pdm run qwen-story31-stability-lab run` and `gate` | Bounded stabilization exploration and promotion gating |
+| `provenance` | `pdm run qwen-historical-pilot-control <launch|status|stop>` | Historical-contract recreation and control evidence |
+| `mechanism` | `pdm run qwen-stability-lab run` and `gate` | Bounded stabilization exploration and promotion gating |
 | `recovery` | governed `qwen-train launch/status` proof lane | Short fresh-start governed proof only after promotion |
 
 Operator rules:
 
 - record active run truth in
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+  `docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`
   and do not create a second live ledger
 - keep one question per run
 - do not make causal claims when code, bundle root, sampler/batching policy,
@@ -369,7 +369,7 @@ Operator rules:
 
 For provenance questions:
 
-- use `qwen-t221-historical-control`
+- use `qwen-historical-pilot-control`
 - latest resolved result:
   `task221-20260317t193125z-a1` is negative recreated-control evidence
 - treat that result as provenance only:
@@ -380,18 +380,18 @@ For mechanism questions:
 - Story 31 owns the active mechanism lane
 - for bounded stabilizer exploration, use the committed exploration surface:
   - local or attached short run:
-    `pdm run qwen-story31-stability-lab run --skip-build`
+    `pdm run qwen-stability-lab run --skip-build`
   - attached Hemma short run through the canonical wrapper:
-    `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab --skip-build`
+    `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab --skip-build`
 - the lab writes one compact matrix run under a single output root:
   - `results.json`
   - `results.md`
   - `variant-reports/<variant>.json`
 - the mandatory local promotion step before any recovery proof is:
-  `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+  `pdm run qwen-stability-lab gate --output-root <lab-output-root>`
 - for the recreated `T221` step-`1` / iteration-`4` failure family, run the
   committed parity surface before any further stabilizer claim:
-  - `pdm run qwen-story31-parity-probe run`
+  - `pdm run qwen-parity-probe run`
 - the parity probe writes:
   - `current-path.json`
   - `intended-path.json`
@@ -478,10 +478,10 @@ For recovery questions:
 These surfaces remain callable, but they are not part of the active operator
 flow:
 
-- `qwen-story30-freshstart-proof`: `legacy-readonly`
-- `qwen-story30-backward-lineage`: `legacy-readonly`
-- `qwen-t197-proof`: `deprecated` for new work
-- `qwen-t198-proof`: `deprecated` for new work
+- `qwen-freshstart-proof`: `legacy-readonly`
+- `qwen-backward-lineage`: `legacy-readonly`
+- `qwen-fallback-proof`: `deprecated` for new work
+- `qwen-fallback-accumulation-proof`: `deprecated` for new work
 
 ## Story 29 Scratch Governance
 
@@ -552,7 +552,7 @@ Operator interpretation:
 - Short recovery probes that only prove "the container came back and wrote a
   new checkpoint" are diagnostic evidence, not acceptance evidence.
 - Keep live recovery and progress notes in the dedicated reference ledger,
-  `docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`,
+  `docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`,
   rather than adding operational logs to the skill doc.
 - For repeated non-finite failures on the preserved Task 101 lane, the
   canonical flow is now:

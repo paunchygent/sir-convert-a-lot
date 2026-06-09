@@ -21,25 +21,25 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_samples import (
     ExamNetQtiSamplePackage,
-    examnet_qti_task_280_samples,
-    examnet_qti_task_303_samples,
+    examnet_qti_keyed_samples,
+    examnet_qti_manual_unkeyed_samples,
 )
 from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import (
     write_examnet_qti_artifacts,
 )
 
-DEFAULT_OUTPUT_DIR = Path("inputs/examples/examnet-qti-samples/task-280")
-DEFAULT_TASK_303_OUTPUT_DIR = Path("inputs/examples/examnet-qti-samples/task-303")
+DEFAULT_KEYED_OUTPUT_DIR = Path("inputs/examples/examnet-qti-samples/keyed")
+DEFAULT_MANUAL_UNKEYED_OUTPUT_DIR = Path("inputs/examples/examnet-qti-samples/manual-unkeyed")
 
 
 def main() -> int:
-    """CLI entrypoint for deterministic Task 280 sample generation."""
+    """CLI entrypoint for deterministic keyed QTI sample generation."""
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--task",
-        choices=("task-280", "task-303"),
-        default="task-280",
+        "--profile",
+        choices=("keyed", "manual-unkeyed"),
+        default="keyed",
         help="Governed QTI sample set to materialize.",
     )
     parser.add_argument(
@@ -50,9 +50,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    output_dir = args.output_dir or _default_output_dir(args.task)
+    output_dir = args.output_dir or _default_profile_output_dir(args.profile)
     summary = []
-    for sample in _samples_for_task(args.task):
+    for sample in _samples_for_profile(args.profile):
         sample_dir = output_dir / sample.name
         plan = build_examnet_qti_package_plan(package_name=sample.name, items=sample.items)
         artifacts = write_examnet_qti_artifacts(
@@ -74,16 +74,16 @@ def main() -> int:
     return 0
 
 
-def _samples_for_task(task: str) -> tuple[ExamNetQtiSamplePackage, ...]:
-    if task == "task-303":
-        return examnet_qti_task_303_samples()
-    return examnet_qti_task_280_samples()
+def _samples_for_profile(task: str) -> tuple[ExamNetQtiSamplePackage, ...]:
+    if task == "manual-unkeyed":
+        return examnet_qti_manual_unkeyed_samples()
+    return examnet_qti_keyed_samples()
 
 
-def _default_output_dir(task: str) -> Path:
-    if task == "task-303":
-        return DEFAULT_TASK_303_OUTPUT_DIR
-    return DEFAULT_OUTPUT_DIR
+def _default_profile_output_dir(task: str) -> Path:
+    if task == "manual-unkeyed":
+        return DEFAULT_MANUAL_UNKEYED_OUTPUT_DIR
+    return DEFAULT_KEYED_OUTPUT_DIR
 
 
 if __name__ == "__main__":

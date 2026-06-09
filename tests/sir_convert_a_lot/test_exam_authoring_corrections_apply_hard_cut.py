@@ -1,12 +1,12 @@
 """Hard-cut and validation privacy tests for correction apply routes.
 
 Purpose:
-    Keep the unified correction route privacy envelope and Task 324 route
+    Keep the unified correction route privacy envelope and HTML to PDF route4 route
     removal proof separate from family-specific apply runtime tests.
 
 Relationships:
     - Exercises `interfaces.http_routes_exam_authoring_corrections_v2`.
-    - Protects ADR-0011's no-compatibility-route decision.
+    - Protects ADR-0011.s route-removal decision.
     - Complements matching and non-matching correction route test modules.
 """
 
@@ -61,7 +61,7 @@ def test_corrections_apply_route_validation_error_does_not_echo_raw_payload(
     ]
 
 
-def test_superseded_task_324_matching_route_is_not_accepted(tmp_path: Path) -> None:
+def test_superseded_matching_route_is_not_accepted(tmp_path: Path) -> None:
     client = _client(tmp_path)
 
     response = client.post(_OLD_ROUTE, headers=_API_HEADERS, json={})

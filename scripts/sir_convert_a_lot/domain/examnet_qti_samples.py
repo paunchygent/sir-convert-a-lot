@@ -40,7 +40,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
 _ONE_PIXEL_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
 )
-_TASK_303_DXE_FIXTURE = Path(
+_MANUAL_UNKEYED_DXE_FIXTURE = Path(
     "inputs/examples/digiexam-evidence/2026-05-07-mixed-question-types/"
     "1772718003-test-samma-prov-i-digiexam.dxe"
 )
@@ -56,8 +56,8 @@ class ExamNetQtiSamplePackage:
     items: tuple[ExamNetQtiItem, ...]
 
 
-def examnet_qti_task_280_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
-    """Return the deterministic Task 280 sample package set."""
+def examnet_qti_keyed_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
+    """Return the deterministic keyed QTI sample package set."""
 
     return (
         _single_choice_sample(),
@@ -71,8 +71,8 @@ def examnet_qti_task_280_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
     )
 
 
-def examnet_qti_task_303_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
-    """Return deterministic Task 303 manual/unkeyed sample packages."""
+def examnet_qti_manual_unkeyed_samples() -> tuple[ExamNetQtiSamplePackage, ...]:
+    """Return deterministic manual/unkeyed QTI manual/unkeyed sample packages."""
 
     return (
         _unkeyed_single_choice_sample(),
@@ -99,21 +99,21 @@ def _single_choice_sample() -> ExamNetQtiSamplePackage:
 def _unkeyed_single_choice_sample() -> ExamNetQtiSamplePackage:
     return _sample(
         "unkeyed-single-choice-preserved",
-        _task_303_dxe_item("item-002"),
+        _manual_unkeyed_dxe_item("item-002"),
     )
 
 
 def _unkeyed_multiple_response_sample() -> ExamNetQtiSamplePackage:
     return _sample(
         "unkeyed-multiple-response-preserved",
-        _task_303_dxe_item("item-004"),
+        _manual_unkeyed_dxe_item("item-004"),
     )
 
 
 def _manual_gap_fill_preservation_sample() -> ExamNetQtiSamplePackage:
     return _sample(
         "manual-gap-fill-preserved-as-free-text",
-        _task_303_dxe_item("item-007"),
+        _manual_unkeyed_dxe_item("item-007"),
     )
 
 
@@ -143,10 +143,10 @@ def _manual_matching_preservation_sample() -> ExamNetQtiSamplePackage:
     )
 
 
-def _task_303_dxe_item(item_id: str) -> ExamNetQtiItem:
-    payload = json.loads(_TASK_303_DXE_FIXTURE.read_text(encoding="utf-8"))
+def _manual_unkeyed_dxe_item(item_id: str) -> ExamNetQtiItem:
+    payload = json.loads(_MANUAL_UNKEYED_DXE_FIXTURE.read_text(encoding="utf-8"))
     exam = build_digiexam_intermediate_exam(
-        DigiExamDxeParser().parse_payload(payload, filename=_TASK_303_DXE_FIXTURE.name)
+        DigiExamDxeParser().parse_payload(payload, filename=_MANUAL_UNKEYED_DXE_FIXTURE.name)
     )
     adapter_result = build_examnet_qti_items_from_digiexam_ir(exam)
     items = {item.item_id: item for item in adapter_result.items}
@@ -318,7 +318,7 @@ def _image(asset_id: str, alt_text: str) -> ExamNetQtiImageResource:
         media_type="image/png",
         payload=_ONE_PIXEL_PNG,
         alt_text=alt_text,
-        source_reference="task-280-deterministic-sample",
+        source_reference="keyed-deterministic-sample",
     )
 
 

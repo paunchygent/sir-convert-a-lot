@@ -11,6 +11,7 @@ related:
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
+  - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
 labels:
   - stt
   - diarization
@@ -200,6 +201,14 @@ Rejection matrix:
 The story is done when a selected backend profile is proven or rejected with
 operator-grade Hemma evidence and the route execution story has clear runtime
 profile inputs.
+
+## Follow-Up Runtime Task
+
+Task 351 adds the first STT sidecar benchmark preflight runner after this
+story's governed production-profile rejection. The preflight runner records
+codec, runtime-package, Hugging Face cache, and token-name readiness, while the
+production `stt_profile` and `diarization_profile` remain rejected until live
+Swedish/English fixture, speaker-hint, and 120-minute lifecycle evidence exists.
 
 ## Checklist
 

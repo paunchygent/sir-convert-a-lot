@@ -5,7 +5,7 @@ Purpose:
     Docling PDF performance investigations.
 
 Relationships:
-    - Used by Task 344 page-window replay reports.
+    - Used by Docling page-window replay page-window replay reports.
     - Complements `infrastructure.docling_formula_diagnostics`.
 """
 

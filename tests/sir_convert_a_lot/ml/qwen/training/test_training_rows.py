@@ -1,12 +1,13 @@
-"""Tests for training-manifest compatibility in the patched Qwen trainer.
+"""Tests for training-manifest loading in the patched Qwen trainer.
 
 Purpose:
-    Verify that the trainer still accepts legacy Task 101 manifests while also
+    Verify that the trainer accepts retained Qwen pilot training manifests while also
     supporting the newer persisted-ref-input contract.
 
 Relationships:
     - Exercises `sft_12hz_training_rows.py` and `dataset.py`.
-    - Protects the minimal compatibility fix that unblocks `T172` validation.
+    - Protects the minimal manifest-loading behavior that unblocks `training-manifest validation`
+      validation.
 """
 
 from __future__ import annotations
@@ -44,7 +45,7 @@ from tests.sir_convert_a_lot.ml.qwen.preprocessing.test_support import write_tes
 
 @dataclass
 class _FakeConfig:
-    """Minimal config stub for dataset compatibility tests."""
+    """Minimal config stub for dataset loading tests."""
 
     tts_pad_token_id: int = 0
     tts_bos_token_id: int = 1
@@ -100,7 +101,7 @@ class _LongTokenProcessor:
 def test_load_training_rows_accepts_legacy_manifest_without_precomputed_ref_input(
     tmp_path: Path,
 ) -> None:
-    """Legacy manifests without persisted-ref-input fields should still load."""
+    """Retained manifests without persisted-ref-input fields should still load."""
     manifest_path = tmp_path / "train.prepared.jsonl"
     ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
     ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +131,7 @@ def test_load_training_rows_accepts_legacy_manifest_without_precomputed_ref_inpu
 def test_load_training_rows_requires_precomputed_ref_inputs_when_enforced(
     tmp_path: Path,
 ) -> None:
-    """Rebuilt-bundle enforcement should fail closed on legacy rows without persisted refs."""
+    """Rebuilt-bundle enforcement should fail closed on rows without persisted refs."""
     manifest_path = tmp_path / "train.prepared.jsonl"
     ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
     ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
@@ -159,7 +160,7 @@ def test_dataset_uses_legacy_ref_audio_fallback_without_precomputed_ref_input(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Dataset items should still extract ref-mels from legacy `ref_audio` rows."""
+    """Dataset items should extract ref-mels from retained `ref_audio` rows."""
     ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
     ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
     write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)
@@ -203,7 +204,7 @@ def test_dataset_records_runtime_ref_mel_extraction_in_proof_mode(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Legacy runtime extraction should be counted during authoritative proof runs."""
+    """Runtime ref-audio extraction should be counted during authoritative proof runs."""
     ref_audio_path = tmp_path / "refs" / "speaker-a" / "ref.wav"
     ref_audio_path.parent.mkdir(parents=True, exist_ok=True)
     write_test_wav(ref_audio_path, sample_rate_hz=24_000, duration_seconds=1.0)

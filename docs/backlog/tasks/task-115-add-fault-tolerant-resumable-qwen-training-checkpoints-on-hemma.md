@@ -51,10 +51,10 @@ overnight Hemma training windows.
   - optimizer state
   - accelerator/training state required for resume
   - latest durable step metadata
-- Add an explicit resume surface to the detached Task 101 runner.
+- Add an explicit resume surface to the detached Qwen pilot runner.
 - Record checkpoint cadence and latest durable checkpoint in machine-readable
   status/report output.
-- Keep checkpoints on SSD scratch under the Task 101 run root.
+- Keep checkpoints on SSD scratch under the Qwen pilot run root.
 - Preserve the current detached Hemma orchestration model.
 
 ## Chosen Resume Contract
@@ -70,7 +70,7 @@ checkpoint, not "restart from exported weights and hope for the best."
   - scheduler state if used,
   - `accelerate` trainer/runtime state needed to resume,
   - global step, epoch, and latest durable wall-clock timestamp.
-- The Task 101 run root must expose a machine-readable latest-checkpoint
+- The Qwen pilot run root must expose a machine-readable latest-checkpoint
   pointer, for example `latest_checkpoint.json`, so detached recovery does not
   depend on scanning directories heuristically.
 - The detached Task 101 command surface must support:

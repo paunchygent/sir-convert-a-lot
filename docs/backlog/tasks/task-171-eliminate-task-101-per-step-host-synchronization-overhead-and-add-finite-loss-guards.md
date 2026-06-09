@@ -9,7 +9,7 @@ last_updated: '2026-03-13'
 related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen

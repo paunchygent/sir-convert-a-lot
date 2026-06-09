@@ -24,7 +24,7 @@ Implementation slice with acceptance-driven scope.
 
 ## Objective
 
-Permanently remove the god-file pressure in the Task 101 Qwen control-plane and
+Permanently remove the god-file pressure in the Qwen control-plane and
 patched training runtime by codifying a stricter `400` LoC SRP/DDD policy and
 refactoring the current mixed-concern modules into bounded, testable domain
 packages.

@@ -18,7 +18,7 @@ Lint Rules Implemented:
 References:
     - https://github.com/davidanson/markdownlint
     - https://github.com/hukkin/mdformat
-    - docs/backlog/tasks/task-21-structural-markdown-quality-gate-and-hard-case-normalization.md
+    - docs/backlog/tasks/structural-markdown-quality-gate-and-hard-case-normalization.md
 """
 
 from __future__ import annotations

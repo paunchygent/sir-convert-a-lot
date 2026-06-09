@@ -25,7 +25,7 @@ related:
   - docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md
   - docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md
   - docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -126,7 +126,7 @@ that a real Swedish optimizer step fits on the R9700.
 
 ## Test Requirements
 
-- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_task79_hemma_tts_sidecar_benchmark.py`
+- [ ] `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_hemma_benchmark.py`
 - [ ] `pdm run validate-tasks`
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

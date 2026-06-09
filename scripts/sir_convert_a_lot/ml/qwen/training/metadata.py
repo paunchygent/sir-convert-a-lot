@@ -646,7 +646,7 @@ def _compat_throughput_profile_label(
     default_throughput_profile_label: str,
     default_legacy_small_batch_throughput_profile_label: str,
 ) -> str:
-    """Return one throughput profile label with legacy launch compatibility."""
+    """Return one throughput profile label for a stored launch payload."""
     raw_value = payload.get("throughput_profile_label")
     if raw_value is None:
         if batch_size < 8:

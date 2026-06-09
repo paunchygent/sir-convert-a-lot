@@ -1,4 +1,4 @@
-"""Benchmark GPU governance behavior for Story 003b.
+"""Benchmark GPU governance behavior for GPU governance benchmark lane.
 
 Purpose:
     Execute a deterministic benchmark corpus against the v2 HTTP contract and
@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Uses `scripts.sir_convert_a_lot.interfaces.http_api.create_app` as the benchmark API.
-    - Produces artifacts referenced by Story 003b and benchmark reference docs.
+    - Produces artifacts referenced by GPU governance benchmark lane and benchmark reference docs.
 """
 
 from __future__ import annotations
@@ -28,9 +28,9 @@ from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 
 DEFAULT_FIXTURES_DIR = Path("tests/fixtures/benchmark_pdfs")
 DEFAULT_OUTPUT_JSON = Path(
-    "build/benchmarks/story-003b/benchmark-story-003b-gpu-governance-local.json"
+    "build/benchmarks/gpu-governance/benchmark-gpu-governance-benchmark-local.json"
 )
-DEFAULT_DATA_ROOT = Path("build/benchmarks/story-003b-local")
+DEFAULT_DATA_ROOT = Path("build/benchmarks/gpu-governance-local")
 
 
 class BenchmarkJobRecord(TypedDict):
@@ -277,7 +277,7 @@ def run_benchmark(
     failed = [job for job in jobs if job["status"] == JobStatus.FAILED.value]
 
     payload: BenchmarkPayload = {
-        "benchmark_id": "story-003b-gpu-governance",
+        "benchmark_id": "gpu-governance-benchmark",
         "stage": stage,
         "generated_at": _utc_now_iso(),
         "fixtures_dir": str(fixtures_dir.resolve()),
@@ -325,8 +325,10 @@ def run_benchmark(
 
 
 def main() -> None:
-    """Parse CLI args and run Story 003b benchmark generation."""
-    parser = argparse.ArgumentParser(description="Run Story 003b GPU governance benchmark.")
+    """Parse CLI args and run GPU governance benchmark lane benchmark generation."""
+    parser = argparse.ArgumentParser(
+        description="Run GPU governance benchmark lane GPU governance benchmark."
+    )
     parser.add_argument("--fixtures-dir", type=Path, default=DEFAULT_FIXTURES_DIR)
     parser.add_argument("--output-json", type=Path, default=DEFAULT_OUTPUT_JSON)
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)

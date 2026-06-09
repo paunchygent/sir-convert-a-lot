@@ -55,7 +55,7 @@ The active research lane was Epic 08 Qwen Swedish language expansion on Hemma,
 with Story 31 as the mechanism lane and Story 32 as the experiment governance
 surface. The live ledger was:
 
-`docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md`
+`docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md`
 
 Key durable facts preserved from the old handoff:
 

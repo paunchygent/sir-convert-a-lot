@@ -1,7 +1,8 @@
 """Regression tests for Hemma v2 smoke helper runtime probes.
 
 Purpose:
-    Lock the in-container command shape used by the Hemma Task 39 / Task 76
+    Lock the in-container command shape used by the Hemma v2 conversion smoke / Hemma deploy
+    verification
     smoke verifier so runtime-version checks match the deployed image contract.
 
 Relationships:

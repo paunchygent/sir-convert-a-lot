@@ -205,7 +205,7 @@ def _official_validator_result() -> ExamNetQtiValidatorResult:
         status=ExamNetQtiValidationStatus.EXTERNAL_VALIDATOR_UNAVAILABLE,
         message=(
             "Official 1EdTech validation is recorded as an external dependency "
-            "for this local Task 280 gate."
+            "for this local keyed QTI gate."
         ),
     )
 

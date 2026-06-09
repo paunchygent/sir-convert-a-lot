@@ -20,8 +20,8 @@ related:
   - tests/sir_convert_a_lot/test_service_dependency_inputs.py
   - tests/sir_convert_a_lot/test_compose_contract.py
   - tests/sir_convert_a_lot/test_local_compose_contract.py
-  - build/verification/task-255-service-deps-image-cache/report.md
-  - build/verification/task-255-service-deps-image-cache/report.json
+  - build/verification/service-dependency-image-cache/report.md
+  - build/verification/service-dependency-image-cache/report.json
 labels:
   - review
   - task-255
@@ -47,7 +47,7 @@ Structured review artifact for implementation or readiness checks.
     `prod-deps-rocm-build-clean`, `dev-deps-cpu-build`, `prod-build`,
     `prod-recreate`, and local equivalents.
   - Hemma proof artifacts under
-    `build/verification/task-255-service-deps-image-cache/`.
+    `build/verification/service-dependency-image-cache/`.
 - Compatibility posture:
   - Clean DevOps contract change. Existing callers should use the documented
     PDM wrappers; no legacy Dockerfile dependency-builder shim is required.

@@ -50,7 +50,7 @@ OpenAI-compatible `/v1/audio/speech` surface already proven on Hemma.
 
 ## Deliverables
 
-- [x] Extended `benchmark:task-79` command surface for Qwen Base voice cloning.
+- [x] Extended `benchmark:tts-sidecar` command surface for Qwen Base voice cloning.
 - [x] Deterministic request-input evidence under one Task 98 output root.
 - [x] Live Hemma English clone artifact generated from the approved reference
   clip plus the requested style instructions.
@@ -69,7 +69,7 @@ OpenAI-compatible `/v1/audio/speech` surface already proven on Hemma.
 
 ## Implementation Notes
 
-- The canonical Qwen benchmark surface remains `benchmark:task-79`; the Base
+- The canonical Qwen benchmark surface remains `benchmark:tts-sidecar`; the Base
   clone lane was added to that existing runner rather than a separate ad hoc
   script.
 - Live Hemma evidence is recorded under:
@@ -100,13 +100,13 @@ OpenAI-compatible `/v1/audio/speech` surface already proven on Hemma.
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task79_hemma_tts_sidecar_benchmark.py tests/sir_convert_a_lot/test_task79_qwen3_tts_request_payload.py -q`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_hemma_benchmark.py tests/sir_convert_a_lot/test_qwen3_tts_request_payload.py -q`
 - `pdm run validate-tasks`
 - `pdm run validate-docs`
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out /tmp/sir_tasks_index.md --fail-on-missing`
 - `pdm run coverage-gate` was rerun but is still red because of the unrelated
   pre-existing failure in
-  `tests/sir_convert_a_lot/test_benchmark_story20_parallel_throughput.py::test_run_benchmark_writes_expected_payload`
+  `tests/sir_convert_a_lot/test_pdf_parallel_throughput_benchmark.py::test_run_benchmark_writes_expected_payload`
 
 ## Checklist
 

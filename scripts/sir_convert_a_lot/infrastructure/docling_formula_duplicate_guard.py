@@ -15,8 +15,7 @@ import threading
 from dataclasses import dataclass
 
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
-from docling_core.types.doc import DoclingDocument
-from docling_core.types.doc import NodeItem
+from docling_core.types.doc import DoclingDocument, NodeItem
 
 _SEEN_LOCK = threading.Lock()
 _SEEN_ITEM_REFS_BY_DOC_ID: dict[int, set[str]] = {}

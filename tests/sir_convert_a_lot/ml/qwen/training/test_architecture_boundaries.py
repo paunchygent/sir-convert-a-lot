@@ -1,7 +1,7 @@
 """Architecture guard tests for the Qwen training control plane.
 
 Purpose:
-    Enforce the Story 28 SRP/DDD boundaries so the old god-file drift does not
+    Enforce the Qwen architecture boundary SRP/DDD boundaries so the old god-file drift does not
     silently return in future edits.
 
 Relationships:
@@ -28,8 +28,8 @@ def test_deleted_qwen_god_modules_stay_deleted() -> None:
     assert not (REPO_ROOT / "scripts/sir_convert_a_lot/ml/qwen/training/reporting.py").exists()
 
 
-def test_hot_path_modules_stay_under_the_story28_line_caps() -> None:
-    """Hot-path Qwen modules should stay below the enforced Story 28 caps."""
+def test_hot_path_modules_stay_under_architecture_line_caps() -> None:
+    """Hot-path Qwen modules should stay below the enforced Qwen architecture boundary caps."""
     assert _line_count(REPO_ROOT / "scripts/sir_convert_a_lot/cli/ml/qwen_train.py") <= 250
     assert _line_count(REPO_ROOT / "scripts/devops/qwen_finetuning_patches/sft_12hz_loop.py") <= 400
     assert (

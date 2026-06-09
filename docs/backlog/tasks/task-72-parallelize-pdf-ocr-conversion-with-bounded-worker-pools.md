@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-70-implement-chunk-checkpoints-and-partial-markdown-artifacts.md
   - docs/backlog/tasks/task-73-add-conversion-bottleneck-telemetry-and-stage-timing-metrics.md
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
-  - docs/reference/ref-task-72-parallel-throughput-evidence.md
+  - docs/reference/ref-pdf-parallel-throughput-evidence.md
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py
   - scripts/sir_convert_a_lot/infrastructure/runtime_telemetry_v2.py
   - scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpointed_executor.py
@@ -190,17 +190,17 @@ preserving determinism, checkpoint/resume correctness, and production stability.
     `scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py`,
   - explicit parallel config/env contract and surfaced conversion metadata in
     `runtime_config.py`, `v2_conversion_executor.py`, and result payloads,
-  - dedicated Task 72 regression coverage for determinism, checkpoint safety, cancel/resume,
+  - dedicated PDF parallel throughput regression coverage for determinism, checkpoint safety, cancel/resume,
     bounded metrics labels, API parity, progress monotonicity, and multi-job caps.
 - Added deterministic local scheduling-regression command and artifact:
-  - `pdm run benchmark:task-72 --output-json build/benchmarks/story-20/task-72-parallel-throughput-local.json`
-  - artifact: `build/benchmarks/story-20/task-72-parallel-throughput-local.json`
+  - `pdm run benchmark:pdf-parallel-throughput --output-json build/benchmarks/pdf-throughput/pdf-parallel-throughput-local.json`
+  - artifact: `build/benchmarks/pdf-throughput/pdf-parallel-throughput-local.json`
   - latest local run (`2026-03-06`, artifact timestamp `2026-03-05T23:10:26Z`):
     - `comparison.p50_wall_clock_improvement_percent=73.274`
     - `comparison.byte_identical_to_serial=true`
     - `serial.p50_duration_seconds=0.317518`
     - `parallel.p50_duration_seconds=0.08486`
-- The local Task 72 artifact is implementation/regression evidence only. It must not be cited as
+- The local PDF parallel throughput artifact is implementation/regression evidence only. It must not be cited as
   production performance proof, throughput proof, tuning evidence, acceptance evidence, or a reason
   to set Hemma production defaults; accepted OCR performance evidence belongs to the Task 74/Story
   39 production-service benchmark path on Hemma after Task 76 parity.
@@ -217,7 +217,7 @@ preserving determinism, checkpoint/resume correctness, and production stability.
 - `pdm run lint-fix` (pass)
 - `pdm run typecheck-all` (pass: `Success: no issues found in 207 source files`)
 - `pdm run pytest-root tests/sir_convert_a_lot -q` (pass: `479 passed, 5 skipped`)
-- `pdm run benchmark:task-72 --total-pages 8 --repeats 5 --chunk-size-pages 1 --max-chunk-workers 4 --stub-work-seconds 0.03 --output-json build/benchmarks/story-20/task-72-parallel-throughput-local.json --data-root build/benchmarks/story-20/task-72-parallel-throughput-runtime` (pass: deterministic scheduling-regression guard only; not production performance proof)
+- `pdm run benchmark:pdf-parallel-throughput --total-pages 8 --repeats 5 --chunk-size-pages 1 --max-chunk-workers 4 --stub-work-seconds 0.03 --output-json build/benchmarks/pdf-throughput/pdf-parallel-throughput-local.json --data-root build/benchmarks/pdf-throughput/pdf-parallel-throughput-runtime` (pass: deterministic scheduling-regression guard only; not production performance proof)
 - `pdm run validate-tasks` (pass: `Validated 109 backlog files`)
 - `pdm run validate-docs` (pass: `Validated docs=137 rules=9`)
 - `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing` (pass)

@@ -7,7 +7,8 @@ Purpose:
 
 Relationships:
     - Imported by `sft_12hz_train_step.py` and `sft_12hz_eval.py`.
-    - Imported by the Story 30 backward-lineage probe to inspect the same
+    - Imported by the Qwen backward-lineage and fresh-start proof lane backward-lineage probe to
+    inspect the same
       forward graph without duplicating train-step assembly code.
 """
 

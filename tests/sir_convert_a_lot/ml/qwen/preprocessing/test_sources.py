@@ -2,7 +2,7 @@
 
 Purpose:
     Cover the bounded parsing and aggregation behavior for FLEURS, Waxholm,
-    RixVox, and staged-public-corpus loaders so data-ingest refactors can land
+    RixVox, and staged-public-corpus loaders so data-ingest behavior remains isolated
     without being hidden inside runner or row-processing tests.
 
 Relationships:

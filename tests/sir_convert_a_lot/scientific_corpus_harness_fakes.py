@@ -1,4 +1,4 @@
-"""Test helpers for the Task 12 scientific-corpus benchmark harness.
+"""Test helpers for the scientific-corpus benchmark scientific-corpus benchmark harness.
 
 Purpose:
     Keep scientific-corpus harness tests deterministic and readable by
@@ -184,7 +184,9 @@ def write_rubric(
     follow_up_required: bool = False,
     follow_up_note: str | None = None,
 ) -> None:
-    """Write a deterministic rubric JSON file for Task 12 manual-review logic tests."""
+    """Write a deterministic rubric JSON file for scientific-corpus benchmark manual-review logic
+    tests.
+    """
     from scripts.sir_convert_a_lot.benchmarking.scientific_corpus_utils import slug_for_pdf
 
     entries: list[dict[str, object]] = []

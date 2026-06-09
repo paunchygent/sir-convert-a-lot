@@ -5,8 +5,8 @@ Purpose:
     answer-key candidates and reviewed effective-IR application.
 
 Relationships:
-    - Consumed by `domain.digiexam_answer_key_completion` for Task 297 reports.
-    - Consumed by `domain.digiexam_ingestion_overlay` for Task 306 reviewed
+    - Consumed by `domain.digiexam_answer_key_completion` for reviewed choice candidate reports.
+    - Consumed by `domain.digiexam_ingestion_overlay` for Markdown to DOCX route6 reviewed
       application.
     - Keeps item-local answer payload semantics separate from provider
       transport, overlay parsing, and target renderers.

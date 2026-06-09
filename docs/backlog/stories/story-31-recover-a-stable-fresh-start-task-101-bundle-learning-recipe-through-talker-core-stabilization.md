@@ -26,7 +26,7 @@ related:
   - docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md
   - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -107,18 +107,18 @@ This story is intentionally split into two lanes:
 
 Build the exploration vehicle by reusing the pieces that are already good:
 
-- reuse [story30_freshstart_bundle.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/story30_freshstart_bundle.py)
+- reuse [qwen_freshstart_bundle.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/qwen_freshstart_bundle.py)
   for tiny truthful train-slice materialization
-- reuse [story30_backward_lineage_bundle.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/story30_backward_lineage_bundle.py)
+- reuse [qwen_backward_lineage_bundle.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_bundle.py)
   when exact selected failing rows are the sharper input than a prefix slice
 - reuse [backward_lineage_probe.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/backward_lineage_probe.py)
   as the fastest existing forward/backward experiment kernel on the real lane
-- reuse [story30_backward_lineage_hooks.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/story30_backward_lineage_hooks.py)
+- reuse [qwen_backward_lineage_hooks.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_hooks.py)
   and [sft_12hz_talker_core_trace.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_trace.py)
   for hook profiles and layer-target resolution
-- reuse [story30_freshstart_runtime.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/story30_freshstart_runtime.py)
+- reuse [qwen_freshstart_runtime.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/qwen_freshstart_runtime.py)
   plus `qwen-train launch/status` only when a candidate is promoted
-- reuse [story30_backward_lineage_detached.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/story30_backward_lineage_detached.py)
+- reuse [qwen_backward_lineage_detached.py](/Users/olofs_mba/Documents/Repos/sir-convert-a-lot/scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_detached.py)
   only for long-running or detached evidence that outlives the local session
 
 Avoid reusing the heavy parts for exploration:
@@ -221,10 +221,10 @@ the governing success criterion for future restart work.
   - `layer16_gated_fp32`
   - `layer16_gated_fp32_clamp_1e4`
 - The reusable exploration surface is:
-  - `pdm run qwen-story31-stability-lab run`
+  - `pdm run qwen-stability-lab run`
 - `T215` is now complete.
 - The mandatory local promotion command is:
-  - `pdm run qwen-story31-stability-lab gate --output-root <lab-output-root>`
+  - `pdm run qwen-stability-lab gate --output-root <lab-output-root>`
 - The gate consumes the existing `results.json` artifact and writes:
   - `gate.json`
   - `gate.md`
@@ -238,7 +238,7 @@ the governing success criterion for future restart work.
   - `layer16_gated_fp32_clamp_1e4` also reproduced the same pair-family seams
 - `T218` is now complete as negative exploration evidence:
   - output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task218-20260317t173122z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task218-20260317t173122z-a1`
   - both bounded late-middle attenuation variants changed the pair-family
     neighborhood
   - neither candidate kept the exact target seams finite, so both failed the
@@ -253,7 +253,7 @@ the governing success criterion for future restart work.
   - this remains provenance evidence for Story 31 decisions, not a Story 31
     mechanism or recovery proof
   - the dedicated committed control surface is:
-    `pdm run qwen-t221-historical-control <launch|status|stop>`
+    `pdm run qwen-historical-pilot-control <launch|status|stop>`
   - it validated the surviving historical bundle under
     `/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312h`
     with documented counts `8445` train / `8` eval and wrote an explicit
@@ -286,9 +286,9 @@ the governing success criterion for future restart work.
   - the exact checkpoint list and state-vector invariants are now documented
     before more bounded stabilizer claims are made
 - `T226` is now complete as the committed local parity-probe surface:
-  - the public command is `pdm run qwen-story31-parity-probe run`
+  - the public command is `pdm run qwen-parity-probe run`
   - it writes one compact comparison artifact set under
-    `build/verification/qwen-story31-parity-probe/`
+    `build/verification/qwen-parity-probe/`
   - it compares the real `execute_train_iteration` window against a
     reconstructed shared-forward optimizer-boundary window on the exact
     `T225` microbatch family
@@ -302,7 +302,7 @@ the governing success criterion for future restart work.
   remediation slice
 - `T219` is now recorded as completed negative evidence:
   - output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1`
   - the layer-16 handoff family did not earn promotion
 - `T228` is now complete as the ranked closure of that family:
   - `layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5` is the
@@ -312,14 +312,14 @@ the governing success criterion for future restart work.
   - `off` remains the baseline negative family
 - `T229` is now complete as the narrowed sub-boundary rerun:
   - output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task229-20260318t064712z-a1`
   - the target `sub_talker_loss` family localizes consistently to
     `talker_core.layer_16.input_layernorm`
   - Story 31 is therefore constrained to one pre-`input_layernorm`
     normalization-entry micro-family only
 - `T230` is now complete as a negative bounded rerun:
   - output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task230-20260318t082049z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task230-20260318t082049z-a1`
   - both entry-rescale variants reproduced the same failure matrix as the
     ranked baseline
   - no local winner earned promotion consideration
@@ -333,7 +333,7 @@ the governing success criterion for future restart work.
   - `T233` opens the next localized question
 - `T233` is now complete as the normalization-internal rerun:
   - output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task233-20260318t112544z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task233-20260318t112544z-a1`
   - pair and both single-row `sub_talker_loss` cases all first broke at
     `talker_core.layer_16.input_layernorm.output`
   - the broader nine-row matrix also first broke at
@@ -342,7 +342,7 @@ the governing success criterion for future restart work.
     post-normalization output-scale family only
 - `T234` is now complete as the bounded post-normalization output-scale rerun:
   - output root:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task234-20260318t123644z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task234-20260318t123644z-a1`
   - no variant stayed finite and no variant earned promotion
   - the strongest `0p5` member shifted `pair-sub-talker-loss` and
     `line-13-sub-talker-loss` downstream to `talker_core.layer_15.output`

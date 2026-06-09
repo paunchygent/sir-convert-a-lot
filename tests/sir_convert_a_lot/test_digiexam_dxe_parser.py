@@ -1,4 +1,4 @@
-"""Tests for the Task 274 DigiExam `.dxe` parser contract.
+"""Tests for the DigiExam `.dxe` parser contract.
 
 Purpose:
     Prove fixture-backed `.dxe` parsing, canonical structure extraction, and

@@ -97,7 +97,7 @@ executor.
   command.
 - `pdm run typecheck-all` -> Success: no issues found in 638 source files.
 - Focused runtime/checkpoint tests:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_engine_v2.py tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_task268_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_cancel_and_resume.py::test_resume_idempotency_replay_survives_public_key_rotation tests/sir_convert_a_lot/test_task72_parallel_execution_contracts.py::test_parallel_api_contract_parity_for_artifact_checkpoint_resume tests/sir_convert_a_lot/test_v2_pdf_checkpoint_planning_and_state.py -q`
+  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_engine_v2.py tests/sir_convert_a_lot/test_runtime_engine_conversion_failures.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_resume.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_partial_and_checkpoint_endpoints.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_cancel_and_resume.py::test_resume_idempotency_replay_survives_public_key_rotation tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py::test_parallel_api_contract_parity_for_artifact_checkpoint_resume tests/sir_convert_a_lot/test_v2_pdf_checkpoint_planning_and_state.py -q`
   -> 36 passed.
 - First `pdm run coverage-gate` caught the extracted chunk runner bypassing the
   parent executor's checkpoint-persistence patch boundary; isolated reruns of

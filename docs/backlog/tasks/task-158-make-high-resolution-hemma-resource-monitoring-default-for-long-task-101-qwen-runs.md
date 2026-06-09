@@ -1,6 +1,6 @@
 ---
 id: task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs
-title: Make high-resolution Hemma resource monitoring default for long Task 101 Qwen runs
+title: Make high-resolution Hemma resource monitoring default for long Qwen runs
 type: task
 status: completed
 priority: critical
@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md
   - docs/backlog/tasks/task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - https://www.mlflow.org/docs/latest/ml/tracking/system-metrics/
 labels:
@@ -86,12 +86,12 @@ That signal is too important to remain opt-in operator trivia.
 - [x] `pdm run format-all`
 - [x] `pdm run lint-fix`
 - [x] `pdm run typecheck-all`
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_task116_hemma_resource_monitor.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_task101_qwen_resource_monitor.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/test_hemma_resource_monitor.py tests/sir_convert_a_lot/test_task101_qwen_pilot.py tests/sir_convert_a_lot/test_task101_qwen_resource_monitor.py -q`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] Bounded Hemma proof shows the monitor launch and summary linked from the
-  corresponding Task 101 run.
+  corresponding Qwen pilot run.
 
 ## Checklist
 

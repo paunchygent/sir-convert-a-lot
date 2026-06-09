@@ -7,8 +7,9 @@ Purpose:
 Relationships:
     - Reuses the authenticated DigiExam service route helpers from the migration
       bundle API tests.
-    - Guards Task 333 product sequencing: non-matching corrections may proceed,
-      while `manual_matching_answer_key` remains blocked on Task 332.
+    - Guards non-matching correction apply runtime product sequencing: non-matching corrections may
+    proceed,
+      while `manual_matching_answer_key` remains blocked on matching correction block.
 """
 
 from __future__ import annotations

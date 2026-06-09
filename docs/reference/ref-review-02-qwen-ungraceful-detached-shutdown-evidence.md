@@ -16,7 +16,7 @@ related:
 Preserve the code-level evidence behind Review 02's detached shutdown finding
 without misclassifying the evidence note as a standalone backlog review.
 
-**Source:** `scripts/sir_convert_a_lot/devops/task101_qwen_pilot_runtime.py`
+**Source:** `scripts/sir_convert_a_lot/ml/qwen/training/detached_runtime/launch_service.py`
 **Lines:** `378-390`
 
 This orchestration code uses `docker stop` to terminate the detached pilot.
@@ -28,7 +28,7 @@ def stop_detached_pilot(launch: Task101DetachedLaunch) -> Task101DetachedStop:
     """Stop one detached Task 101 pilot container intentionally."""
     stop_output = docker_checked(
         ["stop", launch.container_name],
-        label="docker stop task101 detached pilot",
+        label="docker stop qwen detached pilot",
     )
     return Task101DetachedStop(
         stopped_at=_utc_now_iso(),

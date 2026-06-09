@@ -1,7 +1,7 @@
 """DataLoader tuning helpers for the patched Qwen trainer.
 
 Purpose:
-    Hold Task 101 dataloader and transfer-path tuning contracts so `sft_12hz.py`
+    Hold Qwen pilot training dataloader and transfer-path tuning contracts so `sft_12hz.py`
     stays focused on model/training orchestration while still exposing
     evidence-backed loader controls.
 
@@ -27,7 +27,7 @@ DEFAULT_NON_BLOCKING_TRANSFER = True
 
 @dataclass(frozen=True)
 class DataloaderTuning:
-    """Effective Task 101 dataloader and transfer controls."""
+    """Effective Qwen pilot training dataloader and transfer controls."""
 
     num_workers: int
     pin_memory: bool

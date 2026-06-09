@@ -1,6 +1,6 @@
 ---
 id: task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma
-title: Define saturation-oriented Task 101 Qwen launch profiles and acceptance gates on Hemma
+title: Define saturation-oriented Qwen launch profiles and acceptance gates on Hemma
 type: task
 status: proposed
 priority: high
@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs.md
   - docs/backlog/tasks/task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen

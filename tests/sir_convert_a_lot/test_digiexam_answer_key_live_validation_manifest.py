@@ -1,13 +1,13 @@
-"""Tests for Task 309 DigiExam answer-key live-validation manifests.
+"""Tests for answer-key live validation DigiExam answer-key live-validation manifests.
 
 Purpose:
-    Prove that the versioned Task 309 DigiExam DXE fixture corpus produces
+    Prove that the versioned answer-key live validation DigiExam DXE fixture corpus produces
     item-addressable validation metadata and expected-answer worklists without
     leaking raw prompts, alternatives, images, or provider artifacts.
 
 Relationships:
     - Exercises `domain.digiexam_answer_key_live_validation_manifest`.
-    - Guards the Task 309 corpus/golden groundwork before Hemma live runs.
+    - Guards the answer-key live validation corpus/golden groundwork before Hemma live runs.
 """
 
 from __future__ import annotations
@@ -25,33 +25,33 @@ from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
     build_answer_key_provider_run_metadata,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_corpus_coverage import (
-    build_task309_corpus_coverage_proof,
+    build_answer_key_corpus_coverage_proof,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_live_corpus_execution import (
-    Task309AdvisoryCorpusRunReport,
+    AnswerKeyAdvisoryCorpusRunReport,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_openai_eval_gate import (
     OpenAIDataURLVisionCandidatePlanner,
 )
 from scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation import (
-    main as task309_runner_main,
+    main as answer_key_runner_main,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_goldens import (
-    TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION,
-    validate_task309_expected_answer_manifest,
+    EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION,
+    validate_expected_answer_manifest,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    TASK309_CORPUS_ID,
-    TASK309_CORPUS_MANIFEST_SCHEMA_VERSION,
-    TASK309_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION,
-    TASK309_FIXTURE_POLICY,
-    Task309AssetEvalPolicy,
-    build_task309_expected_answer_worklist,
-    build_task309_live_validation_manifest,
-    write_task309_json,
+    ANSWER_KEY_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION,
+    ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID,
+    ANSWER_KEY_LIVE_VALIDATION_CORPUS_MANIFEST_SCHEMA_VERSION,
+    ANSWER_KEY_LIVE_VALIDATION_FIXTURE_POLICY,
+    AnswerKeyAssetEvalPolicy,
+    build_answer_key_expected_answer_worklist,
+    build_answer_key_live_validation_manifest,
+    write_answer_key_json,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
@@ -103,14 +103,14 @@ def test_answer_key_live_validation_dispatches_to_digiexam_source(
     assert received == [["status"]]
 
 
-def test_task309_manifest_records_versioned_fixture_corpus() -> None:
-    manifest = build_task309_live_validation_manifest(_CORPUS_ROOT)
+def test_manifest_records_versioned_fixture_corpus() -> None:
+    manifest = build_answer_key_live_validation_manifest(_CORPUS_ROOT)
     payload = manifest.to_payload()
     summary = _object(payload["summary"])
 
-    assert payload["schema_version"] == TASK309_CORPUS_MANIFEST_SCHEMA_VERSION
-    assert payload["corpus_id"] == TASK309_CORPUS_ID
-    assert payload["fixture_policy"] == TASK309_FIXTURE_POLICY
+    assert payload["schema_version"] == ANSWER_KEY_LIVE_VALIDATION_CORPUS_MANIFEST_SCHEMA_VERSION
+    assert payload["corpus_id"] == ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID
+    assert payload["fixture_policy"] == ANSWER_KEY_LIVE_VALIDATION_FIXTURE_POLICY
     assert summary["file_count"] == 23
     assert summary["item_count"] == 317
     assert summary["eligible_item_count"] == 42
@@ -132,8 +132,8 @@ def test_task309_manifest_records_versioned_fixture_corpus() -> None:
     }
 
 
-def test_task309_corpus_coverage_proof_reports_missing_eligible_items() -> None:
-    proof = build_task309_corpus_coverage_proof(
+def test_corpus_coverage_proof_reports_missing_eligible_items() -> None:
+    proof = build_answer_key_corpus_coverage_proof(
         manifest_items={
             ("exam-a.dxe", "item-001"): {"eligible": True, "skip_reason": "none"},
             ("exam-a.dxe", "item-002"): {"eligible": False, "skip_reason": "unsupported"},
@@ -164,23 +164,23 @@ def test_task309_corpus_coverage_proof_reports_missing_eligible_items() -> None:
     )
 
 
-def test_task309_expected_answer_worklist_contains_only_eligible_items() -> None:
-    manifest = build_task309_live_validation_manifest(_CORPUS_ROOT)
-    worklist = build_task309_expected_answer_worklist(manifest)
+def test_expected_answer_worklist_contains_only_eligible_items() -> None:
+    manifest = build_answer_key_live_validation_manifest(_CORPUS_ROOT)
+    worklist = build_answer_key_expected_answer_worklist(manifest)
     payload = worklist.to_payload()
     items = _objects(payload["items"])
 
-    assert payload["schema_version"] == TASK309_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION
-    assert payload["corpus_id"] == TASK309_CORPUS_ID
+    assert payload["schema_version"] == ANSWER_KEY_EXPECTED_ANSWER_WORKLIST_SCHEMA_VERSION
+    assert payload["corpus_id"] == ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID
     assert len(items) == 42
     assert {item["expected_answer_state"] for item in items} == {"pending_teacher_verified_golden"}
     assert {item["output_mode"] for item in items} == {"json_schema", "vllm_choice"}
 
 
-def test_task309_vision_asset_eval_policy_marks_supported_asset_items_eligible() -> None:
-    manifest = build_task309_live_validation_manifest(
+def test_vision_asset_eval_policy_marks_supported_asset_items_eligible() -> None:
+    manifest = build_answer_key_live_validation_manifest(
         _CORPUS_ROOT,
-        asset_eval_policy=Task309AssetEvalPolicy(allow_supported_embedded_assets=True),
+        asset_eval_policy=AnswerKeyAssetEvalPolicy(allow_supported_embedded_assets=True),
     )
     payload = manifest.to_payload()
     summary = _object(payload["summary"])
@@ -204,16 +204,16 @@ def test_task309_vision_asset_eval_policy_marks_supported_asset_items_eligible()
     )
 
 
-def test_task309_manifest_outputs_do_not_persist_raw_prompt_or_provider_content(
+def test_manifest_outputs_do_not_persist_raw_prompt_or_provider_content(
     tmp_path: Path,
 ) -> None:
-    manifest = build_task309_live_validation_manifest(_CORPUS_ROOT)
-    worklist = build_task309_expected_answer_worklist(manifest)
+    manifest = build_answer_key_live_validation_manifest(_CORPUS_ROOT)
+    worklist = build_answer_key_expected_answer_worklist(manifest)
     manifest_path = tmp_path / "validation-corpus-manifest.json"
     worklist_path = tmp_path / "expected-answer-worklist.json"
 
-    write_task309_json(manifest.to_payload(), manifest_path)
-    write_task309_json(worklist.to_payload(), worklist_path)
+    write_answer_key_json(manifest.to_payload(), manifest_path)
+    write_answer_key_json(worklist.to_payload(), worklist_path)
 
     combined_text = manifest_path.read_text(encoding="utf-8")
     combined_text += worklist_path.read_text(encoding="utf-8")
@@ -221,8 +221,8 @@ def test_task309_manifest_outputs_do_not_persist_raw_prompt_or_provider_content(
         assert marker not in combined_text
 
 
-def test_task309_expected_answer_manifest_validates_teacher_verified_goldens() -> None:
-    report = validate_task309_expected_answer_manifest(
+def test_expected_answer_manifest_validates_teacher_verified_goldens() -> None:
+    report = validate_expected_answer_manifest(
         corpus_root=_CORPUS_ROOT,
         expected_answer_manifest_path=_EXPECTED_ANSWER_MANIFEST,
     )
@@ -237,7 +237,7 @@ def test_task309_expected_answer_manifest_validates_teacher_verified_goldens() -
     assert summary["adjudication_required_count"] == 0
 
 
-def test_task309_expected_answer_manifest_rejects_wrong_but_valid_shape(
+def test_expected_answer_manifest_rejects_wrong_but_valid_shape(
     tmp_path: Path,
 ) -> None:
     payload = _object(json.loads(_EXPECTED_ANSWER_MANIFEST.read_text(encoding="utf-8")))
@@ -247,9 +247,9 @@ def test_task309_expected_answer_manifest_rejects_wrong_but_valid_shape(
         "correct_alternative_ids": [9999],
     }
     bad_manifest_path = tmp_path / "expected-answer-manifest-bad.json"
-    write_task309_json(payload, bad_manifest_path)
+    write_answer_key_json(payload, bad_manifest_path)
 
-    report = validate_task309_expected_answer_manifest(
+    report = validate_expected_answer_manifest(
         corpus_root=_CORPUS_ROOT,
         expected_answer_manifest_path=bad_manifest_path,
     )
@@ -258,8 +258,8 @@ def test_task309_expected_answer_manifest_rejects_wrong_but_valid_shape(
     assert "invalid_expected_answer_payload" in {issue.code for issue in report.issues}
 
 
-def test_task309_runner_validates_goldens_and_writes_retained_report(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_runner_validates_goldens_and_writes_retained_report(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "validate-goldens",
             "--corpus-root",
@@ -276,12 +276,12 @@ def test_task309_runner_validates_goldens_and_writes_retained_report(tmp_path: P
     )
 
     assert exit_code == 0
-    assert report_payload["corpus_id"] == TASK309_CORPUS_ID
+    assert report_payload["corpus_id"] == ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID
     assert _object(report_payload["summary"])["valid"] is True
 
 
-def test_task309_runner_previews_consumer_friendly_request_shape(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_runner_previews_consumer_friendly_request_shape(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "preview-request-shape",
             "--corpus-root",
@@ -305,8 +305,8 @@ def test_task309_runner_previews_consumer_friendly_request_shape(tmp_path: Path)
     assert (tmp_path / "request-shape-preview.md").exists()
 
 
-def test_task309_runner_applies_qwen36_llama_cpp_profile_defaults(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_runner_applies_qwen36_llama_cpp_profile_defaults(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "preview-request-shape",
             "--provider-profile",
@@ -350,7 +350,7 @@ def test_evaluate_advisory_corpus_derives_reports_root_from_output_root(
     assert args.reports_root is None
 
 
-def test_task326_openai_vision_planner_uses_data_url_image_parts(tmp_path: Path) -> None:
+def test_openai_vision_planner_uses_data_url_image_parts(tmp_path: Path) -> None:
     source_path = _CORPUS_ROOT / "1776888013-ak7-lag-och-ratt.dxe"
     exam = build_digiexam_intermediate_exam(DigiExamDxeParser().parse_file(source_path))
     item = next(item for item in exam.items if item.item_id == "item-003")
@@ -368,7 +368,7 @@ def test_task326_openai_vision_planner_uses_data_url_image_parts(tmp_path: Path)
         media_path=media_path,
     )
 
-    plan = planner.plan_candidate(job_id="task326:test", item=item, profile=profile)
+    plan = planner.plan_candidate(job_id="openai-answer-key:test", item=item, profile=profile)
 
     assert plan is not None
     image_parts = tuple(
@@ -380,13 +380,13 @@ def test_task326_openai_vision_planner_uses_data_url_image_parts(tmp_path: Path)
     assert image_parts[0].url.startswith("data:image/png;base64,")
 
 
-def test_task326_openai_runner_blocks_without_sanctioned_credential(
+def test_openai_runner_blocks_without_sanctioned_credential(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     monkeypatch.delenv("SIR_CONVERT_A_LOT_OPENAI_API_KEY", raising=False)
 
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "run-openai-advisory-corpus",
             "--openai-provider-profile",
@@ -409,10 +409,10 @@ def test_task326_openai_runner_blocks_without_sanctioned_credential(
     assert report_payload["report_paths"] == []
 
 
-def test_task309_raw_llama_runtime_stays_text_only_without_named_vision_profile(
+def test_raw_llama_runtime_stays_text_only_without_named_vision_profile(
     tmp_path: Path,
 ) -> None:
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "preview-request-shape",
             "--provider-runtime",
@@ -436,7 +436,7 @@ def test_task309_raw_llama_runtime_stays_text_only_without_named_vision_profile(
     assert report_payload["ok"] is True
 
 
-def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
+def test_advisory_corpus_keeps_vision_media_under_output_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -444,14 +444,14 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
     reports_root = tmp_path / "custom-reports"
     captured: dict[str, object] = {}
 
-    def fake_run_task309_advisory_corpus(
+    def fake_run_answer_key_advisory_corpus(
         **kwargs: object,
-    ) -> Task309AdvisoryCorpusRunReport:
+    ) -> AnswerKeyAdvisoryCorpusRunReport:
         captured.update(kwargs)
         provider_runtime = kwargs["provider_runtime"]
         assert isinstance(provider_runtime, AnswerKeyStructuredProviderRuntime)
-        return Task309AdvisoryCorpusRunReport(
-            schema_version="task309_granite_advisory_corpus_run_v1",
+        return AnswerKeyAdvisoryCorpusRunReport(
+            schema_version="answer_key_granite_advisory_corpus_run_v1",
             provider_url=str(kwargs["provider_url"]),
             model=str(kwargs["model"]),
             provider_runtime=provider_runtime.value,
@@ -478,11 +478,11 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.run_digiexam_answer_key_live_validation"
-        ".run_task309_advisory_corpus",
-        fake_run_task309_advisory_corpus,
+        ".run_answer_key_advisory_corpus",
+        fake_run_answer_key_advisory_corpus,
     )
 
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "run-advisory-corpus",
             "--provider-profile",
@@ -504,14 +504,14 @@ def test_task309_advisory_corpus_keeps_vision_media_under_output_root(
     assert captured["supports_multimodal_vision"] is True
 
 
-def test_task309_provider_status_surface_is_persistent_by_default(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_provider_status_surface_is_persistent_by_default(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "provider-status",
             "--output-root",
             tmp_path.as_posix(),
             "--container-name",
-            "sir-convert-task309-test-missing",
+            "sir-convert-answer-key-live-validation-test-missing",
             "--provider-url",
             "http://127.0.0.1:9",
             "--port",
@@ -526,19 +526,19 @@ def test_task309_provider_status_surface_is_persistent_by_default(tmp_path: Path
 
     assert exit_code == 0
     assert report_payload["persistent_policy"] == "leave_running_until_operator_stop"
-    assert report_payload["container_name"] == "sir-convert-task309-test-missing"
+    assert report_payload["container_name"] == "sir-convert-answer-key-live-validation-test-missing"
     assert report_payload["ready"] is False
     assert (tmp_path / "provider-status.md").exists()
 
 
-def test_task309_provider_launch_surface_dry_runs_persistent_vllm_command(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_provider_launch_surface_dry_runs_persistent_vllm_command(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "launch-provider",
             "--output-root",
             tmp_path.as_posix(),
             "--container-name",
-            "sir-convert-task309-test",
+            "sir-convert-answer-key-live-validation-test",
             "--port",
             "8017",
             "--host-cache-path",
@@ -567,7 +567,7 @@ def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _pretend_current_process_is_hemma(monkeypatch)
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "launch-llama-provider",
             "--provider-profile",
@@ -608,8 +608,8 @@ def test_answer_key_llama_provider_launch_surface_dry_runs_hemma_local_command(
     assert (tmp_path / "llama-provider-launch.md").exists()
 
 
-def test_task309_microprobe_surface_blocks_without_ready_provider(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_microprobe_surface_blocks_without_ready_provider(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "microprobes",
             "--output-root",
@@ -632,8 +632,8 @@ def test_task309_microprobe_surface_blocks_without_ready_provider(tmp_path: Path
     assert report_payload["results"] == []
 
 
-def test_task309_in_process_corpus_surface_blocks_without_ready_provider(tmp_path: Path) -> None:
-    exit_code = task309_runner_main(
+def test_in_process_corpus_surface_blocks_without_ready_provider(tmp_path: Path) -> None:
+    exit_code = answer_key_runner_main(
         [
             "run-advisory-corpus",
             "--output-root",
@@ -663,16 +663,16 @@ def test_task309_in_process_corpus_surface_blocks_without_ready_provider(tmp_pat
     assert metadata["model"] == "ibm-granite/granite-4.1-8b-fp8"
 
 
-def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
+def test_evaluation_uses_qwen_run_metadata_without_granite_fallback(
     tmp_path: Path,
 ) -> None:
     output_root = tmp_path / "qwen-eval"
     reports_root = output_root / "advisory-corpus-reports"
     reports_root.mkdir(parents=True)
-    write_task309_json(
+    write_answer_key_json(
         {
             "schema_version": "digiexam_answer_key_completion_report_v1",
-            "job_id": "task309:1776888013-ak7-lag-och-ratt",
+            "job_id": "answer-key-live-validation:1776888013-ak7-lag-och-ratt",
             "completion_mode": "local_llm_suggest_missing_machine_marked",
             "items": [
                 {
@@ -686,9 +686,9 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
         },
         reports_root / "1776888013-ak7-lag-och-ratt.answer-key-completion-report.json",
     )
-    write_task309_json(
+    write_answer_key_json(
         {
-            "schema_version": "task309_granite_advisory_corpus_run_v1",
+            "schema_version": "answer_key_granite_advisory_corpus_run_v1",
             "provider_run_metadata": _provider_run_metadata_payload(
                 profile_name=AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
                 reports_root=reports_root,
@@ -698,7 +698,7 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
         output_root / "in-process-advisory-corpus-run.json",
     )
 
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "evaluate-advisory-corpus",
             "--provider-profile",
@@ -742,23 +742,23 @@ def test_task309_evaluation_uses_qwen_run_metadata_without_granite_fallback(
     assert "ibm-granite/granite-4.1-8b-fp8" not in str(evaluation["model_settings_json"])
 
 
-def test_task309_evaluation_reports_unavailable_metadata_without_defaulting_to_granite(
+def test_evaluation_reports_unavailable_metadata_without_defaulting_to_granite(
     tmp_path: Path,
 ) -> None:
     output_root = tmp_path / "legacy-eval"
     reports_root = output_root / "advisory-corpus-reports"
     reports_root.mkdir(parents=True)
-    write_task309_json(
+    write_answer_key_json(
         {
             "schema_version": "digiexam_answer_key_completion_report_v1",
-            "job_id": "task309:1776888013-ak7-lag-och-ratt",
+            "job_id": "answer-key-live-validation:1776888013-ak7-lag-och-ratt",
             "completion_mode": "local_llm_suggest_missing_machine_marked",
             "items": [],
         },
         reports_root / "1776888013-ak7-lag-och-ratt.answer-key-completion-report.json",
     )
 
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "evaluate-advisory-corpus",
             "--expected-answer-manifest",
@@ -780,25 +780,25 @@ def test_task309_evaluation_reports_unavailable_metadata_without_defaulting_to_g
     assert "ibm-granite/granite-4.1-8b-fp8" not in str(evaluation["model_settings_json"])
 
 
-def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
+def test_evaluation_upgrades_legacy_qwen_run_report_metadata(
     tmp_path: Path,
 ) -> None:
     output_root = tmp_path / "legacy-qwen-eval"
     reports_root = output_root / "advisory-corpus-reports"
     reports_root.mkdir(parents=True)
     report_path = reports_root / "1776888013-ak7-lag-och-ratt.answer-key-completion-report.json"
-    write_task309_json(
+    write_answer_key_json(
         {
             "schema_version": "digiexam_answer_key_completion_report_v1",
-            "job_id": "task309:1776888013-ak7-lag-och-ratt",
+            "job_id": "answer-key-live-validation:1776888013-ak7-lag-och-ratt",
             "completion_mode": "local_llm_suggest_missing_machine_marked",
             "items": [],
         },
         report_path,
     )
-    write_task309_json(
+    write_answer_key_json(
         {
-            "schema_version": "task309_granite_advisory_corpus_run_v1",
+            "schema_version": "answer_key_granite_advisory_corpus_run_v1",
             "provider_url": "http://127.0.0.1:8082",
             "model": "qwen3.6-27b-q6k",
             "provider_runtime": "llama-cpp-json-schema",
@@ -807,7 +807,7 @@ def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
         output_root / "in-process-advisory-corpus-run.json",
     )
 
-    exit_code = task309_runner_main(
+    exit_code = answer_key_runner_main(
         [
             "evaluate-advisory-corpus",
             "--provider-profile",
@@ -826,7 +826,7 @@ def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
     metadata = _object(json.loads(str(evaluation["provider_run_metadata_json"])))
 
     assert exit_code == 0
-    assert metadata["metadata_source"] == "legacy_task309_run_report_profile_match"
+    assert metadata["metadata_source"] == "legacy_answer_key_run_report_profile_match"
     assert metadata["profile_name"] == "qwen36-llama-cpp"
     assert metadata["model"] == "qwen3.6-27b-q6k"
     assert metadata["context_window_tokens"] == 16384
@@ -838,11 +838,11 @@ def test_task309_evaluation_upgrades_legacy_qwen_run_report_metadata(
     assert "ibm-granite/granite-4.1-8b-fp8" not in str(evaluation["model_settings_json"])
 
 
-def test_task309_expected_answer_manifest_has_committed_schema() -> None:
+def test_expected_answer_manifest_has_committed_schema() -> None:
     payload = _object(json.loads(_EXPECTED_ANSWER_MANIFEST.read_text(encoding="utf-8")))
 
-    assert payload["schema_version"] == TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION
-    assert payload["corpus_id"] == TASK309_CORPUS_ID
+    assert payload["schema_version"] == EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION
+    assert payload["corpus_id"] == ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID
 
 
 def _object(value: object) -> dict[str, object]:

@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-195-land-an-explicit-task-101-text-embedding-mask-policy-and-text-span-only-mitigation.md
   - docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -44,9 +44,9 @@ enough to clear the old failure window and the preferred next review gate.
 ## Prepared Proof Surface
 
 - Local deterministic artifact root:
-  `build/verification/qwen-t197-proof/<proof-id>/`
+  `build/verification/qwen-fallback-proof/<proof-id>/`
 - Canonical wrapper:
-  `pdm run qwen-t197-proof`
+  `pdm run qwen-fallback-proof`
 - Wrapper-generated artifacts:
   - `proof-config.json`
   - `plan.md`
@@ -64,22 +64,22 @@ enough to clear the old failure window and the preferred next review gate.
 ## Exact Command Sequence
 
 1. Prepare the proof package locally:
-   `pdm run qwen-t197-proof prepare --proof-id <proof-id> --skip-build`
+   `pdm run qwen-fallback-proof prepare --proof-id <proof-id> --skip-build`
 1. Launch the detached bounded replay:
-   `pdm run qwen-t197-proof launch-window --proof-id <proof-id>`
+   `pdm run qwen-fallback-proof launch-window --proof-id <proof-id>`
 1. Inspect the bounded replay:
-   `pdm run qwen-t197-proof status-window --proof-id <proof-id>`
+   `pdm run qwen-fallback-proof status-window --proof-id <proof-id>`
 1. Launch the detached `1500` continuation only after the replay passes:
-   `pdm run qwen-t197-proof launch-gate1500 --proof-id <proof-id>`
+   `pdm run qwen-fallback-proof launch-gate1500 --proof-id <proof-id>`
 1. Inspect the detached `1500` continuation:
-   `pdm run qwen-t197-proof status-gate1500 --proof-id <proof-id>`
+   `pdm run qwen-fallback-proof status-gate1500 --proof-id <proof-id>`
 
 ## Outcome
 
 - Hemma proof id:
   `task197-20260316t183555z-a1`
 - Local artifact root:
-  `build/verification/qwen-t197-proof/task197-20260316t183555z-a1/`
+  `build/verification/qwen-fallback-proof/task197-20260316t183555z-a1/`
 - Remote replay launch root:
   `/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-training/task197-20260316t183555z-a1-window`
 - Replay result:
@@ -97,7 +97,7 @@ enough to clear the old failure window and the preferred next review gate.
 
 ## Deliverables
 
-- [x] One committed `qwen-t197-proof` wrapper prepares deterministic local
+- [x] One committed `qwen-fallback-proof` wrapper prepares deterministic local
   proof artifacts and renders the exact detached Hemma commands/checklist.
 - [x] One bounded replay artifact proves whether the mask-only mitigation
   clears the `1417` window.

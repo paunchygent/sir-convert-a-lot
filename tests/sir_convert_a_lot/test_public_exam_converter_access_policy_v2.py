@@ -5,7 +5,7 @@ Purpose:
     HTTP adapters, token codecs, or service-route state.
 
 Relationships:
-    - Covers Task 292 public Exam Converter grant and lease policy.
+    - Covers public Exam Converter grant public Exam Converter grant and lease policy.
     - Complements runtime route tests by asserting exact decision reasons.
 """
 

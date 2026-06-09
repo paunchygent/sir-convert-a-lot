@@ -5,7 +5,7 @@ Purpose:
     new third-party dependency for bounded operational probes.
 
 Relationships:
-    - Used by `task116_hemma_resource_monitor_runtime.py` so Task 116 can persist
+    - Used by `hemma_resource_monitor_runtime.py` so Hemma resource monitor can persist
       host CPU and RAM alongside GPU utilization for long preprocessing runs.
     - Reads `/proc/stat` and `/proc/meminfo`, so this helper is Linux-only by
       design and intended for Hemma execution.

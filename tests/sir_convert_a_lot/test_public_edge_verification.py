@@ -1,4 +1,4 @@
-"""Tests for durable Task 254 public-edge evidence capture.
+"""Tests for durable public-edge verification public-edge evidence capture.
 
 Purpose:
     Lock public HTTPS, nginx-proxy, and unknown-host proof artifacts emitted by
@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.devops.public_edge_verification`.
-    - Complements Task 254 production public-edge recovery contracts.
+    - Complements public-edge verification production public-edge recovery contracts.
 """
 
 from __future__ import annotations

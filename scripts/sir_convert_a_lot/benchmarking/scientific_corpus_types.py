@@ -1,4 +1,4 @@
-"""Typed contracts for the Task 12 scientific-corpus harness.
+"""Typed contracts for the scientific-corpus benchmark scientific-corpus harness.
 
 Purpose:
     Centralize TypedDict, protocol, and profile types for deterministic
@@ -66,7 +66,7 @@ class LaneSummary(TypedDict):
 
 
 class LaneJobRecord(TypedDict):
-    """Per-job execution record for Task 12 evidence."""
+    """Per-job execution record for scientific-corpus benchmark evidence."""
 
     source_file: str
     source_size_bytes: int
@@ -145,7 +145,7 @@ class ManualVerdict(TypedDict):
 
 
 class DecisionSummary(TypedDict):
-    """Task 12 manual-review decision payload."""
+    """scientific-corpus benchmark manual-review decision payload."""
 
     mode: str
     manual_review_completed: bool
@@ -156,7 +156,7 @@ class DecisionSummary(TypedDict):
 
 
 class GovernanceSummary(TypedDict):
-    """Governance compatibility assessment payload."""
+    """Governance-fit assessment payload."""
 
     production_profile: JobSpecProfile
     quality_winner: str | None
@@ -173,7 +173,7 @@ class ServiceRevision(TypedDict):
 
 
 class BenchmarkPayload(TypedDict):
-    """Final Task 12 machine-readable artifact."""
+    """Final scientific-corpus benchmark machine-readable artifact."""
 
     benchmark_id: str
     generated_at: str

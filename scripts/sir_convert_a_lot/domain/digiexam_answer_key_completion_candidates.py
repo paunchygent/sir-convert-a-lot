@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Consumes `domain.digiexam_ir_contracts` item structures.
     - Uses `domain.structured_llm_contracts.StructuredLLMRequest` as the
-      provider boundary from Task 296.
+      provider boundary from structured LLM provider harness.
     - Feeds `domain.digiexam_answer_key_completion` orchestration and
       validation without coupling orchestration to vLLM, Granite, or JSON
       Schema implementation details.
@@ -256,7 +256,7 @@ def candidate_request_for_item(
     item: DigiExamIrItem,
     profile: StructuredLLMProviderProfile | None,
 ) -> DigiExamCompletionCandidatePlan | None:
-    """Build a provider plan using the default planner for compatibility."""
+    """Build a provider plan using the default planner."""
 
     return answer_key_candidate_planner_for_profile(profile).plan_candidate(
         job_id=job_id,

@@ -4,7 +4,7 @@ Purpose:
     Capture sanitized low-level diagnostics from Docling's code/formula VLM path.
 
 Relationships:
-    Installed by `infrastructure.docling_backend`; read by Task 344 replay.
+    Installed by `infrastructure.docling_backend`; read by Docling page-window replay replay.
 """
 
 from __future__ import annotations

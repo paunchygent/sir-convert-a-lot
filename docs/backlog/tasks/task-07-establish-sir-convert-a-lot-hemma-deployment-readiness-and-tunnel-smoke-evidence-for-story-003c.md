@@ -1,5 +1,5 @@
 ---
-id: task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c
+id: task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-consumer-integration
 title: Establish Sir Convert-a-Lot Hemma deployment readiness and tunnel smoke evidence for Story 003c
 type: task
 status: completed
@@ -8,9 +8,9 @@ created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
-  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
+  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-consumer-integration.md
   - docs/converters/internal_adapter_contract_v1.md
-  - docs/reference/ref-story-003c-consumer-integration-handoff.md
+  - docs/reference/ref-consumer-integration-handoff.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - .codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md
   - .codex/rules/030-conversion-workflows.md
@@ -18,7 +18,7 @@ labels:
   - ops
   - hemma
   - tunnel
-  - story-003c
+  - consumer-integration
 ---
 
 PR-sized execution unit; may be linked to a story or standalone.

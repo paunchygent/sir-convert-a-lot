@@ -230,7 +230,8 @@ $$
 math block
 $$
 
-End of doc."""
+End of doc.
+"""
         result = normalize_lint_rules(input_md)
         assert "<https://example.com>" in result
         assert "* code" in result  # preserved in fence

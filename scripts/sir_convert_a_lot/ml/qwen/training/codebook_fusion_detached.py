@@ -1,7 +1,7 @@
-"""Detached host-process helpers for the Task 203 codebook-fusion proof.
+"""Detached host-process helpers for the Qwen codebook-fusion proof codebook-fusion proof.
 
 Purpose:
-    Launch and inspect the Hemma-side Task 203 proof as a detached host
+    Launch and inspect the Hemma-side Qwen codebook-fusion proof proof as a detached host
     process so GPU evidence collection survives the local client session.
 
 Relationships:
@@ -35,7 +35,7 @@ _FAILURE_NAME = "failure.txt"
 
 @dataclass(frozen=True)
 class DetachedCodebookFusionLaunch:
-    """Deterministic launch metadata for one detached Task 203 proof run."""
+    """Deterministic launch metadata for one detached Qwen codebook-fusion proof proof run."""
 
     generated_at: str
     launch_id: str
@@ -52,7 +52,7 @@ class DetachedCodebookFusionLaunch:
 
 @dataclass(frozen=True)
 class DetachedCodebookFusionStatus:
-    """Deterministic status view for one detached Task 203 proof run."""
+    """Deterministic status view for one detached Qwen codebook-fusion proof proof run."""
 
     checked_at: str
     launch_id: str
@@ -69,14 +69,14 @@ class DetachedCodebookFusionStatus:
 
 
 def default_launch_id() -> str:
-    """Return one deterministic launch id for a new Task 203 proof run."""
+    """Return one deterministic launch id for a new Qwen codebook-fusion proof proof run."""
     from datetime import UTC, datetime
 
     return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
 def default_output_root() -> Path:
-    """Return the canonical output root for detached Task 203 proof runs."""
+    """Return the canonical output root for detached Qwen codebook-fusion proof proof runs."""
     return DEFAULT_OUTPUT_ROOT
 
 
@@ -91,12 +91,12 @@ def worker_status_path(output_root: Path) -> Path:
 
 
 def report_path(output_root: Path) -> Path:
-    """Return the canonical Task 203 report artifact path."""
+    """Return the canonical Qwen codebook-fusion proof report artifact path."""
     return output_root / _REPORT_NAME
 
 
 def failure_path(output_root: Path) -> Path:
-    """Return the canonical Task 203 failure artifact path."""
+    """Return the canonical Qwen codebook-fusion proof failure artifact path."""
     return output_root / _FAILURE_NAME
 
 
@@ -114,7 +114,7 @@ def normalize_proof_args(output_root: Path, raw_proof_args: Sequence[str]) -> tu
 
 
 def build_detached_worker_command(output_root: Path, proof_args: Sequence[str]) -> list[str]:
-    """Build the background worker command for one detached Task 203 proof run."""
+    """Build the background worker command for one detached Qwen codebook-fusion proof proof run."""
     normalized_proof_args = normalize_proof_args(output_root, proof_args)
     return [
         sys.executable,
@@ -134,7 +134,7 @@ def launch_detached_codebook_fusion_proof(
     proof_args: Sequence[str],
     launch_id: str | None = None,
 ) -> DetachedCodebookFusionLaunch:
-    """Launch one detached Task 203 proof worker and return launch metadata."""
+    """Launch one detached Qwen codebook-fusion proof proof worker and return launch metadata."""
     output_root.mkdir(parents=True, exist_ok=True)
     resolved_launch_id = default_launch_id() if launch_id is None else str(launch_id)
     resolved_log_path = log_path(output_root)
@@ -169,7 +169,7 @@ def launch_detached_codebook_fusion_proof(
 def inspect_detached_codebook_fusion_proof(
     launch: DetachedCodebookFusionLaunch,
 ) -> DetachedCodebookFusionStatus:
-    """Inspect one detached Task 203 proof worker plus its canonical artifacts."""
+    """Inspect one detached Qwen codebook-fusion proof proof worker plus its canonical artifacts."""
     resolved_output_root = Path(launch.output_root)
     report = _load_optional_json(report_path(resolved_output_root))
     failure_text = _load_optional_text(failure_path(resolved_output_root))

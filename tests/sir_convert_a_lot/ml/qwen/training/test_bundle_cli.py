@@ -1,4 +1,4 @@
-"""Tests for the restored Task 101 training-bundle CLI surface.
+"""Tests for the restored Qwen pilot training training-bundle CLI surface.
 
 Purpose:
     Verify that the restored public bundle-build command parses and dispatches
@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `cli/ml/qwen_bundle.py`.
-    - Protects the restored `task-101-pilot-bundle` public operator contract.
+    - Protects the restored `qwen-pilot-bundle` public operator contract.
 """
 
 from __future__ import annotations

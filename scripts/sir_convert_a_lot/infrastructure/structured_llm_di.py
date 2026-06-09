@@ -1,7 +1,7 @@
 """Dishka composition for structured LLM providers.
 
 Purpose:
-    Compose the Task 296 structured-provider harness from service-loaded
+    Compose the structured LLM provider harness structured-provider harness from service-loaded
     runtime configuration, HTTP client lifecycle, and provider adapter types.
 
 Relationships:

@@ -1,6 +1,6 @@
 ---
 id: task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training
-title: Add standalone eval and scheduled train-stop-resume control for Task 101 Qwen training
+title: Add standalone eval and scheduled train-stop-resume control for Qwen training
 type: task
 status: in_progress
 priority: critical

@@ -1,6 +1,6 @@
 ---
 id: task-183-control-checkpoint-cadence-and-retention-for-scheduled-task-101-qwen-training
-title: Control checkpoint cadence and retention for scheduled Task 101 Qwen training
+title: Control checkpoint cadence and retention for scheduled Qwen training
 type: task
 status: completed
 priority: critical
@@ -27,7 +27,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 ## Objective
 
 Define and implement the canonical checkpoint and eval cadence policy for
-scheduled Task 101 Qwen runs so durable checkpoints happen at deliberate,
+scheduled Qwen runs so durable checkpoints happen at deliberate,
 operator-useful boundaries rather than at smoke-test frequency, while retaining
 only the newest `3` durable trainer-state checkpoints.
 
@@ -107,7 +107,7 @@ training.
 
 ## Deliverables
 
-- [x] Canonical documented checkpoint/eval cadence policy for scheduled Task 101 runs.
+- [x] Canonical documented checkpoint/eval cadence policy for scheduled Qwen pilot runs.
 - [x] Canonical documented durable checkpoint retention policy of newest `3`.
 - [x] Any required CLI/runtime default alignment to that policy.
 - [x] Focused tests covering the chosen default cadence/retention contract.
@@ -116,9 +116,9 @@ training.
 ## Acceptance Criteria
 
 - [x] The repo documents and ships the canonical durable checkpoint cadence for
-  scheduled Task 101 runs as every `500` optimizer steps.
+  scheduled Qwen pilot runs as every `500` optimizer steps.
 - [x] The repo documents and ships the canonical held-out eval cadence for
-  scheduled Task 101 runs as every `100` optimizer steps, explicitly
+  scheduled Qwen pilot runs as every `100` optimizer steps, explicitly
   accounting for the small held-out eval set and the full pilot epoch length.
 - [x] The repo documents and enforces the canonical durable checkpoint
   retention count of `3`.

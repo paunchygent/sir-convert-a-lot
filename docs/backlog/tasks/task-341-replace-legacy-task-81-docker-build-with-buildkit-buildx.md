@@ -9,7 +9,7 @@ last_updated: '2026-05-30'
 related:
   - docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md
   - docs/backlog/tasks/task-84-remediate-task-81-openvoice-benchmark-root-causes-and-evidence-export.md
-  - scripts/sir_convert_a_lot/devops/task81_openvoice_runtime.py
+  - scripts/sir_convert_a_lot/devops/openvoice_benchmark_runtime.py
 labels:
   - docker
   - buildkit
@@ -52,10 +52,10 @@ Task 81 OpenVoice benchmark lane and make the sidecar image build use
 ## Validation
 
 - Red-first focused test:
-  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_task81_openvoice_benchmark.py::test_ensure_image_present_builds_with_buildkit_buildx_load -q`
+  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_openvoice_benchmark.py::test_ensure_image_present_builds_with_buildkit_buildx_load -q`
   failed while Task 81 still emitted legacy `docker build`.
 - Focused proof:
-  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_task81_openvoice_benchmark.py::test_ensure_image_present_builds_with_buildkit_buildx_load -q`
+  `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_openvoice_benchmark.py::test_ensure_image_present_builds_with_buildkit_buildx_load -q`
   passed after the runtime switched to `docker buildx build --load`.
 - Cross-repo scan for executable/plain build examples no longer finds active
   legacy build commands; remaining matches are policy prohibitions, historical

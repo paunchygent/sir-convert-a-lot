@@ -237,7 +237,7 @@ Checkpoint:
 - `pdm run pytest-root tests/sir_convert_a_lot/test_examnet_qti_package.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_unavailable_pdf_target_returns_named_artifact_error tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_accept_current_state_enables_manual_unkeyed_qti_without_correct_response tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_applies_source_bound_teacher_overlay`
   (`14 passed`)
 - `pdm run coverage-gate` (`1188 passed, 5 skipped`, coverage `95.43%`)
-- `pdm run examnet-qti-task-303-samples`
+- `pdm run examnet-qti-migration-samples`
 - `pdm run openapi-export-v2`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_examnet_qti_package.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_accept_current_state_enables_manual_unkeyed_qti_without_correct_response`
   (`15 passed`)

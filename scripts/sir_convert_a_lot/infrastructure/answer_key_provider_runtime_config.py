@@ -50,13 +50,13 @@ QWEN36_LLAMA_CPP_LOCAL_HOST_URL = "http://127.0.0.1:8082"
 QWEN36_LLAMA_CPP_LOCAL_COMPOSE_URL = "http://host.docker.internal:8082"
 QWEN36_LLAMA_CPP_HEMMA_PROD_COMPOSE_URL = "http://sir_convert_qwen_answer_key:8082"
 QWEN36_LLAMA_CPP_PRODUCTION_OUTPUT_ROOT = Path(
-    "/srv/scratch/sir-convert-a-lot/build/verification/task-320-qwen-provider"
+    "/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider"
 )
 QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_PATH = (
     QWEN36_LLAMA_CPP_PRODUCTION_OUTPUT_ROOT / "vision-assets"
 )
 QWEN36_LLAMA_CPP_PRODUCTION_VISION_MEDIA_HOST_PATH = Path(
-    "/home/paunchygent/.data/sir-convert-a-lot/build/verification/task-320-qwen-provider/vision-assets"
+    "/home/paunchygent/.data/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets"
 )
 
 _PROD_FORBIDDEN_PROVIDER_HOSTS = frozenset({"127.0.0.1", "localhost", "host.docker.internal"})

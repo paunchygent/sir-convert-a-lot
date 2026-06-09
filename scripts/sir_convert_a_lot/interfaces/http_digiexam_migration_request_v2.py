@@ -9,8 +9,9 @@ Relationships:
     - Used by `interfaces.http_routes_jobs_v2` after generic v2 job-spec
       validation.
     - Emits companion upload bytes for `infrastructure.runtime_engine_v2`.
-    - Enforces the API/artifact contract owned by Task 278 and implemented by
-      Task 282.
+    - Enforces the API/artifact contract owned by DigiExam migration request contract and
+      implemented by
+      DigiExam migration bundle API.
 """
 
 from __future__ import annotations

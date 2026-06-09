@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Imported by `sft_12hz.py` for accumulation-aware counter updates.
-    - Reused by Task 101 status/report surfaces through trainer summaries.
+    - Reused by Qwen pilot training status/report surfaces through trainer summaries.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ GRADIENT_ACCUMULATION_STEPS = DEFAULT_GRADIENT_ACCUMULATION_STEPS
 
 @dataclass(frozen=True)
 class TrainingStepSemantics:
-    """Machine-readable definitions for Task 101 step counters."""
+    """Machine-readable definitions for Qwen pilot training step counters."""
 
     gradient_accumulation_steps: int
     optimizer_step_definition: str
@@ -33,7 +33,7 @@ class TrainingStepSemantics:
 def default_training_step_semantics(
     gradient_accumulation_steps: int = GRADIENT_ACCUMULATION_STEPS,
 ) -> TrainingStepSemantics:
-    """Return the canonical Task 101 step-semantics payload."""
+    """Return the canonical Qwen pilot training step-semantics payload."""
     return TrainingStepSemantics(
         gradient_accumulation_steps=gradient_accumulation_steps,
         optimizer_step_definition=(

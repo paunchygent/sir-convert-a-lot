@@ -142,7 +142,7 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         pilot_bundle_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-pilot-bundle"
         ),
         runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
         model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
@@ -191,11 +191,11 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     )
     assert "/home/paunchygent/.data/sir-convert-a-lot/build:/app/build" in command
     assert (
-        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "/app/build/reference/qwen3-tts-swedish-pilot-bundle/manifests/"
         "swedish_pilot_train.prepared.jsonl" in command
     )
     assert (
-        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "/app/build/reference/qwen3-tts-swedish-pilot-bundle/manifests/"
         "swedish_checkpoint_dev.prepared.jsonl" in command
     )
     assert "--dataloader-pin-memory" in command
@@ -370,7 +370,7 @@ def test_inspect_detached_training_hides_stale_resumed_run_artifacts(
         dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
         resumed_from_checkpoint_path=(
             "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/"
-            "task101-20260313t102144z/checkpoints/state-step-00001236"
+            "qwen-historical-pilot-20260313t102144z/checkpoints/state-step-00001236"
         ),
         settings=TrainingSettingsSnapshot(
             output_root="/srv/scratch/sir-convert-a-lot/build/verification/qwen-training",
@@ -476,7 +476,7 @@ def test_inspect_detached_training_hides_stale_resumed_run_artifacts_after_stop(
         dockerfile_path=DEFAULT_DOCKERFILE_PATH.as_posix(),
         resumed_from_checkpoint_path=(
             "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/"
-            "task101-20260313t102144z/checkpoints/state-step-00001236"
+            "qwen-historical-pilot-20260313t102144z/checkpoints/state-step-00001236"
         ),
         settings=TrainingSettingsSnapshot(
             output_root="/srv/scratch/sir-convert-a-lot/build/verification/qwen-training",
@@ -616,7 +616,7 @@ def test_ensure_training_bundle_exists_rejects_missing_manifest_assets(tmp_path:
 
 
 def test_ensure_training_bundle_exists_accepts_legacy_bundle_without_report(tmp_path: Path) -> None:
-    """Launch should still accept a legacy bundle that predates persisted ref-mel reports."""
+    """Launch should accept retained bundles that predate persisted ref-mel reports."""
     bundle_root = tmp_path / "bundle"
     manifests_dir = bundle_root / "manifests"
     audio_dir = bundle_root / "audio_24k" / "rixvox" / "train" / "speaker-a"
@@ -734,7 +734,7 @@ def test_ensure_training_bundle_exists_rejects_rebuilt_bundle_missing_precompute
                 "status_path": (reports_dir / "training_bundle_status.json").as_posix(),
                 "precomputed_reference_input": {
                     "kind": "ref_mel",
-                    "version": "task101_ref_mel_v1",
+                    "version": "qwen_reference_mel_v1",
                     "source_field": "ref_audio",
                     "artifact_root": "precomputed/ref_mel",
                     "artifact_count": 2,
@@ -757,10 +757,10 @@ def test_launch_detached_training_accepts_legacy_bundle_without_summary(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Detached launch metadata should omit precomputed-ref payload for legacy bundles."""
+    """Detached launch metadata should omit precomputed-ref payload for retained bundles."""
     settings = TrainingSettings(
         output_root=tmp_path / "verification",
-        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        image="sir-convert-a-lot-qwen-finetune-hemma:historical-control",
         hf_cache_dir=tmp_path / "cache/hf",
         hf_cache_home_mount=tmp_path / "home/cache/hf",
         scratch_build_root=tmp_path / "build",
@@ -962,14 +962,14 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Resume should accept a legacy launch snapshot and redirect to a replacement bundle."""
+    """Resume should accept a retained launch snapshot and redirect to a replacement bundle."""
     output_root = tmp_path / "verification"
     source_launch_root = tmp_path / "legacy-source"
     source_run_root = tmp_path / "runs/qwen-prev"
     checkpoint_path = source_run_root / "checkpoints/state-step-00001236"
     replacement_bundle_root = tmp_path / "replacement-bundle"
     legacy_output_root = (
-        "/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot"
+        "/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-pilot"
     )
     output_root.mkdir(parents=True, exist_ok=True)
     source_launch_root.mkdir(parents=True, exist_ok=True)
@@ -981,8 +981,8 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
     )
     legacy_launch_payload = {
         "generated_at": "2026-03-13T10:21:45Z",
-        "launch_id": "task101-20260313t102144z",
-        "container_name": "task101-20260313t102144z-container",
+        "launch_id": "qwen-historical-pilot-20260313t102144z",
+        "container_name": "qwen-historical-pilot-20260313t102144z-container",
         "container_id": "container-id",
         "repo_root": "/home/paunchygent/apps/sir-convert-a-lot",
         "run_root": source_run_root.as_posix(),
@@ -995,7 +995,7 @@ def test_resume_legacy_launch_uses_bundle_override_and_small_batch_profile(
         "resumed_from_checkpoint_path": None,
         "settings": {
             "output_root": legacy_output_root,
-            "image": "sir-convert-a-lot-qwen-finetune-hemma:task100",
+            "image": "sir-convert-a-lot-qwen-finetune-hemma:historical-control",
             "hf_cache_dir": "/srv/scratch/sir-convert-a-lot/cache/huggingface",
             "hf_cache_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
             "scratch_build_root": "/srv/scratch/sir-convert-a-lot/build",
@@ -1163,14 +1163,14 @@ def test_resume_accepts_explicit_control_posture_overrides(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Resume should let operators move a recovered legacy lane onto a bounded 500/100/3 pilot."""
+    """Resume should let operators move a recovered lane onto a bounded 500/100/3 pilot."""
     output_root = tmp_path / "verification"
     source_launch_root = tmp_path / "legacy-source"
     source_run_root = tmp_path / "runs/qwen-prev"
     checkpoint_path = source_run_root / "checkpoints/state-step-00001238"
     replacement_bundle_root = tmp_path / "replacement-bundle"
     legacy_output_root = (
-        "/srv/scratch/sir-convert-a-lot/build/verification/task-101-qwen3-tts-swedish-hemma-pilot"
+        "/srv/scratch/sir-convert-a-lot/build/verification/qwen3-tts-swedish-hemma-pilot"
     )
     output_root.mkdir(parents=True, exist_ok=True)
     source_launch_root.mkdir(parents=True, exist_ok=True)
@@ -1182,8 +1182,8 @@ def test_resume_accepts_explicit_control_posture_overrides(
     )
     legacy_launch_payload = {
         "generated_at": "2026-03-13T10:21:45Z",
-        "launch_id": "task101-20260313t102144z",
-        "container_name": "task101-20260313t102144z-container",
+        "launch_id": "qwen-historical-pilot-20260313t102144z",
+        "container_name": "qwen-historical-pilot-20260313t102144z-container",
         "container_id": "container-id",
         "repo_root": "/home/paunchygent/apps/sir-convert-a-lot",
         "run_root": source_run_root.as_posix(),
@@ -1196,7 +1196,7 @@ def test_resume_accepts_explicit_control_posture_overrides(
         "resumed_from_checkpoint_path": None,
         "settings": {
             "output_root": legacy_output_root,
-            "image": "sir-convert-a-lot-qwen-finetune-hemma:task100",
+            "image": "sir-convert-a-lot-qwen-finetune-hemma:historical-control",
             "hf_cache_dir": "/srv/scratch/sir-convert-a-lot/cache/huggingface",
             "hf_cache_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
             "scratch_build_root": "/srv/scratch/sir-convert-a-lot/build",
@@ -1364,7 +1364,7 @@ def test_resume_accepts_explicit_control_posture_overrides(
 
 
 def test_resume_fails_closed_when_legacy_source_bundle_root_is_missing(tmp_path: Path) -> None:
-    """Resume should fail before launch when the effective legacy bundle root is gone."""
+    """Resume should fail before launch when the effective source bundle root is gone."""
     output_root = tmp_path / "verification"
     source_launch_root = output_root / "qwen-prev"
     source_run_root = tmp_path / "runs/qwen-prev"
@@ -1378,8 +1378,8 @@ def test_resume_fails_closed_when_legacy_source_bundle_root_is_missing(tmp_path:
     )
     legacy_launch_payload = {
         "generated_at": "2026-03-13T10:21:45Z",
-        "launch_id": "task101-20260313t102144z",
-        "container_name": "task101-20260313t102144z-container",
+        "launch_id": "qwen-historical-pilot-20260313t102144z",
+        "container_name": "qwen-historical-pilot-20260313t102144z-container",
         "container_id": "container-id",
         "repo_root": "/home/paunchygent/apps/sir-convert-a-lot",
         "run_root": source_run_root.as_posix(),
@@ -1392,7 +1392,7 @@ def test_resume_fails_closed_when_legacy_source_bundle_root_is_missing(tmp_path:
         "resumed_from_checkpoint_path": None,
         "settings": {
             "output_root": output_root.as_posix(),
-            "image": "sir-convert-a-lot-qwen-finetune-hemma:task100",
+            "image": "sir-convert-a-lot-qwen-finetune-hemma:historical-control",
             "hf_cache_dir": "/srv/scratch/sir-convert-a-lot/cache/huggingface",
             "hf_cache_home_mount": "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface",
             "scratch_build_root": tmp_path.as_posix(),

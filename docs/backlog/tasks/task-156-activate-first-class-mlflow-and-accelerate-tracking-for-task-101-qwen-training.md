@@ -1,6 +1,6 @@
 ---
 id: task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training
-title: Activate first-class MLflow and Accelerate tracking for Task 101 Qwen training
+title: Activate first-class MLflow and Accelerate tracking for Qwen training
 type: task
 status: completed
 priority: critical
@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
   - docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
   - https://huggingface.co/docs/accelerate/en/usage_guides/tracking
   - https://www.mlflow.org/docs/latest/ml/tracking/
@@ -81,13 +81,13 @@ throughput work blind.
   support packages.
 - [x] Task 101 training initializes MLflow and TensorBoard trackers through
   Accelerate.
-- [x] Live tracker artifacts are created during a bounded Task 101 run.
+- [x] Live tracker artifacts are created during a bounded Qwen pilot run.
 - [x] Task 101 metadata/report surfaces expose tracker ids and artifact paths.
 - [x] Focused tests cover tracker configuration and metadata persistence.
 
 ## Acceptance Criteria
 
-- [x] A bounded Task 101 run creates one MLflow run and one TensorBoard event
+- [x] A bounded Qwen pilot run creates one MLflow run and one TensorBoard event
   stream while training is still in progress.
 - [x] Launch metadata records the tracker backend, run id, and artifact root.
 - [x] The canonical tracked params include the live training configuration and

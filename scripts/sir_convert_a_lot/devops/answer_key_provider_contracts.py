@@ -1,7 +1,7 @@
-"""Task 309 Granite provider preflight report contracts.
+"""answer-key live validation Granite provider preflight report contracts.
 
 Purpose:
-    Define the typed JSON-safe contracts for Task 309 Hemma Granite/vLLM
+    Define the typed JSON-safe contracts for answer-key live validation Hemma Granite/vLLM
     provider status and preflight reports.
 
 Relationships:
@@ -17,12 +17,12 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-TASK309_PROVIDER_STATUS_SCHEMA_VERSION = "answer_key_granite_provider_status_v1"
-TASK309_HEMMA_PREFLIGHT_SCHEMA_VERSION = "task309_granite_hemma_preflight_v1"
-TASK309_PROVIDER_PERSISTENT_POLICY = "leave_running_until_operator_stop"
-ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION = "task309_llama_provider_launch_v1"
+ANSWER_KEY_PROVIDER_STATUS_SCHEMA_VERSION = "answer_key_granite_provider_status_v1"
+ANSWER_KEY_HEMMA_PREFLIGHT_SCHEMA_VERSION = "answer_key_granite_hemma_preflight_v1"
+ANSWER_KEY_PROVIDER_PERSISTENT_POLICY = "leave_running_until_operator_stop"
+ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION = "answer_key_llama_provider_launch_v1"
 DEFAULT_PROVIDER_URL = "http://127.0.0.1:8017"
-DEFAULT_PROVIDER_CONTAINER_NAME = "sir-convert-task309-granite-vllm"
+DEFAULT_PROVIDER_CONTAINER_NAME = "sir-convert-answer-key-live-validation-granite-vllm"
 DEFAULT_PROVIDER_PORT = 8017
 DEFAULT_CACHE_PATHS = (
     "/srv/scratch/sir-convert-a-lot/cache/huggingface",
@@ -39,7 +39,7 @@ DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION = "0.80"
 
 
 @dataclass(frozen=True)
-class Task309CommandProbe:
+class AnswerKeyCommandProbe:
     """One command-availability probe without persisted stdout or stderr."""
 
     name: str
@@ -50,7 +50,7 @@ class Task309CommandProbe:
 
 
 @dataclass(frozen=True)
-class Task309PathProbe:
+class AnswerKeyPathProbe:
     """One Hemma path preflight probe."""
 
     path: str
@@ -59,7 +59,7 @@ class Task309PathProbe:
 
 
 @dataclass(frozen=True)
-class Task309PortBinding:
+class AnswerKeyPortBinding:
     """One Docker host-port binding relevant to the vLLM provider."""
 
     container_port: str
@@ -68,7 +68,7 @@ class Task309PortBinding:
 
 
 @dataclass(frozen=True)
-class Task309MountBinding:
+class AnswerKeyMountBinding:
     """One sanitized Docker mount binding."""
 
     source: str
@@ -77,7 +77,7 @@ class Task309MountBinding:
 
 
 @dataclass(frozen=True)
-class Task309DeviceBinding:
+class AnswerKeyDeviceBinding:
     """One sanitized Docker device binding."""
 
     host_path: str
@@ -85,7 +85,7 @@ class Task309DeviceBinding:
 
 
 @dataclass(frozen=True)
-class Task309ModelsEndpointProbe:
+class AnswerKeyModelsEndpointProbe:
     """One vLLM models endpoint probe."""
 
     url: str
@@ -96,8 +96,8 @@ class Task309ModelsEndpointProbe:
 
 
 @dataclass(frozen=True)
-class Task309ProviderStatus:
-    """Persistent Task 309 provider status report."""
+class AnswerKeyProviderStatus:
+    """Persistent answer-key live validation provider status report."""
 
     schema_version: str
     checked_at: str
@@ -109,11 +109,11 @@ class Task309ProviderStatus:
     container_running: bool
     container_image: str | None
     container_command: tuple[str, ...]
-    port_bindings: tuple[Task309PortBinding, ...]
-    mounts: tuple[Task309MountBinding, ...]
-    devices: tuple[Task309DeviceBinding, ...]
+    port_bindings: tuple[AnswerKeyPortBinding, ...]
+    mounts: tuple[AnswerKeyMountBinding, ...]
+    devices: tuple[AnswerKeyDeviceBinding, ...]
     tcp_reachable: bool
-    models_endpoint: Task309ModelsEndpointProbe
+    models_endpoint: AnswerKeyModelsEndpointProbe
     localhost_only: bool
     localhost_tcp_listener: bool
     request_logging_disabled: bool
@@ -135,8 +135,8 @@ class Task309ProviderStatus:
 
 
 @dataclass(frozen=True)
-class Task309HemmaPreflight:
-    """Hemma preflight report for Task 309 live validation."""
+class AnswerKeyHemmaPreflight:
+    """Hemma preflight report for answer-key live validation live validation."""
 
     schema_version: str
     checked_at: str
@@ -145,9 +145,9 @@ class Task309HemmaPreflight:
     repo_branch: str | None
     manifest_path: str
     manifest_sha256: str | None
-    command_probes: tuple[Task309CommandProbe, ...]
-    cache_path_probes: tuple[Task309PathProbe, ...]
-    provider_status: Task309ProviderStatus
+    command_probes: tuple[AnswerKeyCommandProbe, ...]
+    cache_path_probes: tuple[AnswerKeyPathProbe, ...]
+    provider_status: AnswerKeyProviderStatus
     ready: bool
     blockers: tuple[str, ...]
 
@@ -158,7 +158,7 @@ class Task309HemmaPreflight:
 
 
 @dataclass(frozen=True)
-class Task309ProviderLaunchPlan:
+class AnswerKeyProviderLaunchPlan:
     """Persistent Granite/vLLM Docker launch command and policy."""
 
     schema_version: str
@@ -181,8 +181,8 @@ class Task309ProviderLaunchPlan:
 
 
 @dataclass(frozen=True)
-class Task309ProviderLaunchResult:
-    """Result of a Task 309 persistent provider launch attempt."""
+class AnswerKeyProviderLaunchResult:
+    """Result of a answer-key live validation persistent provider launch attempt."""
 
     schema_version: str
     launched_at: str
@@ -192,7 +192,7 @@ class Task309ProviderLaunchResult:
     container_id: str | None
     ok: bool
     error_kind: str | None
-    plan: Task309ProviderLaunchPlan
+    plan: AnswerKeyProviderLaunchPlan
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload for the provider launch result."""
@@ -201,8 +201,8 @@ class Task309ProviderLaunchResult:
 
 
 @dataclass(frozen=True)
-class Task309LlamaProviderLaunchPlan:
-    """Persistent llama.cpp launch command and policy for Task 309."""
+class AnswerKeyLlamaProviderLaunchPlan:
+    """Persistent llama.cpp launch command and policy for answer-key live validation."""
 
     schema_version: str
     generated_at: str
@@ -231,8 +231,8 @@ class Task309LlamaProviderLaunchPlan:
 
 
 @dataclass(frozen=True)
-class Task309LlamaProviderLaunchResult:
-    """Result of a Task 309 persistent llama.cpp launch attempt."""
+class AnswerKeyLlamaProviderLaunchResult:
+    """Result of a answer-key live validation persistent llama.cpp launch attempt."""
 
     schema_version: str
     launched_at: str
@@ -242,7 +242,7 @@ class Task309LlamaProviderLaunchResult:
     pid: int | None
     ok: bool
     error_kind: str | None
-    plan: Task309LlamaProviderLaunchPlan
+    plan: AnswerKeyLlamaProviderLaunchPlan
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload for the llama.cpp launch result."""
@@ -252,7 +252,9 @@ class Task309LlamaProviderLaunchResult:
 
 def _json_object(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise TypeError("Task 309 provider report must serialize to a JSON object.")
+        raise TypeError(
+            "answer-key live validation provider report must serialize to a JSON object."
+        )
     return {str(key): _json_value(child) for key, child in value.items()}
 
 
@@ -263,4 +265,6 @@ def _json_value(value: object) -> object:
         return [_json_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 provider JSON value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation provider JSON value: {type(value).__name__}"
+    )

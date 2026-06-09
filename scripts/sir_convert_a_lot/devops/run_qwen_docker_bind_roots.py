@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Wraps `qwen_docker_bind_roots_runtime.py` for all host operations.
-    - Emits deterministic evidence under `build/verification/task-242-...`
+    - Emits deterministic evidence under `build/verification/...`
       when used in operator mode.
     - Can be invoked directly by the installed systemd service in service mode.
 """
@@ -177,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.output_root),
             stem="install",
             payload=payload,
-            markdown=_render_markdown("Task 242 Qwen Docker Bind Roots Install", payload),
+            markdown=_render_markdown("Qwen Docker Bind Roots Install", payload),
         )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
@@ -189,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.output_root),
             stem="status",
             payload=payload,
-            markdown=_render_markdown("Task 242 Qwen Docker Bind Roots Status", payload),
+            markdown=_render_markdown("Qwen Docker Bind Roots Status", payload),
         )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
@@ -201,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.output_root),
             stem="probe",
             payload=payload,
-            markdown=_render_markdown("Task 242 Qwen Docker Bind Roots Probe", payload),
+            markdown=_render_markdown("Qwen Docker Bind Roots Probe", payload),
         )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
@@ -214,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
                 Path(args.output_root),
                 stem="repair",
                 payload=payload,
-                markdown=_render_markdown("Task 242 Qwen Docker Bind Roots Repair", payload),
+                markdown=_render_markdown("Qwen Docker Bind Roots Repair", payload),
             )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
                 Path(args.output_root),
                 stem="teardown",
                 payload=payload,
-                markdown=_render_markdown("Task 242 Qwen Docker Bind Roots Teardown", payload),
+                markdown=_render_markdown("Qwen Docker Bind Roots Teardown", payload),
             )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0

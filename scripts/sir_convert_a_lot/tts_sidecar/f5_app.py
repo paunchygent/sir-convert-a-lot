@@ -1,8 +1,8 @@
-"""FastAPI entrypoint for the normalized F5-TTS Task 85 sidecar.
+"""FastAPI entrypoint for the normalized F5-TTS F5-TTS benchmark sidecar.
 
 Purpose:
     Bind the reusable normalized TTS sidecar HTTP contract to the F5-TTS
-    backend adapter used by the Hemma Task 85 smoke benchmark.
+    backend adapter used by the Hemma F5-TTS benchmark smoke benchmark.
 
 Relationships:
     - Uses `create_tts_sidecar_app` to enforce ADR-0007 endpoint behavior.
@@ -21,7 +21,7 @@ from scripts.sir_convert_a_lot.tts_sidecar.f5_runtime import (
 
 
 def create_app() -> FastAPI:
-    """Create the F5-TTS Task 85 sidecar application."""
+    """Create the F5-TTS F5-TTS benchmark sidecar application."""
     settings = F5TtsSidecarSettings.from_env()
     backend = F5TtsSidecarBackend(settings)
     return create_tts_sidecar_app(backend, title="Sir Convert-a-Lot F5-TTS Sidecar")

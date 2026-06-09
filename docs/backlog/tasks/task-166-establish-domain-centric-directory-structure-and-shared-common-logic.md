@@ -28,7 +28,7 @@ migrate shared infrastructure logic (Docker, ROCm, Storage) into a dedicated
 - Create `scripts/sir_convert_a_lot/ml/qwen/{common,preprocessing,training}/`
 - Create `scripts/sir_convert_a_lot/cli/ml/`
 - Migrate `task100_qwen_finetune_runtime.py` to `ml/qwen/common/runtime.py`
-- Migrate `task112_hemma_storage_runtime.py` to `ml/qwen/common/storage.py`
+- Migrate `hemma_storage_runtime.py` to `ml/qwen/common/storage.py`
 - Extract shared models from `task103_*` and `task101_*` into `ml/qwen/common/models.py`
 - Update all task-prefixed imports within these moved files.
 

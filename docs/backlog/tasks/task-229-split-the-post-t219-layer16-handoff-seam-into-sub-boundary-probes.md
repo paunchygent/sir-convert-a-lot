@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-214-split-the-layer-16-layer-15-talker-core-mlp-and-residual-boundary-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md
   - docs/backlog/tasks/task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -62,7 +62,7 @@ micro-boundary instead of another coarse family.
 
 - A new `talker_core_handoff_sub_boundary` hook profile now exists inside the
   existing Story 31 surface:
-  `pdm run qwen-story31-stability-lab run --hook-profile talker_core_handoff_sub_boundary`.
+  `pdm run qwen-stability-lab run --hook-profile talker_core_handoff_sub_boundary`.
 - The committed narrowed target chain is:
   - `talker_core.layer_16.mlp.down_proj`
   - `talker_core.layer_16.output`
@@ -81,9 +81,9 @@ micro-boundary instead of another coarse family.
 ## Result
 
 - Truthful narrowed rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task229-20260318t064712z-a1`
 - Surface:
-  `pdm run qwen-story31-stability-lab run --hook-profile talker_core_handoff_sub_boundary`
+  `pdm run qwen-stability-lab run --hook-profile talker_core_handoff_sub_boundary`
 - Fixed state vector:
   - bundle root:
     `/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle`
@@ -118,8 +118,8 @@ micro-boundary instead of another coarse family.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story31-stability-lab --help`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task229-20260318t064712z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
+- [x] `pdm run qwen-stability-lab --help`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task229-20260318t064712z-a1 --skip-build --hook-profile talker_core_handoff_sub_boundary --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5`
 
 ## Checklist
 

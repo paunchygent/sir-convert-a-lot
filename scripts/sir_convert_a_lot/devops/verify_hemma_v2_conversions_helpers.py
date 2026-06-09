@@ -1,7 +1,7 @@
 """Helper utilities for Hemma v2 conversion smoke verification scripts.
 
 Purpose:
-    Keep the Task 39 verification entrypoint small by extracting reusable
+    Keep the v2 conversion smoke verification entrypoint small by extracting reusable
     helper functions and evidence dataclasses used by the Hemma v2 smoke flow.
 
 Relationships:
@@ -191,7 +191,7 @@ def run_v2_conversion(
 
     file_bytes = source_path.read_bytes()
     idem = idempotency_key(scope=label, file_bytes=file_bytes)
-    correlation_id = f"corr_task39_{label}_{int(time.time())}"
+    correlation_id = f"corr_conversion_smoke_{label}_{int(time.time())}"
 
     with SirConvertALotClientV2(base_url=http_base_url, api_key=api_key) as client:
         outcome = client.convert_upload_to_artifact(

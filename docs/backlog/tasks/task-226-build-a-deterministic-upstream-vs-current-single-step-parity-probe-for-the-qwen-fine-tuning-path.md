@@ -11,8 +11,8 @@ related:
   - docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md
   - docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md
   - docs/backlog/tasks/task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -56,9 +56,9 @@ proof.
 ## Implementation Notes
 
 - The committed local mechanism surface is now:
-  - `pdm run qwen-story31-parity-probe run`
+  - `pdm run qwen-parity-probe run`
 - The surface persists one compact local artifact set under:
-  - `build/verification/qwen-story31-parity-probe/`
+  - `build/verification/qwen-parity-probe/`
   - `current-path.json`
   - `intended-path.json`
   - `results.json`
@@ -72,7 +72,7 @@ proof.
   - the committed device-transfer fix in `555624e` then reran the probe inside
     the `sir-convert-a-lot-qwen-finetune-hemma:task100` image against the real
     historical bundle under
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-parity-probe/task226-20260317t224307Z`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-parity-probe/task226-20260317t224307Z`
   - that live run resolved with:
     - `first_divergence_checkpoint = null`
     - `first_divergence_classification = no_meaningful_divergence_found`
@@ -105,13 +105,13 @@ proof.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story31_parity_probe.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_qwen_parity_probe.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story31-parity-probe --help`
+- [x] `pdm run qwen-parity-probe --help`
 
 ## Checklist
 

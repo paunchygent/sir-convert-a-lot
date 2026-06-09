@@ -5,7 +5,7 @@
 #   requests fail closed through a reserved non-product container.
 #
 # Relationships:
-#   - Implements the Task 254 shared-infrastructure default-host contract.
+#   - Implements the public-edge verification shared-infrastructure default-host contract.
 #   - Edits /home/paunchygent/infrastructure/docker-compose.yml on Hemma.
 #   - Must be launched through hemma-command-start when --deploy is used.
 #

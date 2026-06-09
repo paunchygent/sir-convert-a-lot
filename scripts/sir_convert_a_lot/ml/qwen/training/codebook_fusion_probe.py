@@ -1,4 +1,4 @@
-"""In-container ROCm probe for Task 203 codebook-fusion decisions.
+"""In-container ROCm probe for Qwen codebook-fusion proof codebook-fusion decisions.
 
 Purpose:
     Measure numeric error and hot-path cost for the current auxiliary-codebook
@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Executed inside the Qwen training image by `codebook_fusion_proof.py`.
     - Imports `sft_12hz_codebook_fusion.py` to exercise the live candidate
-      reduction contract under review for `T203`.
+      reduction contract under review for `codebook-fusion reduction`.
 """
 
 from __future__ import annotations
@@ -125,7 +125,9 @@ def _parse_seeds(raw_value: str) -> tuple[int, ...]:
 
 def _build_parser() -> argparse.ArgumentParser:
     """Build the in-container probe parser."""
-    parser = argparse.ArgumentParser(description="Run the Task 203 codebook-fusion ROCm probe.")
+    parser = argparse.ArgumentParser(
+        description="Run the Qwen codebook-fusion proof codebook-fusion ROCm probe."
+    )
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--sequence-length", type=int, default=508)
     parser.add_argument("--codebook-count", type=int, default=15)
@@ -138,7 +140,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _naive_reduce(masked_embeddings: torch.Tensor) -> torch.Tensor:
-    """Return the pre-T203 vectorized reduction contract."""
+    """Return the pre-codebook-fusion reduction vectorized reduction contract."""
     return torch.sum(masked_embeddings, dim=2)
 
 
@@ -273,7 +275,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     if not torch.cuda.is_available():
-        raise SystemExit("Task 203 codebook-fusion probe requires a ROCm/CUDA runtime.")
+        raise SystemExit(
+            "Qwen codebook-fusion proof codebook-fusion probe requires a ROCm/CUDA runtime."
+        )
     shape = ProbeShape(
         batch_size=args.batch_size,
         sequence_length=args.sequence_length,

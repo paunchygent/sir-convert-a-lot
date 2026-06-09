@@ -1,7 +1,7 @@
 """Tests for Docling backend mapping and OCR auto-retry behavior.
 
 Purpose:
-    Validate Task 10 backend semantics: backend mapping, OCR policy mapping,
+    Validate backend conversion semantics backend semantics: backend mapping, OCR policy mapping,
     deterministic auto-retry behavior, and metadata truth.
 
 Relationships:

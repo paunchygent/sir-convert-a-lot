@@ -1,7 +1,8 @@
 """Focused tests for semantic-only text-embedding assembly.
 
 Purpose:
-    Prove the Story 30 Candidate 1 contract locally by showing that only
+    Prove the Qwen backward-lineage and fresh-start proof lane Candidate 1 contract locally by
+    showing that only
     semantic text token ids can ever contribute row membership to
     `text_embedding.weight.grad`.
 

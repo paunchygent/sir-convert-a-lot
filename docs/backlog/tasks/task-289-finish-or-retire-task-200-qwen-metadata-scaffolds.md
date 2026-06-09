@@ -37,7 +37,7 @@ permanent source-code furniture.
 - Reconcile Task 200 frontmatter, checklists, deliverables, and close-out notes
   so future developers can tell whether the lane is active, complete, or
   intentionally retired.
-- Do not reopen Task 101 experiment interpretation or delete historical
+- Do not reopen Qwen experiment interpretation or delete historical
   evidence beyond the explicit Task 200 scaffold scope.
 
 ## Deliverables

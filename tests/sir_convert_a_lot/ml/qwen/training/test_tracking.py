@@ -61,9 +61,9 @@ def test_build_training_tracker_config_defaults_to_run_scoped_paths(tmp_path: Pa
         tensorboard_logging_dir=None,
     )
 
-    assert config.project_name == "task101-qwen-pilot"
+    assert config.project_name == "qwen-swedish-finetune"
     assert config.run_name == "qwen-20260313t120000z"
-    assert config.mlflow_experiment_name == "task101-qwen-pilot"
+    assert config.mlflow_experiment_name == "qwen-swedish-finetune"
     assert config.mlflow_tracking_uri.endswith("/trackers/mlflow/mlflow.db")
     assert config.mlflow_artifact_root.endswith("/trackers/mlflow/artifacts")
     assert config.tensorboard_logging_dir.endswith("/trackers/tensorboard")
@@ -75,7 +75,7 @@ def test_refresh_training_tracker_summary_uses_project_named_tensorboard_run_dir
     """Tracker summaries should mirror the TensorBoard directory shape Accelerate uses."""
     logging_dir = tmp_path / "trackers" / "tensorboard"
     mlflow_db_path = tmp_path / "trackers" / "mlflow" / "mlflow.db"
-    run_dir = logging_dir / "task101-qwen-pilot"
+    run_dir = logging_dir / "qwen-swedish-finetune"
     run_dir.mkdir(parents=True, exist_ok=True)
     event_file = run_dir / "events.out.tfevents.123"
     event_file.write_text("", encoding="utf-8")
@@ -90,10 +90,10 @@ def test_refresh_training_tracker_summary_uses_project_named_tensorboard_run_dir
     summary = refresh_training_tracker_summary(
         FakeAccelerator(tracker),
         tracker_config=TrainingTrackerConfig(
-            project_name="task101-qwen-pilot",
+            project_name="qwen-swedish-finetune",
             run_name="qwen-20260313t120000z",
             tracker_backends=("mlflow", "tensorboard"),
-            mlflow_experiment_name="task101-qwen-pilot",
+            mlflow_experiment_name="qwen-swedish-finetune",
             mlflow_tracking_uri=f"sqlite:///{mlflow_db_path.as_posix()}",
             mlflow_artifact_root=(tmp_path / "trackers" / "mlflow" / "artifacts").as_posix(),
             mlflow_system_metrics_interval_seconds=10,
@@ -102,7 +102,7 @@ def test_refresh_training_tracker_summary_uses_project_named_tensorboard_run_dir
         system_metrics_enabled=True,
     )
 
-    assert summary.project_name == "task101-qwen-pilot"
+    assert summary.project_name == "qwen-swedish-finetune"
     assert summary.run_name == "qwen-20260313t120000z"
     assert summary.mlflow_run_id == "mlflow-run-id"
     assert summary.tensorboard_run_dir == run_dir.as_posix()

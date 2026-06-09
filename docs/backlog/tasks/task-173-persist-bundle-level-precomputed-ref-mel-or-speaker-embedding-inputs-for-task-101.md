@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-161-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-task-101-qwen-reference-mels.md
   - docs/backlog/tasks/task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
 labels:
   - qwen
   - training
@@ -75,7 +75,7 @@ the required follow-on, not optional tuning.
 
 - [x] Bundle materialization persists precomputed reference input artifacts.
 - [x] Training manifest contract carries explicit precomputed artifact fields.
-- [x] Task 101 runtime consumes precomputed inputs in the training hot path.
+- [x] Qwen pilot runtime consumes precomputed inputs in the training hot path.
 
 ## Acceptance Criteria
 

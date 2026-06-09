@@ -1,9 +1,9 @@
 ---
-id: 'review-27-ruthless-review-of-story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection'
-title: 'Ruthless review of Story 52 Hemma STT and diarization backend benchmark profile selection'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-27-ruthless-review-of-story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection
+title: Ruthless review of Story 52 Hemma STT and diarization backend benchmark profile selection
+type: review
+status: completed
+priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
 related:
@@ -22,6 +22,7 @@ labels:
   - hemma
   - gpu
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

@@ -1,4 +1,4 @@
-"""Profiling helpers for the patched Qwen Task 101 trainer.
+"""Profiling helpers for the patched Qwen Qwen pilot training trainer.
 
 Purpose:
     Keep bounded PyTorch profiler setup and phase-marker helpers out of
@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Imported by `sft_12hz.py` to enable opt-in PyTorch profiling.
-    - Writes profiler traces under the Task 101 run root.
+    - Writes profiler traces under the Qwen pilot training run root.
 """
 
 from __future__ import annotations

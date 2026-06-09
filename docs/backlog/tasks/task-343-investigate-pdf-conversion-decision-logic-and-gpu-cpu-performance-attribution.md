@@ -24,7 +24,7 @@ related:
   - scripts/sir_convert_a_lot/infrastructure/docling_backend.py
   - scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpointed_executor.py
   - scripts/sir_convert_a_lot/infrastructure/v2_pdf_checkpoint_chunk_runner.py
-  - scripts/sir_convert_a_lot/benchmarking/story20_throughput_cli.py
+  - scripts/sir_convert_a_lot/benchmarking/pdf_throughput_cli.py
 labels:
   - performance
   - gpu

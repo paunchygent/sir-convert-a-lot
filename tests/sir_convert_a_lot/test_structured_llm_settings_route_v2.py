@@ -1,7 +1,7 @@
 """API tests for operator-owned structured LLM settings routes.
 
 Purpose:
-    Prove Task 325 exposes hot provider routing mutation only through
+    Prove HTML to PDF route5 exposes hot provider routing mutation only through
     HuleEdu-signed internal identity, while API-key/public callers cannot change
     running service settings.
 

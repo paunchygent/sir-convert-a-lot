@@ -1,9 +1,9 @@
 ---
-id: 'review-30-ruthless-review-of-story-55-gateway-and-downstream-transcript-delivery-coordination'
-title: 'Ruthless review of Story 55 gateway and downstream transcript delivery coordination'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-30-ruthless-review-of-story-55-gateway-and-downstream-transcript-delivery-coordination
+title: Ruthless review of Story 55 gateway and downstream transcript delivery coordination
+type: review
+status: completed
+priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
 related:
@@ -22,6 +22,7 @@ labels:
   - downstream
   - stt
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -43,7 +44,7 @@ Structured review artifact for implementation or readiness checks.
   - retained Reviews 26, 27, 28, and 29 for Stories 51, 52, 53, and 54.
 - Files reviewed in the Sir patch:
   - `docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md`
-  - `tests/sir_convert_a_lot/test_story55_downstream_coordination_docs_guard.py`
+  - `tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py`
 - Downstream planning docs inspected:
   - `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md`
   - `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md`
@@ -120,12 +121,12 @@ Structured review artifact for implementation or readiness checks.
 
 ## Test Truthfulness Audit
 
-- `test_story_55_records_gateway_downstream_planning_constraints` is a
+- `test_downstream_transcript_records_gateway_planning_constraints` is a
   docs-as-code guard for the governed Story 55 state. Its string assertions are
   meaningful for this docs-only coordination slice because the reviewed behavior
   is the exact retained planning record and stop condition, not runtime
   conversion behavior.
-- `test_story_55_links_current_blocked_review_authority` requires Story 55 to
+- `test_downstream_transcript_links_current_blocked_review_authority` requires Story 55 to
   keep retained Review 27, Review 28, Story 54, and Review 29 linked in
   frontmatter and to state the Story 52-54 blocked sequence in body text.
 - The test deliberately avoids requiring sibling repository absolute paths to
@@ -169,9 +170,9 @@ created.
 
 ## Validation
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_story55_downstream_coordination_docs_guard.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py`
   -> `2 passed`.
-- `pdm run ruff check tests/sir_convert_a_lot/test_story55_downstream_coordination_docs_guard.py`
+- `pdm run ruff check tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py`
   -> `All checks passed!`.
 - `pdm run docs-sync` refreshed generated indexes.
 - `pdm run docs-validate` -> `Validated 450 backlog files`;

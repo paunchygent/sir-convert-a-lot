@@ -2,7 +2,7 @@
 
 Purpose:
     Materialize deterministic bundle-owned ref-mel artifacts and expose their
-    path and summary contracts for Task 101 training.
+    path and summary contracts for Qwen pilot training training.
 
 Relationships:
     - Imported by `ml.qwen.training.bundles` during bundle preparation/finalization.

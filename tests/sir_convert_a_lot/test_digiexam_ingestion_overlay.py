@@ -5,7 +5,7 @@ Purpose:
     and apply only to effective renderer input.
 
 Relationships:
-    - Exercises `domain.digiexam_ingestion_overlay` for Task 295.
+    - Exercises `domain.digiexam_ingestion_overlay` for DigiExam ingestion overlay.
     - Complements the v2 API bundle tests with focused stale-binding coverage.
 """
 

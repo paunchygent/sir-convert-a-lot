@@ -195,7 +195,7 @@ def _install_fake_qwen_tts(monkeypatch: pytest.MonkeyPatch) -> None:
 def _runtime_request() -> AudioCodesRuntimeRequest:
     """Return one deterministic governed runtime request."""
     return AudioCodesRuntimeRequest(
-        runtime_kind="task101_task103_qwen_audio_codes_gpu_v1",
+        runtime_kind="qwen_audio_codes_gpu_v1",
         device="cuda:0",
         dtype="bfloat16",
         attn_implementation="flash_attention_2",

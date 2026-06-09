@@ -15,6 +15,7 @@ related:
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/internal_adapter_contract_v2.md
+  - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
 labels:
   - stt
   - audio
@@ -40,6 +41,11 @@ production `stt_profile` and `diarization_profile` are rejected until a later
 governed STT sidecar benchmark image/runner proves FFmpeg/ffprobe, backend
 dependencies, token/cache readiness, Swedish/English fixtures, diarization
 speaker hints, and 120-minute lifecycle behavior on Hemma.
+
+Task 351 supplies the first benchmark preflight runner for that lane. It records
+environment readiness and remaining live-evidence gaps, but it does not select a
+production profile and does not change this story's blocked route-registration
+state.
 
 Do not register the route, persist transcript artifacts, publish OpenAPI route
 fields, or implement formatter outputs from this story state. The next
@@ -114,7 +120,8 @@ Service API v2 lifecycle, with no formatter artifacts required yet.
 
 Current blocked state: this done definition is not satisfied. Story 53 cannot
 move to implementation completion until Story 52's rejected production profile
-is superseded by accepted Hemma sidecar benchmark-runner/profile proof.
+is superseded by accepted Hemma sidecar benchmark-runner/profile proof. Task 351
+is the preflight surface for that proof, not the proof itself.
 
 ## Checklist
 

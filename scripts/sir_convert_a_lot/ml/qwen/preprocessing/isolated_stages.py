@@ -94,7 +94,7 @@ def utc_now_iso() -> str:
 def default_launch_id(stage: PreprocessingStage) -> str:
     """Build one deterministic launch identifier for a detached stage."""
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    return f"task114-{stage}-{timestamp}".lower()
+    return f"qwen-isolated-stage-{stage}-{timestamp}".lower()
 
 
 def default_container_name(launch_id: str) -> str:

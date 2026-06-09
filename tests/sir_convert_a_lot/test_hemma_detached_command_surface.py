@@ -5,7 +5,7 @@ Purpose:
     Hemma deploy commands.
 
 Relationships:
-    - Protects Task 254 production deploy recovery operations.
+    - Protects public-edge verification production deploy recovery operations.
     - Exercises scripts/devops/hemma-command-*.sh contract wiring.
 """
 

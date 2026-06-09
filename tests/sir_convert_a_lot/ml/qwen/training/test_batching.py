@@ -1,4 +1,4 @@
-"""Focused tests for Task 101 throughput batching.
+"""Focused tests for Qwen pilot training throughput batching.
 
 Purpose:
     Validate the aggressive bucketed batch sampler and shared throughput-profile
@@ -30,7 +30,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.throughput_profiles import (
 
 
 def test_resolve_throughput_batch_policy_uses_aggressive_default_label() -> None:
-    """The training lane should resolve the aggressive Task 101 profile."""
+    """The training lane should resolve the aggressive Qwen pilot training profile."""
     policy = resolve_throughput_batch_policy(
         profile_label=DEFAULT_THROUGHPUT_PROFILE_LABEL,
         max_batch_size=8,

@@ -2,8 +2,7 @@
 
 Purpose:
     Verify that the centralized talker-runtime resolver reports the resolved
-    surface paths and probeability truth for the supported compatibility
-    shapes.
+    surface paths and probeability truth for the supported runtime shapes.
 
 Relationships:
     - Exercises `sft_12hz_talker_runtime.py` directly.
@@ -97,7 +96,7 @@ def test_talker_runtime_fingerprint_prefers_talker_level_projection() -> None:
 
 
 def test_talker_runtime_fingerprint_falls_back_to_nested_projection() -> None:
-    """Fingerprinting should report the nested compatibility path when needed."""
+    """Fingerprinting should report the nested projection path when needed."""
     model = _build_model()
     projection = torch.nn.Linear(4, 4)
     model.talker.model.text_projection = projection

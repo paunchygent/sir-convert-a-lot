@@ -36,7 +36,7 @@ Containerization in this task means:
 - a new narrow Task 101 batch-runtime helper and, if needed, a narrow
   in-container entrypoint
 - one fresh short-lived container/process per bounded batch
-- reuse of the current Task 100 / Task 101 Qwen image lineage and runtime
+- reuse of the current Task 100 / Qwen image lineage and runtime
   helpers rather than a second ad hoc Qwen image
 
 ## PR Scope
@@ -48,7 +48,7 @@ Containerization in this task means:
 - Replace the current host-side `finalize-batch` subprocess path with one
   committed runtime surface that runs bounded batch finalization inside the
   governed Qwen runtime image.
-- Reuse the existing Task 100 / Task 101 Qwen image/build and mount-resolution
+- Reuse the existing Task 100 / Qwen image/build and mount-resolution
   helpers as a requirement, not a preference.
 - Preserve the current public `--output-root` contract.
   - Do not hardcode `/srv/scratch` as the only valid bundle root when the
@@ -85,7 +85,7 @@ The live `2026-03-12` Hemma Task 101 batch build proved that the new batched
 shape avoids the earlier immediate `ENOSPC` failure and can complete bounded
 batches, but it also exposed one remaining runtime-governance gap:
 
-- `task-101-pilot-bundle build` currently invokes `Qwen3TTSTokenizer` through
+- `qwen-pilot-bundle build` currently invokes `Qwen3TTSTokenizer` through
   the host PDM environment
 - the host environment did not have `flash-attn` available
 - the live run therefore emitted the upstream warning that it was falling back
@@ -103,11 +103,11 @@ The intended fix is therefore:
 
 ## Required Implementation Shape
 
-1. Add one committed Task 101 runtime helper/module for containerized batch
+1. Add one committed Qwen pilot runtime helper/module for containerized batch
    finalization.
    - It should own Docker invocation, bind mounts, in-container command
      execution, and structured failure diagnostics.
-   - It should be small and reuse the shared Task 100 / Task 101 runtime
+   - It should be small and reuse the shared Task 100 / Qwen pilot runtime
      helper pattern rather than introducing a second Qwen image or a second
      runtime model.
    - Mandatory reuse surface:
@@ -117,7 +117,7 @@ The intended fix is therefore:
      - ROCm Docker flags and env posture equivalent to the existing Qwen lane:
        `/dev/kfd`, `/dev/dri`, `--ipc=host`, `--cap-add=SYS_PTRACE`,
        `--security-opt seccomp=unconfined`, and canonical HF env vars
-1. Keep the public `pdm run task-101-pilot-bundle build` surface unchanged.
+1. Keep the public `pdm run qwen-pilot-bundle build` surface unchanged.
    - Operators should not need a new top-level workflow just to get the
      governed runtime.
 1. Keep the direct `finalize-batch` CLI stage coherent with the same runtime
@@ -162,9 +162,9 @@ The intended fix is therefore:
 - [x] Committed Task 101 containerized batch-finalization runtime helper.
 - [x] Committed Task 101 batch-runtime provenance contract so validated shard
   reuse can distinguish governed container output from legacy host output.
-- [x] Canonical `task-101-pilot-bundle build` surface updated to use that
+- [x] Canonical `qwen-pilot-bundle build` surface updated to use that
   helper for bounded batch finalization.
-- [x] Direct `task-101-pilot-bundle finalize-batch` stage updated so it does
+- [x] Direct `qwen-pilot-bundle finalize-batch` stage updated so it does
   not bypass the governed runtime.
 - [x] Tests covering the container-launch contract and failure propagation.
 - [x] Tests covering runtime provenance, host-visible status/event/report path
@@ -179,10 +179,10 @@ The intended fix is therefore:
   dependencies.
 - [x] The live/operator path for Task 101 batch finalization uses the
   containerized runtime with the governed Qwen dependency set.
-- [x] Task 101 batch finalization reuses the existing Task 100 / Task 101 Qwen
+- [x] Task 101 batch finalization reuses the existing Task 100 / Qwen
   training image and canonical runtime helpers rather than building a second
   ad hoc Qwen image.
-- [x] The public `task-101-pilot-bundle build` surface remains stable for
+- [x] The public `qwen-pilot-bundle build` surface remains stable for
   operators.
 - [x] The direct `finalize-batch` stage no longer bypasses the governed
   runtime.
@@ -220,7 +220,7 @@ The intended fix is therefore:
 
 - Preferred runtime source:
   reuse the existing `containers/qwen-finetune-hemma/Dockerfile` image family
-  and Task 100 / Task 101 runtime helpers rather than creating a second Qwen
+  and Task 100 / Qwen pilot runtime helpers rather than creating a second Qwen
   ROCm image unless that proves impossible and is documented explicitly.
 - Preferred architecture posture:
   extend the current working Task 100 / Task 109 container-runtime concept;
@@ -274,7 +274,7 @@ now explicitly aligned with the existing Task 100/101 training lane:
 - `HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub`
 - `TORCH_HOME=/cache/huggingface/torch`
 
-Direct `task-101-pilot-bundle finalize-batch` now uses the same governed
+Direct `qwen-pilot-bundle finalize-batch` now uses the same governed
 runtime contract as `build`, and focused regression coverage now proves:
 
 - generated Docker command shape and fixed in-container HF/cache paths

@@ -23,9 +23,9 @@ links:
   - docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0007-reusable-multi-backend-tts-sidecar-capability-contract.md
-  - scripts/sir_convert_a_lot/devops/run_task86_hemma_chatterbox_benchmark.py
-  - scripts/sir_convert_a_lot/devops/run_task89_hemma_chatterbox_espeak_experiment.py
-  - scripts/sir_convert_a_lot/devops/task86_chatterbox_runtime.py
+  - scripts/sir_convert_a_lot/devops/run_chatterbox_hemma_benchmark.py
+  - scripts/sir_convert_a_lot/devops/run_chatterbox_espeak_hemma_experiment.py
+  - scripts/sir_convert_a_lot/devops/chatterbox_benchmark_runtime.py
   - scripts/sir_convert_a_lot/tts_sidecar/chatterbox_runtime.py
   - containers/textprep-espeak-phonemizer/Dockerfile
   - https://github.com/resemble-ai/chatterbox
@@ -51,8 +51,8 @@ Current lifecycle status in this repo:
 This runbook is intentionally limited to two truth surfaces:
 
 - The Sir Convert-a-Lot repo implementation for Task 86:
-  - `scripts/sir_convert_a_lot/devops/run_task86_hemma_chatterbox_benchmark.py`
-  - `scripts/sir_convert_a_lot/devops/task86_chatterbox_runtime.py`
+  - `scripts/sir_convert_a_lot/devops/run_chatterbox_hemma_benchmark.py`
+  - `scripts/sir_convert_a_lot/devops/chatterbox_benchmark_runtime.py`
   - `scripts/sir_convert_a_lot/tts_sidecar/chatterbox_runtime.py`
   - `containers/tts-sidecar-chatterbox/Dockerfile`
 - The official upstream Chatterbox project:
@@ -67,7 +67,7 @@ Anything outside those surfaces is out of scope for this runbook.
 The current Task 86 benchmark surface is:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-86
+pdm run run-hemma -- pdm run benchmark:chatterbox
 ```
 
 The committed benchmark CLI currently exposes these relevant controls:
@@ -339,7 +339,7 @@ fixed while establishing the baseline lane.
 Example:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-86 \
+pdm run run-hemma -- pdm run benchmark:chatterbox \
   --skip-build \
   --output-root build/verification/task-86-chatterbox-hemma-sv-baseline \
   --reference-audio build/verification/task-81-openvoice-v2-hemma/inputs/teacher_reference_voice.m4a \
@@ -375,7 +375,7 @@ Start with:
 Same-language low-guidance lane:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-86 \
+pdm run run-hemma -- pdm run benchmark:chatterbox \
   --skip-build \
   --output-root build/verification/task-86-chatterbox-hemma-sv-cfg-0p3 \
   --reference-audio build/verification/task-81-openvoice-v2-hemma/inputs/teacher_reference_voice.m4a \
@@ -401,7 +401,7 @@ more expressive speech.
 Example expressive comparison lane:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-86 \
+pdm run run-hemma -- pdm run benchmark:chatterbox \
   --skip-build \
   --output-root build/verification/task-86-chatterbox-hemma-sv-exag-0p7 \
   --reference-audio build/verification/task-81-openvoice-v2-hemma/inputs/teacher_reference_voice.m4a \
@@ -465,13 +465,13 @@ runner that:
 Canonical command:
 
 ```bash
-pdm run benchmark:task-89
+pdm run benchmark:chatterbox-espeak
 ```
 
 Remote execution surface used by the orchestrator:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-89-hemma
+pdm run run-hemma -- pdm run benchmark:chatterbox-espeak-hemma
 ```
 
 Use this path only for experimental A/B evaluation of Swedish phoneme handling.

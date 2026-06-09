@@ -19,13 +19,11 @@ from .metadata_ports import StatusMarkdownRendererPort
 class DetachedStatusMarkdownRenderer(StatusMarkdownRendererPort):
     """Renderer implementation scaffold for detached status markdown output.
 
-    This scaffold intentionally has no runtime wiring yet. Task 200 owns the
+    This scaffold intentionally has no runtime wiring yet. launch metadata persistence owns the
     bounded markdown rendering implementation for detached status payloads.
     """
 
     def render(self, status: DetachedStatus) -> str:
         """Render one detached status markdown summary."""
         del status
-        raise NotImplementedError(
-            "Task 200 implementation pending for detached status markdown rendering."
-        )
+        raise NotImplementedError("Detached status markdown rendering implementation is pending.")

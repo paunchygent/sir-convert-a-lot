@@ -81,7 +81,7 @@ runbook/API documentation updates.
 
 - 2026-04-19: Task 255 completed the cache-hot dependency-image rebuild slice.
   Final evidence is in
-  `build/verification/task-255-service-deps-image-cache/`. Story 05 remains
+  `build/verification/service-dependency-image-cache/`. Story 05 remains
   open while Task 254 public-edge detached deploy verification is still the
   immediate production recovery authority.
 

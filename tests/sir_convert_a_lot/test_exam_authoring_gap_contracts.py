@@ -1,7 +1,7 @@
 """Tests for source-neutral ExamAuthoringIR gap/open-cloze contracts.
 
 Purpose:
-    Prove Task 305 gap ID binding, accepted-value validation, normalization,
+    Prove gap-fill candidate gap ID binding, accepted-value validation, normalization,
     DigiExam adapter mapping, and target-readiness degradation semantics.
 
 Relationships:
@@ -305,7 +305,7 @@ def test_digiexam_result_pdf_gap_answers_map_to_source_provided_authoring_values
     assert result.automatic_evaluation_ready is True
 
 
-def test_available_dxe_gap_pool_matches_task305_gap_assumptions() -> None:
+def test_available_dxe_gap_pool_matches_gap_assumptions() -> None:
     paths = sorted(Path("inputs").rglob("*.dxe"))
     interactions: list[ExamAuthoringGapOpenClozeInteraction] = []
     parser = DigiExamDxeParser()

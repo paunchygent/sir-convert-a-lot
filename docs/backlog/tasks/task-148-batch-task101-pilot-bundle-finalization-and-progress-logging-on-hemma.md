@@ -165,7 +165,7 @@ closed before this task can be treated as fully hardened:
 
 `T148` is now implemented.
 
-The canonical `pdm run task-101-pilot-bundle build` surface still exists, but
+The canonical `pdm run qwen-pilot-bundle build` surface still exists, but
 it no longer performs one whole-family finalization pass in-process. Instead it
 now:
 

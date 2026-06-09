@@ -1,7 +1,7 @@
 """Tests for structured LLM provider HTTP execution.
 
 Purpose:
-    Prove the Task 296 provider adapter executes configured
+    Prove the structured LLM provider harness provider adapter executes configured
     OpenAI-compatible endpoints, parses structured responses, and maps
     provider failures without exposing raw prompts or upstream payloads.
 

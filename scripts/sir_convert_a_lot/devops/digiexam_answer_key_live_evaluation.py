@@ -1,13 +1,13 @@
-"""Task 309 advisory report adjudication against teacher goldens.
+"""answer-key live validation advisory report adjudication against teacher goldens.
 
 Purpose:
-    Build an item-centered diagnostic packet for Task 309 live validation that
+    Build an item-centered diagnostic packet for answer-key live validation live validation that
     shows what the model saw, what the teacher golden says, what the model
     suggested, and why the row is blocked, correct, manual, or unscored.
 
 Relationships:
-    - Consumes the Task 309 fixture manifests and per-file advisory reports.
-    - Reconstructs provider requests through the same Task 312 candidate
+    - Consumes the answer-key live validation fixture manifests and per-file advisory reports.
+    - Reconstructs provider requests through the same answer-key provider protocol candidate
       planner used by production advisory execution.
     - Produces validation-only evidence for failure-path analysis; it still
       avoids raw provider responses.
@@ -26,16 +26,16 @@ from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
     structured_profile_from_answer_key_provider_run_metadata,
 )
 from scripts.sir_convert_a_lot.devops.digiexam_answer_key_corpus_coverage import (
-    Task309CorpusCoverageProof,
-    build_task309_corpus_coverage_proof,
+    AnswerKeyCorpusCoverageProof,
+    build_answer_key_corpus_coverage_proof,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     answer_key_candidate_planner_for_profile,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    Task309AssetEvalPolicy,
-    build_task309_live_validation_manifest,
-    write_task309_json,
+    AnswerKeyAssetEvalPolicy,
+    build_answer_key_live_validation_manifest,
+    write_answer_key_json,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
@@ -47,7 +47,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_payloads import (
     build_structured_llm_payload,
 )
 
-TASK309_ADVISORY_EVALUATION_SCHEMA_VERSION = "task309_advisory_adjudication_v2"
+ANSWER_KEY_ADVISORY_EVALUATION_SCHEMA_VERSION = "answer_key_advisory_adjudication_v2"
 
 # Gap-fill synonym groups for golden evaluation.
 # Each frozenset contains terms that are considered equivalent for answer-key
@@ -71,7 +71,7 @@ _GAP_SYNONYM_GROUPS: tuple[frozenset[str], ...] = (
 
 
 @dataclass(frozen=True)
-class Task309EvaluationFinding:
+class AnswerKeyEvaluationFinding:
     """One item-centered adjudication finding."""
 
     category: str
@@ -131,7 +131,7 @@ class Task309EvaluationFinding:
 
 
 @dataclass(frozen=True)
-class Task309AdvisoryEvaluationReport:
+class AnswerKeyAdvisoryEvaluationReport:
     """Redacted-but-useful advisory evaluation summary."""
 
     schema_version: str
@@ -140,7 +140,7 @@ class Task309AdvisoryEvaluationReport:
     reports_root: str
     provider_run_metadata_json: str
     model_settings_json: str
-    coverage_proof: Task309CorpusCoverageProof
+    coverage_proof: AnswerKeyCorpusCoverageProof
     report_count: int
     golden_count: int
     report_item_count: int
@@ -157,7 +157,7 @@ class Task309AdvisoryEvaluationReport:
     malformed_success_count: int
     finding_count: int
     finding_category_counts: tuple[dict[str, object], ...]
-    findings: tuple[Task309EvaluationFinding, ...]
+    findings: tuple[AnswerKeyEvaluationFinding, ...]
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload."""
@@ -196,12 +196,12 @@ class _Comparison:
     detail: str
 
 
-def evaluate_task309_advisory_reports(
+def evaluate_answer_key_advisory_reports(
     *,
     expected_answer_manifest_path: Path,
     reports_root: Path,
     run_report_path: Path | None = None,
-) -> Task309AdvisoryEvaluationReport:
+) -> AnswerKeyAdvisoryEvaluationReport:
     """Evaluate retained advisory reports and build an adjudication packet."""
 
     validation_manifest_path = (
@@ -222,7 +222,7 @@ def evaluate_task309_advisory_reports(
     item_contexts = _load_item_contexts(expected_answer_manifest_path.parent)
     report_paths = tuple(sorted(reports_root.glob("*.answer-key-completion-report.json")))
     seen_report_keys: set[tuple[str, str]] = set()
-    findings: list[Task309EvaluationFinding] = []
+    findings: list[AnswerKeyEvaluationFinding] = []
     report_item_count = 0
     suggested_count = 0
     correct_suggestion_count = 0
@@ -438,12 +438,12 @@ def evaluate_task309_advisory_reports(
 
     category_counts = Counter(finding.category for finding in findings)
     provider_run_metadata_json = provider_run_metadata.to_json()
-    coverage_proof = build_task309_corpus_coverage_proof(
+    coverage_proof = build_answer_key_corpus_coverage_proof(
         manifest_items=manifest_items,
         report_keys=seen_report_keys,
     )
-    return Task309AdvisoryEvaluationReport(
-        schema_version=TASK309_ADVISORY_EVALUATION_SCHEMA_VERSION,
+    return AnswerKeyAdvisoryEvaluationReport(
+        schema_version=ANSWER_KEY_ADVISORY_EVALUATION_SCHEMA_VERSION,
         expected_answer_manifest_path=expected_answer_manifest_path.as_posix(),
         validation_manifest_path=validation_manifest_path.as_posix(),
         reports_root=reports_root.as_posix(),
@@ -472,17 +472,17 @@ def evaluate_task309_advisory_reports(
     )
 
 
-def write_task309_advisory_evaluation(
+def write_answer_key_advisory_evaluation(
     *,
     output_root: Path,
-    report: Task309AdvisoryEvaluationReport,
+    report: AnswerKeyAdvisoryEvaluationReport,
 ) -> tuple[Path, Path]:
     """Write JSON and Markdown adjudication artifacts."""
 
     output_root.mkdir(parents=True, exist_ok=True)
     json_path = output_root / "advisory-golden-evaluation.json"
     markdown_path = output_root / "advisory-golden-evaluation.md"
-    write_task309_json(report.to_payload(), json_path)
+    write_answer_key_json(report.to_payload(), json_path)
     markdown_path.write_text(_markdown(report).rstrip() + "\n", encoding="utf-8")
     return json_path, markdown_path
 
@@ -516,9 +516,9 @@ def _load_effective_manifest_items(
 ) -> dict[tuple[str, str], dict[str, object]]:
     if diagnostic_profile is None:
         return _load_manifest_items(fallback_manifest_path)
-    manifest = build_task309_live_validation_manifest(
+    manifest = build_answer_key_live_validation_manifest(
         corpus_root,
-        asset_eval_policy=Task309AssetEvalPolicy(
+        asset_eval_policy=AnswerKeyAssetEvalPolicy(
             allow_supported_embedded_assets=(
                 diagnostic_profile.capabilities.supports_multimodal_vision
             ),
@@ -562,10 +562,10 @@ def _finding(
     detail: str,
     teacher_answer_json: str | None = None,
     model_output_json: str | None = None,
-) -> Task309EvaluationFinding:
+) -> AnswerKeyEvaluationFinding:
     exchange_payload = _provider_exchange_diagnostic(report_item)
     request_payload = _request_diagnostic(context, diagnostic_profile)
-    return Task309EvaluationFinding(
+    return AnswerKeyEvaluationFinding(
         category=category,
         source_filename=source_filename,
         item_id=item_id,
@@ -612,7 +612,7 @@ def _request_diagnostic(
     if item is None or profile is None:
         return None
     plan = answer_key_candidate_planner_for_profile(profile).plan_candidate(
-        job_id="task309-diagnostic",
+        job_id="answer-key-live-validation-diagnostic",
         item=item,
         profile=profile,
     )
@@ -651,11 +651,11 @@ def _provider_exchange_diagnostic(
 ) -> dict[str, object] | None:
     if report_item is None:
         return None
-    exchange = report_item.get("task309_provider_exchange")
+    exchange = report_item.get("answer_key_provider_exchange")
     if exchange is None:
         return None
     if not isinstance(exchange, dict):
-        raise ValueError("task309_provider_exchange must be an object.")
+        raise ValueError("answer_key_provider_exchange must be an object.")
     return _json_object(exchange)
 
 
@@ -750,9 +750,9 @@ def _compare_gap_payloads(
     return _Comparison("correct", "gap IDs and values match.")
 
 
-def _markdown(report: Task309AdvisoryEvaluationReport) -> str:
+def _markdown(report: AnswerKeyAdvisoryEvaluationReport) -> str:
     lines = [
-        "# Task 309 Advisory Golden Evaluation",
+        "# answer-key live validation Advisory Golden Evaluation",
         "",
         f"- report_count: `{report.report_count}`",
         f"- golden_count: `{report.golden_count}`",
@@ -806,7 +806,7 @@ class _FindingSection:
 
 
 def _finding_sections(
-    findings: tuple[Task309EvaluationFinding, ...],
+    findings: tuple[AnswerKeyEvaluationFinding, ...],
 ) -> tuple[_FindingSection, ...]:
     known = {
         "correct_suggestion",
@@ -838,7 +838,7 @@ def _finding_sections(
     return tuple(sections)
 
 
-def _append_finding_markdown(lines: list[str], finding: Task309EvaluationFinding) -> None:
+def _append_finding_markdown(lines: list[str], finding: AnswerKeyEvaluationFinding) -> None:
     lines.extend(
         [
             "",

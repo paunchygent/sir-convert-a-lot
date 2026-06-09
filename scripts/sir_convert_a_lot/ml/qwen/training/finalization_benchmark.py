@@ -156,7 +156,7 @@ def selected_family_rows(
 
 
 def benchmark_eval_family(manifest_family: ManifestFamily) -> ManifestFamily:
-    """Return a distinct family literal for benchmark-plan compatibility."""
+    """Return the alternate family literal for benchmark-plan control rows."""
     if manifest_family == "swedish_checkpoint_dev":
         return "swedish_pilot_train"
     return "swedish_checkpoint_dev"

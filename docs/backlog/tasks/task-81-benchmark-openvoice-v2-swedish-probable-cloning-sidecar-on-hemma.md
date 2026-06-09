@@ -48,7 +48,7 @@ teacher voice cloning, using live R9700 evidence rather than upstream claims alo
 
 ## Deliverables
 
-- [x] Committed `benchmark:task-81` command surface (or equivalent named wrapper).
+- [x] Committed `benchmark:openvoice` command surface (or equivalent named wrapper).
 - [x] Deterministic Hemma evidence under `build/verification/task-81-openvoice-v2-hemma/`.
 - [x] Swedish sample artifacts generated from a cloning flow.
 - [x] Explicit recommendation on whether OpenVoice V2 becomes the primary cloning-capable backend

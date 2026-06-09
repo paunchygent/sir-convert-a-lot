@@ -21,7 +21,7 @@ related:
   - docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md
   - docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -76,7 +76,7 @@ The family should:
 
 - The layer-16 handoff family is now grounded in the recovered Hemma artifact
   root:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1`
 - The surviving result artifacts are:
   - `results.json`
   - `results.md`
@@ -90,8 +90,8 @@ The family should:
 ## PR Scope
 
 - Reuse the existing Story 31 exploration vehicle:
-  - `pdm run qwen-story31-stability-lab run`
-  - `pdm run qwen-story31-stability-lab gate`
+  - `pdm run qwen-stability-lab run`
+  - `pdm run qwen-stability-lab gate`
 - Reuse the now-closed `T225-T226` parity result as the mechanism evidence
   that no higher-priority trainer/runtime remediation displaced this slice.
 - Reuse the exact failing-row pair, hook profile, and promotion rule from
@@ -130,8 +130,8 @@ The family should:
 
 ## Validation
 
-- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1/results.json`
-- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task219-20260317t180700z-a1/results.md`
+- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1/results.json`
+- [x] `pdm run run-hemma -- cat /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task219-20260317t180700z-a1/results.md`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`

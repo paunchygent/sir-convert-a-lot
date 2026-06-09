@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
   - docs/backlog/tasks/task-210-run-the-first-governed-hemma-proof-for-candidate-1-semantic-only-assembly.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -94,24 +94,24 @@ opens the ordered Candidate 3 contingency.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_freshstart_proof.py -q`
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_story30_freshstart_bundle.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_qwen_freshstart_proof.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_qwen_freshstart_bundle.py -q`
 - [x] `pdm run typecheck-all`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run qwen-story30-freshstart-proof prepare --proof-id <proof-id> --skip-build`
-- [x] `pdm run qwen-story30-freshstart-proof launch --proof-id <proof-id>`
-- [x] `pdm run qwen-story30-freshstart-proof status --proof-id <proof-id>`
+- [x] `pdm run qwen-freshstart-proof prepare --proof-id <proof-id> --skip-build`
+- [x] `pdm run qwen-freshstart-proof launch --proof-id <proof-id>`
+- [x] `pdm run qwen-freshstart-proof status --proof-id <proof-id>`
 
 ## Outcome
 
 - Final proof id:
   `task211-20260317t130740z-freshstart-a4`
 - Local proof root:
-  `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4`
+  `build/verification/qwen-freshstart-proof/task211-20260317t130740z-freshstart-a4`
 - Terminal artifact:
-  `build/verification/qwen-story30-freshstart-proof/task211-20260317t130740z-freshstart-a4/status.json`
+  `build/verification/qwen-freshstart-proof/task211-20260317t130740z-freshstart-a4/status.json`
 - Terminal Hemma result:
   - `status=exited`
   - `exit_code=1`

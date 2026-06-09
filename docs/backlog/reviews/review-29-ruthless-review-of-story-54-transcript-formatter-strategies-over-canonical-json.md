@@ -1,9 +1,9 @@
 ---
-id: 'review-29-ruthless-review-of-story-54-transcript-formatter-strategies-over-canonical-json'
-title: 'Ruthless review of Story 54 transcript formatter strategies over canonical JSON'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-29-ruthless-review-of-story-54-transcript-formatter-strategies-over-canonical-json
+title: Ruthless review of Story 54 transcript formatter strategies over canonical JSON
+type: review
+status: completed
+priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
 related:
@@ -21,6 +21,7 @@ labels:
   - transcript-formatters
   - blocked-state
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -160,10 +161,10 @@ Structured review artifact for implementation or readiness checks.
   behavior-focused for this blocked slice: it asks the real v2 create-job
   registry for registered route keys and validates that `JobSpecV2` rejects an
   `audio -> transcript_bundle` request.
-- `test_formatter_artifact_requests_are_rejected_while_story_53_is_blocked`
+- `test_formatter_artifact_requests_are_rejected_while_audio_transcript_route_is_blocked`
   proves the public audio options boundary rejects the future formatter artifact
   names while only JSON is day-one accepted.
-- `test_story_54_records_blocked_decision_without_runtime_completion` is a
+- `test_transcript_formatter_records_blocked_decision_without_runtime_completion` is a
   docs-as-code guard. Its string assertions are acceptable here because the
   governed artifact text is part of the reviewed state boundary, and the other
   tests carry runtime boundary proof.

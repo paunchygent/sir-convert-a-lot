@@ -3,7 +3,7 @@
 Purpose:
     Validate the durable checkpoint metadata, retention pruning, pointer
     consistency, retry semantics, free-space guard, and metadata rehydration
-    contract introduced for T115 without requiring a real GPU training run.
+    contract introduced for durable-checkpoint lifecycle without requiring a real GPU training run.
 
 Relationships:
     - Exercises helper functions in

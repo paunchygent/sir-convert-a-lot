@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
   - docs/backlog/tasks/task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -128,7 +128,7 @@ restart rule so Story 29 does not keep consuming replay-only RCAs forever.
 - The single final post-fix Hemma proof has now been run under
   `task206-20260317t074600z-postfix1470-a1`:
   - proof surface:
-    `pdm run qwen-t198-proof launch-fallback1470 --proof-id task206-20260317t074600z-postfix1470-a1`
+    `pdm run qwen-fallback-accumulation-proof launch-fallback1470 --proof-id task206-20260317t074600z-postfix1470-a1`
   - settings:
     - `text_embedding_mask_policy=text_span_only`
     - explicit position-mask correction committed

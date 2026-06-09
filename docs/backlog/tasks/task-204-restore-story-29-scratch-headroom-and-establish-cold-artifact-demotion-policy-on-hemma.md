@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
   - docs/backlog/tasks/task-112-move-qwen-hemma-generated-output-to-data-and-clean-root-disk.md
   - docs/backlog/tasks/task-113-migrate-hemma-docker-storage-root-to-data-backed-disk.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -101,7 +101,7 @@ scratch governance:
 - [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy remediate ...` can
   archive explicit scratch roots onto `/srv/storage` while preserving symlink
   stability at the original path.
-- [ ] `qwen-t197-proof` and `qwen-t198-proof` refuse launch when Hemma scratch
+- [ ] `qwen-fallback-proof` and `qwen-fallback-accumulation-proof` refuse launch when Hemma scratch
   free bytes are below the required threshold.
 - [ ] The selected remediation frees enough space that the next accumulation-`2`
   replay is not blocked by the same checkpoint-save headroom failure.
@@ -117,7 +117,7 @@ scratch governance:
 1. Add Docker cleanup if needed:
    `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --prune-docker-state ...`
 1. Rerun the accumulation-`2` proof only after headroom is restored:
-   `pdm run qwen-t198-proof prepare --proof-id <proof-id> --skip-build`
+   `pdm run qwen-fallback-accumulation-proof prepare --proof-id <proof-id> --skip-build`
 
 ## Checklist
 

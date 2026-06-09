@@ -1,12 +1,12 @@
-"""Task 309 llama.cpp provider launch helpers.
+"""answer-key live validation llama.cpp provider launch helpers.
 
 Purpose:
     Build and execute the Hemma-local llama.cpp server command used for the
-    Qwen3.6 Task 309 answer-key validation lane.
+    Qwen3.6 answer-key live validation answer-key validation lane.
 
 Relationships:
     - Complements the Granite/vLLM Docker launch surface without replacing it.
-    - Writes persistent pid/log artifacts under the governed Task 309 output
+    - Writes persistent pid/log artifacts under the governed answer-key live validation output
       root so the provider remains observable after the CLI exits.
     - Uses the named provider defaults from
       `infrastructure.answer_key_local_model_profiles`.
@@ -22,9 +22,9 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
-    TASK309_PROVIDER_PERSISTENT_POLICY,
-    Task309LlamaProviderLaunchPlan,
-    Task309LlamaProviderLaunchResult,
+    ANSWER_KEY_PROVIDER_PERSISTENT_POLICY,
+    AnswerKeyLlamaProviderLaunchPlan,
+    AnswerKeyLlamaProviderLaunchResult,
 )
 from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles import (
     QWEN36_LLAMA_CPP_HF_FILE,
@@ -55,8 +55,8 @@ def build_answer_key_llama_provider_launch_plan(
     hf_file: str | None = None,
     llama_cache_path: str,
     dry_run: bool,
-) -> Task309LlamaProviderLaunchPlan:
-    """Build the persistent llama.cpp launch plan for Task 309."""
+) -> AnswerKeyLlamaProviderLaunchPlan:
+    """Build the persistent llama.cpp launch plan for answer-key live validation."""
 
     log_path = output_root / f"{model}-llama-server.log"
     pid_path = output_root / f"{model}-llama-server.pid"
@@ -73,7 +73,7 @@ def build_answer_key_llama_provider_launch_plan(
         log_path=log_path,
         provider_profile=provider_profile,
     )
-    return Task309LlamaProviderLaunchPlan(
+    return AnswerKeyLlamaProviderLaunchPlan(
         schema_version=ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
         generated_at=_utc_now_iso(),
         provider_profile=provider_profile.value,
@@ -90,15 +90,15 @@ def build_answer_key_llama_provider_launch_plan(
         output_root=output_root.as_posix(),
         log_path=log_path.as_posix(),
         pid_path=pid_path.as_posix(),
-        persistent_policy=TASK309_PROVIDER_PERSISTENT_POLICY,
+        persistent_policy=ANSWER_KEY_PROVIDER_PERSISTENT_POLICY,
         command=command,
         dry_run=dry_run,
     )
 
 
-def launch_task309_llama_provider(
-    plan: Task309LlamaProviderLaunchPlan,
-) -> Task309LlamaProviderLaunchResult:
+def launch_answer_key_llama_provider(
+    plan: AnswerKeyLlamaProviderLaunchPlan,
+) -> AnswerKeyLlamaProviderLaunchResult:
     """Launch the persistent llama.cpp provider or return a dry-run result."""
 
     if plan.dry_run:
@@ -223,13 +223,13 @@ def _launch_command(
 
 def _result(
     *,
-    plan: Task309LlamaProviderLaunchPlan,
+    plan: AnswerKeyLlamaProviderLaunchPlan,
     exit_code: int | None,
     pid: int | None,
     ok: bool,
     error_kind: str | None,
-) -> Task309LlamaProviderLaunchResult:
-    return Task309LlamaProviderLaunchResult(
+) -> AnswerKeyLlamaProviderLaunchResult:
+    return AnswerKeyLlamaProviderLaunchResult(
         schema_version=ANSWER_KEY_LLAMA_PROVIDER_LAUNCH_SCHEMA_VERSION,
         launched_at=_utc_now_iso(),
         provider_profile=plan.provider_profile,

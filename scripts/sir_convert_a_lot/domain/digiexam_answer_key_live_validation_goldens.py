@@ -1,7 +1,7 @@
 """DigiExam answer-key live-validation golden verification.
 
 Purpose:
-    Validate Task 309 expected-answer manifests against the versioned DigiExam
+    Validate answer-key live validation expected-answer manifests against the versioned DigiExam
     DXE fixture corpus before any live provider output is scored.
 
 Relationships:
@@ -10,7 +10,7 @@ Relationships:
     - Uses `digiexam_answer_key_payloads` to prove each teacher-verified
       answer payload is accepted by the same reviewed-overlay contract used by
       apply mode.
-    - Feeds the Task 309 runner and later report evaluators without involving
+    - Feeds the answer-key live validation runner and later report evaluators without involving
       the model under validation.
 """
 
@@ -24,11 +24,11 @@ from pathlib import Path
 from pydantic import JsonValue
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    TASK309_CORPUS_ID,
-    Task309AssetEvalPolicy,
-    Task309LiveValidationFile,
-    Task309LiveValidationItem,
-    build_task309_live_validation_manifest,
+    ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID,
+    AnswerKeyAssetEvalPolicy,
+    AnswerKeyLiveValidationFile,
+    AnswerKeyLiveValidationItem,
+    build_answer_key_live_validation_manifest,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_payloads import (
     validated_reviewed_answer_payload,
@@ -39,14 +39,12 @@ from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     build_digiexam_intermediate_exam,
 )
 
-TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION = (
-    "digiexam_answer_key_live_validation_expected_answers_v1"
-)
-TASK309_TEACHER_VERIFIED_STATE = "teacher_verified"
+EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION = "digiexam_answer_key_live_validation_expected_answers_v1"
+TEACHER_VERIFIED_ANSWER_STATE = "teacher_verified"
 
 
 @dataclass(frozen=True)
-class Task309GoldenValidationIssue:
+class ExpectedAnswerValidationIssue:
     """One deterministic expected-answer manifest validation issue."""
 
     code: str
@@ -56,7 +54,7 @@ class Task309GoldenValidationIssue:
 
 
 @dataclass(frozen=True)
-class Task309GoldenValidationSummary:
+class ExpectedAnswerValidationSummary:
     """Aggregate expected-answer manifest validation result."""
 
     entry_count: int
@@ -71,8 +69,8 @@ class Task309GoldenValidationSummary:
 
 
 @dataclass(frozen=True)
-class Task309GoldenValidationReport:
-    """Task 309 expected-answer validation report safe to retain."""
+class AnswerKeyGoldenValidationReport:
+    """answer-key live validation expected-answer validation report safe to retain."""
 
     schema_version: str
     corpus_id: str
@@ -80,8 +78,8 @@ class Task309GoldenValidationReport:
     source_root_hint: str
     source_manifest_sha256: str
     expected_answer_manifest_sha256: str
-    summary: Task309GoldenValidationSummary
-    issues: tuple[Task309GoldenValidationIssue, ...]
+    summary: ExpectedAnswerValidationSummary
+    issues: tuple[ExpectedAnswerValidationIssue, ...]
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON payload for the validation report."""
@@ -98,34 +96,41 @@ class Task309GoldenValidationReport:
         }
 
 
-def validate_task309_expected_answer_manifest(
+def validate_expected_answer_manifest(
     *,
     corpus_root: Path,
     expected_answer_manifest_path: Path,
-) -> Task309GoldenValidationReport:
-    """Validate the committed expected-answer manifest for one Task 309 corpus."""
+) -> AnswerKeyGoldenValidationReport:
+    """Validate the committed expected-answer manifest for one answer-key live validation corpus."""
 
-    corpus_manifest = build_task309_live_validation_manifest(
+    corpus_manifest = build_answer_key_live_validation_manifest(
         corpus_root,
-        asset_eval_policy=Task309AssetEvalPolicy(allow_supported_embedded_assets=True),
+        asset_eval_policy=AnswerKeyAssetEvalPolicy(allow_supported_embedded_assets=True),
     )
     eligible_items = _eligible_items(corpus_manifest.files)
     ir_items = _ir_items(corpus_root)
     payload = _load_object(expected_answer_manifest_path)
     entries = _entries(payload)
-    issues: list[Task309GoldenValidationIssue] = []
+    issues: list[ExpectedAnswerValidationIssue] = []
 
-    if payload.get("schema_version") != TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION:
+    if payload.get("schema_version") != EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION:
         issues.append(
             _issue(
                 "unexpected_schema_version",
                 None,
                 None,
-                f"Expected {TASK309_EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION}.",
+                f"Expected {EXPECTED_ANSWER_MANIFEST_SCHEMA_VERSION}.",
             )
         )
-    if payload.get("corpus_id") != TASK309_CORPUS_ID:
-        issues.append(_issue("unexpected_corpus_id", None, None, f"Expected {TASK309_CORPUS_ID}."))
+    if payload.get("corpus_id") != ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID:
+        issues.append(
+            _issue(
+                "unexpected_corpus_id",
+                None,
+                None,
+                f"Expected {ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID}.",
+            )
+        )
 
     seen_keys: set[tuple[str, str]] = set()
     unknown_keys: set[tuple[str, str]] = set()
@@ -174,10 +179,11 @@ def validate_task309_expected_answer_manifest(
                     "adjudication_required",
                     entry.source_filename,
                     entry.item_id,
-                    "Scored Task 309 items must be teacher verified before correctness scoring.",
+                    "Scored answer-key live validation items must be teacher verified "
+                    "before correctness scoring.",
                 )
             )
-        if entry.expected_answer_state != TASK309_TEACHER_VERIFIED_STATE:
+        if entry.expected_answer_state != TEACHER_VERIFIED_ANSWER_STATE:
             issues.append(
                 _issue(
                     "expected_answer_not_teacher_verified",
@@ -186,7 +192,7 @@ def validate_task309_expected_answer_manifest(
                     "Expected-answer state must be teacher_verified.",
                 )
             )
-        if entry.verification_state != TASK309_TEACHER_VERIFIED_STATE:
+        if entry.verification_state != TEACHER_VERIFIED_ANSWER_STATE:
             issues.append(
                 _issue(
                     "verification_not_teacher_verified",
@@ -220,7 +226,7 @@ def validate_task309_expected_answer_manifest(
     _validate_summary(payload, entries=entries, issues=issues)
 
     issue_tuple = tuple(issues)
-    summary = Task309GoldenValidationSummary(
+    summary = ExpectedAnswerValidationSummary(
         entry_count=len(entries),
         eligible_item_count=len(eligible_items),
         validated_item_count=validated_count,
@@ -231,9 +237,9 @@ def validate_task309_expected_answer_manifest(
         issue_count=len(issue_tuple),
         valid=len(issue_tuple) == 0,
     )
-    return Task309GoldenValidationReport(
+    return AnswerKeyGoldenValidationReport(
         schema_version="digiexam_answer_key_live_validation_expected_answer_validation_v1",
-        corpus_id=TASK309_CORPUS_ID,
+        corpus_id=ANSWER_KEY_LIVE_VALIDATION_CORPUS_ID,
         expected_answer_manifest_path=expected_answer_manifest_path.as_posix(),
         source_root_hint=corpus_root.as_posix(),
         source_manifest_sha256=_sha256(corpus_root / "validation-corpus-manifest.json"),
@@ -259,9 +265,9 @@ class _ExpectedAnswerEntry:
 
 
 def _eligible_items(
-    files: tuple[Task309LiveValidationFile, ...],
-) -> dict[tuple[str, str], Task309LiveValidationItem]:
-    items: dict[tuple[str, str], Task309LiveValidationItem] = {}
+    files: tuple[AnswerKeyLiveValidationFile, ...],
+) -> dict[tuple[str, str], AnswerKeyLiveValidationItem]:
+    items: dict[tuple[str, str], AnswerKeyLiveValidationItem] = {}
     for file_entry in files:
         for item in file_entry.items:
             if item.eligible:
@@ -282,7 +288,9 @@ def _ir_items(corpus_root: Path) -> dict[tuple[str, str], DigiExamIrItem]:
 def _load_object(path: Path) -> dict[str, object]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError(f"Task 309 expected-answer manifest must be an object: {path}")
+        raise ValueError(
+            f"answer-key live validation expected-answer manifest must be an object: {path}"
+        )
     return {str(key): value for key, value in payload.items()}
 
 
@@ -297,7 +305,7 @@ def _entry(
     raw_entry: dict[object, object],
     *,
     index: int,
-    issues: list[Task309GoldenValidationIssue],
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> _ExpectedAnswerEntry | None:
     source_filename = _required_str(raw_entry, "source_filename", index, issues)
     source_sha256 = _required_str(raw_entry, "source_sha256", index, issues)
@@ -344,8 +352,8 @@ def _entry(
 def _validate_entry_binding(
     *,
     entry: _ExpectedAnswerEntry,
-    manifest_item: Task309LiveValidationItem,
-    issues: list[Task309GoldenValidationIssue],
+    manifest_item: AnswerKeyLiveValidationItem,
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> None:
     checks = (
         ("source_sha256_mismatch", entry.source_sha256, manifest_item.source_sha256),
@@ -374,7 +382,7 @@ def _validate_summary(
     payload: dict[str, object],
     *,
     entries: list[object],
-    issues: list[Task309GoldenValidationIssue],
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> None:
     summary = payload.get("summary")
     if not isinstance(summary, dict):
@@ -391,7 +399,7 @@ def _required_str(
     payload: dict[object, object],
     key: str,
     index: int,
-    issues: list[Task309GoldenValidationIssue],
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> str | None:
     value = payload.get(key)
     if isinstance(value, str) and value.strip():
@@ -404,7 +412,7 @@ def _required_int(
     payload: dict[object, object],
     key: str,
     index: int,
-    issues: list[Task309GoldenValidationIssue],
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> int | None:
     value = payload.get(key)
     if isinstance(value, int) and not isinstance(value, bool):
@@ -417,7 +425,7 @@ def _required_bool(
     payload: dict[object, object],
     key: str,
     index: int,
-    issues: list[Task309GoldenValidationIssue],
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> bool | None:
     value = payload.get(key)
     if isinstance(value, bool):
@@ -430,7 +438,7 @@ def _required_json_object(
     payload: dict[object, object],
     key: str,
     index: int,
-    issues: list[Task309GoldenValidationIssue],
+    issues: list[ExpectedAnswerValidationIssue],
 ) -> dict[str, JsonValue] | None:
     value = payload.get(key)
     try:
@@ -468,8 +476,8 @@ def _issue(
     source_filename: str | None,
     item_id: str | None,
     detail: str,
-) -> Task309GoldenValidationIssue:
-    return Task309GoldenValidationIssue(
+) -> ExpectedAnswerValidationIssue:
+    return ExpectedAnswerValidationIssue(
         code=code,
         source_filename=source_filename,
         item_id=item_id,

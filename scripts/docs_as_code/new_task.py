@@ -109,7 +109,8 @@ labels: []
 ---
 {template.intro}
 
-{render_sections(args.type)}"""
+{render_sections(args.type)}
+"""
     target.write_text(content, encoding="utf-8")
     print(target)
 

@@ -1,7 +1,7 @@
 """Structured LLM admission routing tests.
 
 Purpose:
-    Prove Task 325-B resolves provider routing once at job admission and keeps
+    Prove HTML to PDF route5-B resolves provider routing once at job admission and keeps
     public remote-provider use fail-closed before execution begins.
 
 Relationships:

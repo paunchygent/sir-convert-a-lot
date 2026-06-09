@@ -191,7 +191,7 @@ def execute_train_iteration(
         grad_norm: torch.Tensor | float | None = None
         pre_step_probes = None
         post_clip_gradient_probes: dict[str, object] | None = None
-        with prepared.torch_profiler_session.phase("task101.batch-preparation"):
+        with prepared.torch_profiler_session.phase("qwen-swedish-finetune.batch-preparation"):
             input_ids = resolved_batch["input_ids"]
             codec_ids = resolved_batch["codec_ids"]
             semantic_text_ids = resolved_batch["semantic_text_ids"]
@@ -204,7 +204,7 @@ def execute_train_iteration(
             attention_mask = resolved_batch["attention_mask"]
             codec_0_labels = resolved_batch["codec_0_labels"]
             codec_mask = resolved_batch["codec_mask"]
-        with prepared.torch_profiler_session.phase("task101.forward-backward"):
+        with prepared.torch_profiler_session.phase("qwen-swedish-finetune.forward-backward"):
             input_text_ids = input_ids[:, :, 0]
             diagnostic_window = getattr(prepared, "diagnostic_window", None)
             diagnostic_step_active = (
@@ -345,7 +345,7 @@ def execute_train_iteration(
             )
             if clip_boundary_failure is not None:
                 raise clip_boundary_failure
-        with prepared.torch_profiler_session.phase("task101.optimizer-step"):
+        with prepared.torch_profiler_session.phase("qwen-swedish-finetune.optimizer-step"):
             optimizer.step()
             if not completed_optimizer_step:
                 optimizer.zero_grad()

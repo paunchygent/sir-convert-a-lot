@@ -1,4 +1,4 @@
-"""Tests for bounded Story 31 talker-core stabilization policies.
+"""Tests for bounded Qwen stability lab talker-core stabilization policies.
 
 Purpose:
     Prove the first bounded stabilization surface patches only the intended
@@ -40,8 +40,8 @@ from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_stabilization i
 )
 
 
-def test_resolve_talker_core_stabilization_spec_supports_first_story31_variants() -> None:
-    """The Story 31 bounded variants should resolve to a stable concrete contract."""
+def test_resolve_talker_core_stabilization_spec_supports_stability_lab_variants() -> None:
+    """The Qwen stability lab bounded variants should resolve to a stable concrete contract."""
     off_spec = resolve_talker_core_stabilization_spec(TALKER_CORE_STABILIZATION_OFF)
     fp32_spec = resolve_talker_core_stabilization_spec(LAYER16_GATED_FP32)
     clamp_spec = resolve_talker_core_stabilization_spec(LAYER16_GATED_FP32_CLAMP_1E4)
@@ -158,7 +158,9 @@ def test_apply_talker_core_stabilization_patches_layer15_output_and_restores_for
 
 
 def test_apply_talker_core_stabilization_accepts_fp32_layer15_output_scale_confirmation() -> None:
-    """The T245 confirmation variant should patch the same layer-15 seam and preserve dtype."""
+    """The multiply-site confirmation confirmation variant should patch the same layer-15 seam and
+    preserve dtype.
+    """
     model = _fake_model(layer_count=18)
     sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
 
@@ -244,7 +246,9 @@ def test_apply_talker_core_stabilization_attenuates_layer16_handoff_and_layer15_
 
 
 def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_entry() -> None:
-    """The T230 family should patch only the targeted layer-16 input-layernorm entry."""
+    """
+    The input-layernorm family family should patch only the targeted layer-16 input-layernorm entry.
+    """
     model = _fake_model(layer_count=18)
     assert "forward" not in _layer(model, 16).input_layernorm.__dict__
     assert "forward" not in _layer(model, 15).input_layernorm.__dict__
@@ -261,7 +265,9 @@ def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_entry()
 
 
 def test_apply_talker_core_stabilization_rescales_layer16_input_layernorm_entry() -> None:
-    """The T230 family should bound only the residual stream entering layer-16 input-layernorm."""
+    """The input-layernorm family family should bound only the residual stream entering layer-16
+    input-layernorm.
+    """
     model = _fake_model(layer_count=18)
     sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
 
@@ -276,7 +282,10 @@ def test_apply_talker_core_stabilization_rescales_layer16_input_layernorm_entry(
 
 
 def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_output() -> None:
-    """The T234 family should patch only the targeted layer-16 input-layernorm output seam."""
+    """
+    The input-layernorm output family should patch only the targeted layer-16 input-layernorm output
+    seam.
+    """
     model = _fake_model(layer_count=18)
     assert "forward" not in _layer(model, 16).input_layernorm.__dict__
     assert "forward" not in _layer(model, 15).input_layernorm.__dict__
@@ -293,7 +302,9 @@ def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_output(
 
 
 def test_apply_talker_core_stabilization_attenuates_layer16_input_layernorm_output() -> None:
-    """The T234 family should attenuate only the layer-16 input-layernorm output seam."""
+    """The input-layernorm output family should attenuate only the layer-16 input-layernorm output
+    seam.
+    """
     base_model = _fake_model(layer_count=18)
     attenuated_model = _fake_model(layer_count=18)
     sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)
@@ -314,7 +325,10 @@ def test_apply_talker_core_stabilization_attenuates_layer16_input_layernorm_outp
 
 
 def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_fp32_output_cap() -> None:
-    """The T237 family should patch only the targeted layer-16 input-layernorm output seam."""
+    """
+    The row-local micro-family family should patch only the targeted layer-16 input-layernorm output
+    seam.
+    """
     model = _fake_model(layer_count=18)
     assert "forward" not in _layer(model, 16).input_layernorm.__dict__
     assert "forward" not in _layer(model, 15).input_layernorm.__dict__
@@ -331,7 +345,9 @@ def test_apply_talker_core_stabilization_patches_layer16_input_layernorm_fp32_ou
 
 
 def test_apply_talker_core_stabilization_caps_layer16_input_layernorm_fp32_output() -> None:
-    """The T237 family should cap the weighted fp32 output before cast-back and scaling."""
+    """The row-local micro-family family should cap the weighted fp32 output before cast-back and
+    scaling.
+    """
     base_model = _fake_model(layer_count=18)
     capped_model = _fake_model(layer_count=18)
     sample = torch.full((1, 2, 3), 20_000.0, dtype=torch.bfloat16)

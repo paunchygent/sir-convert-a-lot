@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Used by status writers, report builders, and evaluator surfaces.
-    - Serves as the single canonical artifact-writing owner after Story 28.
+    - Serves as the single canonical artifact-writing owner after Qwen architecture boundary.
 """
 
 from __future__ import annotations

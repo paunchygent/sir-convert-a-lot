@@ -33,7 +33,7 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
         scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         pilot_bundle_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
+            "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-pilot-bundle"
         ),
         runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
         model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
@@ -84,11 +84,11 @@ def test_build_detached_training_command_uses_rocm_mounts_and_prepared_manifest(
     )
     assert "/home/paunchygent/.data/sir-convert-a-lot/build:/app/build" in command
     assert (
-        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "/app/build/reference/qwen3-tts-swedish-pilot-bundle/manifests/"
         "swedish_pilot_train.prepared.jsonl" in command
     )
     assert (
-        "/app/build/reference/qwen3-tts-swedish-task101-pilot-bundle/manifests/"
+        "/app/build/reference/qwen3-tts-swedish-pilot-bundle/manifests/"
         "swedish_checkpoint_dev.prepared.jsonl" in command
     )
     assert "--text-embedding-assembly-mode" in command

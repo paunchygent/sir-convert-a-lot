@@ -180,7 +180,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH"] == (
         "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
         "/srv/scratch/sir-convert-a-lot/build/verification/"
-        "task-320-qwen-provider/vision-assets}"
+        "answer-key-qwen-provider/vision-assets}"
     )
     assert env_map["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] == ("${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}")
 
@@ -203,10 +203,10 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         (
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-"
             "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
-            "task-320-qwen-provider/vision-assets}:"
+            "answer-key-qwen-provider/vision-assets}:"
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
             "/srv/scratch/sir-convert-a-lot/build/verification/"
-            "task-320-qwen-provider/vision-assets}"
+            "answer-key-qwen-provider/vision-assets}"
         ),
         (
             "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"
@@ -263,10 +263,10 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
         (
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-"
             "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
-            "task-320-qwen-provider/vision-assets}:"
+            "answer-key-qwen-provider/vision-assets}:"
             "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-"
             "/srv/scratch/sir-convert-a-lot/build/verification/"
-            "task-320-qwen-provider/vision-assets}"
+            "answer-key-qwen-provider/vision-assets}"
         ),
         (
             "${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-"

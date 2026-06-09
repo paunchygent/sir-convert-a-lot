@@ -1,15 +1,15 @@
-"""Public CLI entrypoint for Task 101 Qwen training-bundle materialization.
+"""Public CLI entrypoint for Qwen training-bundle materialization.
 
 Purpose:
     Provide the operator command surface for copying, finalizing, assembling,
-    and building deterministic Task 101 training bundles from the frozen Qwen
+    and building deterministic Qwen training bundles from the frozen Qwen
     pilot root.
 
 Relationships:
     - Delegates orchestration to `ml.qwen.training.bundles`.
     - Reuses the governed Qwen container runtime from
       `ml.qwen.training.bundle_runtime`.
-    - Exposes the public `pdm run task-101-pilot-bundle ...` contract.
+    - Exposes the public `pdm run qwen-pilot-bundle ...` contract.
 """
 
 from __future__ import annotations
@@ -53,10 +53,10 @@ from scripts.sir_convert_a_lot.ml.qwen.training.bundles import (
 
 DEFAULT_FROZEN_PILOT_ROOT = Path(
     "/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/"
-    "task140-qwen-pilot-frozen-20260311a"
+    "qwen-pilot-frozen-20260311a"
 )
 DEFAULT_PILOT_BUNDLE_ROOT = Path(
-    "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle"
+    "/srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-pilot-bundle"
 )
 DEFAULT_TRAIN_MANIFEST_FAMILY: ManifestFamily = "swedish_pilot_train"
 DEFAULT_EVAL_MANIFEST_FAMILY: ManifestFamily = "swedish_checkpoint_dev"
@@ -82,9 +82,9 @@ def _manifest_family_from_cli_value(value: object, *, argument_name: str) -> Man
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the committed Task 101 training-bundle CLI parser."""
+    """Build the committed Qwen pilot training training-bundle CLI parser."""
     parser = argparse.ArgumentParser(
-        description="Materialize one deterministic Task 101 Qwen training bundle."
+        description="Materialize one deterministic Qwen training bundle."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -265,7 +265,7 @@ def _build_bundle_in_governed_runtime(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the restored Task 101 training-bundle CLI surface."""
+    """Run the restored Qwen pilot training training-bundle CLI surface."""
     args = build_parser().parse_args(argv)
     if args.command == "copy":
         plan = prepare_training_bundle_inputs(

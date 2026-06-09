@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Imported by `sft_12hz.py` inside the same patch directory.
     - Uses Accelerate tracker integration as the canonical logging surface.
-    - Produces machine-readable tracker metadata that the detached Task 101
+    - Produces machine-readable tracker metadata that the detached Qwen pilot training
       probe can mirror into status and report artifacts.
 """
 
@@ -23,8 +23,8 @@ from typing import Iterator
 from accelerate import Accelerator
 
 DEFAULT_TRACKER_BACKENDS = ("mlflow", "tensorboard")
-DEFAULT_TRACKER_PROJECT_NAME = "task101-qwen-pilot"
-DEFAULT_MLFLOW_EXPERIMENT_NAME = "task101-qwen-pilot"
+DEFAULT_TRACKER_PROJECT_NAME = "qwen-swedish-finetune"
+DEFAULT_MLFLOW_EXPERIMENT_NAME = "qwen-swedish-finetune"
 DEFAULT_MLFLOW_SYSTEM_METRICS_INTERVAL_SECONDS = 10
 
 
@@ -167,9 +167,7 @@ def initialize_training_trackers(
                 "mlflow": {
                     "logging_dir": tracker_config.mlflow_artifact_root,
                     "run_name": tracker_config.run_name,
-                    "description": (
-                        "Detached Task 101 Swedish Qwen fine-tune tracked via Accelerate."
-                    ),
+                    "description": ("Detached Swedish Qwen fine-tune tracked via Accelerate."),
                     "tags": tags,
                 },
             },

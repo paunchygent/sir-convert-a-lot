@@ -1,7 +1,7 @@
 """Tests for source-neutral matching manual answer-key submissions.
 
 Purpose:
-    Prove that Task 323 exposes a producer-ready matching key DTO and
+    Prove that HTML to PDF route3 exposes a producer-ready matching key DTO and
     validation boundary without reintroducing DigiExam-specific matching
     overlays.
 

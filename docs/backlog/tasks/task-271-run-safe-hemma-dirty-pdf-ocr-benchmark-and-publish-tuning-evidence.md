@@ -13,7 +13,7 @@ related:
   - docs/backlog/tasks/task-76-harden-hemma-deploy-parity-and-live-verification-workflow.md
   - docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py
+  - scripts/sir_convert_a_lot/pdf_throughput_benchmark_report.py
   - scripts/sir_convert_a_lot/devops/verify_hemma_v2_conversions.py
 labels:
   - ocr
@@ -122,11 +122,11 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
 
 ## Entry Points
 
-- `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha>`
-- `pdm run run-hemma -- pdm run benchmark:task-74-hemma --expected-revision <sha> --dirty-corpus-manifest <metadata-only-manifest.json> --dirty-corpus-source-root <private-pdf-root>`
-- `pdm run run-hemma -- pdm run benchmark:task-74-two-worker-sweep-hemma --expected-revision <sha>` remains a safe exploration command only unless the service is redeployed per governed profile and the resulting evidence is tied to the production-service lane.
-- `scripts/sir_convert_a_lot/benchmark_story20_throughput_report.py`
-- `scripts/sir_convert_a_lot/benchmarking/story20_throughput_report.py`
+- `pdm run run-hemma -- pdm run benchmark:pdf-throughput-hemma --expected-revision <sha>`
+- `pdm run run-hemma -- pdm run benchmark:pdf-throughput-hemma --expected-revision <sha> --dirty-corpus-manifest <metadata-only-manifest.json> --dirty-corpus-source-root <private-pdf-root>`
+- `pdm run run-hemma -- pdm run benchmark:pdf-throughput-two-worker-sweep-hemma --expected-revision <sha>` remains a safe exploration command only unless the service is redeployed per governed profile and the resulting evidence is tied to the production-service lane.
+- `scripts/sir_convert_a_lot/pdf_throughput_benchmark_report.py`
+- `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_report.py`
 - `docs/runbooks/runbook-hemma-devops-and-gpu.md`
 
 ## Test Requirements
@@ -237,7 +237,7 @@ and block Story 39 closeout on unsafe or non-representative performance proof.
   - detached log:
     `.artifacts/hemma-command-task271-dirty-proof-20260430T103413Z.log`,
   - command surface:
-    `pdm run benchmark:task-74-hemma --expected-revision 405cddc59d02974f43eaf03556bad92cdd1c2341 --dirty-corpus-manifest inputs/dirty_pdf_to_ocr/dirty_pdf_ocr_manifest.json --dirty-corpus-source-root inputs/dirty_pdf_to_ocr`.
+    `pdm run benchmark:pdf-throughput-hemma --expected-revision 405cddc59d02974f43eaf03556bad92cdd1c2341 --dirty-corpus-manifest inputs/dirty_pdf_to_ocr/dirty_pdf_ocr_manifest.json --dirty-corpus-source-root inputs/dirty_pdf_to_ocr`.
 - Benchmark artifacts were written on Hemma and copied locally for operator
   inspection under ignored `build/` paths:
   - remote JSON:

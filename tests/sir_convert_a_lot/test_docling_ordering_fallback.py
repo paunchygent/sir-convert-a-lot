@@ -2,7 +2,7 @@
 
 Purpose:
     Validate deterministic layout-candidate resolution and ordering-based
-    fallback selection behavior for Task 26 source-level mitigation.
+    fallback selection behavior for Docling ordering fallback source-level mitigation.
 
 Relationships:
     - Exercises ordering-gate flow in

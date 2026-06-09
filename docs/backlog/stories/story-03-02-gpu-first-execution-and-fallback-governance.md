@@ -11,7 +11,7 @@ related:
   - docs/decisions/0001-pdf-to-md-service-v1-contract-and-phase0-decisions.md
   - docs/converters/pdf_to_md_service_api_v1.md
   - docs/backlog/tasks/task-05-enforce-gpu-first-lock-and-benchmark-evidence-for-story-003b.md
-  - docs/reference/ref-story-003b-gpu-governance-benchmark-evidence.md
+  - docs/reference/ref-gpu-governance-benchmark-evidence.md
 labels:
   - gpu
   - performance

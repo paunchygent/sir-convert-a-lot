@@ -58,10 +58,10 @@ class RixvoxTrainStagingReport:
 def normalize_train_audio_shards(train_audio_shards: tuple[int, ...]) -> tuple[int, ...]:
     """Normalize one bounded list of RixVox train shard ids."""
     if not train_audio_shards:
-        raise SystemExit("Task 108 requires at least one `train_audio_shard`.")
+        raise SystemExit("Rixvox staging requires at least one `train_audio_shard`.")
     normalized_shards = tuple(sorted(set(train_audio_shards)))
     if any(shard < 0 for shard in normalized_shards):
-        raise SystemExit("Task 108 train audio shards must be non-negative integers.")
+        raise SystemExit("Rixvox staging train audio shards must be non-negative integers.")
     return normalized_shards
 
 
@@ -69,8 +69,8 @@ def run_rixvox_train_staging(
     settings: RixvoxTrainStagingSettings,
 ) -> RixvoxTrainStagingReport:
     """Stage train metadata and bounded train audio archives for RixVox."""
-    ensure_bulk_data_storage_path(settings.data_root, label="Task 108 data_root")
-    ensure_data_disk_path(settings.hf_cache_dir, label="Task 108 hf_cache_dir")
+    ensure_bulk_data_storage_path(settings.data_root, label="Rixvox staging data_root")
+    ensure_data_disk_path(settings.hf_cache_dir, label="Rixvox staging hf_cache_dir")
     settings.data_root.mkdir(parents=True, exist_ok=True)
     settings.hf_cache_dir.mkdir(parents=True, exist_ok=True)
 

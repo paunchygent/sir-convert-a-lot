@@ -2,7 +2,7 @@
 #
 # Purpose:
 #   Verify Hemma docker-lane multi-format conversions (service API v2) and
-#   emit deterministic evidence under `build/verification/task-39-v2-smoke/`.
+#   emit deterministic evidence under `build/verification/v2-smoke/`.
 #
 # Relationships:
 #   - Local wrapper: uses `pdm run run-local-pdm run-hemma` to execute this script

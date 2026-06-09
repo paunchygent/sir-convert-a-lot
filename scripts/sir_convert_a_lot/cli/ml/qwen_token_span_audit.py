@@ -1,4 +1,4 @@
-"""Public CLI entrypoint for the Story 29 token-span audit.
+"""Public CLI entrypoint for the Qwen fallback proof lane token-span audit.
 
 Purpose:
     Keep the public command surface small while delegating implementation to

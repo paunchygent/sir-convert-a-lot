@@ -87,7 +87,7 @@ root.
 
 ## Deliverables
 
-- [x] Task 101 runtime helper updated to resolve the selected bundle output
+- [x] Qwen pilot runtime helper updated to resolve the selected bundle output
   root through the shared bind-root helper.
 - [x] Focused runtime tests covering deterministic output-root fallback and
   Docker command generation.

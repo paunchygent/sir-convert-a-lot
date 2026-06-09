@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `pandoc_markdown_to_html` and `pandoc_html_to_docx`.
-    - Supports Task 60 security/resilience hardening evidence.
+    - Supports resource sandboxing security/resilience hardening evidence.
     - Validates that DOCX-output wrappers do not use Pandoc `--sandbox`, since
       Pandoc's DOCX writer requires built-in data files that are unavailable
       under sandbox mode.

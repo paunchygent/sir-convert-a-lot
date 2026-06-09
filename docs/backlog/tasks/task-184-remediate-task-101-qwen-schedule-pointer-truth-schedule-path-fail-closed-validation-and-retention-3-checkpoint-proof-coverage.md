@@ -1,6 +1,6 @@
 ---
 id: task-184-remediate-task-101-qwen-schedule-pointer-truth-schedule-path-fail-closed-validation-and-retention-3-checkpoint-proof-coverage
-title: Remediate Task 101 Qwen schedule pointer truth, schedule-path fail-closed validation, and retention-3 checkpoint proof coverage
+title: Remediate Qwen schedule pointer truth, schedule-path fail-closed validation, and retention-3 checkpoint proof coverage
 type: task
 status: completed
 priority: high

@@ -1,6 +1,6 @@
 ---
 id: task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution
-title: Add bounded PyTorch and ROCm profiling surfaces for Task 101 Qwen bottleneck attribution
+title: Add bounded PyTorch and ROCm profiling surfaces for Qwen bottleneck attribution
 type: task
 status: completed
 priority: high
@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md
   - docs/backlog/tasks/task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - https://docs.pytorch.org/tutorials/recipes/recipes/profiler_recipe.html
   - https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/docs-6.3.0/how-to/using-rocprofv3.html
 labels:
@@ -37,7 +37,7 @@ repeated MIOpen warnings correspond to meaningful kernel slowdowns.
 
 ## PR Scope
 
-- Add one bounded PyTorch profiler surface for the Task 101 runtime with a
+- Add one bounded PyTorch profiler surface for the Qwen pilot runtime with a
   documented schedule and explicit trace output location.
 - Add one governed ROCm profiling surface using `rocprofv3` or the canonical
   ROCm profiler toolchain already documented by AMD.

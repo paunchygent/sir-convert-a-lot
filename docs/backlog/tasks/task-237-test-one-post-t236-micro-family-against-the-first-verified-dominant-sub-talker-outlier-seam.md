@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-236-resolve-the-post-t235-line4-row-local-outlier-before-claiming-a-generic-layer15-output-seam.md
   - docs/backlog/tasks/task-240-split-the-post-t237-downstream-convergence-seam-beneath-layer15-output-before-any-promotion-discussion.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -34,7 +34,7 @@ sweep.
 
 - Treat `T236` as the gating diagnosis:
   - truthful row-local resolution:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task236-20260318t145434z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task236-20260318t145434z-a1`
   - resolved classification:
     `genuine_row_local_seam_difference`
   - verified dominant seam for the next task:
@@ -76,15 +76,15 @@ sweep.
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization.py`
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization_specs.py`
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_stabilization_input_layernorm.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_post_t236_micro_family_assessment.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_contracts.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_runner.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_markdown.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_micro_family_assessment.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_contracts.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_runner.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_markdown.py`
 
 ## Result
 
 - Truthful bounded rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task237-20260318t154708z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task237-20260318t154708z-a1`
 - Resolved family classification:
   `converged_downstream`
 - Winning candidate:
@@ -119,7 +119,7 @@ sweep.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_stabilization.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t236_micro_family_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_stabilization.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_micro_family_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_stability_lab.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run typecheck-all`
@@ -128,7 +128,7 @@ sweep.
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task237-20260318t154708z-a1 --skip-build --hook-profile talker_core_post_t235_row_local_outlier --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e2`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task237-20260318t154708z-a1 --skip-build --hook-profile talker_core_post_t235_row_local_outlier --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3,layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e2`
 
 ## Checklist
 

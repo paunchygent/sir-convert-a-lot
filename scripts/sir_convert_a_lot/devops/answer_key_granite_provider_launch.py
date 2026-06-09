@@ -1,8 +1,8 @@
-"""Task 309 persistent Granite/vLLM provider launch planning.
+"""answer-key live validation persistent Granite/vLLM provider launch planning.
 
 Purpose:
     Build and optionally execute the named Docker launch command for the
-    Granite/vLLM provider used by Task 309 live answer-key validation.
+    Granite/vLLM provider used by answer-key live validation live answer-key validation.
 
 Relationships:
     - Uses `answer_key_provider_contracts` for the retained launch plan
@@ -20,6 +20,7 @@ import subprocess
 from datetime import UTC, datetime
 
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
+    ANSWER_KEY_PROVIDER_PERSISTENT_POLICY,
     DEFAULT_PROVIDER_CONTAINER_CACHE,
     DEFAULT_PROVIDER_CONTAINER_NAME,
     DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION,
@@ -28,20 +29,19 @@ from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_MAX_MODEL_LEN,
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_PORT,
-    TASK309_PROVIDER_PERSISTENT_POLICY,
-    Task309ProviderLaunchPlan,
-    Task309ProviderLaunchResult,
+    AnswerKeyProviderLaunchPlan,
+    AnswerKeyProviderLaunchResult,
 )
 
-ANSWER_KEY_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION = "task309_granite_provider_launch_plan_v1"
-ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION = "task309_granite_provider_launch_result_v1"
+ANSWER_KEY_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION = "answer_key_granite_provider_launch_plan_v1"
+ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION = "answer_key_granite_provider_launch_result_v1"
 DEFAULT_CONTAINER_PORT = 8000
 DOCKER_COMMAND_PREFIX = ("sudo", "-n", "docker")
 HEMMA_VIDEO_GROUP_ID = "44"
 HEMMA_RENDER_GROUP_ID = "993"
 
 
-def build_task309_provider_launch_plan(
+def build_answer_key_provider_launch_plan(
     *,
     container_name: str = DEFAULT_PROVIDER_CONTAINER_NAME,
     image: str = DEFAULT_PROVIDER_IMAGE,
@@ -51,8 +51,8 @@ def build_task309_provider_launch_plan(
     host_cache_path: str = DEFAULT_PROVIDER_HOST_CACHE,
     container_cache_path: str = DEFAULT_PROVIDER_CONTAINER_CACHE,
     dry_run: bool = True,
-) -> Task309ProviderLaunchPlan:
-    """Build the Docker command for the persistent Task 309 vLLM provider."""
+) -> AnswerKeyProviderLaunchPlan:
+    """Build the Docker command for the persistent answer-key live validation vLLM provider."""
 
     command = (
         *DOCKER_COMMAND_PREFIX,
@@ -95,7 +95,7 @@ def build_task309_provider_launch_plan(
         DEFAULT_PROVIDER_GPU_MEMORY_UTILIZATION,
         "--disable-log-requests",
     )
-    return Task309ProviderLaunchPlan(
+    return AnswerKeyProviderLaunchPlan(
         schema_version=ANSWER_KEY_PROVIDER_LAUNCH_PLAN_SCHEMA_VERSION,
         generated_at=_utc_now_iso(),
         container_name=container_name,
@@ -105,17 +105,17 @@ def build_task309_provider_launch_plan(
         container_port=container_port,
         host_cache_path=host_cache_path,
         container_cache_path=container_cache_path,
-        persistent_policy=TASK309_PROVIDER_PERSISTENT_POLICY,
+        persistent_policy=ANSWER_KEY_PROVIDER_PERSISTENT_POLICY,
         command=command,
         dry_run=dry_run,
     )
 
 
-def launch_task309_provider(plan: Task309ProviderLaunchPlan) -> Task309ProviderLaunchResult:
+def launch_answer_key_provider(plan: AnswerKeyProviderLaunchPlan) -> AnswerKeyProviderLaunchResult:
     """Execute one persistent provider launch plan unless it is a dry run."""
 
     if plan.dry_run:
-        return Task309ProviderLaunchResult(
+        return AnswerKeyProviderLaunchResult(
             schema_version=ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
             launched_at=_utc_now_iso(),
             container_name=plan.container_name,
@@ -139,7 +139,7 @@ def launch_task309_provider(plan: Task309ProviderLaunchPlan) -> Task309ProviderL
     except subprocess.TimeoutExpired:
         return _failed_launch(plan, error_kind="TimeoutExpired")
     container_id = result.stdout.strip() if result.returncode == 0 else None
-    return Task309ProviderLaunchResult(
+    return AnswerKeyProviderLaunchResult(
         schema_version=ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
         launched_at=_utc_now_iso(),
         container_name=plan.container_name,
@@ -153,11 +153,11 @@ def launch_task309_provider(plan: Task309ProviderLaunchPlan) -> Task309ProviderL
 
 
 def _failed_launch(
-    plan: Task309ProviderLaunchPlan,
+    plan: AnswerKeyProviderLaunchPlan,
     *,
     error_kind: str,
-) -> Task309ProviderLaunchResult:
-    return Task309ProviderLaunchResult(
+) -> AnswerKeyProviderLaunchResult:
+    return AnswerKeyProviderLaunchResult(
         schema_version=ANSWER_KEY_PROVIDER_LAUNCH_RESULT_SCHEMA_VERSION,
         launched_at=_utc_now_iso(),
         container_name=plan.container_name,

@@ -51,13 +51,13 @@ Prove that the chosen sidecar stack can run on the real Hemma AMD Radeon AI PRO 
 Local entrypoint:
 
 ```bash
-pdm run benchmark:task-79
+pdm run benchmark:tts-sidecar
 ```
 
 Remote Hemma execution:
 
 ```bash
-pdm run run-hemma -- pdm run benchmark:task-79
+pdm run run-hemma -- pdm run benchmark:tts-sidecar
 ```
 
 Current command defaults:
@@ -70,7 +70,7 @@ Current command defaults:
 - compatibility mount when Docker cannot bind `/srv/*` directly:
   `${SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT:-/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}`
 - stage config:
-  `scripts/sir_convert_a_lot/devops/task79_qwen3_tts_stage_config.yaml`
+  `scripts/sir_convert_a_lot/devops/qwen3_tts_stage_config.yaml`
   (mirrors the current upstream `qwen3_tts.yaml` schema)
 - output root: `build/verification/task-79-hemma-tts-sidecar/`
 - response formats: `wav,mp3`
@@ -108,7 +108,7 @@ Task 98 extends this benchmark with the official Qwen Base clone lane:
 - `ref_text`
 - `instructions`
 
-The clone lane keeps the same canonical `benchmark:task-79` command surface and
+The clone lane keeps the same canonical `benchmark:tts-sidecar` command surface and
 does not introduce a parallel ad hoc benchmark script.
 
 ## Acceptance Criteria

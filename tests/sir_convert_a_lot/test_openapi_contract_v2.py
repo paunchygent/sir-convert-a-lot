@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.openapi_export_v2`.
-    - Protects Story 48 / Task 304 consumer contract publication.
+    - Protects OpenAPI consumer contract / Markdown to DOCX route4 consumer contract publication.
 """
 
 from __future__ import annotations

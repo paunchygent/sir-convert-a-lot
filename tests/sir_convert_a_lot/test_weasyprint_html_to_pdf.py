@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.infrastructure.weasyprint_html_to_pdf`.
-    - Supports Task 60 hardening coverage for resource sandboxing.
+    - Supports resource sandboxing hardening coverage for resource sandboxing.
 """
 
 from __future__ import annotations

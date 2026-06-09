@@ -34,7 +34,7 @@ def test_acquire_parse_args_defaults() -> None:
 
 
 def test_ensure_data_disk_path_rejects_non_data_disk_path(tmp_path: Path) -> None:
-    """Task 106 should reject paths that do not live on managed Hemma tiers."""
+    """Qwen dataset acquisition should reject paths that do not live on managed Hemma tiers."""
     with pytest.raises(SystemExit, match="managed Hemma storage tier"):
         ensure_data_disk_path(tmp_path / "not-data-root", label="test path")
 

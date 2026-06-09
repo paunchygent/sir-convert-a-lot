@@ -12,7 +12,7 @@ related:
   - scripts/sir_convert_a_lot/infrastructure/runtime_engine_v2.py
   - scripts/sir_convert_a_lot/interfaces/http_api.py
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
-  - docs/reference/ref-task-73-telemetry-overhead-evidence.md
+  - docs/reference/ref-pdf-telemetry-overhead-evidence.md
 labels:
   - observability
   - performance
@@ -72,7 +72,7 @@ instead of tuning blindly.
   - success/failure-path metrics contract tests (`/metrics` label safety + terminal counters),
   - acceleration policy + GPU utilization snapshot fields in `result.conversion_metadata`,
   - synthetic sustained-load overhead regression evidence:
-    - `build/benchmarks/story-20/task-73-telemetry-overhead-local.json`
+    - `build/benchmarks/pdf-throughput/pdf-telemetry-overhead-local.json`
     - benchmark id: `task-73-telemetry-overhead`,
     - run sample (`2026-03-05`): `overhead_percent.full_vs_sink_disabled=1.3728%`,
       `overhead_percent.full_vs_bypassed=-1.4069%`, bounded labels verified.

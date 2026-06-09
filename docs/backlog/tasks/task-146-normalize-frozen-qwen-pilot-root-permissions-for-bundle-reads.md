@@ -54,7 +54,7 @@ reports from the immutable storage-backed source root.
 - [x] `pdm run run-hemma -- find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type f -perm 600 | head`
 - [x] `pdm run run-hemma -- sudo -n find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type f -exec chmod 644 '{}' +`
 - [x] `pdm run run-hemma -- sudo -n find /srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a -type d -exec chmod 755 '{}' +`
-- [x] `pdm run run-hemma -- pdm run task-101-pilot-bundle build --output-root /srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312d`
+- [x] `pdm run run-hemma -- pdm run qwen-pilot-bundle build --output-root /srv/scratch/sir-convert-a-lot/build/reference/qwen3-tts-swedish-task101-pilot-bundle-20260312d`
 
 ## Outcome
 

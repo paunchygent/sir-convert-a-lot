@@ -17,9 +17,9 @@ related:
   - docs/backlog/tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md
   - docs/backlog/tasks/task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay.md
   - docs/backlog/tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval.py
-  - scripts/sir_convert_a_lot/devops/task346_formula_candidate_eval_candidates.py
-  - scripts/sir_convert_a_lot/devops/task347_deepseek_ocr2_hf_command.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval.py
+  - scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py
+  - scripts/sir_convert_a_lot/devops/deepseek_ocr2_hf_command.py
 ---
 
 PR-sized execution unit; may be linked to a story or standalone.
@@ -123,29 +123,29 @@ on the same rendered PNG in `159262 ms`.
 
 Implemented 2026-06-06:
 
-- `task346_formula_candidate_eval_candidates.py` now declares
+- `formula_candidate_eval_candidates.py` now declares
   `deepseek_ocr2_hf_eager` as the default DeepSeek page-image candidate using
   the single-image command template lane.
-- `task347_deepseek_ocr2_hf_command.py` now defaults
+- `deepseek_ocr2_hf_command.py` now defaults
   `--attn-implementation` to `eager`, matching the Task 347 Hemma control
   evidence.
-- `test_task346_formula_candidate_eval.py` proves native `.mmd` artifact
+- `test_formula_candidate_eval.py` proves native `.mmd` artifact
   capture and default candidate wiring.
-- `test_task347_deepseek_ocr2_hf_command.py` proves the HF command parser and
+- `test_deepseek_ocr2_hf_command.py` proves the HF command parser and
   Docker command forward eager attention without local model inference.
 
 Hemma replay command:
 
 ```bash
-pdm run hemma-command-start task350-deepseek-hf-eager-task346-replay -- /bin/bash -lc 'set -euo pipefail; cd /home/paunchygent/apps/sir-convert-a-lot; /home/paunchygent/.local/bin/pdm run task346-formula-candidate-eval --output-dir build/verification/task-350-deepseek-hf-eager-task346-replay --candidate-timeout-seconds 1200 --deepseek-ocr2-command "/home/paunchygent/.local/bin/pdm run task347-deepseek-ocr2-hf-command --input {input} --output-dir {output_dir} --model {model} --inner-timeout-seconds 1000 --host-timeout-seconds 1100"'
+pdm run hemma-command-start task350-deepseek-hf-eager-task346-replay -- /bin/bash -lc 'set -euo pipefail; cd /home/paunchygent/apps/sir-convert-a-lot; /home/paunchygent/.local/bin/pdm run formula-candidate-eval --output-dir build/verification/task-350-deepseek-hf-eager-task346-replay --candidate-timeout-seconds 1200 --deepseek-ocr2-command "/home/paunchygent/.local/bin/pdm run deepseek-ocr2-hf-command --input {input} --output-dir {output_dir} --model {model} --inner-timeout-seconds 1000 --host-timeout-seconds 1100"'
 ```
 
 Generated evidence:
 
 ```text
-build/verification/task-350-deepseek-hf-eager-task346-replay/task346-formula-candidate-eval-20260606T201448Z/report.json
-build/verification/task-350-deepseek-hf-eager-task346-replay/task346-formula-candidate-eval-20260606T201448Z/report.md
-build/verification/task-350-deepseek-hf-eager-task346-replay/task346-formula-candidate-eval-20260606T201448Z/visual-review.html
+build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/report.json
+build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/report.md
+build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/visual-review.html
 ```
 
 Summary:
@@ -206,10 +206,10 @@ Do not use it as a blind overwrite path for born-digital formula regions.
   default DeepSeek candidate was still the vLLM batch lane and HF default
   attention was still `sdpa`.
 - Local focused tests:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_hf_command.py`
+  `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
   -> `9 passed`.
 - Hemma focused tests:
-  `/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_task346_formula_candidate_eval.py tests/sir_convert_a_lot/test_task347_deepseek_ocr2_hf_command.py`
+  `/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
   -> `9 passed`.
 - Close-out gates:
   focused `ruff format`, focused `ruff check --fix`, focused mypy, focused

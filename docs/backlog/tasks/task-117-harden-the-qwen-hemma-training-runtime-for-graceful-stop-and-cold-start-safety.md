@@ -68,7 +68,7 @@ Execution order note:
   transfer surface that is safer for large HF caches.
 - Make cold image-build behavior operator-visible when a Task 100/101 launch
   will trigger a heavy `docker buildx build`.
-- Keep the current detached Task 101 runtime contract, checkpoint format, and
+- Keep the current detached Qwen pilot runtime contract, checkpoint format, and
   ROCm image family intact.
 - Keep the scope on Hemma runtime hardening only.
 
@@ -99,7 +99,7 @@ Execution order note:
 
 Operational boundary:
 
-- this task improves stop behavior around the existing detached Task 101 run
+- this task improves stop behavior around the existing detached Qwen pilot run
   root contract
 - it does not change dataset ownership, pilot manifest families, or the
   pilot-bundle materialization contract

@@ -7,7 +7,7 @@ Purpose:
 Relationships:
     - Uses the existing PyMuPDF dependency already owned by Sir Convert PDF
       infrastructure.
-    - Feeds `domain.digiexam_parser.DigiExamParser` for Task 267 fixture tests.
+    - Feeds `domain.digiexam_parser.DigiExamParser` for DigiExam parser fixture tests.
 """
 
 from __future__ import annotations

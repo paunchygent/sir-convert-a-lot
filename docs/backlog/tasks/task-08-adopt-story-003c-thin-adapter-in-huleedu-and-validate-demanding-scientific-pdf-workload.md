@@ -1,5 +1,5 @@
 ---
-id: task-08-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload
+id: task-08-adopt-consumer-integration-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload
 title: Adopt Story 003c thin adapter in HuleEdu and validate demanding scientific PDF workload
 type: task
 status: in_progress
@@ -8,13 +8,13 @@ created: '2026-02-11'
 last_updated: '2026-02-11'
 related:
   - docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md
-  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md
-  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md
+  - docs/backlog/tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-consumer-integration.md
+  - docs/backlog/tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-consumer-integration.md
   - docs/converters/internal_adapter_contract_v1.md
-  - docs/reference/ref-story-003c-consumer-integration-handoff.md
+  - docs/reference/ref-consumer-integration-handoff.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 labels:
-  - story-003c
+  - consumer-integration
   - huledu
   - integration
   - scientific-pdfs

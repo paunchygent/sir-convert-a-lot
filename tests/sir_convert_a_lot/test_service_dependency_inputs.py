@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Covers `scripts.sir_convert_a_lot.devops.service_dependency_inputs`.
-    - Supports Task 255 Docker dependency image cache-key invariants.
+    - Supports strict markdown hardening5 Docker dependency image cache-key invariants.
 """
 
 from __future__ import annotations

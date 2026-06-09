@@ -1,7 +1,7 @@
 """Tests for structured LLM hot-routing settings.
 
 Purpose:
-    Prove Task 325's hot-settings core is operator-gated, versioned, atomic, and
+    Prove HTML to PDF route5's hot-settings core is operator-gated, versioned, atomic, and
     metadata-only before it is wired to service HTTP routes.
 
 Relationships:

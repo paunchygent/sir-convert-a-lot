@@ -1,12 +1,12 @@
 """Container runtime helpers for Qwen training-bundle batch finalization.
 
 Purpose:
-    Restore the governed Task 101 bundle finalization contract by launching
+    Restore the governed Qwen pilot training bundle finalization contract by launching
     bounded batch work inside the shared Qwen Hemma container runtime instead
     of executing tokenizer-dependent audio-code generation in host Python.
 
 Relationships:
-    - Used by `cli.ml.qwen_bundle` for the public `task-101-pilot-bundle`
+    - Used by `cli.ml.qwen_bundle` for the public `qwen-pilot-bundle`
       operator surface.
     - Invokes the narrow in-container batch entrypoint in
       `ml.qwen.training.bundle_in_container`.
@@ -53,15 +53,15 @@ DEFAULT_DOCKERFILE_PATH = Path("containers/qwen-finetune-hemma/Dockerfile")
 DEFAULT_IMAGE = "sir-convert-a-lot-qwen-finetune-hemma:latest"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")
 DEFAULT_HF_CACHE_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface")
-DEFAULT_RUNTIME_KIND = "task101_qwen_training_bundle_containerized_batch_v1"
+DEFAULT_RUNTIME_KIND = "qwen_training_bundle_containerized_batch_v1"
 DEFAULT_ENTRY_MODULE = "scripts.sir_convert_a_lot.ml.qwen.training.bundle_in_container"
-DEFAULT_AUDIO_CODES_RUNTIME_KIND = "task101_task103_qwen_audio_codes_gpu_v1"
-DEFAULT_TRITON_CACHE_DIR = Path("/srv/scratch/sir-convert-a-lot/cache/triton/task101-audio-codes")
+DEFAULT_AUDIO_CODES_RUNTIME_KIND = "qwen_audio_codes_gpu_v1"
+DEFAULT_TRITON_CACHE_DIR = Path("/srv/scratch/sir-convert-a-lot/cache/triton/qwen-audio-codes")
 DEFAULT_TRITON_CACHE_HOME_MOUNT = Path(
-    "/home/paunchygent/.data/sir-convert-a-lot/cache/triton/task101-audio-codes"
+    "/home/paunchygent/.data/sir-convert-a-lot/cache/triton/qwen-audio-codes"
 )
 DEFAULT_OUTPUT_ROOT_HOME_MOUNT_BASE = Path(
-    "/home/paunchygent/.data/sir-convert-a-lot/task101-training-bundle-output-roots"
+    "/home/paunchygent/.data/sir-convert-a-lot/qwen-training-bundle-output-roots"
 )
 CONTAINER_TRITON_CACHE_DIR = "/cache/triton"
 
@@ -240,7 +240,7 @@ def resolve_effective_output_root(
 def resolve_effective_triton_cache_dir(
     settings: TrainingBundleContainerSettings,
 ) -> MountResolution:
-    """Return the Docker-mountable host path for the Task 101 Triton cache."""
+    """Return the Docker-mountable host path for the Qwen pilot training Triton cache."""
     return resolve_effective_bind_root(
         settings.triton_cache_dir,
         settings.triton_cache_home_mount,

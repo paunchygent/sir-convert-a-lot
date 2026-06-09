@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts/devops/verify-hemma-gpu-runtime.sh`.
-    - Complements Task 76 verifier contract tests by protecting the local
+    - Complements Hemma deploy verification verifier contract tests by protecting the local
       wrapper-to-Hemma command boundary.
 """
 

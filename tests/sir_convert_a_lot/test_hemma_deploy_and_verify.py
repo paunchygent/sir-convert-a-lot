@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify`.
-    - Complements Task 76 contract tests.
+    - Complements Hemma deploy verification contract tests.
 """
 
 from __future__ import annotations

@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Used by `scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify`.
-    - Documents Task 76 and Task 254 evidence file surfaces.
+    - Documents Hemma deploy verification and public-edge verification evidence file surfaces.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ def build_report_markdown(report: dict[str, object]) -> str:
     llm_probe = checks_obj.get("structured_llm_microprobe_passed")
 
     lines: list[str] = [
-        "# Task 76 Hemma Deploy and Verify Report",
+        "# Hemma Deploy and Verify Report",
         "",
         f"- generated_at: `{report.get('generated_at')}`",
         f"- status: `{report.get('status')}`",

@@ -1,4 +1,4 @@
-"""Throughput-profile contracts for Task 101 Qwen training.
+"""Throughput-profile contracts for Qwen training.
 
 Purpose:
     Define the bounded, explicit throughput profiles used to raise useful GPU

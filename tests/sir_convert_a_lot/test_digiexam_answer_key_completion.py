@@ -1,13 +1,14 @@
 """DigiExam advisory answer-key completion domain tests.
 
 Purpose:
-    Prove Task 297 candidate construction, backend validation, and report
+    Prove reviewed choice candidate candidate construction, backend validation, and report
     privacy without exercising HTTP artifact routes.
 
 Relationships:
     - Exercises `domain.digiexam_answer_key_completion` and its candidate/report
       contracts.
-    - Uses the Task 296 structured LLM provider protocol with a fake provider.
+    - Uses the structured LLM provider harness structured LLM provider protocol with a fake
+    provider.
     - Complements route-level bundle tests for artifact wiring.
 """
 

@@ -1,4 +1,4 @@
-"""Tests for the Task 296 structured LLM provider harness.
+"""Tests for the structured LLM provider harness structured LLM provider harness.
 
 Purpose:
     Prove the first provider-harness slice is source-neutral, local-first, and

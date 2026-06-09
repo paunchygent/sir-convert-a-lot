@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Called by `scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify`.
-    - Implements the durable public-edge artifact contract governed by Task 254.
+    - Implements the durable public-edge artifact contract governed by public-edge verification.
 """
 
 from __future__ import annotations
@@ -33,12 +33,12 @@ CommandRunner = Callable[[list[str], str], str]
 
 
 class PublicEdgeVerificationError(ValueError):
-    """Raised when public-edge evidence fails Task 254 contracts."""
+    """Raised when public-edge evidence fails public-edge verification contracts."""
 
 
 @dataclass(frozen=True)
 class PublicEdgeArtifactPaths:
-    """Paths for durable Task 254 public-edge evidence artifacts."""
+    """Paths for durable public-edge verification public-edge evidence artifacts."""
 
     public_edge_json: Path
     public_host_response_txt: Path

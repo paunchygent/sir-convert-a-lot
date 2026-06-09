@@ -152,7 +152,7 @@ Task 103 expectations.
 ## Task 103 Consumption Contract
 
 Portable Colab row-processing must still go through
-`run_task103_qwen_swedish_preprocessing.py`.
+`qwen_preprocess.py`.
 
 The added source mode is:
 

@@ -9,7 +9,7 @@ Relationships:
       runtime application semantics.
     - Exposed by `interfaces.http_routes_exam_authoring_corrections_v2` through
       FastAPI and generated OpenAPI.
-    - Mirrors the accepted ADR-0011 and Task 327 source-neutral correction
+    - Mirrors the accepted ADR-0011 and HTML to PDF route7 source-neutral correction
       contract without depending on source-adapter-specific overlay names.
 """
 
@@ -152,7 +152,7 @@ class ExamAuthoringManualGapOpenClozeAnswerKeyCorrectionV1(ExamAuthoringCorrecti
 
 
 class ExamAuthoringManualMatchingAnswerKeyCorrectionV1(ExamAuthoringCorrectionEntryBaseV1):
-    """Manual matching answer-key correction implemented by Task 330."""
+    """Manual matching answer-key correction for teacher-authored answer keys."""
 
     kind: Literal["manual_matching_answer_key"]
     item_type: Literal["matching"]

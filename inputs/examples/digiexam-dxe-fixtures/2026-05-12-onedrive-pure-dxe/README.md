@@ -1,6 +1,6 @@
 # DigiExam DXE Fixture Corpus 2026-05-12
 
-This directory is the Task 309 versioned DigiExam `.dxe` fixture corpus moved
+This directory is the answer-key live-validation DigiExam `.dxe` fixture corpus moved
 from `inputs/examples/digiexam-evidence/OneDrive_1_5-12-2026/`.
 
 Retention decision:

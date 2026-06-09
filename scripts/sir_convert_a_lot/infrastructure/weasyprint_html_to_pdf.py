@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Called by `scripts.sir_convert_a_lot.interfaces.cli_app` for the
-      `html -> pdf` local route (Task 32).
+      `html -> pdf` local route (HTML to PDF route).
     - Must not affect the locked PDF->MD service v1 contract; this is a purely
       local execution utility.
 """

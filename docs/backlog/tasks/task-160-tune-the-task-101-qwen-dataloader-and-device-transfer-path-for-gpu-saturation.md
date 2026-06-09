@@ -1,6 +1,6 @@
 ---
 id: task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation
-title: Tune the Task 101 Qwen dataloader and device-transfer path for GPU saturation
+title: Tune the Qwen dataloader and device-transfer path for GPU saturation
 type: task
 status: completed
 priority: critical
@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md
   - docs/backlog/tasks/task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
   - https://docs.pytorch.org/docs/stable/data.html
 labels:

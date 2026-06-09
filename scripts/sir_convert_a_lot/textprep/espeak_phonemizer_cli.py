@@ -7,8 +7,8 @@ Purpose:
     contract.
 
 Relationships:
-    - Intended to run inside the dedicated Task 89 helper container.
-    - Called by the Task 89 Hemma experiment runner.
+    - Intended to run inside the dedicated Chatterbox eSpeak experiment helper container.
+    - Called by the Chatterbox eSpeak experiment Hemma experiment runner.
 """
 
 from __future__ import annotations

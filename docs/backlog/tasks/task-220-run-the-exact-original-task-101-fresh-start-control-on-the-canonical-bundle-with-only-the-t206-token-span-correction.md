@@ -14,7 +14,7 @@ related:
   - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -161,7 +161,7 @@ bounded Hemma attempt is invalid as exact historical-control evidence.
 Why this run is not a credible answer to the historical control question:
 
 - the documented historical Task 101 contract in
-  `ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md` is:
+  `ref-qwen-live-training-pipeline-analysis-2026-03-13.md` is:
   - bundle root `qwen3-tts-swedish-task101-pilot-bundle-20260312h`
   - `batch_size=1`
   - `num_epochs=1000`

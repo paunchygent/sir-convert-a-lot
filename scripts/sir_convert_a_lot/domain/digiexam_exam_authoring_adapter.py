@@ -9,7 +9,7 @@ Relationships:
     - Consumes `domain.digiexam_ir_contracts` after `.dxe` parser and
       DigiExam IR construction.
     - Emits `domain.exam_authoring_gap_contracts` gap/open-cloze interactions
-      for Task 305 validation and later target/export cutover work.
+      for gap-fill candidate validation and later target/export cutover work.
     - Keeps target-specific PDF/QTI conversion outside the source adapter.
 """
 

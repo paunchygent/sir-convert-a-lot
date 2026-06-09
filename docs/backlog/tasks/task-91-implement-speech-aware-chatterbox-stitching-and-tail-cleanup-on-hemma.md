@@ -86,8 +86,8 @@ Task 91 is now implemented in the repo-owned Chatterbox segmented path:
 
 - `scripts/sir_convert_a_lot/tts_sidecar/chatterbox_segmented_generation.py`
 - `scripts/sir_convert_a_lot/tts_sidecar/chatterbox_runtime.py`
-- `scripts/sir_convert_a_lot/devops/run_task91_hemma_chatterbox_speech_aware_stitching_experiment.py`
-- `scripts/sir_convert_a_lot/devops/run_task91_chatterbox_speech_aware_stitching_experiment.py`
+- `scripts/sir_convert_a_lot/devops/run_chatterbox_speech_stitching_hemma_experiment.py`
+- `scripts/sir_convert_a_lot/devops/run_chatterbox_speech_stitching_experiment.py`
 
 The new stitch mode is internal-only and does not change the public sidecar
 request contract. The benchmark/runtime surface now supports:
@@ -169,7 +169,7 @@ Current acceptance status:
 
 Local validation completed:
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_adapter.py tests/sir_convert_a_lot/test_task86_chatterbox_benchmark.py tests/sir_convert_a_lot/test_task90_chatterbox_segmented_experiment.py tests/sir_convert_a_lot/test_task91_chatterbox_speech_aware_stitching_experiment.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_segmented_generation.py tests/sir_convert_a_lot/test_tts_sidecar_chatterbox_adapter.py tests/sir_convert_a_lot/test_chatterbox_benchmark.py tests/sir_convert_a_lot/test_chatterbox_segmented_experiment.py tests/sir_convert_a_lot/test_chatterbox_speech_aware_stitching_experiment.py`
 - `pdm run format-all`
 - `pdm run lint-fix`
 - `pdm run typecheck-all`

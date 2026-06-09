@@ -368,7 +368,7 @@ Current package hashes:
 Task 303 adds deterministic QTI 2.1 manual/unkeyed preservation samples under
 `inputs/examples/examnet-qti-samples/task-303/`.
 
-Use `pdm run examnet-qti-task-303-samples` to regenerate the samples and
+Use `pdm run examnet-qti-migration-samples` to regenerate the samples and
 reports.
 
 The single-choice, multiple-response, and gap-fill samples are derived from the

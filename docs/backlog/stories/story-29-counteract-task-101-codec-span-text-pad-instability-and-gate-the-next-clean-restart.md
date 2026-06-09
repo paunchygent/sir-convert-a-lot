@@ -16,7 +16,7 @@ related:
   - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
   - docs/backlog/tasks/task-205-establish-idle-safe-recurring-hemma-scratch-maintenance.md
   - docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -145,14 +145,14 @@ numerical stability.
   audit removed that helper change from the proof lane.
 - `T197` now has a committed local wrapper that prepares deterministic proof
   artifacts plus the exact detached Hemma launch/status commands:
-  `pdm run qwen-t197-proof`.
+  `pdm run qwen-fallback-proof`.
 - `T197` then completed on Hemma under `task197-20260316t183555z-a1` and
   failed again at optimizer step `1417`, so `text_span_only` plus
   accumulation `4` did not satisfy the preferred gate.
 - `T198` was the next active task and is now complete as terminal negative
   evidence.
 - `T198` now has a committed local wrapper for the detached accumulation-`2`
-  proof lane: `pdm run qwen-t198-proof`.
+  proof lane: `pdm run qwen-fallback-accumulation-proof`.
 - The first `T198` accumulation-`2` replay then reached optimizer step `1418`
   cleanly but failed during durable checkpoint save because Hemma scratch
   headroom had collapsed below the required free-space threshold.
@@ -194,15 +194,15 @@ numerical stability.
   next governed lane.
 - The fallback lane is now prepared in the committed Story 29 proof surface:
   - direct bounded replay:
-    `pdm run qwen-t198-proof launch-fallback1470 --proof-id <proof-id>`
+    `pdm run qwen-fallback-accumulation-proof launch-fallback1470 --proof-id <proof-id>`
   - fallback replay status:
-    `pdm run qwen-t198-proof status-fallback1470 --proof-id <proof-id>`
+    `pdm run qwen-fallback-accumulation-proof status-fallback1470 --proof-id <proof-id>`
   - detached standalone eval launch:
-    `pdm run qwen-t198-proof launch-fallback-eval --proof-id <proof-id>`
+    `pdm run qwen-fallback-accumulation-proof launch-fallback-eval --proof-id <proof-id>`
   - detached standalone eval status:
-    `pdm run qwen-t198-proof status-fallback-eval --proof-id <proof-id>`
+    `pdm run qwen-fallback-accumulation-proof status-fallback-eval --proof-id <proof-id>`
   - detached eval worker:
-    `pdm run run-hemma -- pdm run qwen-story29-eval-detached ...`
+    `pdm run run-hemma -- pdm run qwen-fallback-eval-detached ...`
 - The live fallback replay under
   `task198-20260317t062816z-fallback1470-a1`
   then exited with `exit_code=1` at optimizer step `1449`.

@@ -1,7 +1,7 @@
-"""Detached worker entrypoint for the Task 203 codebook-fusion proof.
+"""Detached worker entrypoint for the Qwen codebook-fusion proof codebook-fusion proof.
 
 Purpose:
-    Execute the canonical Task 203 proof in a background host process and
+    Execute the canonical Qwen codebook-fusion proof proof in a background host process and
     persist one worker-status artifact for later detached inspection.
 
 Relationships:
@@ -25,14 +25,16 @@ from scripts.sir_convert_a_lot.ml.qwen.training.reporting.artifact_io import utc
 
 def _build_parser() -> argparse.ArgumentParser:
     """Build the detached worker parser."""
-    parser = argparse.ArgumentParser(description="Run the detached Task 203 proof worker.")
+    parser = argparse.ArgumentParser(
+        description="Run the detached Qwen codebook-fusion proof proof worker."
+    )
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("proof_args", nargs=argparse.REMAINDER)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the Task 203 proof and persist the detached worker status."""
+    """Run the Qwen codebook-fusion proof proof and persist the detached worker status."""
     parser = _build_parser()
     args = parser.parse_args(argv)
     output_root = Path(args.output_root)
@@ -48,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:
         traceback.print_exc()
         failure_path(output_root).write_text(
-            f"Detached Task 203 worker failed: {exc}\n",
+            f"Detached Qwen codebook-fusion proof worker failed: {exc}\n",
             encoding="utf-8",
         )
         exit_code = 1

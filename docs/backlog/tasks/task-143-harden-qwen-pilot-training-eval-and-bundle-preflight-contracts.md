@@ -33,7 +33,7 @@ explicit held-out eval-manifest metadata throughout the detached runtime.
 - Harden Task 101 launch preflight so it validates the actual prepared-manifest
   payloads and bundle-local `audio` / `ref_audio` targets before the detached
   training container starts.
-- Carry the held-out eval manifest path through the Task 101 runtime metadata,
+- Carry the held-out eval manifest path through the Qwen pilot runtime metadata,
   detached launch metadata, and in-container status/report surfaces so the
   pilot contract records both the training and held-out evaluation inputs even
   though upstream Qwen training remains train-only.
@@ -83,7 +83,7 @@ to matter before the first canonical Task 101 pilot launch.
 - [x] Relocation-safe Task 101 pilot-bundle materialization.
 - [x] Fail-closed Task 101 launch preflight that validates bundle-local
   manifest paths, `audio`, and `ref_audio` artifacts.
-- [x] Detached Task 101 runtime/probe metadata that records both train and
+- [x] Detached Qwen pilot runtime/probe metadata that records both train and
   held-out eval manifest inputs.
 - [x] Focused tests covering the new contract.
 

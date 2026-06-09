@@ -36,7 +36,7 @@ overlap incident by:
 - Use the committed canonical processed-root builder to combine:
   - Hemma `task116-rowproc-5x2-20260309c`
   - the synced Colab backup snapshot for
-    `task129-colab-scale-rowproc-1-of-2-20260311a`
+    `qwen-colab-scale-rowproc-1-of-2-20260311a`
 - Emit one pilot ownership report from the resulting canonical root.
 - Use the original Hemma `task129` slice root as the source manifest for one
   remaining-unique recovery slice.
@@ -97,7 +97,7 @@ Current Colab salvage result:
 - rows already owned by completed Hemma or completed Colab work: `10813`
 - remaining unique recovery rows: `7187`
 - recovery bundle:
-  - `colab_ml_training/proof_inputs/task138-task129-remaining-unique-20260311a-bundle.tar.gz`
+  - `colab_ml_training/proof_inputs/qwen-colab-remaining-unique-slice-20260311a-bundle.tar.gz`
   - `sha256=6b260245a5daf208310489c4b4ba59eab4284c45ef4e4fb401519948a1e70d6b`
 
 Important nuance:

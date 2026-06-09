@@ -1,12 +1,12 @@
-"""Report rendering for Task 12 scientific-corpus benchmarking.
+"""Report rendering for scientific-corpus benchmark scientific-corpus benchmarking.
 
 Purpose:
     Convert benchmark payloads into deterministic human-readable markdown
-    artifacts for Task 12 acceptance/evaluation evidence.
+    artifacts for scientific-corpus benchmark acceptance/evaluation evidence.
 
 Relationships:
     - Consumes `BenchmarkPayload` from benchmark orchestration.
-    - Writes report path referenced by Task 12 backlog documentation.
+    - Writes report path referenced by scientific-corpus benchmark backlog documentation.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def render_profile_metrics_table(profiles: list[LaneProfileResult]) -> str:
 def write_report(
     *, report_path: Path, benchmark_json_path: Path, payload: BenchmarkPayload
 ) -> None:
-    """Write deterministic markdown report for Task 12 evidence output."""
+    """Write deterministic markdown report for scientific-corpus benchmark evidence output."""
     acceptance_summary = payload["acceptance_lane"]["summary"]
     evaluation_summary = payload["evaluation_lane"]["summary"]
     decision = payload["decision"]
@@ -57,9 +57,9 @@ def write_report(
     follow_up_lines = ["- None."]
     if decision["follow_up_required"]:
         follow_up_lines = [f"- {decision['follow_up_note']}"]
-    task_12_doc_link = (
+    scientific_corpus_doc_link = (
         "  - docs/backlog/tasks/"
-        "task-12-scientific-paper-workload-evidence-harness-hemma-"
+        "scientific-corpus-paper-workload-evidence-harness-hemma-"
         "tunnel-acceptance-report-10-10-corpus.md"
     )
     acceptance_method_line = (
@@ -90,7 +90,7 @@ def write_report(
             "---",
             "type: reference",
             "id: REF-production-pdf-md-scientific-corpus-validation",
-            "title: Production PDF->MD Scientific Corpus Validation (Task 12)",
+            "title: Production PDF->MD Scientific Corpus Validation (scientific-corpus benchmark)",
             "status: active",
             f"created: '{today_iso}'",
             f"updated: '{today_iso}'",
@@ -98,11 +98,11 @@ def write_report(
             "  - platform",
             "tags:",
             "  - benchmark",
-            "  - task-12",
+            "  - scientific-corpus-benchmark",
             "  - scientific-corpus",
             "  - hemma",
             "links:",
-            task_12_doc_link,
+            scientific_corpus_doc_link,
             f"  - {benchmark_json_path.as_posix()}",
             "---",
             "",

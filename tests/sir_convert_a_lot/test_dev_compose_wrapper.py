@@ -8,8 +8,8 @@ Purpose:
 Relationships:
     - Exercises `scripts/devops/dev-compose.sh`.
     - Exercises `scripts/devops/prod-compose.sh`.
-    - Protects Task 22 compose command-surface contracts.
-    - Protects Task 254 local/prod compose surface separation.
+    - Protects compose command-surface compose command-surface contracts.
+    - Protects public-edge verification local/prod compose surface separation.
 """
 
 from __future__ import annotations
@@ -32,7 +32,8 @@ SERVICE_REQUIREMENTS = REPO_ROOT / "docker" / "service-deps" / "service-requirem
 def _write_fake_docker(script_dir: Path) -> None:
     fake_docker = script_dir / "docker"
     fake_docker.write_text(
-        """#!/usr/bin/env bash
+        """
+        #!/usr/bin/env bash
 set -euo pipefail
 
 case "${1:-}" in
@@ -118,7 +119,8 @@ exit 0
 def _write_fake_docker_without_compose_plugin(script_dir: Path) -> None:
     fake_docker = script_dir / "docker"
     fake_docker.write_text(
-        """#!/usr/bin/env bash
+        """
+        #!/usr/bin/env bash
 set -euo pipefail
 
 if [[ "${1:-}" == "compose" && "${2:-}" == "version" ]]; then

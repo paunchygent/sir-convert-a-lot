@@ -68,7 +68,7 @@ Chatterbox capabilities and a quality-first benchmark discipline on Hemma.
 
 ## Deliverables
 
-- [x] Committed `benchmark:task-86` command surface (or equivalent named wrapper).
+- [x] Committed `benchmark:chatterbox` command surface (or equivalent named wrapper).
 - [x] Deterministic Hemma evidence under `build/verification/task-86-chatterbox-hemma/`.
 - [x] One successful official-API smoke artifact from `ChatterboxMultilingualTTS`.
 - [x] One successful Swedish cloning artifact using the approved teacher reference clip.

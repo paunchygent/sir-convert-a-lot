@@ -1,9 +1,9 @@
-"""Host-side Hemma proof runner for Task 203 codebook-fusion decisions.
+"""Host-side Hemma proof runner for Qwen codebook-fusion proof codebook-fusion decisions.
 
 Purpose:
     Reuse the governed Qwen ROCm image/build/smoke posture, execute the
     in-container codebook-fusion probe, and persist deterministic proof
-    artifacts for the Story 29 hot-path decision.
+    artifacts for the Qwen fallback proof lane hot-path decision.
 
 Relationships:
     - Reuses `ml.qwen.common.runtime` for image, Docker, and smoke execution.
@@ -62,7 +62,7 @@ class CodebookFusionProofSettings(SmokeSettings):
 
 @dataclass(frozen=True)
 class CodebookFusionProofReport:
-    """Deterministic report contract for one Task 203 proof run."""
+    """Deterministic report contract for one Qwen codebook-fusion proof proof run."""
 
     generated_at: str
     image: str
@@ -110,7 +110,9 @@ def _parse_seeds(raw_value: str) -> tuple[int, ...]:
 
 def parse_args(argv: list[str] | None) -> CodebookFusionProofSettings:
     """Parse CLI arguments into normalized proof settings."""
-    parser = argparse.ArgumentParser(description="Run the Task 203 codebook-fusion proof on Hemma.")
+    parser = argparse.ArgumentParser(
+        description="Run the Qwen codebook-fusion proof codebook-fusion proof on Hemma."
+    )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--dockerfile-path", type=Path, default=DEFAULT_DOCKERFILE_PATH)
     parser.add_argument("--image", default=DEFAULT_IMAGE)
@@ -235,7 +237,7 @@ def run_codebook_fusion_probe(
 
 
 def build_report_markdown(report: CodebookFusionProofReport) -> str:
-    """Render one concise markdown summary for the Task 203 proof."""
+    """Render one concise markdown summary for the Qwen codebook-fusion proof proof."""
     lines = [
         "# Qwen Codebook Fusion Proof",
         "",
@@ -283,7 +285,7 @@ def build_report_markdown(report: CodebookFusionProofReport) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the Task 203 proof and write deterministic artifacts."""
+    """Run the Qwen codebook-fusion proof proof and write deterministic artifacts."""
     settings = parse_args(argv)
     report_json_path, report_md_path, failure_path = prepare_output_root(settings.output_root)
     enforce_generated_output_path(report_json_path, label="report_json_path")

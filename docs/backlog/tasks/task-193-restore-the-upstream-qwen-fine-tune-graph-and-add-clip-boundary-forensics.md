@@ -12,7 +12,7 @@ related:
   - docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md
   - docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md
   - .codex/handoff.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -28,7 +28,7 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 Restore the patched Qwen fine-tuning lane to the upstream no-projection
 training contract, add stage-resolved clipping forensics, and reframe the
-preserved Task 101 run as the canonical no-projection RCA lane rather than as
+preserved Qwen pilot run as the canonical no-projection RCA lane rather than as
 discarded progress.
 
 ## PR Scope

@@ -119,7 +119,9 @@ def test_resolve_installed_persistent_home_path_maps_build_subpaths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Installed persistent build mounts should resolve arbitrary build subpaths."""
-    canonical_root = Path("/srv/scratch/sir-convert-a-lot/build/verification/story31/task240")
+    canonical_root = Path(
+        "/srv/scratch/sir-convert-a-lot/build/verification/qwen_stability/qwen-stability-lab"
+    )
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.ml.qwen.common.runtime.find_mount_source",
@@ -134,7 +136,7 @@ def test_resolve_installed_persistent_home_path_maps_build_subpaths(
     resolved = _resolve_installed_persistent_home_path(canonical_root)
 
     assert resolved == Path(
-        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/story31/task240"
+        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/qwen_stability/qwen-stability-lab"
     )
 
 
@@ -142,10 +144,12 @@ def test_resolve_effective_bind_root_prefers_installed_persistent_home_mount(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Installed persistent home mounts should be preferred over the failing scratch root."""
-    canonical_root = Path("/srv/scratch/sir-convert-a-lot/build/verification/story31/task240")
+    canonical_root = Path(
+        "/srv/scratch/sir-convert-a-lot/build/verification/qwen_stability/qwen-stability-lab"
+    )
     home_mount = Path(
-        "/home/paunchygent/.data/sir-convert-a-lot/qwen-story31-stability-lab-output-roots/"
-        "srv/scratch/sir-convert-a-lot/build/verification/story31/task240"
+        "/home/paunchygent/.data/sir-convert-a-lot/qwen-stability-lab-output-roots/"
+        "srv/scratch/sir-convert-a-lot/build/verification/qwen_stability/qwen-stability-lab"
     )
     probe_calls: list[Path] = []
 
@@ -163,7 +167,7 @@ def test_resolve_effective_bind_root_prefers_installed_persistent_home_mount(
         del image
         probe_calls.append(path)
         return path == Path(
-            "/home/paunchygent/.data/sir-convert-a-lot/build/verification/story31/task240"
+            "/home/paunchygent/.data/sir-convert-a-lot/build/verification/qwen_stability/qwen-stability-lab"
         )
 
     monkeypatch.setattr(
@@ -174,13 +178,13 @@ def test_resolve_effective_bind_root_prefers_installed_persistent_home_mount(
     resolved = resolve_effective_bind_root(
         canonical_root,
         home_mount,
-        image="sir-convert-a-lot-qwen-finetune-hemma:task100",
+        image="sir-convert-a-lot-qwen-finetune-hemma:historical-control",
         sync_home_into_canonical=False,
     )
 
     assert resolved.canonical_root == canonical_root
     assert resolved.effective_root == Path(
-        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/story31/task240"
+        "/home/paunchygent/.data/sir-convert-a-lot/build/verification/qwen_stability/qwen-stability-lab"
     )
     assert resolved.used_home_mount is True
     assert probe_calls == [resolved.effective_root]

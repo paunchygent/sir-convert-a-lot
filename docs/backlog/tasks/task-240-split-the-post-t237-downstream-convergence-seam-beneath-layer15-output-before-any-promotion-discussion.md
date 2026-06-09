@@ -11,7 +11,7 @@ related:
   - docs/backlog/tasks/task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam.md
   - docs/backlog/tasks/task-241-split-the-post-t240-layer15-output-seam-into-residual-output-formation-sub-boundaries-before-any-new-stabilizer-family.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -38,7 +38,7 @@ before any new stabilizer family or promotion discussion opens.
 
 - Treat `T237` as closed truth:
   - truthful bounded rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task237-20260318t154708z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task237-20260318t154708z-a1`
   - resolved family classification:
     `converged_downstream`
   - winning member only:
@@ -85,16 +85,16 @@ before any new stabilizer family or promotion discussion opens.
 
 - Landed code surfaces:
   - `scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_trace.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story30_backward_lineage_hooks.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_post_t237_downstream_convergence_assessment.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_contracts.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_runner.py`
-  - `scripts/sir_convert_a_lot/ml/qwen/training/story31_stability_lab_markdown.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_hooks.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_downstream_convergence_assessment.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_contracts.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_runner.py`
+  - `scripts/sir_convert_a_lot/ml/qwen/training/qwen_stability_lab_markdown.py`
 
 ## Result
 
 - Truthful bounded rerun:
-  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task240-20260318t165458z-a1`
+  `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task240-20260318t165458z-a1`
 - Resolved downstream classification:
   `converged_layer15_output`
 - Dominant surface:
@@ -137,13 +137,13 @@ before any new stabilizer family or promotion discussion opens.
 
 ## Validation
 
-- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_post_t237_downstream_convergence_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_story31_stability_lab.py -q`
+- [x] `pdm run pytest-root tests/sir_convert_a_lot/ml/qwen/training/test_talker_core_trace.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_downstream_convergence_assessment.py tests/sir_convert_a_lot/ml/qwen/training/test_qwen_stability_lab.py -q`
 - [x] `pdm run test-ml`
 - [x] `pdm run typecheck-ml`
 - [x] `pdm run validate-tasks`
 - [x] `pdm run validate-docs`
 - [x] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
-- [x] `pdm run run-hemma -- pdm run qwen-story31-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task240-20260318t165458z-a1 --skip-build --hook-profile talker_core_post_t237_downstream_convergence --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
+- [x] `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task240-20260318t165458z-a1 --skip-build --hook-profile talker_core_post_t237_downstream_convergence --stabilization-variants layer16_gated_fp32_rescale_1e3_layer16_out_0p5_layer15_out_0p5_layer16_input_ln_output_0p5_layer16_input_ln_fp32_output_cap_1e3`
 
 ## Checklist
 

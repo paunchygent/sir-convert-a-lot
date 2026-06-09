@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
   - docs/backlog/tasks/task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
@@ -104,7 +104,7 @@ The scheduler must therefore be conservative rather than merely aggressive:
 1. Inspect timer state:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
 1. After scratch headroom is healthy again, rerun the accumulation-`2` lane:
-   `pdm run qwen-t198-proof launch-window --proof-id task198-20260316t185616z-accum2-a1`
+   `pdm run qwen-fallback-accumulation-proof launch-window --proof-id task198-20260316t185616z-accum2-a1`
 
 ## Checklist
 

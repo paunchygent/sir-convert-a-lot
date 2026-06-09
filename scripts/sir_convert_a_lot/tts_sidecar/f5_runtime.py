@@ -2,7 +2,7 @@
 
 Purpose:
     Wrap the ChiliOlavi `swedish-tts` F5-TTS CLI inference plus the Swedish
-    Task 85 fine-tune behind the reusable ADR-0007 sidecar contract so Hemma
+    F5-TTS benchmark fine-tune behind the reusable ADR-0007 sidecar contract so Hemma
     can validate a minimal cloning-capable Swedish backend through the
     service-container path.
 
@@ -58,7 +58,7 @@ _DEFAULT_REFERENCE_MAX_SECONDS = 12.0
 
 @dataclass(frozen=True)
 class F5TtsSidecarSettings:
-    """Environment-driven settings for the F5-TTS Task 85 sidecar."""
+    """Environment-driven settings for the F5-TTS F5-TTS benchmark sidecar."""
 
     backend_id: str
     backend_version: str
@@ -274,19 +274,19 @@ class F5TtsSidecarBackend:
         if request.output_format is not OutputFormat.WAV:
             raise SidecarRequestError(
                 code="unsupported_output_format",
-                message="F5-TTS Task 85 currently supports `wav` output only.",
+                message="F5-TTS F5-TTS benchmark currently supports `wav` output only.",
                 status_code=422,
             )
         if request.voice_mode is not VoiceMode.REFERENCE_CLONE:
             raise SidecarRequestError(
                 code="unsupported_voice_mode",
-                message="F5-TTS Task 85 requires `reference_clone` voice mode.",
+                message="F5-TTS F5-TTS benchmark requires `reference_clone` voice mode.",
                 status_code=422,
             )
         if request.preset_voice_id is not None:
             raise SidecarRequestError(
                 code="preset_voice_not_supported",
-                message="F5-TTS Task 85 does not expose preset voices.",
+                message="F5-TTS F5-TTS benchmark does not expose preset voices.",
                 status_code=422,
             )
         normalized_language = _normalize_language_code(request.language)
@@ -294,7 +294,7 @@ class F5TtsSidecarBackend:
             raise SidecarRequestError(
                 code="unsupported_language",
                 message=(
-                    "F5-TTS Task 85 only supports the configured benchmark languages: "
+                    "F5-TTS F5-TTS benchmark only supports the configured benchmark languages: "
                     f"{', '.join(self._settings.supported_language_codes)}."
                 ),
                 status_code=422,
@@ -308,7 +308,7 @@ class F5TtsSidecarBackend:
         if request.reference_transcript is None or request.reference_transcript.strip() == "":
             raise SidecarRequestError(
                 code="missing_reference_transcript",
-                message="Reference transcript is required for F5-TTS Task 85.",
+                message="Reference transcript is required for F5-TTS F5-TTS benchmark.",
                 status_code=422,
             )
         normalized_text = _normalize_text(request.text, profile=request.normalization_profile)
@@ -332,7 +332,7 @@ class F5TtsSidecarBackend:
             output_dir = temp_dir / "output"
             output_dir.mkdir(parents=True, exist_ok=True)
             output_file = "synthesized.wav"
-            config_path = temp_dir / "f5_task85.toml"
+            config_path = temp_dir / "f5_f5-tts.toml"
             gen_file_path = temp_dir / "gen_text.txt"
             source_reference_path.write_bytes(reference_audio.data)
             _prepare_reference_audio(
@@ -435,14 +435,14 @@ class F5TtsSidecarBackend:
 
 @dataclass(frozen=True)
 class _ModelFiles:
-    """Resolved Swedish model artifact paths for Task 85."""
+    """Resolved Swedish model artifact paths for F5-TTS benchmark."""
 
     checkpoint_path: Path
     vocab_path: Path
 
 
 def _resolve_model_files(model_root: Path, *, required: bool = True) -> _ModelFiles | None:
-    """Return the Task 85 checkpoint and vocab paths under the mounted model root."""
+    """Return the F5-TTS benchmark checkpoint and vocab paths under the mounted model root."""
     vocab_path = model_root / "vocab.txt"
     checkpoint_candidates = sorted(model_root.glob("*.safetensors")) + sorted(
         model_root.glob("*.pt")

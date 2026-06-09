@@ -2,7 +2,7 @@
 
 Purpose:
     Centralize canonical lane mapping, API-key resolution, metrics safety scans,
-    and revision-parity guardrails used by Task 76 deploy verification surfaces.
+    and revision-parity guardrails used by Hemma deploy verification deploy verification surfaces.
 
 Relationships:
     - Used by `scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify`.
@@ -28,7 +28,7 @@ FORBIDDEN_METRICS_SUBSTRINGS: tuple[str, ...] = (
 
 
 class VerificationContractError(ValueError):
-    """Raised when Task 76 deploy/verification contracts are violated."""
+    """Raised when Hemma deploy verification deploy/verification contracts are violated."""
 
 
 @dataclass(frozen=True)

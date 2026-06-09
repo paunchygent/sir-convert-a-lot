@@ -1,7 +1,8 @@
-"""Focused tests for Story 30 talker-core trace target resolution.
+"""Focused tests for Qwen backward-lineage and fresh-start proof lane talker-core trace target
+resolution.
 
 Purpose:
-    Lock the deterministic talker-core module target order so T213 can deepen
+    Lock the deterministic talker-core module target order so per-layer talker-core trace can deepen
     the backward trace without drifting away from the intended first-layer and
     per-layer hook families.
 
@@ -17,22 +18,22 @@ import torch
 
 from scripts.devops.qwen_finetuning_patches.sft_12hz_talker_core_trace import (
     iter_talker_core_boundary_trace_targets,
+    iter_talker_core_downstream_convergence_trace_targets,
     iter_talker_core_handoff_sub_boundary_trace_targets,
-    iter_talker_core_post_t234_disagreement_trace_targets,
-    iter_talker_core_post_t235_row_local_outlier_trace_targets,
-    iter_talker_core_post_t237_downstream_convergence_trace_targets,
-    iter_talker_core_post_t240_layer15_output_split_trace_targets,
-    iter_talker_core_post_t241_layer15_residual_output_trace_targets,
-    iter_talker_core_post_t243_layer15_output_return_trace_targets,
-    iter_talker_core_post_t245_fp32_scaled_output_trace_targets,
+    iter_talker_core_layer15_output_return_trace_targets,
+    iter_talker_core_layer15_output_split_trace_targets,
+    iter_talker_core_layer15_residual_output_trace_targets,
+    iter_talker_core_post_layer15_output_multiply_fp32_scaled_output_trace_targets,
+    iter_talker_core_row_local_outlier_trace_targets,
+    iter_talker_core_sub_talker_disagreement_trace_targets,
     iter_talker_core_trace_targets,
+    talker_core_downstream_convergence_trace_names,
     talker_core_input_layernorm_internal_trace_names,
-    talker_core_post_t235_row_local_outlier_trace_names,
-    talker_core_post_t237_downstream_convergence_trace_names,
-    talker_core_post_t240_layer15_output_split_trace_names,
-    talker_core_post_t241_layer15_residual_output_trace_names,
-    talker_core_post_t243_layer15_output_return_trace_names,
-    talker_core_post_t245_fp32_scaled_output_trace_names,
+    talker_core_layer15_output_return_trace_names,
+    talker_core_layer15_output_split_trace_names,
+    talker_core_layer15_residual_output_trace_names,
+    talker_core_post_layer15_output_multiply_fp32_scaled_output_trace_names,
+    talker_core_row_local_outlier_trace_names,
     talker_core_trace_prefix,
 )
 
@@ -94,7 +95,10 @@ def test_iter_talker_core_trace_targets_returns_ordered_layer_and_norm_targets()
 
 
 def test_iter_talker_core_boundary_trace_targets_focuses_layer_16_and_15_mlp_boundary() -> None:
-    """The T214 boundary trace should target the layer 16/15 seam in fixed order."""
+    """
+    The layer-16/layer-15 boundary trace boundary trace should target the layer 16/15 seam in fixed
+    order.
+    """
     targets = iter_talker_core_boundary_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
@@ -121,8 +125,10 @@ def test_iter_talker_core_boundary_trace_targets_focuses_layer_16_and_15_mlp_bou
     ]
 
 
-def test_iter_talker_core_handoff_sub_boundary_trace_targets_focuses_t229_chain() -> None:
-    """The T229 trace should isolate the narrowed post-T219 layer-16 handoff seam."""
+def test_iter_talker_core_handoff_sub_boundary_trace_targets_focuses_sub_boundary_chain() -> None:
+    """
+    The sub-boundary trace should isolate the narrowed post-layer-16 handoff layer-16 handoff seam.
+    """
     targets = iter_talker_core_handoff_sub_boundary_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
@@ -133,8 +139,8 @@ def test_iter_talker_core_handoff_sub_boundary_trace_targets_focuses_t229_chain(
     ]
 
 
-def test_talker_core_input_layernorm_internal_trace_names_lock_t233_chain_order() -> None:
-    """The T233 trace should expose the fixed internal RMSNorm arithmetic chain."""
+def test_input_layernorm_internal_trace_names_lock_chain_order() -> None:
+    """The input-layernorm internal trace should expose the fixed RMSNorm arithmetic chain."""
     assert talker_core_input_layernorm_internal_trace_names() == (
         "talker_core.layer_16.input_layernorm.residual_input",
         "talker_core.layer_16.input_layernorm.fp32_input",
@@ -144,9 +150,11 @@ def test_talker_core_input_layernorm_internal_trace_names_lock_t233_chain_order(
     )
 
 
-def test_iter_talker_core_post_t234_disagreement_trace_targets_focuses_t235_corridor() -> None:
-    """The T235 trace should isolate the mixed post-T234 disagreement corridor."""
-    targets = iter_talker_core_post_t234_disagreement_trace_targets(_FakeRootModel())
+def test_sub_talker_disagreement_trace_targets_focus_corridor() -> None:
+    """The sub-talker disagreement trace should isolate the mixed post-input-layernorm output
+    disagreement corridor.
+    """
+    targets = iter_talker_core_sub_talker_disagreement_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.output",
@@ -155,18 +163,20 @@ def test_iter_talker_core_post_t234_disagreement_trace_targets_focuses_t235_corr
     ]
 
 
-def test_talker_core_post_t235_row_local_outlier_trace_names_lock_t236_order() -> None:
-    """The T236 trace should expose the fixed row-local outlier corridor."""
-    assert talker_core_post_t235_row_local_outlier_trace_names() == (
+def test_talker_core_row_local_outlier_trace_names_lock_row_local_outlier_order() -> None:
+    """The row-local outlier trace should expose the fixed row-local outlier corridor."""
+    assert talker_core_row_local_outlier_trace_names() == (
         "talker_core.layer_15.output",
         "talker_core.layer_16.input",
         "talker_core.layer_16.input_layernorm.output",
     )
 
 
-def test_iter_talker_core_post_t235_row_local_outlier_trace_targets_focuses_t236_corridor() -> None:
-    """The T236 trace should isolate the narrowed line-4 outlier corridor."""
-    targets = iter_talker_core_post_t235_row_local_outlier_trace_targets(_FakeRootModel())
+def test_iter_talker_core_row_local_outlier_trace_targets_focuses_row_local_outlier_corridor() -> (
+    None
+):
+    """The row-local outlier trace should isolate the narrowed line-4 outlier corridor."""
+    targets = iter_talker_core_row_local_outlier_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.output",
@@ -174,9 +184,9 @@ def test_iter_talker_core_post_t235_row_local_outlier_trace_targets_focuses_t236
     ]
 
 
-def test_talker_core_post_t237_downstream_convergence_trace_names_lock_t240_order() -> None:
-    """The T240 trace should expose the fixed downstream convergence corridor."""
-    assert talker_core_post_t237_downstream_convergence_trace_names() == (
+def test_talker_core_downstream_convergence_trace_names_lock_downstream_convergence_order() -> None:
+    """The downstream convergence trace should expose the fixed downstream convergence corridor."""
+    assert talker_core_downstream_convergence_trace_names() == (
         "talker_core.layer_15.mlp.down_proj",
         "talker_core.layer_15.output",
         "talker_core.layer_16.input",
@@ -184,9 +194,9 @@ def test_talker_core_post_t237_downstream_convergence_trace_names_lock_t240_orde
     )
 
 
-def test_iter_talker_core_post_t237_downstream_convergence_targets_focus_t240_corridor() -> None:
-    """The T240 trace should isolate the downstream split beneath layer 15 output."""
-    targets = iter_talker_core_post_t237_downstream_convergence_trace_targets(_FakeRootModel())
+def test_downstream_convergence_trace_targets_focus_corridor() -> None:
+    """The downstream convergence trace should isolate the split beneath layer 15 output."""
+    targets = iter_talker_core_downstream_convergence_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.mlp.down_proj",
@@ -195,9 +205,9 @@ def test_iter_talker_core_post_t237_downstream_convergence_targets_focus_t240_co
     ]
 
 
-def test_talker_core_post_t240_layer15_output_split_trace_names_lock_t241_order() -> None:
-    """The T241 trace should expose the fixed layer-15 split corridor."""
-    assert talker_core_post_t240_layer15_output_split_trace_names() == (
+def test_talker_core_layer15_output_split_trace_names_lock_layer15_output_split_order() -> None:
+    """The layer-15 split trace should expose the fixed layer-15 split corridor."""
+    assert talker_core_layer15_output_split_trace_names() == (
         "talker_core.layer_15.mlp.gated_product",
         "talker_core.layer_15.mlp.down_proj",
         "talker_core.layer_15.output",
@@ -205,9 +215,11 @@ def test_talker_core_post_t240_layer15_output_split_trace_names_lock_t241_order(
     )
 
 
-def test_iter_talker_core_post_t240_layer15_output_split_targets_focus_t241_corridor() -> None:
-    """The T241 trace should isolate the converged layer-15 residual/output seam."""
-    targets = iter_talker_core_post_t240_layer15_output_split_trace_targets(_FakeRootModel())
+def test_iter_talker_core_layer15_output_split_targets_focus_layer15_output_split_corridor() -> (
+    None
+):
+    """The layer-15 split trace should isolate the converged layer-15 residual/output seam."""
+    targets = iter_talker_core_layer15_output_split_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.mlp.gated_product",
@@ -217,9 +229,11 @@ def test_iter_talker_core_post_t240_layer15_output_split_targets_focus_t241_corr
     ]
 
 
-def test_talker_core_post_t241_layer15_residual_output_trace_names_lock_t243_order() -> None:
-    """The T243 trace should expose the fixed upstream residual/output corridor."""
-    assert talker_core_post_t241_layer15_residual_output_trace_names() == (
+def test_talker_core_layer15_residual_output_trace_names_lock_layer15_residual_output_order() -> (
+    None
+):
+    """The residual/output trace should expose the fixed upstream residual/output corridor."""
+    assert talker_core_layer15_residual_output_trace_names() == (
         "talker_core.layer_15.output.residual_input",
         "talker_core.layer_15.output.residual_sum",
         "talker_core.layer_15.output",
@@ -227,9 +241,9 @@ def test_talker_core_post_t241_layer15_residual_output_trace_names_lock_t243_ord
     )
 
 
-def test_iter_talker_core_post_t241_layer15_residual_output_targets_focus_t243_corridor() -> None:
-    """The T243 trace should isolate the residual-path split beneath layer 15 output."""
-    targets = iter_talker_core_post_t241_layer15_residual_output_trace_targets(_FakeRootModel())
+def test_layer15_residual_output_trace_targets_focus_corridor() -> None:
+    """The residual/output trace should isolate the residual-path split beneath layer 15 output."""
+    targets = iter_talker_core_layer15_residual_output_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.output.residual_input",
@@ -238,18 +252,22 @@ def test_iter_talker_core_post_t241_layer15_residual_output_targets_focus_t243_c
     ]
 
 
-def test_talker_core_post_t243_layer15_output_return_trace_names_lock_t244_order() -> None:
-    """The T244 trace should expose the fixed pre-scale versus emitted return corridor."""
-    assert talker_core_post_t243_layer15_output_return_trace_names() == (
+def test_talker_core_layer15_output_return_trace_names_lock_layer15_output_return_order() -> None:
+    """The output-return trace should expose the fixed pre-scale versus emitted return corridor."""
+    assert talker_core_layer15_output_return_trace_names() == (
         "talker_core.layer_15.output.pre_output_scale_return",
         "talker_core.layer_15.output",
         "talker_core.layer_16.input",
     )
 
 
-def test_iter_talker_core_post_t243_layer15_output_return_targets_focus_t244_corridor() -> None:
-    """The T244 trace should isolate the post-sum return-path split beneath layer 15 output."""
-    targets = iter_talker_core_post_t243_layer15_output_return_trace_targets(_FakeRootModel())
+def test_iter_talker_core_layer15_output_return_targets_focus_layer15_output_return_corridor() -> (
+    None
+):
+    """
+    The output-return trace should isolate the post-sum return-path split beneath layer 15 output.
+    """
+    targets = iter_talker_core_layer15_output_return_trace_targets(_FakeRootModel())
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.output",
@@ -257,18 +275,20 @@ def test_iter_talker_core_post_t243_layer15_output_return_targets_focus_t244_cor
     ]
 
 
-def test_talker_core_post_t245_fp32_scaled_output_trace_names_lock_t246_order() -> None:
-    """The T246 trace should expose the fp32-scaled versus emitted output corridor."""
-    assert talker_core_post_t245_fp32_scaled_output_trace_names() == (
+def test_fp32_scaled_layer15_output_trace_names_lock_order() -> None:
+    """The fp32-scaled output trace should expose the fp32-scaled versus emitted output corridor."""
+    assert talker_core_post_layer15_output_multiply_fp32_scaled_output_trace_names() == (
         "talker_core.layer_15.output.fp32_scaled_output",
         "talker_core.layer_15.output",
         "talker_core.layer_16.input",
     )
 
 
-def test_iter_talker_core_post_t245_fp32_scaled_output_targets_focus_t246_corridor() -> None:
-    """The T246 trace should isolate the post-multiply fp32-scaled output seam."""
-    targets = iter_talker_core_post_t245_fp32_scaled_output_trace_targets(_FakeRootModel())
+def test_fp32_scaled_layer15_output_trace_targets_focus_corridor() -> None:
+    """The fp32-scaled output trace should isolate the post-multiply fp32-scaled output seam."""
+    targets = iter_talker_core_post_layer15_output_multiply_fp32_scaled_output_trace_targets(
+        _FakeRootModel()
+    )
 
     assert [target.name for target in targets] == [
         "talker_core.layer_15.output",

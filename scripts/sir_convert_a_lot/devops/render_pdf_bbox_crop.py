@@ -5,7 +5,7 @@ Purpose:
     failures can be checked against the actual source crop.
 
 Relationships:
-    Complements Task 344 formula-generation JSONL sidecars without changing
+    Complements Docling page-window replay formula-generation JSONL sidecars without changing
     conversion runtime behavior.
 """
 

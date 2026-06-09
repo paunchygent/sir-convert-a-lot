@@ -23,7 +23,8 @@ RUN_HEMMA_SCRIPT = REPO_ROOT / "scripts" / "devops" / "run-hemma.sh"
 def _write_fake_ssh(script_dir: Path) -> None:
     fake_ssh = script_dir / "ssh"
     fake_ssh.write_text(
-        """#!/usr/bin/env bash
+        """
+        #!/usr/bin/env bash
 set -euo pipefail
 
 if [[ "$#" -lt 5 ]]; then

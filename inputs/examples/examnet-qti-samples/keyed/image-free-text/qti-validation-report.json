@@ -1,0 +1,37 @@
+{
+  "errors": [],
+  "examnet_proof_status": "vendor_reported_unproven",
+  "generator_version": "examnet_qti_2_1_v1",
+  "manual_follow_ups": [],
+  "package_filename": "qti-package.zip",
+  "package_sha256": "917dba37c29e44147826ac508942fafcd536d78cd3fcc552d1106bc0072d13e8",
+  "package_status": "passed",
+  "profile_id": "examnet_qti_2_1_v1",
+  "qti_version": "2.1",
+  "schema_version": "examnet_qti_validation_report_v1",
+  "target_support_status": "vendor_reported_minimum",
+  "validator_results": [
+    {
+      "layer": "package_xml_preflight",
+      "message": "Package files, XML documents, manifest hrefs, and image references passed.",
+      "name": "sir-convert-local-qti-package-preflight",
+      "status": "passed",
+      "version": "examnet_qti_2_1_v1"
+    },
+    {
+      "layer": "official_qti_validation",
+      "message": "Official 1EdTech validation is recorded as an external dependency for this local Exam.net QTI gate.",
+      "name": "1EdTech QTI validator",
+      "status": "external_validator_unavailable",
+      "version": "external"
+    },
+    {
+      "layer": "local_semantic_smoke",
+      "message": "QTIWorks was not installed as part of this bounded implementation slice.",
+      "name": "QTIWorks local semantic smoke",
+      "status": "not_run",
+      "version": "not_configured"
+    }
+  ],
+  "warnings": []
+}

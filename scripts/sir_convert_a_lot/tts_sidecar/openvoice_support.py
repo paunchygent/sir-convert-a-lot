@@ -1,9 +1,9 @@
-"""Support utilities for the OpenVoice Task 81 sidecar adapter.
+"""Support utilities for the OpenVoice OpenVoice benchmark sidecar adapter.
 
 Purpose:
     Isolate the OpenVoice-specific runtime helpers that are needed by the
     normalized ADR-0007 sidecar backend without forcing the main adapter module
-    to carry upstream compatibility details and heavy audio preprocessing logic.
+    to carry OpenVoice-specific helper details and heavy audio preprocessing logic.
 
 Relationships:
     - Imported by `openvoice_runtime.py` for converter construction, bounded
@@ -145,7 +145,7 @@ def _package_version_or_none(name: str) -> str | None:
 
 
 def _create_tone_color_converter(config_path: Path, *, device: str) -> _OpenVoiceConverter:
-    """Create a no-watermark converter for Task 81 without unsupported kwargs."""
+    """Create a no-watermark converter for OpenVoice benchmark without unsupported kwargs."""
     from openvoice.api import OpenVoiceBaseClass, ToneColorConverter
 
     converter: _OpenVoiceConverter = ToneColorConverter.__new__(ToneColorConverter)

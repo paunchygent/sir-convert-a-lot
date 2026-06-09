@@ -6,7 +6,7 @@ Purpose:
     response objects.
 
 Relationships:
-    - Implements the Task 296 provider execution slice behind
+    - Implements the structured LLM provider harness provider execution slice behind
       `domain.structured_llm_contracts.StructuredChatProviderProtocol`.
     - Uses `infrastructure.structured_llm_payloads` for endpoint-specific
       request shapes and `infrastructure.structured_llm_responses` for response

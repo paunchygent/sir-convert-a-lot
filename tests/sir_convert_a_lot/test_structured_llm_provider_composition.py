@@ -1,7 +1,7 @@
 """Tests for structured LLM provider configuration and composition.
 
 Purpose:
-    Prove Task 296 service settings and Dishka composition are opt-in,
+    Prove structured LLM provider harness service settings and Dishka composition are opt-in,
     constant-backed, and provider-agnostic before advisory answer-key reports
     start using the harness.
 

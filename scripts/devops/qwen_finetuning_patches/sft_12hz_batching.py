@@ -1,7 +1,7 @@
 """Bucketed batching helpers for the patched Qwen trainer.
 
 Purpose:
-    Build aggressive but bounded Task 101 training batches using token/frame
+    Build aggressive but bounded Qwen pilot training training batches using token/frame
     budgets and length bucketing instead of fixed-size random batching.
 
 Relationships:

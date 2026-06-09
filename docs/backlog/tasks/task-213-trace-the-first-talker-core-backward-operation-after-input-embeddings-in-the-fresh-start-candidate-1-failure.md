@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-211-run-a-fresh-start-candidate-1-discriminant-proof-before-opening-candidate-3.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -83,7 +83,7 @@ talker-core puzzle piece before making any Candidate `3` implementation move.
 - Truthful probe:
   `task213-20260317t143810z-talkercore-a1`
 - Artifact:
-  `build/verification/qwen-story30-backward-lineage/task213-20260317t143810z-talkercore-a1/status.json`
+  `build/verification/qwen-backward-lineage/task213-20260317t143810z-talkercore-a1/status.json`
 - Pair `main_loss` and pair `combined_loss` first non-finite talker-core hook:
   `talker_core.layer_16.post_attention_layernorm`
 - Pair `sub_talker_loss` first non-finite talker-core hook:

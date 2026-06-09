@@ -1,13 +1,15 @@
-"""Talker-core trace targets for Story 30 backward-lineage probes.
+"""Talker-core trace targets for Qwen backward-lineage and fresh-start proof lane backward-lineage
+probes.
 
 Purpose:
     Expose deterministic talker-core hook targets for both the broad
-    per-layer trace used by `T213` and the narrower layer `16` / layer `15`
-    boundary split used by `T214`, without duplicating upstream Qwen talker
+    per-layer trace used by `per-layer talker-core trace` and the narrower layer `16` / layer `15`
+    boundary split used by `layer-16/layer-15 boundary trace`, without duplicating upstream Qwen
+    talker
     path assumptions in probe code.
 
 Relationships:
-    - Imported by `story30_backward_lineage_hooks.py` to install module hooks
+    - Imported by `qwen_backward_lineage_hooks.py` to install module hooks
       before the shared Qwen talker forward pass executes.
     - Reuses the live patched talker runtime layout from the actual model
       object rather than restating architecture paths in the probe layer.
@@ -26,13 +28,13 @@ _TALKER_CORE_PREFIX = "talker_core."
 _BOUNDARY_TARGET_LAYER_INDICES = (16, 15)
 _HANDOFF_SUB_BOUNDARY_LAYER_INDEX = 16
 _INPUT_LAYERNORM_INTERNAL_LAYER_INDEX = 16
-_POST_T234_DISAGREEMENT_LAYER_INDICES = (16, 15)
-_POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES = (16, 15)
-_POST_T237_DOWNSTREAM_CONVERGENCE_LAYER_INDICES = (15, 16)
-_POST_T240_LAYER15_OUTPUT_SPLIT_LAYER_INDICES = (15, 16)
-_POST_T241_LAYER15_RESIDUAL_OUTPUT_LAYER_INDICES = (15, 16)
-_POST_T243_LAYER15_OUTPUT_RETURN_LAYER_INDICES = (15, 16)
-_POST_T245_FP32_SCALED_OUTPUT_LAYER_INDICES = (15, 16)
+_POST_INPUT_LAYERNORM_OUTPUT_DISAGREEMENT_LAYER_INDICES = (16, 15)
+_POST_SUB_TALKER_DISAGREEMENT_ROW_LOCAL_OUTLIER_LAYER_INDICES = (16, 15)
+_POST_ROW_LOCAL_MICRO_FAMILY_DOWNSTREAM_CONVERGENCE_LAYER_INDICES = (15, 16)
+_POST_DOWNSTREAM_CONVERGENCE_LAYER15_OUTPUT_SPLIT_LAYER_INDICES = (15, 16)
+_POST_LAYER15_OUTPUT_SPLIT_LAYER15_RESIDUAL_OUTPUT_LAYER_INDICES = (15, 16)
+_POST_LAYER15_RESIDUAL_OUTPUT_LAYER15_OUTPUT_RETURN_LAYER_INDICES = (15, 16)
+_POST_LAYER15_OUTPUT_MULTIPLY_FP32_SCALED_OUTPUT_LAYER_INDICES = (15, 16)
 
 
 @dataclass(frozen=True)
@@ -66,7 +68,9 @@ def resolve_talker_input_layernorm(model: object, layer_index: int) -> torch.nn.
 
 
 def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
-    """Return the fixed T233 internal trace chain for `layer_16.input_layernorm`."""
+    """
+    Return the fixed input-layernorm internal internal trace chain for `layer_16.input_layernorm`.
+    """
     layer_prefix = (
         f"{_TALKER_CORE_PREFIX}layer_{_INPUT_LAYERNORM_INTERNAL_LAYER_INDEX}.input_layernorm"
     )
@@ -79,8 +83,8 @@ def talker_core_input_layernorm_internal_trace_names() -> tuple[str, ...]:
     )
 
 
-def talker_core_post_t235_row_local_outlier_trace_names() -> tuple[str, ...]:
-    """Return the fixed T236 row-local outlier corridor for `sub_talker_loss`."""
+def talker_core_row_local_outlier_trace_names() -> tuple[str, ...]:
+    """Return the fixed row-local outlier row-local outlier corridor for `sub_talker_loss`."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.output",
         f"{_TALKER_CORE_PREFIX}layer_16.input",
@@ -88,8 +92,10 @@ def talker_core_post_t235_row_local_outlier_trace_names() -> tuple[str, ...]:
     )
 
 
-def talker_core_post_t237_downstream_convergence_trace_names() -> tuple[str, ...]:
-    """Return the fixed T240 downstream convergence corridor beneath `layer_15.output`."""
+def talker_core_downstream_convergence_trace_names() -> tuple[str, ...]:
+    """Return the fixed downstream convergence downstream convergence corridor beneath
+    `layer_15.output`.
+    """
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
         f"{_TALKER_CORE_PREFIX}layer_15.output",
@@ -98,8 +104,8 @@ def talker_core_post_t237_downstream_convergence_trace_names() -> tuple[str, ...
     )
 
 
-def talker_core_post_t240_layer15_output_split_trace_names() -> tuple[str, ...]:
-    """Return the fixed T241 seam split beneath the converged `layer_15.output` surface."""
+def talker_core_layer15_output_split_trace_names() -> tuple[str, ...]:
+    """Return the fixed layer-15 split beneath the converged `layer_15.output` surface."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.mlp.gated_product",
         f"{_TALKER_CORE_PREFIX}layer_15.mlp.down_proj",
@@ -108,8 +114,8 @@ def talker_core_post_t240_layer15_output_split_trace_names() -> tuple[str, ...]:
     )
 
 
-def talker_core_post_t241_layer15_residual_output_trace_names() -> tuple[str, ...]:
-    """Return the fixed T243 split of the real layer-15 residual/output path."""
+def talker_core_layer15_residual_output_trace_names() -> tuple[str, ...]:
+    """Return the fixed residual/output split of the real layer-15 residual/output path."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.output.residual_input",
         f"{_TALKER_CORE_PREFIX}layer_15.output.residual_sum",
@@ -118,8 +124,8 @@ def talker_core_post_t241_layer15_residual_output_trace_names() -> tuple[str, ..
     )
 
 
-def talker_core_post_t243_layer15_output_return_trace_names() -> tuple[str, ...]:
-    """Return the fixed T244 split of the winner-specific layer-15 return path."""
+def talker_core_layer15_output_return_trace_names() -> tuple[str, ...]:
+    """Return the fixed output-return split of the winner-specific layer-15 return path."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.output.pre_output_scale_return",
         f"{_TALKER_CORE_PREFIX}layer_15.output",
@@ -127,8 +133,8 @@ def talker_core_post_t243_layer15_output_return_trace_names() -> tuple[str, ...]
     )
 
 
-def talker_core_post_t245_fp32_scaled_output_trace_names() -> tuple[str, ...]:
-    """Return the fixed T246 split of the fp32-scaled layer-15 output path."""
+def talker_core_post_layer15_output_multiply_fp32_scaled_output_trace_names() -> tuple[str, ...]:
+    """Return the fixed fp32-scaled output split of the fp32-scaled layer-15 output path."""
     return (
         f"{_TALKER_CORE_PREFIX}layer_15.output.fp32_scaled_output",
         f"{_TALKER_CORE_PREFIX}layer_15.output",
@@ -137,7 +143,7 @@ def talker_core_post_t245_fp32_scaled_output_trace_names() -> tuple[str, ...]:
 
 
 def iter_talker_core_trace_targets(model: object) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the broad per-layer talker-core targets used by `T213`."""
+    """Return the broad per-layer talker-core targets used by `per-layer talker-core trace`."""
     talker_model = _resolve_talker_model(model)
     layers = resolve_talker_decoder_layers(model)
     targets: list[TalkerCoreTraceTarget] = []
@@ -176,7 +182,9 @@ def iter_talker_core_trace_targets(model: object) -> tuple[TalkerCoreTraceTarget
 def iter_talker_core_boundary_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the finer layer `16` / layer `15` boundary targets used by `T214`."""
+    """Return the finer layer `16` / layer `15` boundary targets used by `layer-16/layer-15 boundary
+    trace`.
+    """
     layers = resolve_talker_decoder_layers(model)
     targets: list[TalkerCoreTraceTarget] = []
     for layer_index in _BOUNDARY_TARGET_LAYER_INDICES:
@@ -227,7 +235,7 @@ def iter_talker_core_boundary_trace_targets(
 def iter_talker_core_handoff_sub_boundary_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed post-T219 layer-16 handoff targets used by `T229`."""
+    """Return the narrowed post-layer-16 handoff layer-16 handoff targets used by `sub-boundary`."""
     layer = resolve_talker_decoder_layer(model, _HANDOFF_SUB_BOUNDARY_LAYER_INDEX)
     mlp = _required_module(layer, "mlp")
     input_layernorm = _required_module(layer, "input_layernorm")
@@ -249,13 +257,15 @@ def iter_talker_core_handoff_sub_boundary_trace_targets(
     )
 
 
-def iter_talker_core_post_t234_disagreement_trace_targets(
+def iter_talker_core_sub_talker_disagreement_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T235 corridor between the T234 disagreement seams."""
+    """Return the narrowed sub-talker disagreement corridor between the input-layernorm output
+    disagreement seams.
+    """
     layer_16, layer_15 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T234_DISAGREEMENT_LAYER_INDICES
+        for layer_index in _POST_INPUT_LAYERNORM_OUTPUT_DISAGREEMENT_LAYER_INDICES
     )
     return (
         _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
@@ -267,13 +277,13 @@ def iter_talker_core_post_t234_disagreement_trace_targets(
     )
 
 
-def iter_talker_core_post_t235_row_local_outlier_trace_targets(
+def iter_talker_core_row_local_outlier_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T236 row-local corridor around the line-4 outlier."""
+    """Return the narrowed row-local outlier row-local corridor around the line-4 outlier."""
     layer_16, layer_15 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T235_ROW_LOCAL_OUTLIER_LAYER_INDICES
+        for layer_index in _POST_SUB_TALKER_DISAGREEMENT_ROW_LOCAL_OUTLIER_LAYER_INDICES
     )
     return (
         _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
@@ -281,13 +291,15 @@ def iter_talker_core_post_t235_row_local_outlier_trace_targets(
     )
 
 
-def iter_talker_core_post_t237_downstream_convergence_trace_targets(
+def iter_talker_core_downstream_convergence_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T240 corridor beneath the converged `layer_15.output` seam."""
+    """Return the narrowed downstream convergence corridor beneath the converged `layer_15.output`
+    seam.
+    """
     layer_15, layer_16 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T237_DOWNSTREAM_CONVERGENCE_LAYER_INDICES
+        for layer_index in _POST_ROW_LOCAL_MICRO_FAMILY_DOWNSTREAM_CONVERGENCE_LAYER_INDICES
     )
     layer_15_mlp = _required_module(layer_15, "mlp")
     return (
@@ -300,13 +312,13 @@ def iter_talker_core_post_t237_downstream_convergence_trace_targets(
     )
 
 
-def iter_talker_core_post_t240_layer15_output_split_trace_targets(
+def iter_talker_core_layer15_output_split_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T241 split beneath the converged `layer_15.output` seam."""
+    """Return the narrowed layer-15 split split beneath the converged `layer_15.output` seam."""
     layer_15, layer_16 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T240_LAYER15_OUTPUT_SPLIT_LAYER_INDICES
+        for layer_index in _POST_DOWNSTREAM_CONVERGENCE_LAYER15_OUTPUT_SPLIT_LAYER_INDICES
     )
     layer_15_mlp = _required_module(layer_15, "mlp")
     return (
@@ -323,13 +335,13 @@ def iter_talker_core_post_t240_layer15_output_split_trace_targets(
     )
 
 
-def iter_talker_core_post_t241_layer15_residual_output_trace_targets(
+def iter_talker_core_layer15_residual_output_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T243 residual/output corridor beneath `layer_15.output`."""
+    """Return the narrowed residual/output residual/output corridor beneath `layer_15.output`."""
     layer_15, layer_16 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T241_LAYER15_RESIDUAL_OUTPUT_LAYER_INDICES
+        for layer_index in _POST_LAYER15_OUTPUT_SPLIT_LAYER15_RESIDUAL_OUTPUT_LAYER_INDICES
     )
     return (
         _forward_pre_target(
@@ -341,13 +353,13 @@ def iter_talker_core_post_t241_layer15_residual_output_trace_targets(
     )
 
 
-def iter_talker_core_post_t243_layer15_output_return_trace_targets(
+def iter_talker_core_layer15_output_return_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T244 return-path corridor beneath `layer_15.output`."""
+    """Return the narrowed output-return return-path corridor beneath `layer_15.output`."""
     layer_15, layer_16 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T243_LAYER15_OUTPUT_RETURN_LAYER_INDICES
+        for layer_index in _POST_LAYER15_RESIDUAL_OUTPUT_LAYER15_OUTPUT_RETURN_LAYER_INDICES
     )
     return (
         _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),
@@ -355,13 +367,15 @@ def iter_talker_core_post_t243_layer15_output_return_trace_targets(
     )
 
 
-def iter_talker_core_post_t245_fp32_scaled_output_trace_targets(
+def iter_talker_core_post_layer15_output_multiply_fp32_scaled_output_trace_targets(
     model: object,
 ) -> tuple[TalkerCoreTraceTarget, ...]:
-    """Return the narrowed T246 corridor beneath the fixed T245 confirmation seam."""
+    """Return the narrowed fp32-scaled output corridor beneath the fixed multiply-site confirmation
+    confirmation seam.
+    """
     layer_15, layer_16 = (
         resolve_talker_decoder_layer(model, layer_index)
-        for layer_index in _POST_T245_FP32_SCALED_OUTPUT_LAYER_INDICES
+        for layer_index in _POST_LAYER15_OUTPUT_MULTIPLY_FP32_SCALED_OUTPUT_LAYER_INDICES
     )
     return (
         _forward_target(name=f"{_TALKER_CORE_PREFIX}layer_15.output", module=layer_15),

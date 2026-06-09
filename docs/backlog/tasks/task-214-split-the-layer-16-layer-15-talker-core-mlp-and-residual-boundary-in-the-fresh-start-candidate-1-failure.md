@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md
   - docs/backlog/tasks/task-213-trace-the-first-talker-core-backward-operation-after-input-embeddings-in-the-fresh-start-candidate-1-failure.md
   - docs/backlog/tasks/task-212-run-a-single-step-backward-lineage-probe-for-the-fresh-start-candidate-1-failure.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -89,7 +89,7 @@ talker-core defect before making any Candidate `3` implementation move.
 - Truthful probe:
   `task214-20260317t151800z-boundary-a1`
 - Artifact:
-  `build/verification/qwen-story30-backward-lineage/task214-20260317t151800z-boundary-a1/status.json`
+  `build/verification/qwen-backward-lineage/task214-20260317t151800z-boundary-a1/status.json`
 - Pair `main_loss` and `combined_loss` first non-finite hook:
   `talker_core.layer_16.mlp.gated_product`
 - Pair `sub_talker_loss` first non-finite hook:

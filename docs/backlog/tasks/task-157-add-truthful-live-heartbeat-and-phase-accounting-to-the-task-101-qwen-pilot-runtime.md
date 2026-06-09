@@ -1,6 +1,6 @@
 ---
 id: task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime
-title: Add truthful live heartbeat and phase accounting to the Task 101 Qwen pilot runtime
+title: Add truthful live heartbeat and phase accounting to the Qwen pilot runtime
 type: task
 status: completed
 priority: critical
@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training.md
   - docs/backlog/tasks/task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -30,13 +30,13 @@ latest known runtime state during training.
 
 ## Why This Exists
 
-The live Task 101 run on `2026-03-13` kept `pilot_status.updated_at` pinned
+The live Qwen pilot run on `2026-03-13` kept `pilot_status.updated_at` pinned
 near launch time even while steps and checkpoints advanced. That makes the
 status contract misleading and prevents phase-aware monitor analysis.
 
 ## PR Scope
 
-- Update the in-container Task 101 runtime to persist a bounded live heartbeat
+- Update the in-container Qwen pilot runtime to persist a bounded live heartbeat
   during training.
 - Record progress fields such as:
   - current epoch
@@ -73,7 +73,7 @@ status contract misleading and prevents phase-aware monitor analysis.
 
 ## Acceptance Criteria
 
-- [x] During a bounded Task 101 run, `status.json` updates while training is
+- [x] During a bounded Qwen pilot run, `status.json` updates while training is
   still in progress rather than only at launch and terminal completion.
 - [x] The live status artifact exposes current step, current epoch, latest loss,
   smoothed loss, current phase, and latest checkpoint metadata.

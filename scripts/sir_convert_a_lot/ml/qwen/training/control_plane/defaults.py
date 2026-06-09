@@ -45,9 +45,7 @@ DEFAULT_SCRATCH_BUILD_HOME_MOUNT = Path("/home/paunchygent/.data/sir-convert-a-l
 DEFAULT_DOCKERFILE_PATH = Path("containers/qwen-finetune-hemma/Dockerfile")
 DEFAULT_IMAGE = "sir-convert-a-lot-qwen-finetune-hemma:latest"
 DEFAULT_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
-DEFAULT_PILOT_BUNDLE_ROOT = (
-    DEFAULT_SCRATCH_BUILD_ROOT / "reference/qwen3-tts-swedish-task101-pilot-bundle"
-)
+DEFAULT_PILOT_BUNDLE_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "reference/qwen3-tts-swedish-pilot-bundle"
 DEFAULT_HEMMA_HF_CACHE_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_PATH"
 DEFAULT_HEMMA_HF_CACHE_HOME_MOUNT_ENV = "SIR_CONVERT_A_LOT_HEMMA_HF_CACHE_HOME_MOUNT"
 DEFAULT_HF_CACHE = Path("/srv/scratch/sir-convert-a-lot/cache/huggingface")

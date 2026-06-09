@@ -165,7 +165,7 @@ in-flight progress truthfully.
   request and Docling `PdfPipelineOptions.document_timeout`.
 - Include `document_timeout_seconds` in the Docling converter cache key so
   different timeout budgets cannot reuse an incompatible converter instance.
-- Add `pdm run diagnose:task-344-page-window-replay` as a bounded page-window
+- Add `pdm run diagnose:docling-page-window-replay` as a bounded page-window
   replay command.
 - Run each replay window in a child process with:
   - Docling `document_timeout`,
@@ -495,7 +495,7 @@ Implementation added:
 
 Local tests:
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_task344_page_window_replay.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_docling_page_window_replay.py`
 - Result: `18 passed`.
 
 Live direct Granite page-14 replay after stop forwarding, stage terminators,
@@ -772,8 +772,7 @@ Root-cause remediation proof:
       `\mathbmath`, and `0` `\mathbf` occurrences in both the full output and
       the affected `13-16` chunk.
     - Formula hallucinations were still present pre-remediation in the affected
-      chunk, including generated text such as `A s t h e d i t i o n o v e r
-      s o r e s`, `Govc`, `asoucsumd`, `cisic`, `Sumerian-Morphism`, and
+      chunk, including generated text such as `A s t h e d i t i o n o v e r s o r e s`, `Govc`, `asoucsumd`, `cisic`, `Sumerian-Morphism`, and
       `loly`.
     - Therefore, the no-repeat remediation changed the failure signature and
       avoided token-ceiling/non-return behavior, but formula-output quality was

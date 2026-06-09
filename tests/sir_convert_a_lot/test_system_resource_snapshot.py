@@ -1,4 +1,4 @@
-"""Tests for Linux host CPU and RAM snapshots used by Task 116."""
+"""Tests for Linux host CPU and RAM snapshots used by Hemma resource monitor."""
 
 from __future__ import annotations
 

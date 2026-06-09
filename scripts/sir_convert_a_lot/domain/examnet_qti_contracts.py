@@ -24,9 +24,7 @@ EXAMNET_QTI_PACKAGE_SCHEMA_VERSION: Literal["examnet_qti_package_plan_v1"] = (
 EXAMNET_QTI_VALIDATION_REPORT_SCHEMA_VERSION: Literal["examnet_qti_validation_report_v1"] = (
     "examnet_qti_validation_report_v1"
 )
-EXAMNET_QTI_GENERATOR_VERSION: Literal["task_280_examnet_qti_2_1_v1"] = (
-    "task_280_examnet_qti_2_1_v1"
-)
+EXAMNET_QTI_GENERATOR_VERSION: Literal["examnet_qti_2_1_v1"] = "examnet_qti_2_1_v1"
 EXAMNET_QTI_AUTOMATIC_PROFILE_ID: Literal["examnet_qti_2_1_v1"] = "examnet_qti_2_1_v1"
 EXAMNET_QTI_MANUAL_UNKEYED_PROFILE_ID: Literal["unkeyed_manual_qti_2_1_v1"] = (
     "unkeyed_manual_qti_2_1_v1"
@@ -201,7 +199,7 @@ class ExamNetQtiPackagePlan:
     """Filesystem-free QTI package plan."""
 
     schema_version: Literal["examnet_qti_package_plan_v1"]
-    generator_version: Literal["task_280_examnet_qti_2_1_v1"]
+    generator_version: Literal["examnet_qti_2_1_v1"]
     qti_version: Literal["2.1"]
     profile_id: Literal["examnet_qti_2_1_v1", "unkeyed_manual_qti_2_1_v1"]
     package_name: str
@@ -230,7 +228,7 @@ class ExamNetQtiValidationReport:
     """JSON-serializable QTI validation report contract."""
 
     schema_version: Literal["examnet_qti_validation_report_v1"]
-    generator_version: Literal["task_280_examnet_qti_2_1_v1"]
+    generator_version: Literal["examnet_qti_2_1_v1"]
     qti_version: Literal["2.1"]
     profile_id: Literal["examnet_qti_2_1_v1", "unkeyed_manual_qti_2_1_v1"]
     package_filename: str

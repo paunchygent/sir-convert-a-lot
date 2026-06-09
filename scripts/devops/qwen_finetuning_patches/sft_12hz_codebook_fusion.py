@@ -1,7 +1,7 @@
 """Codebook-fusion helpers for the patched Qwen trainer.
 
 Purpose:
-    Keep the Task 101 auxiliary-codebook fusion logic out of the hot training
+    Keep the Qwen pilot training auxiliary-codebook fusion logic out of the hot training
     loop while reducing repeated tensor-add fragmentation there.
 
 Relationships:

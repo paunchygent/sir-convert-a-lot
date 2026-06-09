@@ -1,7 +1,7 @@
 """One-command Hemma deploy and live verification orchestrator.
 
 Purpose:
-    Execute Task 76 deploy parity and live verification in one deterministic
+    Execute Hemma deploy verification deploy parity and live verification in one deterministic
     command: push -> remote pull -> production rebuild/recreate -> readiness
     parity -> live GPU smoke -> metrics safety scan.
 
@@ -46,7 +46,7 @@ from scripts.sir_convert_a_lot.devops.public_edge_verification import (
     verify_public_edge,
 )
 
-DEFAULT_OUTPUT_ROOT = Path("build/verification/task-76-hemma-deploy-verify")
+DEFAULT_OUTPUT_ROOT = Path("build/verification/hemma-deploy-verify")
 REMOTE_PDM = "/home/paunchygent/.local/bin/pdm"
 REMOTE_DEPLOY_PATH = (
     "/home/paunchygent/.local/bin:"
@@ -88,8 +88,10 @@ def _utc_now_iso() -> str:
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    """Parse CLI arguments for Task 76 command surface."""
-    parser = argparse.ArgumentParser(description="Hemma deploy + verify orchestrator (Task 76).")
+    """Parse CLI arguments for Hemma deploy verification command surface."""
+    parser = argparse.ArgumentParser(
+        description="Hemma deploy + verify orchestrator (Hemma deploy verification)."
+    )
     parser.add_argument(
         "--expected-revision",
         required=True,
@@ -374,7 +376,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
 
         record_structured_llm_report(report, verify_structured_llm_provider(_run_remote))
 
-        remote_smoke_output_root = "build/verification/task-76-hemma-deploy-verify/v2-smoke"
+        remote_smoke_output_root = "build/verification/hemma-deploy-verify/v2-smoke"
         remote_verify_args: list[str] = [
             "pdm",
             "run",
@@ -450,7 +452,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint for Task 76 deploy and verification workflow."""
+    """CLI entrypoint for Hemma deploy verification deploy and verification workflow."""
     args = _parse_args(sys.argv[1:] if argv is None else argv)
     try:
         settings = _load_workflow_settings(args)

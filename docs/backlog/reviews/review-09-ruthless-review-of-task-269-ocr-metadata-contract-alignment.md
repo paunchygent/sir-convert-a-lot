@@ -17,7 +17,7 @@ related:
   - scripts/sir_convert_a_lot/infrastructure/docling_backend.py
   - scripts/sir_convert_a_lot/infrastructure/pdf_checkpoint_metadata_v2.py
   - scripts/sir_convert_a_lot/infrastructure/job_store_v2.py
-  - tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py
+  - tests/sir_convert_a_lot/test_ocr_metadata_contract.py
   - tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py
 labels:
   - review
@@ -52,7 +52,7 @@ Structured review artifact for implementation or readiness checks.
   - `scripts/sir_convert_a_lot/infrastructure/job_store_v2.py`
   - `scripts/sir_convert_a_lot/devops/verify_hemma_v2_conversions.py`
   - `scripts/sir_convert_a_lot/devops/verify_hemma_v2_conversions_helpers.py`
-  - `tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py`
+  - `tests/sir_convert_a_lot/test_ocr_metadata_contract.py`
   - `tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py`
 - Public surfaces affected:
   - Service API v2 terminal result `result.conversion_metadata`.
@@ -65,7 +65,7 @@ Structured review artifact for implementation or readiness checks.
     remain superseded/deferred, not compatibility-shimmed.
 - Evidence reviewed:
   - `rg "ocr_languages_requested|ocr_acceleration_used" docs scripts tests`
-  - `pdm run pytest-root tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q`
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q`
   - `pdm run docs-validate`
   - `pdm run skills-validate`
   - `pdm run handoff-validate`
@@ -108,7 +108,7 @@ Structured review artifact for implementation or readiness checks.
      Add or update a v2 API contract test for a PDF-to-Markdown result with
      OCR disabled/not-needed and assert the chosen `ocr_enabled`,
      `ocr_engine_used`, and `ocr_languages_used` values. Rerun
-     `pdm run pytest-root tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py <new-or-updated-no-ocr-test> -q`
+     `pdm run pytest-root tests/sir_convert_a_lot/test_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py <new-or-updated-no-ocr-test> -q`
      plus the docs validators.
 
 ## Decision
@@ -135,7 +135,7 @@ The Review 09 follow-up is implemented locally:
 
 Validation evidence for the local response:
 
-- `pdm run pytest-root tests/sir_convert_a_lot/test_task269_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_ocr_metadata_contract.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py -q`
   passed with `5 passed`.
 - `pdm run format-all` passed.
 - `pdm run lint-fix` passed.

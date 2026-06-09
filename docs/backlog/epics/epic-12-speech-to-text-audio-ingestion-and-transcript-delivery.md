@@ -20,6 +20,7 @@ related:
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md
   - docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md
+  - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md
@@ -122,6 +123,15 @@ Planned story slices:
    and
    `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md`
    are the Skriptoteket Conversion Hub companion stories.
+
+## Runtime-Enabling Tasks
+
+- `docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md`
+  adds the first STT sidecar benchmark preflight runner. It records
+  content-safe readiness for codec tools, runtime packages, Hugging Face
+  cache/token names, and the live evidence still required before a production
+  profile can be selected. It does not satisfy the Hemma benchmark acceptance
+  gate and does not register `audio -> transcript_bundle`.
 
 ## Acceptance Criteria
 

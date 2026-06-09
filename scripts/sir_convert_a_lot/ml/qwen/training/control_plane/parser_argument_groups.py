@@ -1,7 +1,7 @@
 """Reusable parser argument groups for Qwen training control-plane commands.
 
 Purpose:
-    Keep the committed `qwen-train` parser under the Story 28 hot-path size
+    Keep the committed `qwen-train` parser under the Qwen architecture boundary hot-path size
     cap by centralizing repeated argument groups such as text-embedding runtime
     contract flags, resource-monitor controls, and detached build toggles.
 

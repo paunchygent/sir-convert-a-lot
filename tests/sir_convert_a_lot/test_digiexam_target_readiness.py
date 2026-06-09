@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `domain.digiexam_target_readiness`.
-    - Guards Task 322 source-binding behavior for Skriptoteket consumers.
+    - Guards HTML to PDF route2 source-binding behavior for Skriptoteket consumers.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """Tests for the in-container Qwen trainer entrypoint.
 
 Purpose:
-    Verify that the canonical trainer entrypoint handles legacy bundles
+    Verify that the canonical trainer entrypoint handles retained bundles
     gracefully while still building the expected reporting configuration.
 
 Relationships:
@@ -97,7 +97,7 @@ def test_main_accepts_legacy_bundle_without_training_report(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Trainer startup should tolerate legacy bundles that lack a bundle report."""
+    """Trainer startup should tolerate retained bundles that lack a bundle report."""
     train_jsonl = tmp_path / "manifests/train.jsonl"
     eval_jsonl = tmp_path / "manifests/eval.jsonl"
     output_dir = tmp_path / "run"

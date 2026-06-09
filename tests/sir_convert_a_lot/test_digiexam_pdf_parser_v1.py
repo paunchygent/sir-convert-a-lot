@@ -1,4 +1,4 @@
-"""Tests for the Task 267 DigiExam parser v1 contract.
+"""Tests for the DigiExam parser v1 contract.
 
 Purpose:
     Prove fixture-backed DigiExam PDF parsing, deterministic item baselines, and

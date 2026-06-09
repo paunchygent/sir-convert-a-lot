@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Consumes `domain.structured_llm_contracts` without depending on DigiExam
       parser DTOs, renderer inputs, or answer-key completion item schemas.
-    - Provides pure payload construction for Task 296 provider adapters and
+    - Provides pure payload construction for structured LLM provider harness provider adapters and
       tests before any network client is introduced.
 """
 

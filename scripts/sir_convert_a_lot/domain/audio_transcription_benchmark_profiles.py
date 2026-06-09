@@ -40,9 +40,7 @@ from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
 
 _REQUIRED_120_MINUTE_SECONDS = 7_200.0
 _ALLOWED_STT_PROFILE_LABELS: frozenset[str] = frozenset({"stt_sv_en_primary"})
-_ALLOWED_DIARIZATION_PROFILE_LABELS: frozenset[str] = frozenset(
-    {"diarization_sv_en_primary"}
-)
+_ALLOWED_DIARIZATION_PROFILE_LABELS: frozenset[str] = frozenset({"diarization_sv_en_primary"})
 _REQUIRED_LANGUAGE_VALUES: frozenset[str] = frozenset({"sv", "en"})
 _ALLOWED_ACCELERATION_FAMILIES: frozenset[str] = frozenset({"rocm", "cuda"})
 _ALLOWED_CACHE_FAMILIES: frozenset[str] = frozenset({"huggingface"})
@@ -119,12 +117,8 @@ def build_content_safe_audio_benchmark_report(
         },
         "fixtures": [_fixture_report(language) for language in evidence.language_evidence],
         "speaker_hints": {
-            "exact_speaker_count_supported": (
-                evidence.speaker_hints.exact_speaker_count_supported
-            ),
-            "exact_speaker_count_exercised": (
-                evidence.speaker_hints.exact_speaker_count_exercised
-            ),
+            "exact_speaker_count_supported": (evidence.speaker_hints.exact_speaker_count_supported),
+            "exact_speaker_count_exercised": (evidence.speaker_hints.exact_speaker_count_exercised),
             "min_max_speaker_range_supported": (
                 evidence.speaker_hints.min_max_speaker_range_supported
             ),
@@ -137,9 +131,7 @@ def build_content_safe_audio_benchmark_report(
             "duration_seconds": evidence.duration.duration_seconds,
             "chunk_count": evidence.duration.chunk_count,
             "max_chunk_duration_seconds": evidence.duration.max_chunk_duration_seconds,
-            "lifecycle_assumptions_exercised": (
-                evidence.duration.lifecycle_assumptions_exercised
-            ),
+            "lifecycle_assumptions_exercised": (evidence.duration.lifecycle_assumptions_exercised),
         },
         "selected": decision.status is BenchmarkProfileSelectionStatus.SELECTED,
         "rejection_reasons": decision.rejection_reasons,

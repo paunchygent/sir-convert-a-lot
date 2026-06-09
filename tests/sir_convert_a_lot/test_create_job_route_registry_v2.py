@@ -1,4 +1,4 @@
-"""Task 285 tests for service API v2 create-job route registry.
+"""create-job route registry tests for service API v2 create-job route registry.
 
 Purpose:
     Prove that v2 create-job route authority is shared between `JobSpecV2`

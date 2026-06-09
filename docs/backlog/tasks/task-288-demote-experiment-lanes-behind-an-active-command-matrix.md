@@ -54,8 +54,8 @@ proof commands behind explicit legacy or docs-only surfaces.
 
 - [ ] No production conversion command is hidden or renamed without a
   compatibility decision.
-- [ ] Deprecated Qwen proof commands such as `qwen-t197-proof` and
-  `qwen-t198-proof` are no longer presented as active commands.
+- [ ] Deprecated Qwen proof commands such as `qwen-fallback-proof` and
+  `qwen-fallback-accumulation-proof` are no longer presented as active commands.
 - [ ] Active command docs agree with Rule 096's status vocabulary or update that
   rule in the same governed diff.
 - [ ] Validation includes docs gates plus focused script/help checks for any

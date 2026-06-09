@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Used by `application.exam_authoring_corrections_apply_contracts` as the
-      Task 333 non-matching runtime delegate.
+      non-matching correction apply runtime non-matching runtime delegate.
     - Consumes source-state DTOs from
       `application.exam_authoring_correction_source_state_models`.
     - Shares advisory-candidate digest semantics with the unified apply

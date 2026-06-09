@@ -1,4 +1,4 @@
-"""Hemma v2 conversion smoke verification (Task 39).
+"""Hemma v2 conversion smoke verification (v2 conversion smoke).
 
 Purpose:
     Produce deterministic evidence that the Hemma dockerized runtime can execute
@@ -9,7 +9,7 @@ Relationships:
     - Called by `scripts/devops/verify-hemma-v2-conversions.sh` (remote mode).
     - Uses the typed HTTP clients:
         - `scripts.sir_convert_a_lot.interfaces.http_client_v2.SirConvertALotClientV2` (v2)
-    - Writes evidence under `build/verification/task-39-v2-smoke/` (artifacts,
+    - Writes evidence under `build/verification/v2-smoke/` (artifacts,
       responses, and a markdown + JSON report).
 """
 
@@ -37,7 +37,9 @@ from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import ClientErr
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Hemma v2 conversion smoke verifier (Task 39).")
+    parser = argparse.ArgumentParser(
+        description="Hemma v2 conversion smoke verifier (v2 conversion smoke)."
+    )
     parser.add_argument(
         "--lane",
         choices=["docker", "host"],
@@ -56,7 +58,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-root",
-        default="build/verification/task-39-v2-smoke",
+        default="build/verification/v2-smoke",
         help="Output directory for evidence artifacts and reports.",
     )
     parser.add_argument(
@@ -177,20 +179,20 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=runtime_dir,
     )
 
-    html_path = fixtures_dir / "task39_smoke.html"
-    md_path = fixtures_dir / "task39_smoke.md"
-    css_path = fixtures_dir / "task39_smoke.css"
+    html_path = fixtures_dir / "v2_conversion_smoke.html"
+    md_path = fixtures_dir / "v2_conversion_smoke.md"
+    css_path = fixtures_dir / "v2_conversion_smoke.css"
     html_path.write_text(
         "<!doctype html>\n"
-        '<html><head><meta charset="utf-8"><title>Task 39 Smoke</title></head>\n'
+        '<html><head><meta charset="utf-8"><title>v2 conversion smoke Smoke</title></head>\n'
         "<body>\n"
-        "<h1>Task 39 v2 smoke: html -&gt; pdf</h1>\n"
+        "<h1>v2 conversion smoke v2 smoke: html -&gt; pdf</h1>\n"
         "<p>This verifies v2 route execution on Hemma docker lane.</p>\n"
         "</body></html>\n",
         encoding="utf-8",
     )
     md_path.write_text(
-        "# Task 39 v2 smoke\n\n"
+        "# v2 conversion smoke v2 smoke\n\n"
         "This verifies `md -> pdf` and `md -> docx` conversion routes.\n\n"
         "- alpha\n"
         "- beta\n\n"
@@ -207,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
 
     v2_results: dict[str, ArtifactEvidence] = {}
     evidence_payloads: dict[str, dict[str, object]] = {}
-    swedish_pdf_fixture = fixtures_dir / "task77_swedish_ocr_fixture.pdf"
+    swedish_pdf_fixture = fixtures_dir / "swedish_ocr_fixture.pdf"
     _write_swedish_ocr_fixture_pdf(swedish_pdf_fixture)
 
     def _spec_v2(
@@ -429,7 +431,7 @@ def main(argv: list[str] | None = None) -> int:
     write_json(output_root / "report.json", report)
 
     md_lines: list[str] = []
-    md_lines.append("# Task 39 — Hemma v2 conversion smoke verification")
+    md_lines.append("# v2 conversion smoke — Hemma v2 conversion smoke verification")
     md_lines.append("")
     md_lines.append(f"- generated_at: `{report['generated_at']}`")
     md_lines.append(f"- lane: `{args.lane}`")

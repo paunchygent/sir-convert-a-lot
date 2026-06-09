@@ -64,7 +64,7 @@ real multi-epoch Hemma run completes.
 ## Deliverables
 
 - [x] Patched Qwen trainer retention/defaults committed in code.
-- [x] Detached Task 101 runtime surfaces record the new checkpoint policy.
+- [x] Detached Qwen pilot runtime surfaces record the new checkpoint policy.
 - [x] Focused tests for retention, pointer updates, and free-space refusal.
 - [x] Runbook/task docs updated with the canonical `N=2` policy and scratch
   guard posture.

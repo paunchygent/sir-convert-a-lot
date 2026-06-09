@@ -1,13 +1,13 @@
-"""Task 326 OpenAI answer-key evaluation gate runner.
+"""OpenAI answer-key evaluation OpenAI answer-key evaluation gate runner.
 
 Purpose:
     Execute the governed DigiExam answer-key corpus against pinned OpenAI
-    Responses profiles while retaining raw diagnostic artifacts for Task 326
+    Responses profiles while retaining raw diagnostic artifacts for OpenAI answer-key evaluation
     adjudication.
 
 Relationships:
-    - Reuses the Task 309 DigiExam corpus and golden-evaluation scorer.
-    - Consumes Task 325 OpenAI provider profiles without adding model-name
+    - Reuses the answer-key live validation DigiExam corpus and golden-evaluation scorer.
+    - Consumes HTML to PDF route5 OpenAI provider profiles without adding model-name
       branches to answer-key orchestration.
     - Writes ignored `build/verification` artifacts; committed docs should
       retain only aggregate outcomes, hashes, and promotion recommendations.
@@ -25,8 +25,8 @@ from pathlib import Path
 import httpx
 
 from scripts.sir_convert_a_lot.devops.answer_key_provider_exchange_capture import (
-    Task309CapturingStructuredChatProvider,
-    Task309ProviderExchange,
+    AnswerKeyProviderExchange,
+    CapturingAnswerKeyStructuredChatProvider,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
     build_digiexam_answer_key_completion_report,
@@ -38,7 +38,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts i
     report_to_json_payload,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    write_task309_json,
+    write_answer_key_json,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
@@ -67,12 +67,14 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
 
-TASK326_OPENAI_ADVISORY_CORPUS_RUN_SCHEMA_VERSION = "task326_openai_advisory_corpus_run_v1"
+OPENAI_ANSWER_KEY_ADVISORY_CORPUS_RUN_SCHEMA_VERSION = (
+    "openai-answer-key_openai_advisory_corpus_run_v1"
+)
 COMPLETION_MODE = "local_llm_suggest_missing_machine_marked"
 
 
 @dataclass(frozen=True)
-class Task326OpenAIAdvisoryCorpusRunReport:
+class OpenAIAnswerKeyAdvisoryCorpusRunReport:
     """Raw diagnostic full-corpus OpenAI advisory run report."""
 
     schema_version: str
@@ -102,14 +104,14 @@ class Task326OpenAIAdvisoryCorpusRunReport:
         return _json_object(asdict(self))
 
 
-def default_task326_openai_output_root(provider_profile: str) -> Path:
-    """Return the ignored Task 326 output root for one OpenAI profile."""
+def default_openai_answer_key_output_root(provider_profile: str) -> Path:
+    """Return the ignored OpenAI answer-key evaluation output root for one OpenAI profile."""
 
     safe_profile = provider_profile.replace("/", "_")
-    return Path("build/verification") / f"task-326-{safe_profile}"
+    return Path("build/verification") / f"openai-answer-key-{safe_profile}"
 
 
-def run_task326_openai_advisory_corpus(
+def run_openai_answer_key_advisory_corpus(
     *,
     corpus_root: Path,
     reports_root: Path,
@@ -119,11 +121,11 @@ def run_task326_openai_advisory_corpus(
     vision_media_path: Path | None = None,
     source_file: Path | None = None,
     item_id: str | None = None,
-) -> Task326OpenAIAdvisoryCorpusRunReport:
-    """Run the Task 326 OpenAI eval corpus, retaining raw diagnostic reports."""
+) -> OpenAIAnswerKeyAdvisoryCorpusRunReport:
+    """Run the OpenAI answer-key evaluation OpenAI eval corpus, retaining raw diagnostic reports."""
 
     return asyncio.run(
-        _run_task326_openai_advisory_corpus(
+        _run_openai_answer_key_advisory_corpus(
             corpus_root=corpus_root,
             reports_root=reports_root,
             provider_profile=provider_profile,
@@ -136,20 +138,20 @@ def run_task326_openai_advisory_corpus(
     )
 
 
-def write_task326_openai_advisory_corpus_run(
+def write_openai_answer_key_advisory_corpus_run(
     *,
     output_root: Path,
-    report: Task326OpenAIAdvisoryCorpusRunReport,
+    report: OpenAIAnswerKeyAdvisoryCorpusRunReport,
 ) -> Path:
-    """Write the Task 326 OpenAI run report."""
+    """Write the OpenAI answer-key evaluation OpenAI run report."""
 
     output_root.mkdir(parents=True, exist_ok=True)
     path = output_root / "in-process-advisory-corpus-run.json"
-    write_task309_json(report.to_payload(), path)
+    write_answer_key_json(report.to_payload(), path)
     return path
 
 
-async def _run_task326_openai_advisory_corpus(
+async def _run_openai_answer_key_advisory_corpus(
     *,
     corpus_root: Path,
     reports_root: Path,
@@ -159,7 +161,7 @@ async def _run_task326_openai_advisory_corpus(
     vision_media_path: Path | None,
     source_file: Path | None,
     item_id: str | None,
-) -> Task326OpenAIAdvisoryCorpusRunReport:
+) -> OpenAIAnswerKeyAdvisoryCorpusRunReport:
     defaults = answer_key_openai_defaults_for_provider_profile(provider_profile)
     profile = build_answer_key_openai_provider_profile(defaults, supports_multimodal_vision=True)
     resolved_timeout = timeout_seconds if timeout_seconds is not None else defaults.timeout_seconds
@@ -198,7 +200,7 @@ async def _run_task326_openai_advisory_corpus(
     item_count = 0
     started = time.perf_counter()
     async with httpx.AsyncClient() as client:
-        provider = Task309CapturingStructuredChatProvider(
+        provider = CapturingAnswerKeyStructuredChatProvider(
             client=client,
             connections={
                 profile.provider_id: StructuredLLMProviderConnection(
@@ -223,7 +225,7 @@ async def _run_task326_openai_advisory_corpus(
                 item_assets_by_id=item_assets_by_id,
                 media_path=resolved_vision_media_path,
             )
-            job_id = f"task326:{source_path.stem}:{profile.provider_id}"
+            job_id = f"openai-answer-key:{source_path.stem}:{profile.provider_id}"
             item_count += len(exam.items)
             report = await build_digiexam_answer_key_completion_report(
                 job_id=job_id,
@@ -248,10 +250,10 @@ async def _run_task326_openai_advisory_corpus(
                 key: value for key, value in report_to_json_payload(report).items()
             }
             _attach_provider_exchanges(report_payload=report_payload, exchanges=exchanges)
-            write_task309_json(report_payload, report_path)
+            write_answer_key_json(report_payload, report_path)
             report_paths.append(report_path.as_posix())
-    return Task326OpenAIAdvisoryCorpusRunReport(
-        schema_version=TASK326_OPENAI_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
+    return OpenAIAnswerKeyAdvisoryCorpusRunReport(
+        schema_version=OPENAI_ANSWER_KEY_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
         provider_url=defaults.base_url,
         model=defaults.model,
         provider_profile_id=defaults.provider_id,
@@ -295,9 +297,9 @@ def _blocked_report(
     api_key_env: str,
     file_count: int,
     metadata: dict[str, object],
-) -> Task326OpenAIAdvisoryCorpusRunReport:
-    return Task326OpenAIAdvisoryCorpusRunReport(
-        schema_version=TASK326_OPENAI_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
+) -> OpenAIAnswerKeyAdvisoryCorpusRunReport:
+    return OpenAIAnswerKeyAdvisoryCorpusRunReport(
+        schema_version=OPENAI_ANSWER_KEY_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
         provider_profile_id=provider_profile_id,
@@ -329,9 +331,9 @@ def _provider_run_metadata(
     timeout_seconds: float,
 ) -> dict[str, object]:
     return {
-        "schema_version": "task326_openai_provider_run_metadata_v1",
+        "schema_version": "openai-answer-key_openai_provider_run_metadata_v1",
         "available": True,
-        "metadata_source": "task326_openai_run_report",
+        "metadata_source": "openai-answer-key_openai_run_report",
         "profile_name": defaults.profile_name.value,
         "provider_url": defaults.base_url,
         "expected_model_id": defaults.model,
@@ -384,20 +386,22 @@ def _output_mode_policy_payload(profile: StructuredLLMProviderProfile) -> dict[s
 def _attach_provider_exchanges(
     *,
     report_payload: dict[str, object],
-    exchanges: dict[str, Task309ProviderExchange],
+    exchanges: dict[str, AnswerKeyProviderExchange],
 ) -> None:
     items = report_payload.get("items")
     if not isinstance(items, list):
-        raise ValueError("Task 326 advisory report items must be a list.")
+        raise ValueError("OpenAI answer-key evaluation advisory report items must be a list.")
     for item in items:
         if not isinstance(item, dict):
-            raise ValueError("Task 326 advisory report item must be an object.")
+            raise ValueError("OpenAI answer-key evaluation advisory report item must be an object.")
         item_id = item.get("item_id")
         if not isinstance(item_id, str):
-            raise ValueError("Task 326 advisory report item_id must be a string.")
+            raise ValueError(
+                "OpenAI answer-key evaluation advisory report item_id must be a string."
+            )
         exchange = exchanges.get(item_id)
         if exchange is not None:
-            item["task309_provider_exchange"] = exchange.to_payload()
+            item["answer_key_provider_exchange"] = exchange.to_payload()
 
 
 def _route_policy() -> StructuredLLMRoutePolicy:

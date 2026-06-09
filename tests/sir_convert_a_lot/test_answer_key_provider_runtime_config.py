@@ -60,7 +60,7 @@ def test_rendered_prod_profile_uses_openai_mini_as_temporary_default() -> None:
     assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED"] == "1"
     assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH"] == (
         "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
-        "task-320-qwen-provider/vision-assets"
+        "answer-key-qwen-provider/vision-assets"
     )
     assert provider_payload["model"] == "gpt-5.4-mini-2026-03-17"
     assert provider_payload["base_url"] == "https://api.openai.com"

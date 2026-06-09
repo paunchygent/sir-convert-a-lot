@@ -1,4 +1,4 @@
-"""Input-layernorm stabilization helpers for bounded Story 31 experiments.
+"""Input-layernorm stabilization helpers for bounded Qwen stability lab experiments.
 
 Purpose:
     Keep the layer-16 input-layernorm entry/output wrapper contracts small and
@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Imported by `sft_12hz_talker_core_stabilization.py`.
     - Reuses the same reversible MethodType patching pattern as the broader
-      Story 31 stabilization lane.
+      Qwen stability lab stabilization lane.
 """
 
 from __future__ import annotations

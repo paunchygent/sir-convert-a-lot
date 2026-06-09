@@ -14,7 +14,7 @@ related:
   - docs/backlog/tasks/task-207-implement-semantic-only-batch-contract-for-task-101-text-embedding-assembly.md
   - docs/backlog/tasks/task-208-implement-semantic-only-train-step-assembly-for-task-101-text-embeddings.md
   - docs/backlog/tasks/task-209-add-local-gradient-membership-proof-for-semantic-only-text-embedding-assembly.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - architecture-review
   - qwen
@@ -26,7 +26,7 @@ Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
 
-External architecture review of the preserved Task 101 Qwen stabilization lane
+External architecture review of the preserved Qwen stabilization lane
 after Story 29 reached its bounded-RCA stop rule.
 
 This review is not asked to approve another replay. It is asked to choose the

@@ -5,7 +5,7 @@ Purpose:
     so slow VLM batches can be correlated without storing document pixels.
 
 Relationships:
-    Used by `infrastructure.docling_formula_diagnostics` only when the Task 344
+    Used by `infrastructure.docling_formula_diagnostics` only when the Docling page-window replay
     JSONL sidecar is enabled.
 """
 

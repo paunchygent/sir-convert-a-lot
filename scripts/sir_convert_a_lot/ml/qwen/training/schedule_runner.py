@@ -372,7 +372,8 @@ def _resolve_dataloader_length(source_launch_root: Path, source_launch: Detached
                 return value
     raise SystemExit(
         "Schedule runner could not resolve `dataloader_length` from the source launch artifacts. "
-        "Run the source launch on the Task 182 contract before using epoch-aware schedule control."
+        "Run the source launch with the epoch-aware schedule contract before using "
+        "epoch-aware schedule control."
     )
 
 

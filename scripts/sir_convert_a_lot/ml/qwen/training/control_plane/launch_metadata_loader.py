@@ -2,7 +2,7 @@
 
 Purpose:
     Host the bounded, file-backed implementation that will deserialize
-    `launch.json` payloads into `DetachedLaunch` with compatibility defaults.
+    `launch.json` payloads into `DetachedLaunch` with stored-launch defaults.
 
 Relationships:
     - Implements `LaunchMetadataLoaderPort`.
@@ -21,7 +21,7 @@ from .metadata_ports import LaunchMetadataCompatibilityDefaults, LaunchMetadataL
 class JsonLaunchMetadataLoader(LaunchMetadataLoaderPort):
     """File-backed launch metadata loader.
 
-    This scaffold intentionally has no runtime wiring yet. Task 200 owns the
+    This scaffold intentionally has no runtime wiring yet. launch metadata persistence owns the
     bounded deserialization implementation for launch metadata payloads.
     """
 
@@ -34,6 +34,4 @@ class JsonLaunchMetadataLoader(LaunchMetadataLoaderPort):
         """Load one persisted detached launch payload from `launch.json`."""
         del launch_root_path
         del defaults
-        raise NotImplementedError(
-            "Task 200 implementation pending for launch metadata deserialization."
-        )
+        raise NotImplementedError("Launch metadata deserialization implementation is pending.")

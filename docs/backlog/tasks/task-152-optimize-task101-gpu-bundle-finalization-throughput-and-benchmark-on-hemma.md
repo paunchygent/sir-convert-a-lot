@@ -168,7 +168,7 @@ important runtime truths:
 - [x] `pdm run format-all`
 - [x] `pdm run lint-fix`
 - [x] `pdm run typecheck-all`
-- [x] focused pytest for Task 101 runtime, Task 101 bundle orchestration, and
+- [x] focused pytest for Qwen pilot runtime, Task 101 bundle orchestration, and
   the Task 152 benchmark helper
 - [x] Hemma benchmark evidence comparing baseline and optimized variants
 - [x] `pdm run validate-tasks`

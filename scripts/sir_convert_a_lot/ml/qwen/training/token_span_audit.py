@@ -1,7 +1,7 @@
-"""Offline token-span audit for Story 29 Qwen RCA.
+"""Offline token-span audit for Qwen fallback proof RCA.
 
 Purpose:
-    Inspect one saved Story 29 failure artifact, reconstruct the current
+    Inspect one saved Qwen fallback proof lane failure artifact, reconstruct the current
     trainable text-embedding span versus the intended semantic text span, and
     persist deterministic JSON/Markdown artifacts that prove whether the
     current runtime still leaks non-semantic positions into the trainable
@@ -11,7 +11,7 @@ Relationships:
     - Reuses `text_embedding_mask_policy.py` for the current resolved
       text-embedding span contract.
     - Consumes saved bounded-proof status artifacts produced by the detached
-      Story 29 proof surfaces.
+      Qwen fallback proof lane proof surfaces.
     - Exposed through the public `qwen-token-span-audit` CLI entrypoint.
 """
 
@@ -31,10 +31,12 @@ from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy impor
 )
 
 DEFAULT_STATUS_JSON_PATH = Path(
-    "build/verification/qwen-t198-proof/"
-    "task198-20260317t062816z-fallback1470-a1/fallback1470-status.json"
+    "build/verification/qwen-fallback-accumulation-proof/"
+    "qwen-fallback-accumulation-20260317t062816z-fallback1470-a1/fallback1470-status.json"
 )
-DEFAULT_OUTPUT_ROOT = Path("build/verification/qwen-token-span-audit/task206-canonical-line101")
+DEFAULT_OUTPUT_ROOT = Path(
+    "build/verification/qwen-token-span-audit/text-token-span-canonical-line101"
+)
 DEFAULT_MANIFEST_LINE_NUMBER = 101
 DEFAULT_TRAIN_ITERATION = 851
 SEMANTIC_TEXT_START_INDEX = 8
@@ -130,7 +132,9 @@ class TokenSpanAuditResult:
 
 def parse_args(argv: list[str] | None) -> TokenSpanAuditSettings:
     """Parse CLI arguments into normalized audit settings."""
-    parser = argparse.ArgumentParser(description="Run the offline Story 29 token-span audit.")
+    parser = argparse.ArgumentParser(
+        description="Run the offline Qwen fallback proof lane token-span audit."
+    )
     parser.add_argument("--status-json", type=Path, default=DEFAULT_STATUS_JSON_PATH)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--manifest-line-number", type=int, default=DEFAULT_MANIFEST_LINE_NUMBER)
@@ -319,7 +323,7 @@ def build_legacy_codec_span_window(
     sample: TokenSpanSample,
     layout: TokenSpanLayout,
 ) -> TokenSpanWindow:
-    """Build the legacy prefix window that reaches through the codec tail."""
+    """Build the codec-span prefix window that reaches through the codec tail."""
     legacy_span = resolve_active_text_embedding_span(
         policy=LEGACY_CODEC_SPAN_TEXT_EMBEDDING_MASK_POLICY,
         text_ids_len=layout.inferred_text_ids_len,
@@ -451,7 +455,7 @@ def build_synthetic_regression_case() -> dict[str, object]:
 def build_report_markdown(report: TokenSpanAuditResult) -> str:
     """Render one concise operator-facing markdown report."""
     lines = [
-        "# Story 29 Token-Span Audit",
+        "# Qwen fallback proof lane Token-Span Audit",
         "",
         f"- Generated at: `{report.generated_at}`",
         f"- Source status JSON: `{report.source_status_json_path}`",
@@ -579,7 +583,9 @@ def _required_int_tuple(payload: dict[str, object], key: str) -> tuple[int, ...]
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the offline Story 29 token-span audit and persist deterministic artifacts."""
+    """
+    Run the offline Qwen fallback proof lane token-span audit and persist deterministic artifacts.
+    """
     settings = parse_args(argv)
     report_json_path, report_md_path = prepare_output_paths(settings.output_root)
     sample = load_sample_from_status(

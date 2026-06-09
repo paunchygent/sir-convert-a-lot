@@ -1,14 +1,14 @@
-"""Task 309 live structured-provider validation execution helpers.
+"""answer-key live validation live structured-provider validation execution helpers.
 
 Purpose:
     Run the in-process DigiExam advisory answer-key path against a selected
-    Task 309 structured provider runtime.
+    answer-key live validation structured provider runtime.
 
 Relationships:
-    - Uses the Task 296 structured-provider adapter for live HTTP execution.
-    - Uses the Task 312 provider-protocol answer-key planner through the normal
+    - Uses the structured LLM provider harness structured-provider adapter for live HTTP execution.
+    - Uses the answer-key provider protocol provider-protocol answer-key planner through the normal
       advisory orchestration path.
-    - Writes retained Task 309 validation JSON/Markdown reports with raw
+    - Writes retained answer-key live validation validation JSON/Markdown reports with raw
       provider exchanges so failed live reasoning can be adjudicated.
 """
 
@@ -23,15 +23,15 @@ from pathlib import Path
 import httpx
 
 from scripts.sir_convert_a_lot.devops.answer_key_granite_provider_status import (
-    build_task309_provider_status,
+    build_answer_key_provider_status,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
     DEFAULT_PROVIDER_MODEL,
     DEFAULT_PROVIDER_URL,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_exchange_capture import (
-    Task309CapturingStructuredChatProvider,
-    Task309ProviderExchange,
+    AnswerKeyProviderExchange,
+    CapturingAnswerKeyStructuredChatProvider,
 )
 from scripts.sir_convert_a_lot.devops.answer_key_provider_run_metadata import (
     build_answer_key_provider_run_metadata,
@@ -46,7 +46,7 @@ from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts i
     report_to_json_payload,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    write_task309_json,
+    write_answer_key_json,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
@@ -74,13 +74,13 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
 
-TASK309_MICROPROBE_REPORT_SCHEMA_VERSION = "task309_granite_microprobe_report_v1"
-TASK309_ADVISORY_CORPUS_RUN_SCHEMA_VERSION = "task309_granite_advisory_corpus_run_v1"
+ANSWER_KEY_MICROPROBE_REPORT_SCHEMA_VERSION = "answer_key_granite_microprobe_report_v1"
+ANSWER_KEY_ADVISORY_CORPUS_RUN_SCHEMA_VERSION = "answer_key_granite_advisory_corpus_run_v1"
 COMPLETION_MODE = "local_llm_suggest_missing_machine_marked"
 
 
 @dataclass(frozen=True)
-class Task309AdvisoryCorpusRunReport:
+class AnswerKeyAdvisoryCorpusRunReport:
     """Redacted full-corpus in-process advisory run report."""
 
     schema_version: str
@@ -109,7 +109,7 @@ class Task309AdvisoryCorpusRunReport:
         return _json_object(asdict(self))
 
 
-def run_task309_advisory_corpus(
+def run_answer_key_advisory_corpus(
     *,
     corpus_root: Path,
     reports_root: Path,
@@ -124,11 +124,11 @@ def run_task309_advisory_corpus(
     vision_media_path: Path | None = None,
     require_provider_ready: bool = True,
     timeout_seconds: float = 30.0,
-) -> Task309AdvisoryCorpusRunReport:
-    """Run in-process advisory completion over the Task 309 corpus."""
+) -> AnswerKeyAdvisoryCorpusRunReport:
+    """Run in-process advisory completion over the answer-key live validation corpus."""
 
     return asyncio.run(
-        _run_task309_advisory_corpus(
+        _run_answer_key_advisory_corpus(
             corpus_root=corpus_root,
             reports_root=reports_root,
             provider_url=provider_url,
@@ -146,7 +146,7 @@ def run_task309_advisory_corpus(
     )
 
 
-async def _run_task309_advisory_corpus(
+async def _run_answer_key_advisory_corpus(
     *,
     corpus_root: Path,
     reports_root: Path,
@@ -161,7 +161,7 @@ async def _run_task309_advisory_corpus(
     vision_media_path: Path | None,
     require_provider_ready: bool,
     timeout_seconds: float,
-) -> Task309AdvisoryCorpusRunReport:
+) -> AnswerKeyAdvisoryCorpusRunReport:
     from urllib.parse import urlparse
 
     profile = build_answer_key_provider_profile(
@@ -188,7 +188,7 @@ async def _run_task309_advisory_corpus(
     ).to_payload()
     parsed = urlparse(provider_url)
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    ready = build_task309_provider_status(
+    ready = build_answer_key_provider_status(
         provider_url=provider_url,
         port=port,
         timeout_seconds=min(timeout_seconds, 2.0),
@@ -235,7 +235,7 @@ async def _run_task309_advisory_corpus(
             )
             item_count += len(exam.items)
             report = await build_digiexam_answer_key_completion_report(
-                job_id=f"task309:{source_path.stem}",
+                job_id=f"answer-key-live-validation:{source_path.stem}",
                 completion_mode=COMPLETION_MODE,
                 exam=exam,
                 provider_set=StructuredChatProviderSet(primary=profile),
@@ -246,7 +246,9 @@ async def _run_task309_advisory_corpus(
             asset_eligible_count += len(item_assets_by_id)
             multimodal_request_count += sum(
                 1
-                for exchange in provider.exchanges_for_job(f"task309:{source_path.stem}").values()
+                for exchange in provider.exchanges_for_job(
+                    f"answer-key-live-validation:{source_path.stem}"
+                ).values()
                 if exchange.multimodal_request
             )
             for item in report.items:
@@ -259,12 +261,14 @@ async def _run_task309_advisory_corpus(
             }
             _attach_provider_exchanges(
                 report_payload=report_payload,
-                exchanges=provider.exchanges_for_job(f"task309:{source_path.stem}"),
+                exchanges=provider.exchanges_for_job(
+                    f"answer-key-live-validation:{source_path.stem}"
+                ),
             )
-            write_task309_json(report_payload, report_path)
+            write_answer_key_json(report_payload, report_path)
             report_paths.append(report_path.as_posix())
-    return Task309AdvisoryCorpusRunReport(
-        schema_version=TASK309_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
+    return AnswerKeyAdvisoryCorpusRunReport(
+        schema_version=ANSWER_KEY_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
         provider_runtime=provider_runtime.value,
@@ -294,9 +298,9 @@ def _blocked_corpus_report(
     provider_runtime: AnswerKeyStructuredProviderRuntime,
     provider_run_metadata: dict[str, object],
     file_count: int,
-) -> Task309AdvisoryCorpusRunReport:
-    return Task309AdvisoryCorpusRunReport(
-        schema_version=TASK309_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
+) -> AnswerKeyAdvisoryCorpusRunReport:
+    return AnswerKeyAdvisoryCorpusRunReport(
+        schema_version=ANSWER_KEY_ADVISORY_CORPUS_RUN_SCHEMA_VERSION,
         provider_url=provider_url,
         model=model,
         provider_runtime=provider_runtime.value,
@@ -324,13 +328,13 @@ def _capturing_provider(
     timeout_seconds: float,
     client: httpx.AsyncClient,
     provider_id: str,
-) -> Task309CapturingStructuredChatProvider:
+) -> CapturingAnswerKeyStructuredChatProvider:
     connection = StructuredLLMProviderConnection(
         provider_id=provider_id,
         base_url=provider_url,
         timeout_seconds=timeout_seconds,
     )
-    return Task309CapturingStructuredChatProvider(
+    return CapturingAnswerKeyStructuredChatProvider(
         client=client,
         connections={provider_id: connection},
     )
@@ -339,20 +343,20 @@ def _capturing_provider(
 def _attach_provider_exchanges(
     *,
     report_payload: dict[str, object],
-    exchanges: dict[str, Task309ProviderExchange],
+    exchanges: dict[str, AnswerKeyProviderExchange],
 ) -> None:
     items = report_payload.get("items")
     if not isinstance(items, list):
-        raise ValueError("Task 309 advisory report items must be a list.")
+        raise ValueError("answer-key live validation advisory report items must be a list.")
     for item in items:
         if not isinstance(item, dict):
-            raise ValueError("Task 309 advisory report item must be an object.")
+            raise ValueError("answer-key live validation advisory report item must be an object.")
         item_id = item.get("item_id")
         if not isinstance(item_id, str):
-            raise ValueError("Task 309 advisory report item_id must be a string.")
+            raise ValueError("answer-key live validation advisory report item_id must be a string.")
         exchange = exchanges.get(item_id)
         if exchange is not None:
-            item["task309_provider_exchange"] = exchange.to_payload()
+            item["answer_key_provider_exchange"] = exchange.to_payload()
 
 
 def _route_policy() -> StructuredLLMRoutePolicy:
@@ -371,7 +375,9 @@ def _resolved_vision_media_path(
     if not supports_multimodal_vision:
         return None
     if vision_media_path is None:
-        raise ValueError("Task 309 multimodal advisory runs require a vision_media_path.")
+        raise ValueError(
+            "answer-key live validation multimodal advisory runs require a vision_media_path."
+        )
     return vision_media_path
 
 
@@ -381,7 +387,9 @@ def _counter_payload(counter: Counter[str]) -> tuple[dict[str, object], ...]:
 
 def _json_object(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise TypeError("Task 309 live execution report must serialize to an object.")
+        raise TypeError(
+            "answer-key live validation live execution report must serialize to an object."
+        )
     return {str(key): _json_value(child) for key, child in value.items()}
 
 
@@ -392,4 +400,6 @@ def _json_value(value: object) -> object:
         return [_json_value(child) for child in value]
     if isinstance(value, str | int | float | bool) or value is None:
         return value
-    raise TypeError(f"Unsupported Task 309 live execution JSON value: {type(value).__name__}")
+    raise TypeError(
+        f"Unsupported answer-key live validation live execution JSON value: {type(value).__name__}"
+    )

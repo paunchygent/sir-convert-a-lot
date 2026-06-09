@@ -1,16 +1,16 @@
-"""Task 309 Hemma Granite provider preflight and status probes.
+"""answer-key live validation Hemma Granite provider preflight and status probes.
 
 Purpose:
     Collect deterministic, redacted operator evidence for the persistent
-    Granite/vLLM provider used by Task 309 answer-key live validation.
+    Granite/vLLM provider used by answer-key live validation answer-key live validation.
 
 Relationships:
-    - Used by the Task 309 runner to write JSON and Markdown reports before
+    - Used by the answer-key live validation runner to write JSON and Markdown reports before
       long Hemma validation runs.
     - Follows the Hemma GPU runtime runbook contract for ROCm checks,
       scratch-backed Hugging Face cache paths, localhost-only vLLM exposure,
       disabled request logging, and no CPU fallback.
-    - Complements the detached Task 116 resource monitor surface without
+    - Complements the detached Hemma resource monitor surface without
       stopping or cleaning up the provider container.
 """
 
@@ -27,27 +27,27 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
+    ANSWER_KEY_HEMMA_PREFLIGHT_SCHEMA_VERSION,
+    ANSWER_KEY_PROVIDER_PERSISTENT_POLICY,
+    ANSWER_KEY_PROVIDER_STATUS_SCHEMA_VERSION,
     DEFAULT_CACHE_PATHS,
     DEFAULT_PROVIDER_CONTAINER_NAME,
     DEFAULT_PROVIDER_PORT,
     DEFAULT_PROVIDER_URL,
-    TASK309_HEMMA_PREFLIGHT_SCHEMA_VERSION,
-    TASK309_PROVIDER_PERSISTENT_POLICY,
-    TASK309_PROVIDER_STATUS_SCHEMA_VERSION,
-    Task309CommandProbe,
-    Task309DeviceBinding,
-    Task309HemmaPreflight,
-    Task309ModelsEndpointProbe,
-    Task309MountBinding,
-    Task309PathProbe,
-    Task309PortBinding,
-    Task309ProviderStatus,
+    AnswerKeyCommandProbe,
+    AnswerKeyDeviceBinding,
+    AnswerKeyHemmaPreflight,
+    AnswerKeyModelsEndpointProbe,
+    AnswerKeyMountBinding,
+    AnswerKeyPathProbe,
+    AnswerKeyPortBinding,
+    AnswerKeyProviderStatus,
 )
 
 DOCKER_COMMAND_PREFIX = ("sudo", "-n", "docker")
 
 
-def build_task309_provider_status(
+def build_answer_key_provider_status(
     *,
     provider_url: str = DEFAULT_PROVIDER_URL,
     container_name: str = DEFAULT_PROVIDER_CONTAINER_NAME,
@@ -55,7 +55,7 @@ def build_task309_provider_status(
     timeout_seconds: float = 2.0,
     expected_model_id: str | None = None,
     required_process_args: tuple[str, ...] = (),
-) -> Task309ProviderStatus:
+) -> AnswerKeyProviderStatus:
     """Build one persistent provider status report without mutating Docker state."""
 
     inspect_payload = _docker_inspect(container_name)
@@ -64,9 +64,9 @@ def build_task309_provider_status(
     container_running = False
     container_image: str | None = None
     container_command: tuple[str, ...] = ()
-    port_bindings: tuple[Task309PortBinding, ...] = ()
-    mounts: tuple[Task309MountBinding, ...] = ()
-    devices: tuple[Task309DeviceBinding, ...] = ()
+    port_bindings: tuple[AnswerKeyPortBinding, ...] = ()
+    mounts: tuple[AnswerKeyMountBinding, ...] = ()
+    devices: tuple[AnswerKeyDeviceBinding, ...] = ()
     if inspect_payload.payload is not None:
         container_running = _container_running(inspect_payload.payload)
         container_image = _container_image(inspect_payload.payload)
@@ -122,12 +122,12 @@ def build_task309_provider_status(
         and llama_no_cpu_fallback_gate
     )
     ready = docker_ready or llama_ready
-    return Task309ProviderStatus(
-        schema_version=TASK309_PROVIDER_STATUS_SCHEMA_VERSION,
+    return AnswerKeyProviderStatus(
+        schema_version=ANSWER_KEY_PROVIDER_STATUS_SCHEMA_VERSION,
         checked_at=_utc_now_iso(),
         provider_url=provider_url,
         container_name=container_name,
-        persistent_policy=TASK309_PROVIDER_PERSISTENT_POLICY,
+        persistent_policy=ANSWER_KEY_PROVIDER_PERSISTENT_POLICY,
         docker_available=docker_available,
         container_present=container_present,
         container_running=container_running,
@@ -154,7 +154,7 @@ def build_task309_provider_status(
     )
 
 
-def build_task309_hemma_preflight(
+def build_answer_key_hemma_preflight(
     *,
     manifest_path: Path,
     provider_url: str = DEFAULT_PROVIDER_URL,
@@ -164,15 +164,15 @@ def build_task309_hemma_preflight(
     timeout_seconds: float = 2.0,
     expected_model_id: str | None = None,
     required_process_args: tuple[str, ...] = (),
-) -> Task309HemmaPreflight:
-    """Build one Hemma preflight report for the Task 309 provider lane."""
+) -> AnswerKeyHemmaPreflight:
+    """Build one Hemma preflight report for the answer-key live validation provider lane."""
 
     command_probes = (
         _command_probe("rocminfo", ("rocminfo",)),
         _command_probe("rocm-smi", ("rocm-smi",)),
     )
     cache_path_probes = tuple(_path_probe(path) for path in cache_paths)
-    provider_status = build_task309_provider_status(
+    provider_status = build_answer_key_provider_status(
         provider_url=provider_url,
         container_name=container_name,
         port=port,
@@ -187,8 +187,8 @@ def build_task309_hemma_preflight(
         provider_status=provider_status,
         manifest_sha=manifest_sha,
     )
-    return Task309HemmaPreflight(
-        schema_version=TASK309_HEMMA_PREFLIGHT_SCHEMA_VERSION,
+    return AnswerKeyHemmaPreflight(
+        schema_version=ANSWER_KEY_HEMMA_PREFLIGHT_SCHEMA_VERSION,
         checked_at=_utc_now_iso(),
         runtime_lane="hemma-localhost-rocm-vllm-granite",
         repo_revision=_text_command(("git", "rev-parse", "HEAD")),
@@ -233,7 +233,7 @@ def _docker_inspect(container_name: str) -> _DockerInspectResult:
     )
 
 
-def _command_probe(name: str, command: tuple[str, ...]) -> Task309CommandProbe:
+def _command_probe(name: str, command: tuple[str, ...]) -> AnswerKeyCommandProbe:
     try:
         result = subprocess.run(
             list(command),
@@ -243,14 +243,14 @@ def _command_probe(name: str, command: tuple[str, ...]) -> Task309CommandProbe:
             timeout=20,
         )
     except FileNotFoundError:
-        return Task309CommandProbe(
+        return AnswerKeyCommandProbe(
             name=name, command=command, exit_code=None, ok=False, error_kind="FileNotFoundError"
         )
     except subprocess.TimeoutExpired:
-        return Task309CommandProbe(
+        return AnswerKeyCommandProbe(
             name=name, command=command, exit_code=None, ok=False, error_kind="TimeoutExpired"
         )
-    return Task309CommandProbe(
+    return AnswerKeyCommandProbe(
         name=name,
         command=command,
         exit_code=result.returncode,
@@ -290,9 +290,9 @@ def _command_ok(command: tuple[str, ...]) -> bool:
     return result.returncode == 0
 
 
-def _path_probe(path: str) -> Task309PathProbe:
+def _path_probe(path: str) -> AnswerKeyPathProbe:
     path_obj = Path(path)
-    return Task309PathProbe(
+    return AnswerKeyPathProbe(
         path=path,
         exists=path_obj.exists(),
         is_dir=path_obj.is_dir(),
@@ -321,14 +321,14 @@ def _container_command(payload: dict[str, object]) -> tuple[str, ...]:
     return entrypoint + cmd + args
 
 
-def _port_bindings(payload: dict[str, object]) -> tuple[Task309PortBinding, ...]:
+def _port_bindings(payload: dict[str, object]) -> tuple[AnswerKeyPortBinding, ...]:
     network_settings = _mapping(payload.get("NetworkSettings"))
     if network_settings is None:
         return ()
     ports = _mapping(network_settings.get("Ports"))
     if ports is None:
         return ()
-    bindings: list[Task309PortBinding] = []
+    bindings: list[AnswerKeyPortBinding] = []
     for container_port, raw_bindings in ports.items():
         if not isinstance(raw_bindings, list):
             continue
@@ -340,7 +340,7 @@ def _port_bindings(payload: dict[str, object]) -> tuple[Task309PortBinding, ...]
             host_port = _string(binding.get("HostPort"))
             if host_ip is not None and host_port is not None:
                 bindings.append(
-                    Task309PortBinding(
+                    AnswerKeyPortBinding(
                         container_port=container_port,
                         host_ip=host_ip,
                         host_port=host_port,
@@ -349,11 +349,11 @@ def _port_bindings(payload: dict[str, object]) -> tuple[Task309PortBinding, ...]
     return tuple(bindings)
 
 
-def _mounts(payload: dict[str, object]) -> tuple[Task309MountBinding, ...]:
+def _mounts(payload: dict[str, object]) -> tuple[AnswerKeyMountBinding, ...]:
     raw_mounts = payload.get("Mounts")
     if not isinstance(raw_mounts, list):
         return ()
-    mounts: list[Task309MountBinding] = []
+    mounts: list[AnswerKeyMountBinding] = []
     for raw_mount in raw_mounts:
         mount = _mapping(raw_mount)
         if mount is None:
@@ -363,7 +363,7 @@ def _mounts(payload: dict[str, object]) -> tuple[Task309MountBinding, ...]:
         mount_type = _string(mount.get("Type"))
         if source is not None and destination is not None and mount_type is not None:
             mounts.append(
-                Task309MountBinding(
+                AnswerKeyMountBinding(
                     source=source,
                     destination=destination,
                     mount_type=mount_type,
@@ -372,14 +372,14 @@ def _mounts(payload: dict[str, object]) -> tuple[Task309MountBinding, ...]:
     return tuple(mounts)
 
 
-def _devices(payload: dict[str, object]) -> tuple[Task309DeviceBinding, ...]:
+def _devices(payload: dict[str, object]) -> tuple[AnswerKeyDeviceBinding, ...]:
     host_config = _mapping(payload.get("HostConfig"))
     if host_config is None:
         return ()
     raw_devices = host_config.get("Devices")
     if not isinstance(raw_devices, list):
         return ()
-    devices: list[Task309DeviceBinding] = []
+    devices: list[AnswerKeyDeviceBinding] = []
     for raw_device in raw_devices:
         device = _mapping(raw_device)
         if device is None:
@@ -387,7 +387,9 @@ def _devices(payload: dict[str, object]) -> tuple[Task309DeviceBinding, ...]:
         host_path = _string(device.get("PathOnHost"))
         container_path = _string(device.get("PathInContainer"))
         if host_path is not None and container_path is not None:
-            devices.append(Task309DeviceBinding(host_path=host_path, container_path=container_path))
+            devices.append(
+                AnswerKeyDeviceBinding(host_path=host_path, container_path=container_path)
+            )
     return tuple(devices)
 
 
@@ -474,7 +476,7 @@ def _required_args_present(
     return all(arg in process_command or arg in process_text for arg in required_args)
 
 
-def _models_endpoint(provider_url: str, *, timeout_seconds: float) -> Task309ModelsEndpointProbe:
+def _models_endpoint(provider_url: str, *, timeout_seconds: float) -> AnswerKeyModelsEndpointProbe:
     url = provider_url.rstrip("/") + "/v1/models"
     request = urllib.request.Request(url, method="GET")
     try:
@@ -482,7 +484,7 @@ def _models_endpoint(provider_url: str, *, timeout_seconds: float) -> Task309Mod
             status_code = response.status
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        return Task309ModelsEndpointProbe(
+        return AnswerKeyModelsEndpointProbe(
             url=url,
             reachable=False,
             status_code=exc.code,
@@ -490,7 +492,7 @@ def _models_endpoint(provider_url: str, *, timeout_seconds: float) -> Task309Mod
             error_kind="HTTPError",
         )
     except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-        return Task309ModelsEndpointProbe(
+        return AnswerKeyModelsEndpointProbe(
             url=url,
             reachable=False,
             status_code=None,
@@ -498,7 +500,7 @@ def _models_endpoint(provider_url: str, *, timeout_seconds: float) -> Task309Mod
             error_kind=type(exc).__name__,
         )
     model_ids = _model_ids(payload)
-    return Task309ModelsEndpointProbe(
+    return AnswerKeyModelsEndpointProbe(
         url=url,
         reachable=status_code == 200,
         status_code=status_code,
@@ -525,7 +527,7 @@ def _model_ids(payload: object) -> tuple[str, ...]:
     return tuple(sorted(model_ids))
 
 
-def _localhost_only(bindings: tuple[Task309PortBinding, ...], *, port: int) -> bool:
+def _localhost_only(bindings: tuple[AnswerKeyPortBinding, ...], *, port: int) -> bool:
     expected_port = str(port)
     relevant = tuple(binding for binding in bindings if binding.host_port == expected_port)
     if not relevant:
@@ -534,7 +536,7 @@ def _localhost_only(bindings: tuple[Task309PortBinding, ...], *, port: int) -> b
     return all(binding.host_ip in allowed_hosts for binding in relevant)
 
 
-def _gpu_devices_mounted(devices: tuple[Task309DeviceBinding, ...]) -> bool:
+def _gpu_devices_mounted(devices: tuple[AnswerKeyDeviceBinding, ...]) -> bool:
     device_paths = {device.host_path for device in devices} | {
         device.container_path for device in devices
     }
@@ -543,9 +545,9 @@ def _gpu_devices_mounted(devices: tuple[Task309DeviceBinding, ...]) -> bool:
 
 def _preflight_blockers(
     *,
-    command_probes: tuple[Task309CommandProbe, ...],
-    cache_path_probes: tuple[Task309PathProbe, ...],
-    provider_status: Task309ProviderStatus,
+    command_probes: tuple[AnswerKeyCommandProbe, ...],
+    cache_path_probes: tuple[AnswerKeyPathProbe, ...],
+    provider_status: AnswerKeyProviderStatus,
     manifest_sha: str | None,
 ) -> tuple[str, ...]:
     blockers: list[str] = []

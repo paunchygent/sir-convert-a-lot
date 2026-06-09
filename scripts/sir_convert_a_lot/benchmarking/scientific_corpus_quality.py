@@ -1,12 +1,12 @@
-"""Rubric and manual-verdict logic for Task 12 scientific-corpus benchmarking.
+"""Rubric and manual-verdict logic for scientific-corpus benchmark scientific-corpus benchmarking.
 
 Purpose:
     Create/load deterministic manual rubric payloads and produce
-    manual-review-driven decision and governance compatibility sections.
+    manual-review-driven decision and governance-fit sections.
 
 Relationships:
     - Consumes evaluation lane outputs from `scientific_corpus_execution.py`.
-    - Produces `decision` and `governance_compatibility` payload sections.
+    - Produces `decision` and governance payload sections.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Conformance tests for Story 003c integration adapter behavior.
+"""Conformance tests for integration adapter lane integration adapter behavior.
 
 Purpose:
     Validate that HuleEdu and Skriptoteket adapter profiles remain thin and

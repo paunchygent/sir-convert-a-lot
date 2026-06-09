@@ -1,4 +1,4 @@
-"""Task 12 scientific corpus harness tests.
+"""scientific-corpus benchmark scientific corpus harness tests.
 
 Purpose:
     Validate deterministic schema/ordering, lane behavior, manual-review
@@ -35,8 +35,8 @@ from tests.sir_convert_a_lot.scientific_corpus_harness_fakes import (
 def test_deterministic_ordering_and_output_keys(tmp_path: Path) -> None:
     corpus_dir, filenames = build_corpus(tmp_path)
     FakeScientificClient.scenario = default_scenario(filenames)
-    output_json = tmp_path / "task12.json"
-    output_report = tmp_path / "task12.md"
+    output_json = tmp_path / "scientific-corpus.json"
+    output_report = tmp_path / "scientific-corpus.md"
     artifacts_root = tmp_path / "artifacts"
     rubric_path = tmp_path / "rubric.json"
 
@@ -44,7 +44,7 @@ def test_deterministic_ordering_and_output_keys(tmp_path: Path) -> None:
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
+        api_key="scientific-corpus-key",
         output_json=output_json,
         output_report=output_report,
         artifacts_root=artifacts_root,
@@ -91,11 +91,11 @@ def test_rejects_docs_reference_output_paths() -> None:
             corpus_dir=Path("."),
             acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
             evaluation_service_url=DEFAULT_EVALUATION_URL,
-            api_key="task12-key",
+            api_key="scientific-corpus-key",
             output_json=Path("docs/reference/forbidden.json"),
-            output_report=Path("build/task12.md"),
-            artifacts_root=Path("build/task12-artifacts"),
-            rubric_path=Path("build/task12-rubric.json"),
+            output_report=Path("build/scientific-corpus.md"),
+            artifacts_root=Path("build/scientific-corpus-artifacts"),
+            rubric_path=Path("build/scientific-corpus-rubric.json"),
             local_sha="local-sha",
             hemma_sha="hemma-sha",
             max_poll_seconds=20.0,
@@ -106,14 +106,14 @@ def test_rejects_docs_reference_output_paths() -> None:
 def test_summary_metrics_shape_and_counts(tmp_path: Path) -> None:
     corpus_dir, filenames = build_corpus(tmp_path)
     FakeScientificClient.scenario = default_scenario(filenames)
-    output_json = tmp_path / "task12.json"
-    output_report = tmp_path / "task12.md"
+    output_json = tmp_path / "scientific-corpus.json"
+    output_report = tmp_path / "scientific-corpus.md"
 
     payload = run_benchmark(
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
+        api_key="scientific-corpus-key",
         output_json=output_json,
         output_report=output_report,
         artifacts_root=tmp_path / "artifacts",
@@ -151,9 +151,9 @@ def test_harness_records_gpu_runtime_unavailable_failures_deterministically(tmp_
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
-        output_json=tmp_path / "task12.json",
-        output_report=tmp_path / "task12.md",
+        api_key="scientific-corpus-key",
+        output_json=tmp_path / "scientific-corpus.json",
+        output_report=tmp_path / "scientific-corpus.md",
         artifacts_root=tmp_path / "artifacts",
         rubric_path=tmp_path / "rubric.json",
         local_sha="local-sha",
@@ -184,9 +184,9 @@ def test_acceptance_lane_records_warnings_retries_backend_and_acceleration(tmp_p
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
-        output_json=tmp_path / "task12.json",
-        output_report=tmp_path / "task12.md",
+        api_key="scientific-corpus-key",
+        output_json=tmp_path / "scientific-corpus.json",
+        output_report=tmp_path / "scientific-corpus.md",
         artifacts_root=tmp_path / "artifacts",
         rubric_path=tmp_path / "rubric.json",
         local_sha="local-sha",
@@ -211,9 +211,9 @@ def test_evaluation_lane_emits_backend_profiles_and_artifacts(tmp_path: Path) ->
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
-        output_json=tmp_path / "task12.json",
-        output_report=tmp_path / "task12.md",
+        api_key="scientific-corpus-key",
+        output_json=tmp_path / "scientific-corpus.json",
+        output_report=tmp_path / "scientific-corpus.md",
         artifacts_root=artifacts_root,
         rubric_path=tmp_path / "rubric.json",
         local_sha="local-sha",
@@ -254,9 +254,9 @@ def test_manual_verdict_is_governance_checked_without_auto_ranking(tmp_path: Pat
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
-        output_json=tmp_path / "task12.json",
-        output_report=tmp_path / "task12.md",
+        api_key="scientific-corpus-key",
+        output_json=tmp_path / "scientific-corpus.json",
+        output_report=tmp_path / "scientific-corpus.md",
         artifacts_root=tmp_path / "artifacts",
         rubric_path=rubric_path,
         local_sha="local-sha",
@@ -290,14 +290,14 @@ def test_document_slug_is_deterministic_and_collision_safe() -> None:
 def test_report_contains_required_sections_and_recommendation(tmp_path: Path) -> None:
     corpus_dir, filenames = build_corpus(tmp_path)
     FakeScientificClient.scenario = default_scenario(filenames)
-    report_path = tmp_path / "task12-report.md"
-    output_json = tmp_path / "task12.json"
+    report_path = tmp_path / "scientific-corpus-report.md"
+    output_json = tmp_path / "scientific-corpus.json"
 
     run_benchmark(
         corpus_dir=corpus_dir,
         acceptance_service_url=DEFAULT_ACCEPTANCE_URL,
         evaluation_service_url=DEFAULT_EVALUATION_URL,
-        api_key="task12-key",
+        api_key="scientific-corpus-key",
         output_json=output_json,
         output_report=report_path,
         artifacts_root=tmp_path / "artifacts",

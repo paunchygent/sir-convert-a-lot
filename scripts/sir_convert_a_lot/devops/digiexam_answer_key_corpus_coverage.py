@@ -1,7 +1,7 @@
 """DigiExam answer-key live-validation corpus coverage proof.
 
 Purpose:
-    Compare Task 309 validation manifest items with retained advisory report
+    Compare answer-key live validation validation manifest items with retained advisory report
     rows so live-validation evidence can prove which corpus items were
     exercised.
 
@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass
 
 
 @dataclass(frozen=True)
-class Task309CoverageItemRef:
+class AnswerKeyCoverageItemRef:
     """One manifest or report item key in the coverage proof."""
 
     source_filename: str
@@ -28,7 +28,7 @@ class Task309CoverageItemRef:
 
 
 @dataclass(frozen=True)
-class Task309CorpusCoverageProof:
+class AnswerKeyCorpusCoverageProof:
     """Manifest-vs-report coverage proof for one live-validation run."""
 
     manifest_item_count: int
@@ -41,9 +41,9 @@ class Task309CorpusCoverageProof:
     missing_manifest_item_count: int
     missing_eligible_item_count: int
     unexpected_report_item_count: int
-    missing_manifest_items: tuple[Task309CoverageItemRef, ...]
-    missing_eligible_items: tuple[Task309CoverageItemRef, ...]
-    unexpected_report_items: tuple[Task309CoverageItemRef, ...]
+    missing_manifest_items: tuple[AnswerKeyCoverageItemRef, ...]
+    missing_eligible_items: tuple[AnswerKeyCoverageItemRef, ...]
+    unexpected_report_items: tuple[AnswerKeyCoverageItemRef, ...]
 
     def to_payload(self) -> dict[str, object]:
         """Return deterministic JSON-safe coverage proof."""
@@ -52,11 +52,11 @@ class Task309CorpusCoverageProof:
         return {key: value for key, value in payload.items()}
 
 
-def build_task309_corpus_coverage_proof(
+def build_answer_key_corpus_coverage_proof(
     *,
     manifest_items: Mapping[tuple[str, str], Mapping[str, object]],
     report_keys: set[tuple[str, str]],
-) -> Task309CorpusCoverageProof:
+) -> AnswerKeyCorpusCoverageProof:
     """Build a coverage proof comparing manifest items to report rows."""
 
     manifest_keys = set(manifest_items)
@@ -67,7 +67,7 @@ def build_task309_corpus_coverage_proof(
     missing_eligible_keys = eligible_keys - report_keys
     unexpected_report_keys = report_keys - manifest_keys
     reported_manifest_keys = manifest_keys & report_keys
-    return Task309CorpusCoverageProof(
+    return AnswerKeyCorpusCoverageProof(
         manifest_item_count=len(manifest_keys),
         manifest_eligible_item_count=len(eligible_keys),
         manifest_ineligible_item_count=len(manifest_keys - eligible_keys),
@@ -94,9 +94,9 @@ def _refs_for_manifest_keys(
     *,
     keys: set[tuple[str, str]],
     manifest_items: Mapping[tuple[str, str], Mapping[str, object]],
-) -> tuple[Task309CoverageItemRef, ...]:
+) -> tuple[AnswerKeyCoverageItemRef, ...]:
     return tuple(
-        Task309CoverageItemRef(
+        AnswerKeyCoverageItemRef(
             source_filename=source_filename,
             item_id=item_id,
             eligible=_optional_bool(manifest_items[(source_filename, item_id)], "eligible"),
@@ -108,9 +108,9 @@ def _refs_for_manifest_keys(
 
 def _refs_for_unexpected_keys(
     keys: set[tuple[str, str]],
-) -> tuple[Task309CoverageItemRef, ...]:
+) -> tuple[AnswerKeyCoverageItemRef, ...]:
     return tuple(
-        Task309CoverageItemRef(
+        AnswerKeyCoverageItemRef(
             source_filename=source_filename,
             item_id=item_id,
             eligible=None,

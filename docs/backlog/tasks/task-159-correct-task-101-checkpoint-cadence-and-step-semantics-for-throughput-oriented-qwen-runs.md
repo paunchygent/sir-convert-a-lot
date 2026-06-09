@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
   - docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md
   - docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md
-  - docs/reference/ref-task101-live-qwen-training-pipeline-analysis-2026-03-13.md
+  - docs/reference/ref-qwen-live-training-pipeline-analysis-2026-03-13.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
 labels:
   - qwen
@@ -72,7 +72,7 @@ for a long saturation-oriented run.
 
 ## Acceptance Criteria
 
-- [x] Long Task 101 runs no longer default to durable trainer-state saves every
+- [x] Long Qwen pilot runs no longer default to durable trainer-state saves every
   `2` steps.
 - [x] Smoke/profile runs retain an explicitly documented tighter checkpoint
   posture where needed.

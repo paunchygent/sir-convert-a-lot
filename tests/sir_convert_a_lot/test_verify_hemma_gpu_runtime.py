@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.devops.verify_hemma_gpu_runtime`.
-    - Protects Task 76 live verification accuracy.
+    - Protects Hemma deploy verification live verification accuracy.
 """
 
 from __future__ import annotations

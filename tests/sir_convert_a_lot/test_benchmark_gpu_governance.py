@@ -1,4 +1,4 @@
-"""Benchmark runner tests for Story 003b evidence generation.
+"""Benchmark runner tests for GPU governance benchmark lane evidence generation.
 
 Purpose:
     Validate schema shape and deterministic ordering for benchmark JSON output
@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.benchmark_gpu_governance.run_benchmark`.
-    - Protects benchmark evidence pipeline used in Story 003b docs.
+    - Protects benchmark evidence pipeline used in GPU governance benchmark lane docs.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def test_run_benchmark_writes_expected_json_payload(tmp_path: Path) -> None:
     )
 
     assert output_json.exists()
-    assert payload["benchmark_id"] == "story-003b-gpu-governance"
+    assert payload["benchmark_id"] == "gpu-governance-benchmark"
     assert payload["stage"] == "local-test"
 
     summary = payload["summary"]

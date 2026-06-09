@@ -1,4 +1,4 @@
-"""Consumer integration adapter profiles for Story 003c.
+"""Consumer integration adapter profiles for integration adapter lane.
 
 Purpose:
     Define thin adapter helper behavior for HuleEdu and Skriptoteket that

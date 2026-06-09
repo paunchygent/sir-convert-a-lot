@@ -1,4 +1,4 @@
-"""Tests for the Task 281 DigiExam `.dxe` validation corpus manifest.
+"""Tests for the DigiExam `.dxe` validation corpus manifest.
 
 Purpose:
     Prove that local raw DigiExam `.dxe` validation packages can be converted
@@ -6,7 +6,7 @@ Purpose:
     prompt text, user metadata, or embedded asset payloads.
 
 Relationships:
-    - Exercises `domain.digiexam_dxe_corpus_manifest` as the Task 281 corpus
+    - Exercises `domain.digiexam_dxe_corpus_manifest` as the DXE corpus
       manifest boundary.
     - Keeps raw OneDrive `.dxe` exports local while preserving parser/IR
       regression counts for EPIC-10.
@@ -87,7 +87,7 @@ def _count_map(value: object) -> dict[str, int]:
     return result
 
 
-def test_committed_digiexam_dxe_corpus_manifest_records_task281_baseline() -> None:
+def test_committed_digiexam_dxe_corpus_manifest_records_baseline() -> None:
     payload = _load_manifest_payload()
     summary = _object(payload["summary"])
     entries = _objects(payload["entries"])

@@ -9,7 +9,7 @@ Relationships:
     - Called by `infrastructure.digiexam_migration_bundle_builder` only when the
       job spec explicitly requests advisory local LLM completion.
     - Uses `infrastructure.structured_llm_di` to construct the HTTP provider
-      adapter from Task 296.
+      adapter from structured LLM provider harness.
     - Returns a bounded report artifact payload without raw prompts or provider
       responses.
 """

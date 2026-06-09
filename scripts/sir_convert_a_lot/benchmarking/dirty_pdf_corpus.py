@@ -1,4 +1,4 @@
-"""Dirty PDF OCR corpus manifest and report validation for Task 270.
+"""Dirty PDF OCR corpus manifest and report validation for dirty PDF OCR corpus.
 
 Purpose:
     Validate metadata-only dirty PDF OCR corpus manifests and build sanitized
@@ -6,12 +6,13 @@ Purpose:
     PII-bearing paths, or unsafe benchmark profile claims.
 
 Relationships:
-    - Extends the Task 74 Story 20 throughput benchmark payload with
+    - Extends the PDF throughput benchmark PDF throughput lane throughput benchmark payload with
       dirty-corpus evidence.
-    - Feeds `story20_throughput_report.write_report` with a safe summary for
+    - Feeds `pdf_throughput_report.write_report` with a safe summary for
       markdown rendering.
-    - Keeps Task 271 Hemma benchmark evidence tied to Task 74 profile safety
-      and Task 76 runtime parity requirements.
+    - Keeps dirty PDF OCR final proof Hemma benchmark evidence tied to PDF throughput benchmark
+    profile safety
+      and Hemma deploy verification runtime parity requirements.
 """
 
 from __future__ import annotations
@@ -21,23 +22,23 @@ import json
 import re
 from pathlib import Path
 
-from .story20_throughput_types import (
+from .pdf_throughput_types import (
     DirtyCorpusFailureTaxonomy,
     DirtyCorpusManifestEntry,
     DirtyCorpusManifestSummary,
     DirtyCorpusOcrMetadataSummary,
     DirtyCorpusReportExtension,
+    DirtyPdfBenchmarkProofSummary,
     ProfilePayload,
     ProfileSafetySummary,
     RuntimeParitySummary,
     RuntimeSurface,
-    Task271ProofSummary,
 )
 
 MANIFEST_SCHEMA_VERSION = "dirty_pdf_ocr_corpus_manifest_v1"
 REPORT_SCHEMA_VERSION = "dirty_pdf_ocr_benchmark_report_extension_v1"
-TASK271_TARGET_EXECUTED_PAGES = 150
-TASK271_TARGET_WALL_CLOCK_SECONDS = 3600
+DIRTY_PDF_TARGET_EXECUTED_PAGES = 150
+DIRTY_PDF_TARGET_WALL_CLOCK_SECONDS = 3600
 REQUIRED_DIRTY_DATA_CLASSES = (
     "scanned",
     "mixed_scanned_text",
@@ -298,9 +299,9 @@ def _classify_profile_safety(profile: ProfilePayload) -> ProfileSafetySummary:
     gpu_stage_max_concurrency = config["gpu_stage_max_concurrency"]
     unsafe_reason = None
     if max_chunk_workers > 2:
-        unsafe_reason = "max_chunk_workers exceeds Task 74 safe 2-worker boundary."
+        unsafe_reason = "max_chunk_workers exceeds PDF throughput benchmark safe 2-worker boundary."
     elif gpu_stage_max_concurrency > 2:
-        unsafe_reason = "gpu_stage_max_concurrency exceeds Task 74 safe boundary."
+        unsafe_reason = "gpu_stage_max_concurrency exceeds PDF throughput benchmark safe boundary."
     elif "4w" in profile_name or "4-worker" in profile_name:
         unsafe_reason = "profile name matches the removed 4-worker OOM profile family."
     return {
@@ -384,7 +385,7 @@ def _metadata_summary(profiles: list[ProfilePayload]) -> DirtyCorpusOcrMetadataS
     }
 
 
-def _select_task271_profile(profiles: list[ProfilePayload]) -> ProfilePayload:
+def _select_dirty_pdf_profile(profiles: list[ProfilePayload]) -> ProfilePayload:
     candidates = [profile for profile in profiles[1:] if profile["summary"]["failed_jobs"] == 0]
     if not candidates:
         candidates = [profile for profile in profiles if profile["summary"]["failed_jobs"] == 0]
@@ -397,15 +398,15 @@ def _sum_profile_pages(profile: ProfilePayload) -> int:
     return sum(job["page_count"] for job in profile["jobs"])
 
 
-def _build_task271_proof_summary(
+def _build_dirty_pdf_proof_summary(
     *,
     manifest: DirtyCorpusManifestSummary,
     profiles: list[ProfilePayload],
     runtime_surface: RuntimeSurface,
     runtime_parity: RuntimeParitySummary,
     all_profiles_safe: bool,
-) -> Task271ProofSummary:
-    tuned_profile = _select_task271_profile(profiles)
+) -> DirtyPdfBenchmarkProofSummary:
+    tuned_profile = _select_dirty_pdf_profile(profiles)
     tuned_summary = tuned_profile["summary"]
     tuned_total_pages = _sum_profile_pages(tuned_profile)
     tuned_wall_clock_seconds = tuned_summary["total_latency_seconds"]
@@ -417,21 +418,21 @@ def _build_task271_proof_summary(
         and manifest["source_hashes_verified"]
         and manifest["real_data_gate_satisfied"]
         and tuned_summary["success_rate"] == 1.0
-        and tuned_total_pages >= TASK271_TARGET_EXECUTED_PAGES
-        and tuned_wall_clock_seconds <= TASK271_TARGET_WALL_CLOCK_SECONDS
+        and tuned_total_pages >= DIRTY_PDF_TARGET_EXECUTED_PAGES
+        and tuned_wall_clock_seconds <= DIRTY_PDF_TARGET_WALL_CLOCK_SECONDS
     )
     return {
         "runtime_mode": runtime_surface["mode"],
         "production_service_runtime": production_service_runtime,
-        "target_executed_pages": TASK271_TARGET_EXECUTED_PAGES,
-        "target_wall_clock_seconds": TASK271_TARGET_WALL_CLOCK_SECONDS,
+        "target_executed_pages": DIRTY_PDF_TARGET_EXECUTED_PAGES,
+        "target_wall_clock_seconds": DIRTY_PDF_TARGET_WALL_CLOCK_SECONDS,
         "tuned_profile": tuned_profile["profile_name"],
         "tuned_total_pages": tuned_total_pages,
         "tuned_wall_clock_seconds": tuned_wall_clock_seconds,
         "tuned_success_rate": tuned_summary["success_rate"],
         "source_hashes_verified": manifest["source_hashes_verified"],
         "real_data_gate_satisfied": manifest["real_data_gate_satisfied"],
-        "task76_parity_proven": runtime_parity["parity_proven"],
+        "deploy_parity_proven": runtime_parity["parity_proven"],
         "all_profiles_safe": all_profiles_safe,
         "meets_150_page_target": meets_150_page_target,
     }
@@ -444,7 +445,7 @@ def build_dirty_corpus_report_extension(
     runtime_surface: RuntimeSurface,
     runtime_parity: RuntimeParitySummary,
 ) -> DirtyCorpusReportExtension:
-    """Build the sanitized Task 270 dirty-corpus benchmark report extension."""
+    """Build the sanitized dirty PDF OCR corpus dirty-corpus benchmark report extension."""
     profile_safety = [_classify_profile_safety(profile) for profile in profiles]
     all_profiles_safe = all(profile["safe_profile"] for profile in profile_safety)
     return {
@@ -452,11 +453,11 @@ def build_dirty_corpus_report_extension(
         "manifest": manifest,
         "profile_safety": profile_safety,
         "all_profiles_safe": all_profiles_safe,
-        "task76_parity_required": True,
-        "task76_parity_proven": runtime_parity["parity_proven"],
+        "deploy_parity_required": True,
+        "deploy_parity_proven": runtime_parity["parity_proven"],
         "failure_taxonomy": _classify_failure_taxonomy(profiles),
         "ocr_metadata_summary": _metadata_summary(profiles),
-        "task271_proof": _build_task271_proof_summary(
+        "dirty_pdf_ocr_proof": _build_dirty_pdf_proof_summary(
             manifest=manifest,
             profiles=profiles,
             runtime_surface=runtime_surface,
@@ -468,7 +469,9 @@ def build_dirty_corpus_report_extension(
 
 def main() -> None:
     """Validate a metadata-only dirty PDF OCR corpus manifest."""
-    parser = argparse.ArgumentParser(description="Validate a Task 270 dirty PDF OCR manifest.")
+    parser = argparse.ArgumentParser(
+        description="Validate a dirty PDF OCR corpus dirty PDF OCR manifest."
+    )
     parser.add_argument("--manifest", type=Path, required=True)
     args = parser.parse_args()
     manifest = load_dirty_corpus_manifest(args.manifest)

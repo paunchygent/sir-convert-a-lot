@@ -7,7 +7,7 @@ Purpose:
 Relationships:
     - Parsed by `domain.digiexam_ingestion_overlay`.
     - Emitted by `infrastructure.digiexam_migration_bundle_builder`.
-    - Mirrors the public v2 artifact contract for Task 295.
+    - Mirrors the public v2 artifact contract for DigiExam ingestion overlay.
 """
 
 from __future__ import annotations
@@ -111,7 +111,7 @@ class DigiExamOverlayReviewedCompletionCandidateLineage(BaseModel):
 
 
 class DigiExamOverlayReviewedChoiceAnswerPayload(BaseModel):
-    """Reviewed choice answer payload using Task 297 candidate semantics."""
+    """Reviewed choice answer payload using reviewed choice candidate candidate semantics."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -120,7 +120,7 @@ class DigiExamOverlayReviewedChoiceAnswerPayload(BaseModel):
 
 
 class DigiExamOverlayReviewedGapFillAnswerPayload(BaseModel):
-    """Reviewed gap-fill answer payload using Task 305 candidate semantics."""
+    """Reviewed gap-fill answer payload using gap-fill candidate candidate semantics."""
 
     model_config = ConfigDict(extra="forbid")
 

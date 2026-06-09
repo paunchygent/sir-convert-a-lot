@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Uses the generic FastAPI surface built by `app_factory.py`.
     - Depends on OpenVoice V2 for tone-color conversion and `facebook/mms-tts-swe`
-      as the Swedish base speaker generator for the Task 81 benchmark.
+      as the Swedish base speaker generator for the OpenVoice benchmark.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ _SUPPORTED_LANGUAGE_ALIASES = {
 
 @dataclass(frozen=True)
 class OpenVoiceSidecarSettings:
-    """Environment-driven settings for the OpenVoice Task 81 sidecar."""
+    """Environment-driven settings for the OpenVoice OpenVoice benchmark sidecar."""
 
     backend_id: str
     backend_version: str
@@ -272,7 +272,7 @@ class OpenVoiceSidecarBackend:
                     support_level=LanguageSupportLevel.CROSS_LINGUAL_CLAIMED,
                     notes=(
                         "OpenVoice claims any-language support with an appropriate base speaker; "
-                        "this Task 81 adapter uses facebook/mms-tts-swe as the Swedish base model."
+                        "this adapter uses facebook/mms-tts-swe as the Swedish base model."
                     ),
                 )
             ],
@@ -293,19 +293,19 @@ class OpenVoiceSidecarBackend:
         if request.output_format is not OutputFormat.WAV:
             raise SidecarRequestError(
                 code="unsupported_output_format",
-                message="OpenVoice Task 81 currently supports `wav` output only.",
+                message="OpenVoice OpenVoice benchmark currently supports `wav` output only.",
                 status_code=422,
             )
         if request.voice_mode is not VoiceMode.REFERENCE_CLONE:
             raise SidecarRequestError(
                 code="unsupported_voice_mode",
-                message="OpenVoice Task 81 requires `reference_clone` voice mode.",
+                message="OpenVoice OpenVoice benchmark requires `reference_clone` voice mode.",
                 status_code=422,
             )
         if request.preset_voice_id is not None:
             raise SidecarRequestError(
                 code="preset_voice_not_supported",
-                message="OpenVoice Task 81 does not expose preset voices.",
+                message="OpenVoice OpenVoice benchmark does not expose preset voices.",
                 status_code=422,
             )
         normalized_language = _normalize_language_code(request.language)
@@ -313,7 +313,7 @@ class OpenVoiceSidecarBackend:
             raise SidecarRequestError(
                 code="unsupported_language",
                 message=(
-                    "OpenVoice Task 81 only supports the configured benchmark languages: "
+                    "OpenVoice only supports the configured benchmark languages: "
                     f"{', '.join(self._settings.supported_language_codes)}."
                 ),
                 status_code=422,

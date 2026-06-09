@@ -1,4 +1,4 @@
-"""Tests for the Story 29 offline token-span audit surface.
+"""Tests for the Qwen fallback proof lane offline token-span audit surface.
 
 Purpose:
     Verify that the token-span audit can extract the canonical failing sample
@@ -8,7 +8,7 @@ Purpose:
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.ml.qwen.training.token_span_audit`.
     - Complements the existing dataset and gradient RCA tests with one
-      contract-level audit for T206.
+      contract-level audit for text-token span.
 """
 
 from __future__ import annotations

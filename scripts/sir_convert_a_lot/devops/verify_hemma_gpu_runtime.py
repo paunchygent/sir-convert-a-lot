@@ -2,7 +2,7 @@
 
 Purpose:
     Execute deterministic ROCm/runtime/readiness/live-conversion checks on the
-    remote Hemma repository as a committed Python surface (Task 76).
+    remote Hemma repository as a committed Python surface (Hemma deploy verification).
 
 Relationships:
     - Invoked by `scripts/devops/verify-hemma-gpu-runtime.sh` in `--remote` mode.
@@ -38,7 +38,7 @@ from scripts.sir_convert_a_lot.devops.service_image_build_contract import (
 from scripts.sir_convert_a_lot.infrastructure.gpu_runtime_probe import probe_torch_gpu_runtime
 
 DEFAULT_FIXTURE = Path("tests/fixtures/benchmark_pdfs/paper_alpha.pdf")
-DEFAULT_OUTPUT_ROOT = Path("build/verification/task-76-hemma-deploy-verify/gpu-runtime")
+DEFAULT_OUTPUT_ROOT = Path("build/verification/hemma-deploy-verify/gpu-runtime")
 
 
 @dataclass(frozen=True)
@@ -51,7 +51,9 @@ class RuntimeProbeResult:
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Hemma GPU runtime verifier (Task 76).")
+    parser = argparse.ArgumentParser(
+        description="Hemma GPU runtime verifier (Hemma deploy verification)."
+    )
     parser.add_argument(
         "--lane",
         choices=["host", "docker"],
@@ -288,7 +290,7 @@ def _run_live_conversion_smoke(
     headers = {
         "X-API-Key": api_key,
         "Idempotency-Key": idempotency_key,
-        "X-Correlation-ID": "corr_task76_gpu_runtime",
+        "X-Correlation-ID": "corr_deploy_gpu_runtime",
     }
 
     gpu_busy_peak = 0
@@ -322,7 +324,7 @@ def _run_live_conversion_smoke(
                 f"/v2/convert/jobs/{job_id}",
                 headers={
                     "X-API-Key": api_key,
-                    "X-Correlation-ID": "corr_task76_gpu_runtime_poll",
+                    "X-Correlation-ID": "corr_deploy_gpu_runtime_poll",
                 },
             )
             status_response.raise_for_status()
@@ -346,7 +348,7 @@ def _run_live_conversion_smoke(
             f"/v2/convert/jobs/{job_id}/result",
             headers={
                 "X-API-Key": api_key,
-                "X-Correlation-ID": "corr_task76_gpu_runtime_result",
+                "X-Correlation-ID": "corr_deploy_gpu_runtime_result",
             },
         )
         result_response.raise_for_status()
@@ -380,7 +382,7 @@ def _run_live_conversion_smoke(
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run Task 76 GPU runtime verification checks and emit deterministic report."""
+    """Run Hemma deploy GPU runtime checks and emit a deterministic report."""
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 
     try:

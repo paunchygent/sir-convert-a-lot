@@ -6,7 +6,8 @@ Purpose:
 
 Relationships:
     - Covers `scripts.sir_convert_a_lot.ml.qwen.common.storage`.
-    - Protects the symlink fallback used by Task 204 and Task 205 archive paths.
+    - Protects the symlink fallback used by Hemma scratch audit and Hemma scratch maintenance
+    archive paths.
 """
 
 from __future__ import annotations

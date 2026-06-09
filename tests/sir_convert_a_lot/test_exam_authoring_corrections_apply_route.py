@@ -1,13 +1,13 @@
 """Tests for the unified exam authoring corrections apply route.
 
 Purpose:
-    Prove Task 330 exposes the unified source-neutral correction route, applies
+    Prove unified correction route exposes the unified source-neutral correction route, applies
     matching manual keys through it, and preserves signed source-state binding
     rules for the initial matching implementation.
 
 Relationships:
     - Exercises `interfaces.http_routes_exam_authoring_corrections_v2`.
-    - Reuses the Task 323 matching DTO/domain validation through the unified
+    - Reuses the HTML to PDF route3 matching DTO/domain validation through the unified
       `manual_matching_answer_key` entry.
     - Complements hard-cut and non-matching correction route test modules.
 """

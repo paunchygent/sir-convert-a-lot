@@ -7,7 +7,7 @@ Purpose:
 
 Relationships:
     - Exercises `infrastructure.digiexam_answer_key_completion_runtime`.
-    - Guards the Task 325 OpenAI provider path that feeds advisory answer-key
+    - Guards the HTML to PDF route5 OpenAI provider path that feeds advisory answer-key
       reports for DigiExam migration jobs.
 """
 

@@ -7,7 +7,7 @@ Purpose:
 Relationships:
     - Delegates parser and manifest rules to
       `domain.digiexam_dxe_corpus_manifest`.
-    - Used by Task 281 to keep raw validation corpora local while committing
+    - Used by Markdown to PDF route1 to keep raw validation corpora local while committing
       only safe aggregate parser evidence.
 """
 

@@ -1,12 +1,12 @@
-"""Task 309 Granite provider report artifact rendering.
+"""answer-key live validation Granite provider report artifact rendering.
 
 Purpose:
-    Render redacted JSON and Markdown artifacts for Task 309 Hemma preflight
+    Render redacted JSON and Markdown artifacts for answer-key live validation Hemma preflight
     and persistent Granite/vLLM provider status reports.
 
 Relationships:
     - Consumes contracts from `answer_key_provider_contracts`.
-    - Writes through the Task 309 manifest JSON helper so report formatting is
+    - Writes through the answer-key live validation manifest JSON helper so report formatting is
       deterministic across corpus, golden, and provider evidence.
     - Keeps artifact rendering separate from non-mutating Docker/ROCm probes.
 """
@@ -16,54 +16,54 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.answer_key_provider_contracts import (
-    Task309HemmaPreflight,
-    Task309LlamaProviderLaunchResult,
-    Task309ProviderLaunchResult,
-    Task309ProviderStatus,
+    AnswerKeyHemmaPreflight,
+    AnswerKeyLlamaProviderLaunchResult,
+    AnswerKeyProviderLaunchResult,
+    AnswerKeyProviderStatus,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_live_validation_manifest import (
-    write_task309_json,
+    write_answer_key_json,
 )
 
 
-def write_task309_provider_status_artifacts(
+def write_answer_key_provider_status_artifacts(
     *,
     output_root: Path,
-    status: Task309ProviderStatus,
+    status: AnswerKeyProviderStatus,
 ) -> tuple[Path, Path]:
     """Write JSON and Markdown provider-status artifacts."""
 
     json_path = output_root / "provider-status.json"
     markdown_path = output_root / "provider-status.md"
-    write_task309_json(status.to_payload(), json_path)
+    write_answer_key_json(status.to_payload(), json_path)
     _write_markdown(markdown_path, _provider_status_markdown(status))
     return json_path, markdown_path
 
 
-def write_task309_hemma_preflight_artifacts(
+def write_answer_key_hemma_preflight_artifacts(
     *,
     output_root: Path,
-    preflight: Task309HemmaPreflight,
+    preflight: AnswerKeyHemmaPreflight,
 ) -> tuple[Path, Path]:
     """Write JSON and Markdown Hemma preflight artifacts."""
 
     json_path = output_root / "hemma-preflight.json"
     markdown_path = output_root / "hemma-preflight.md"
-    write_task309_json(preflight.to_payload(), json_path)
+    write_answer_key_json(preflight.to_payload(), json_path)
     _write_markdown(markdown_path, _hemma_preflight_markdown(preflight))
     return json_path, markdown_path
 
 
-def write_task309_provider_launch_artifacts(
+def write_answer_key_provider_launch_artifacts(
     *,
     output_root: Path,
-    result: Task309ProviderLaunchResult,
+    result: AnswerKeyProviderLaunchResult,
 ) -> tuple[Path, Path]:
     """Write JSON and Markdown provider-launch artifacts."""
 
     json_path = output_root / "provider-launch.json"
     markdown_path = output_root / "provider-launch.md"
-    write_task309_json(result.to_payload(), json_path)
+    write_answer_key_json(result.to_payload(), json_path)
     _write_markdown(markdown_path, _provider_launch_markdown(result))
     return json_path, markdown_path
 
@@ -71,21 +71,21 @@ def write_task309_provider_launch_artifacts(
 def write_answer_key_llama_provider_launch_artifacts(
     *,
     output_root: Path,
-    result: Task309LlamaProviderLaunchResult,
+    result: AnswerKeyLlamaProviderLaunchResult,
 ) -> tuple[Path, Path]:
     """Write JSON and Markdown llama.cpp provider-launch artifacts."""
 
     json_path = output_root / "llama-provider-launch.json"
     markdown_path = output_root / "llama-provider-launch.md"
-    write_task309_json(result.to_payload(), json_path)
+    write_answer_key_json(result.to_payload(), json_path)
     _write_markdown(markdown_path, _llama_provider_launch_markdown(result))
     return json_path, markdown_path
 
 
-def _provider_status_markdown(status: Task309ProviderStatus) -> str:
+def _provider_status_markdown(status: AnswerKeyProviderStatus) -> str:
     model_ids = ", ".join(f"`{model_id}`" for model_id in status.models_endpoint.model_ids)
     lines = [
-        "# Task 309 Granite Provider Status",
+        "# answer-key live validation Granite Provider Status",
         "",
         f"- checked_at: `{status.checked_at}`",
         f"- provider_url: `{status.provider_url}`",
@@ -110,10 +110,10 @@ def _provider_status_markdown(status: Task309ProviderStatus) -> str:
     return "\n".join(lines)
 
 
-def _hemma_preflight_markdown(preflight: Task309HemmaPreflight) -> str:
+def _hemma_preflight_markdown(preflight: AnswerKeyHemmaPreflight) -> str:
     blockers = ", ".join(f"`{blocker}`" for blocker in preflight.blockers)
     lines = [
-        "# Task 309 Hemma Preflight",
+        "# answer-key live validation Hemma Preflight",
         "",
         f"- checked_at: `{preflight.checked_at}`",
         f"- runtime_lane: `{preflight.runtime_lane}`",
@@ -142,9 +142,9 @@ def _hemma_preflight_markdown(preflight: Task309HemmaPreflight) -> str:
     return "\n".join(lines)
 
 
-def _provider_launch_markdown(result: Task309ProviderLaunchResult) -> str:
+def _provider_launch_markdown(result: AnswerKeyProviderLaunchResult) -> str:
     lines = [
-        "# Task 309 Granite Provider Launch",
+        "# answer-key live validation Granite Provider Launch",
         "",
         f"- launched_at: `{result.launched_at}`",
         f"- container_name: `{result.container_name}`",
@@ -164,9 +164,9 @@ def _provider_launch_markdown(result: Task309ProviderLaunchResult) -> str:
     return "\n".join(lines)
 
 
-def _llama_provider_launch_markdown(result: Task309LlamaProviderLaunchResult) -> str:
+def _llama_provider_launch_markdown(result: AnswerKeyLlamaProviderLaunchResult) -> str:
     lines = [
-        "# Task 309 llama.cpp Provider Launch",
+        "# answer-key live validation llama.cpp Provider Launch",
         "",
         f"- launched_at: `{result.launched_at}`",
         f"- provider_profile: `{result.provider_profile}`",

@@ -3,11 +3,11 @@
 Purpose:
     Keep live phase/heartbeat dataclasses and heartbeat-construction helpers
     out of `sft_12hz.py` so the trainer can emit truthful progress updates
-    without owning the detached Task 101 status payload contract directly.
+    without owning the detached Qwen pilot training status payload contract directly.
 
 Relationships:
     - Imported by `sft_12hz.py` to emit bounded live training heartbeats.
-    - Consumed by the detached Task 101 probe status reporter to persist
+    - Consumed by the detached Qwen pilot training probe status reporter to persist
       current phase, loss, and checkpoint progress into `status.json`.
 """
 

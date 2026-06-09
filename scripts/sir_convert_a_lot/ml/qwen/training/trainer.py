@@ -63,7 +63,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.trainer_runtime_support import (
 
 
 def _parse_args() -> argparse.Namespace:
-    """Return CLI arguments for compatibility with trainer-focused tests."""
+    """Return parsed trainer CLI arguments."""
     return parse_trainer_args()
 
 

@@ -1,8 +1,8 @@
-"""FastAPI entrypoint for the normalized Chatterbox Task 86 sidecar.
+"""FastAPI entrypoint for the normalized Chatterbox Chatterbox benchmark sidecar.
 
 Purpose:
     Bind the reusable normalized TTS sidecar HTTP contract to the Chatterbox
-    backend adapter used by the Hemma Task 86 benchmark.
+    backend adapter used by the Hemma Chatterbox benchmark.
 
 Relationships:
     - Uses `create_tts_sidecar_app` to enforce ADR-0007 endpoint behavior.
@@ -21,7 +21,7 @@ from scripts.sir_convert_a_lot.tts_sidecar.chatterbox_runtime import (
 
 
 def create_app() -> FastAPI:
-    """Create the Chatterbox Task 86 sidecar application."""
+    """Create the Chatterbox Chatterbox benchmark sidecar application."""
     settings = ChatterboxSidecarSettings.from_env()
     backend = ChatterboxSidecarBackend(settings)
     return create_tts_sidecar_app(backend, title="Sir Convert-a-Lot Chatterbox Sidecar")

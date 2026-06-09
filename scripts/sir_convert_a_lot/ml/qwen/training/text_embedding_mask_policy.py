@@ -1,15 +1,15 @@
 """Text-embedding mask policy contracts for Qwen fine-tuning.
 
 Purpose:
-    Define the canonical Task 101 text-embedding mask policies, keep launch
-    defaults and backward-compatible legacy defaults explicit, and provide the
+    Define the canonical Qwen pilot training text-embedding mask policies, keep launch
+    defaults and retained codec-span defaults explicit, and provide the
     small helpers needed to compute the active positional text-embedding span
     during batch collation.
 
 Relationships:
     - Imported by the detached Qwen control plane when constructing settings.
     - Imported by the patched Qwen dataset and runtime fingerprint helpers.
-    - Consumed by metadata loading so older launch artifacts stay compatible.
+    - Consumed by metadata loading so retained launch artifacts resolve deterministically.
 """
 
 from __future__ import annotations

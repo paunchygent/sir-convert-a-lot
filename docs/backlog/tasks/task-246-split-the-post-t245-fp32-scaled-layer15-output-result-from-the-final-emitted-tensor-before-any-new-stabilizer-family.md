@@ -10,7 +10,7 @@ related:
   - docs/backlog/stories/story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md
   - docs/backlog/tasks/task-245-confirm-the-post-t244-winner-specific-layer15-output-attenuation-multiply-before-any-new-stabilizer-family.md
   - docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md
-  - docs/reference/ref-task101-training-eval-pilot-progress-2026-03-15.md
+  - docs/reference/ref-qwen-training-eval-pilot-progress-2026-03-15.md
 labels:
   - qwen
   - finetuning
@@ -38,7 +38,7 @@ before any new stabilizer family is considered.
 
 - Treat `T245` as closed truth:
   - truthful rerun:
-    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-story31-stability-lab/task245-20260318t202916z-a1`
+    `/srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab/task245-20260318t202916z-a1`
   - resolved classification:
     `multiply_not_causal`
   - dominant surface:
