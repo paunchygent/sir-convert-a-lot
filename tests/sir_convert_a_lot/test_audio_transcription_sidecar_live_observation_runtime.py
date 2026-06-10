@@ -1,13 +1,13 @@
 """Audio transcription sidecar live-observation producer behavior.
 
 Purpose:
-    Prove the operator command that produces sanitized live Hemma STT sidecar
-    observations for the approved profile-proof ingestion runner.
+    Exercise the operator command that produces sanitized live Hemma STT sidecar
+    observations for profile-proof ingestion.
 
 Relationships:
     - Exercises the live-observation producer CLI boundary.
     - Feeds generated observations into the profile-proof runner to verify the
-      producer emits the contract consumed by Task 352 proof selection.
+      producer emits the contract consumed by backend profile selection.
 """
 
 from __future__ import annotations

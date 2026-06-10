@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md
   - docs/backlog/reviews/review-33-ruthless-review-of-task-352-post-deploy-stt-sidecar-live-proof-blocker.md
   - docs/backlog/reviews/review-34-ruthless-review-of-task-353-stt-sidecar-backend-failure-classification.md
+  - docs/backlog/reviews/review-35-ruthless-review-of-stt-sidecar-ctranslate2-rocm-image-contract.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -166,6 +167,28 @@ Profile-proof ingestion still returns exit code `2` with `proof_ready=false`.
 The remaining product blockers are unchanged: GPU-backed Whisper-family STT
 execution and live diarization execution are still not accepted.
 
+The second Task 353 implementation slice updates only the benchmark sidecar
+image contract for the preferred FasterWhisper path:
+
+- the image downloads the official CTranslate2 `4.8.0` ROCm wheel archive from
+  OpenNMT's release artifacts and verifies SHA256
+  `9ec6d82e5682b27af6c535f56525665c949cc63fbef14a9028c47b0164717143`;
+- the image installs the exact Python 3.11 CTranslate2 ROCm wheel after
+  `faster-whisper`, `pyannote.audio`, and `huggingface-hub==0.34.4`;
+- the image registers the Torch ROCm library directory with the system dynamic
+  linker so the CTranslate2 ROCm extension can resolve the HIP sonames already
+  declared by the Torch ROCm wheel;
+- the slice does not add CPU fallback, route registration, transcript
+  persistence, formatter output, Gateway publication, main-service STT
+  dependencies, or diarization replacement behavior.
+
+Review 35 approved this bounded image-contract slice on 2026-06-10. That
+approval does not accept Task 352 live proof. The updated image must still be
+committed, pushed, deployed, and exercised through live observation/profile-proof
+ingestion before the STT backend blocker can be removed. Pyannote gated access
+or a governed library-backed diarization replacement remains a separate live
+proof blocker.
+
 ## Deliverables
 
 - [x] Current upstream/backend feasibility notes for FasterWhisper/CTranslate2
@@ -173,9 +196,10 @@ execution and live diarization execution are still not accepted.
 - [x] The live observation schema or retained diagnostic artifact records
   bounded backend failure classifications without transcript text, token values,
   private paths, or raw model identifiers.
-- [ ] GPU-backed Whisper-family execution is implemented and proven,
-  preferably through FasterWhisper, or the task records that Task 352 remains
-  blocked.
+- [ ] GPU-backed Whisper-family execution is proven, preferably through
+  FasterWhisper, or the task records that Task 352 remains blocked. The
+  CTranslate2 ROCm image contract is approved but still needs post-deploy live
+  observation.
 - [ ] Diarization backend access is proven or explicitly rejected with governed
   replacement follow-up.
 - [x] Post-remediation live observation and profile-proof artifacts are

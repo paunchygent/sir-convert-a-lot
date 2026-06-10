@@ -1,8 +1,8 @@
 """Audio transcription sidecar runtime probe output behavior.
 
 Purpose:
-    Prove that the STT sidecar runtime probe keeps third-party backend output
-    away from the JSON stdout stream consumed by live observation ingestion.
+    Keep third-party backend output away from the JSON stdout stream consumed by
+    live observation ingestion.
 
 Relationships:
     - Exercises the benchmark-sidecar runtime probe CLI boundary.
