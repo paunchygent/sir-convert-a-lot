@@ -143,6 +143,10 @@ Planned story slices:
   is the first Story 53 runtime slice. It registers Service API v2 route
   admission only and is accepted in Review 41; sidecar execution and canonical
   `transcript_json` persistence remain later Story 53 tasks.
+- `docs/backlog/tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md`
+  is the active Story 53 runtime-execution slice for sidecar-backed execution
+  and canonical `transcript_json` persistence. Formatter artifacts and
+  downstream product UI/storage remain later lanes.
 
 ## Acceptance Criteria
 

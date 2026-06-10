@@ -167,8 +167,7 @@ Important:
   sidecar APIs are not the normative Sir-facing contract.
 - ADR-0013 is accepted, and Task 355 registers the first admission-only audio
   route slice. Sidecar execution, route-specific progress, cancellation
-  cleanup, and transcript artifact persistence still require later governed
-  implementation tasks.
+  cleanup, and transcript artifact persistence are now governed by Task 356.
 - For audio transcription, the first stable output authority is structured
   JSON; `txt`, `md`, `vtt`, and `srt` are later formatter artifacts over that
   JSON core.

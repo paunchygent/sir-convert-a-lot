@@ -43,6 +43,10 @@ durable implementation authority lives in governed docs.
   `9859b4a51dc94e9a6083a9fd7985b746cd75c380` was deployed to Hemma and proved
   live through the tunnel with `202 queued` admission and `202 canceled`
   cancellation for an `audio -> transcript_bundle` job.
+- Task 356 is scaffolded as the active Story 53 execution/persistence slice:
+  sidecar-backed runtime execution, route-specific audio progress,
+  cancellation/retry/retention cleanup, and canonical `transcript_json`.
+  Formatter artifacts and downstream product UI/storage remain out of scope.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -157,9 +161,9 @@ formula evidence with VLM output.
 
 1. Continue STT Story 53 with the next execution slice: wire the accepted
    FasterWhisper ROCm plus pyannote sidecar into queued
-   `audio -> transcript_bundle` jobs, persist canonical `transcript_json`, and
-   prove progress, cancellation, retry, and short-retention cleanup without
-   enabling formatter artifacts yet.
+   `audio -> transcript_bundle` jobs under Task 356, persist canonical
+   `transcript_json`, and prove progress, cancellation, retry, and
+   short-retention cleanup without enabling formatter artifacts yet.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task

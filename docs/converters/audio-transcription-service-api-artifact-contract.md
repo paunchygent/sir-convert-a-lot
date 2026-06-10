@@ -42,6 +42,10 @@ owner-scope, local-upload, public-option, capacity, GPU-required, and
 cancellation cleanup, `transcript_json` persistence, and formatter outputs are
 not implemented until later governed Story 53 and Story 54 tasks land.
 
+Task 356 is the active Story 53 execution slice for sidecar-backed processing
+and canonical `transcript_json` persistence. Formatter artifacts remain blocked
+until the JSON core is accepted.
+
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
 approved the remediated contract direction on 2026-06-09. This contract remains

@@ -2,7 +2,7 @@
 id: story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence
 title: Audio transcript bundle route execution and JSON artifact persistence
 type: story
-status: proposed
+status: in_progress
 priority: high
 created: '2026-06-09'
 last_updated: '2026-06-09'
@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md
   - docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md
   - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
+  - docs/backlog/tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md
   - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
@@ -53,11 +54,17 @@ implement formatter outputs. Later Story 53 tasks own sidecar execution,
 progress, cancellation cleanup, retry, retention, and canonical
 `transcript_json` artifact persistence.
 
+Task 356 is the next runtime slice. It owns sidecar-backed execution and
+canonical `transcript_json` persistence through the v2 job lifecycle. It still
+excludes formatter artifacts and downstream UI/storage lanes.
+
 Current runtime truth:
 
 - Service API v2 create-job route admission exists for
   `audio -> transcript_bundle` through Task 355 and is accepted in Review 41,
   with API-key tunnel and Gateway signed-identity owner scopes.
+- Task 356 is the active execution/persistence slice for turning those queued
+  jobs into succeeded jobs with canonical `transcript_json`.
 - `JobSpecV2` accepts the governed day-one audio transcription request shape,
   including Swedish/English auto language selection, exact speaker count, and
   min/max speaker range hints.
@@ -132,6 +139,7 @@ retention cleanup, and canonical `transcript_json` persistence.
 - [x] Runtime route admission slice created; execution remains unimplemented
 - [x] Task 355 route-admission slice created
 - [x] Task 355 route-admission slice accepted
+- [x] Task 356 execution/persistence slice created
 - [ ] Runtime route implementation complete
 - [ ] Runtime tests and validations complete
 - [ ] Runtime docs synchronized
