@@ -154,6 +154,7 @@ class RoutePolicyV2:
     rejects_retention_pin: bool = False
     create_required_grant: str | None = None
     create_optional_identity_grant: str | None = None
+    dispatches_runtime_jobs: bool = True
     unsupported_option_context: str | None = None
 
 
@@ -219,6 +220,7 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
         allows_audio_transcription_options=True,
         rejects_retention_pin=True,
         create_optional_identity_grant="sir-convert:jobs:create",
+        dispatches_runtime_jobs=False,
         unsupported_option_context="audio transcription routes",
     ),
 )
@@ -241,6 +243,21 @@ def route_policy_for_key_v2(key: RouteKeyV2) -> RoutePolicyV2 | None:
         if policy.key == key:
             return policy
     return None
+
+
+def route_dispatches_runtime_jobs_v2(
+    *,
+    source_format: SourceFormatV2,
+    output_format: OutputFormatV2,
+) -> bool:
+    """Return whether queued jobs for a v2 route may enter runtime execution."""
+
+    policy = route_policy_for_key_v2(
+        RouteKeyV2(source_format=source_format, output_format=output_format)
+    )
+    if policy is None:
+        return False
+    return policy.dispatches_runtime_jobs
 
 
 def supported_route_keys_v2() -> tuple[RouteKeyV2, ...]:

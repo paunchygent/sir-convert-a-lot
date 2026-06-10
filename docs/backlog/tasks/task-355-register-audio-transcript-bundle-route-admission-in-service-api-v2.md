@@ -176,6 +176,27 @@ later Story 53 and Story 55 tasks after the route admission contract is green.
 - Parent docs gates passed after `pdm run docs-sync`: `pdm run docs-validate`,
   `pdm run skills-validate`, `pdm run handoff-validate`, and
   `git diff --check`.
+- Deployed live smoke against revision
+  `f7af68535a73b4cdecdd3ea0fdbd75f87fc0b046` admitted
+  `audio -> transcript_bundle` through `http://127.0.0.1:28085` with
+  `create_status=202`, then exposed a pre-review admission-only defect: the
+  production supervisor immediately claimed the queued audio job and returned
+  `status=running`. The smoke job `jobv2_587a64cfbd5d4a7f97ab324ce4` was
+  canceled through the same owner scope with `cancel_status=202`.
+- Supervisor regression red command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_supervision_v2.py`
+  failed with `1 failed, 1 passed` because the supervisor started
+  `job_audio_queued` before the executable document job.
+- Supervisor fix green command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_supervision_v2.py`
+  passed with `2 passed` after route policy gained a shared
+  runtime-dispatch flag and `RuntimeSupervisorV2` skipped admission-only audio
+  jobs.
+- Post-fix focused command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_policy.py tests/sir_convert_a_lot/test_create_job_route_registry_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`
+  passed with `92 passed`.
+- Post-fix quality gates passed: `pdm run lint-fix`, `pdm run typecheck-all`,
+  and `git diff --check`.
 
 ## Checklist
 

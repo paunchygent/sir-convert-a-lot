@@ -28,12 +28,11 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
 )
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
     normalized_fingerprint_payload_for_spec_v2,
+    route_dispatches_runtime_jobs_v2,
 )
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
     JobSpecV2,
-    OutputFormatV2,
-    SourceFormatV2,
     normalized_exam_migration_targets_v2,
 )
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
@@ -82,12 +81,10 @@ from scripts.sir_convert_a_lot.interfaces.http_structured_llm_settings_state_v2 
 
 
 def _should_dispatch_submitted_job_v2(spec: JobSpecV2) -> bool:
-    if (
-        spec.source.format == SourceFormatV2.AUDIO
-        and spec.conversion.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
-    ):
-        return False
-    return True
+    return route_dispatches_runtime_jobs_v2(
+        source_format=spec.source.format,
+        output_format=spec.conversion.output_format,
+    )
 
 
 def build_job_router_v2(*, service_started_at: str) -> APIRouter:

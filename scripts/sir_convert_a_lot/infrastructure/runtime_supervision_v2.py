@@ -18,6 +18,7 @@ from collections.abc import Callable
 from types import TracebackType
 from typing import Protocol
 
+from scripts.sir_convert_a_lot.domain.service_routes_v2 import route_dispatches_runtime_jobs_v2
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobExpiredV2,
@@ -116,6 +117,11 @@ class RuntimeSupervisorV2:
             except (JobMissingV2, JobExpiredV2):
                 continue
             if record.status != JobStatus.QUEUED:
+                continue
+            if not route_dispatches_runtime_jobs_v2(
+                source_format=record.source_format,
+                output_format=record.output_format,
+            ):
                 continue
             self._run_job_async(job_id)
 

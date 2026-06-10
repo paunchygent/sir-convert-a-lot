@@ -50,17 +50,52 @@ def _spec(filename: str) -> JobSpecV2:
     )
 
 
-def _record(tmp_path: Path, *, job_id: str, status: JobStatus) -> StoredJobRecordV2:
+def _audio_spec(filename: str) -> JobSpecV2:
+    return JobSpecV2.model_validate(
+        {
+            "api_version": "v2",
+            "source": {"kind": "upload", "filename": filename, "format": "audio"},
+            "conversion": {"output_format": "transcript_bundle"},
+            "execution": {
+                "acceleration_policy": "gpu_required",
+                "priority": "normal",
+                "document_timeout_seconds": 7200,
+            },
+            "audio_transcription_options": {
+                "language": "auto",
+                "diarization": {
+                    "mode": "auto",
+                    "num_speakers": None,
+                    "min_speakers": None,
+                    "max_speakers": None,
+                },
+                "max_duration_seconds": 7200,
+                "output_artifacts": ["json"],
+            },
+            "retention": {"pin": False},
+        }
+    )
+
+
+def _record(
+    tmp_path: Path,
+    *,
+    job_id: str,
+    status: JobStatus,
+    spec: JobSpecV2 | None = None,
+    source_format: SourceFormatV2 = SourceFormatV2.MD,
+    output_format: OutputFormatV2 = OutputFormatV2.PDF,
+) -> StoredJobRecordV2:
     now = datetime.now(UTC)
-    upload_path = tmp_path / f"{job_id}.md"
-    artifact_path = tmp_path / f"{job_id}.pdf"
+    upload_path = tmp_path / f"{job_id}.{source_format.value}"
+    artifact_path = tmp_path / f"{job_id}.{output_format.value}"
     return StoredJobRecordV2(
         job_id=job_id,
-        spec=_spec(f"{job_id}.md"),
+        spec=spec if spec is not None else _spec(f"{job_id}.md"),
         owner_api_key_scope="service-api-key",
-        source_filename=f"{job_id}.md",
-        source_format=SourceFormatV2.MD,
-        output_format=OutputFormatV2.PDF,
+        source_filename=upload_path.name,
+        source_format=source_format,
+        output_format=output_format,
         status=status,
         created_at=now,
         updated_at=now,
@@ -141,3 +176,43 @@ def test_runtime_supervisor_starts_queued_jobs_until_capacity(tmp_path: Path) ->
 
     assert started == ["job_queued_a"]
     assert active_job_ids == {"job_active", "job_queued_a"}
+
+
+def test_runtime_supervisor_skips_admission_only_audio_jobs(tmp_path: Path) -> None:
+    active_job_ids: set[str] = set()
+    started: list[str] = []
+
+    def _run_job_async(job_id: str) -> None:
+        started.append(job_id)
+        active_job_ids.add(job_id)
+
+    supervisor = RuntimeSupervisorV2(
+        config=ServiceConfig(api_key="secret-key", data_root=tmp_path),
+        job_store=_FakeSupervisorStore(
+            {
+                "job_audio_queued": _record(
+                    tmp_path,
+                    job_id="job_audio_queued",
+                    status=JobStatus.QUEUED,
+                    spec=_audio_spec("job_audio_queued.m4a"),
+                    source_format=SourceFormatV2.AUDIO,
+                    output_format=OutputFormatV2.TRANSCRIPT_BUNDLE,
+                ),
+                "job_document_queued": _record(
+                    tmp_path,
+                    job_id="job_document_queued",
+                    status=JobStatus.QUEUED,
+                ),
+            }
+        ),
+        active_job_ids=active_job_ids,
+        lock=threading.Lock(),
+        shutdown_event=threading.Event(),
+        run_job_async=_run_job_async,
+        emit_capacity=lambda: None,
+    )
+
+    supervisor._start_queued_jobs_until_capacity(max_workers=2)
+
+    assert started == ["job_document_queued"]
+    assert active_job_ids == {"job_document_queued"}
