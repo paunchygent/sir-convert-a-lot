@@ -39,9 +39,9 @@ headers, and error propagation), not service runtime policy internals.
 - Route-specific adapters, including DigiExam migration for Skriptoteket, must
   follow the route-specific converter contract without embedding conversion
   policy in the consumer app.
-- Planned route-specific adapters, including audio transcription, must remain
-  transport-only until their route contract, OpenAPI update, and implementation
-  tasks register the runtime route.
+- Route-specific adapters, including audio transcription, must remain
+  transport-only and follow the accepted route contract, OpenAPI update, and
+  runtime route state.
 - Internal adapters currently use the v2 service API key as a transport
   credential. Under ADR-0009, user-originated adapter calls must also preserve
   HuleEdu `InternalIdentityContextV1` with audience `sir-convert-a-lot` so job
@@ -77,7 +77,7 @@ headers, and error propagation), not service runtime policy internals.
   - `source.format: "digiexam_dxe"`
   - `conversion.output_format: "examnet_migration_bundle"`
   - `retention.pin: false`
-- For admission-registered audio transcription, required defaults are owned by
+- For audio transcription, required defaults are owned by
   `docs/converters/audio-transcription-service-api-artifact-contract.md` and
   begin with:
   - `api_version: "v2"`
@@ -154,8 +154,8 @@ Canonical reference implementation:
 ### 9. Audio transcription adapter boundary
 
 - Skriptoteket and HuleEdu adapters may submit governed audio transcription
-  jobs only after the route-specific contract and runtime implementation tasks
-  land.
+  jobs through the route-specific contract once their downstream lanes wire the
+  existing Service API v2 transport.
 - The adapter must remain transport-only: it builds headers and job specs,
   uploads the declared source file, polls status/result, lists named artifacts,
   downloads transcript artifacts, and passes artifact metadata to product-owned

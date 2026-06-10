@@ -115,14 +115,15 @@ states:
 | Source | Target | Route key | State | Contract |
 | --- | --- | --- | --- | --- |
 | `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | Runtime route | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
-| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Admission registered; execution and `transcript_json` persistence pending | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Runtime JSON execution deployed; retained Task 356 review pending | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
 `/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion
 jobs. The initial product contract is authenticated Gateway plus tunnel API
 only; no public grant or anonymous transcription lane is part of the accepted
-ADR-0013 boundary. The route is not a runtime surface until its implementation
-tasks register execution and publish transcript artifact updates.
+ADR-0013 boundary. Task 356 provides the first runtime surface for canonical
+`transcript_json`; formatter artifacts and product-owned durable transcript
+save semantics remain separate downstream work.
 
 ## PDF Page CSS Modes
 

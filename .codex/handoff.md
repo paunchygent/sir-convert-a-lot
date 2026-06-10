@@ -43,10 +43,10 @@ durable implementation authority lives in governed docs.
   `9859b4a51dc94e9a6083a9fd7985b746cd75c380` was deployed to Hemma and proved
   live through the tunnel with `202 queued` admission and `202 canceled`
   cancellation for an `audio -> transcript_bundle` job.
-- Task 356 is scaffolded as the active Story 53 execution/persistence slice:
-  sidecar-backed runtime execution, route-specific audio progress,
-  cancellation/retry/retention cleanup, and canonical `transcript_json`.
-  Formatter artifacts and downstream product UI/storage remain out of scope.
+- Task 356 is implemented and deployed pending retained review: revision
+  `a8ab0d1211fa4a0fb8e0d1efe5fd6a40d982e4ac` passed Hemma deploy verification
+  and live tunnel proof for English/Swedish `transcript_json` artifacts.
+  Bounded evidence is in Task 356.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -159,11 +159,12 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. Continue STT Story 53 with the next execution slice: wire the accepted
-   FasterWhisper ROCm plus pyannote sidecar into queued
-   `audio -> transcript_bundle` jobs under Task 356, persist canonical
-   `transcript_json`, and prove progress, cancellation, retry, and
-   short-retention cleanup without enabling formatter artifacts yet.
+1. Run retained ruthless review for Task 356 now that the deployed
+   `audio -> transcript_bundle` JSON pipeline proof succeeded. If review
+   requests changes, route them back through the implementer, redeploy, and
+   rerun live proof before re-review. If accepted, mark Task 356 complete and
+   continue the downstream/Gateway/Skriptoteket JSON consumption lane without
+   enabling formatter artifacts yet.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -188,10 +189,9 @@ formula evidence with VLM output.
   profile proof validation is recorded in Review 40: focused suite `37 passed`,
   deploy verification passed for `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`,
   live profile proof returned `proof_ready=true`, and docs/skills/handoff
-  validators passed. Task 355 admission proof is recorded in Review 41:
-  deployed revision `9859b4a51dc94e9a6083a9fd7985b746cd75c380`, live tunnel
-  admission/cancel proof, red/green review remediation evidence, focused
-  re-review suite `72 passed`, and docs/skills/handoff validators passed.
+  validators passed. Task 355 admission proof is recorded in Review 41. Task
+  356 implementation, quality, docs, Hemma deploy, and live tunnel proof
+  evidence is recorded in Task 356 and awaits retained review.
 
 ## Stop Conditions
 

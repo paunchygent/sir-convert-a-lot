@@ -5,7 +5,7 @@ type: story
 status: in_progress
 priority: high
 created: '2026-06-09'
-last_updated: '2026-06-09'
+last_updated: '2026-06-10'
 related:
   - docs/backlog/epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md
   - docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
@@ -54,23 +54,26 @@ implement formatter outputs. Later Story 53 tasks own sidecar execution,
 progress, cancellation cleanup, retry, retention, and canonical
 `transcript_json` artifact persistence.
 
-Task 356 is the next runtime slice. It owns sidecar-backed execution and
-canonical `transcript_json` persistence through the v2 job lifecycle. It still
-excludes formatter artifacts and downstream UI/storage lanes.
+Task 356 is the active runtime slice. It has deployed sidecar-backed execution
+and canonical `transcript_json` persistence through the v2 job lifecycle, with
+retained ruthless review still pending. It still excludes formatter artifacts
+and downstream UI/storage lanes.
 
 Current runtime truth:
 
 - Service API v2 create-job route admission exists for
   `audio -> transcript_bundle` through Task 355 and is accepted in Review 41,
   with API-key tunnel and Gateway signed-identity owner scopes.
-- Task 356 is the active execution/persistence slice for turning those queued
-  jobs into succeeded jobs with canonical `transcript_json`.
+- Task 356 turns queued jobs into succeeded jobs with canonical
+  `transcript_json` through the accepted FasterWhisper ROCm plus pyannote
+  sidecar profile. The slice remains in progress until retained review accepts
+  the deployed proof.
 - `JobSpecV2` accepts the governed day-one audio transcription request shape,
   including Swedish/English auto language selection, exact speaker count, and
   min/max speaker range hints.
-- Downstream and internal adapter docs must continue to distinguish admitted
-  route requests from completed transcript generation until later execution and
-  artifact tasks are accepted.
+- Downstream and internal adapter docs must continue to distinguish completed
+  JSON transcript generation from future formatter artifacts and product-owned
+  durable save semantics.
 
 ## Scope
 
@@ -93,32 +96,32 @@ Current runtime truth:
 
 - [x] Runtime route registration is gated by accepted Story 51 admission caps
   and Story 52 backend profile evidence.
-- [ ] Successful jobs produce `transcript_json` with schema version, timestamps,
+- [x] Successful jobs produce `transcript_json` with schema version, timestamps,
   speaker labels, language evidence, warnings, and bounded runtime metadata.
-- [ ] Jobs fail deterministically when media probing, normalization,
+- [x] Jobs fail deterministically when media probing, normalization,
   transcription, diarization, alignment, GPU readiness, or sidecar capacity
   fails.
-- [ ] Audio progress reports stage, heartbeat, `audio_total_media_seconds`,
+- [x] Audio progress reports stage, heartbeat, `audio_total_media_seconds`,
   `audio_processed_media_seconds`, `audio_percent_complete`,
   `audio_current_chunk_index`, and `audio_total_chunks` where applicable.
-- [ ] Cancellation propagates to sidecar work and purges incomplete media,
+- [x] Cancellation propagates to sidecar work and purges incomplete media,
   chunks, and partial transcript state.
-- [ ] Owner-scoped job/artifact access uses verified
+- [x] Owner-scoped job/artifact access uses verified
   `InternalIdentityContextV1` for Gateway/user-originated work.
-- [ ] OpenAPI and downstream/internal adapter docs are synchronized.
+- [x] OpenAPI and downstream/internal adapter docs are synchronized.
 
 ## Test Requirements
 
-- [ ] Route validation tests for accepted/rejected request shapes.
-- [ ] Idempotency replay and different-payload conflict tests.
-- [ ] Owner-scoped status/result/artifact/cancel tests.
-- [ ] Media safety failure tests for no-audio, corrupt, oversized,
+- [x] Route validation tests for accepted/rejected request shapes.
+- [x] Idempotency replay and different-payload conflict tests.
+- [x] Owner-scoped status/result/artifact/cancel tests.
+- [x] Media safety failure tests for no-audio, corrupt, oversized,
   duration-exceeded, timeout, and unsupported codec inputs.
-- [ ] Sidecar unavailable, capacity-exceeded, diarization-failed, and
+- [x] Sidecar unavailable, capacity-exceeded, diarization-failed, and
   alignment-failed tests proving no false success.
-- [ ] Cancellation cleanup and retry idempotency tests.
-- [ ] Focused Hemma live proof for the selected backend profile.
-- [ ] Docs validation: `pdm run docs-sync`, `pdm run docs-validate`,
+- [x] Cancellation cleanup and retry idempotency tests.
+- [x] Focused Hemma live proof for the selected backend profile.
+- [x] Docs validation: `pdm run docs-sync`, `pdm run docs-validate`,
   `pdm run skills-validate`, `pdm run handoff-validate`, and
   `git diff --check`.
 
@@ -128,10 +131,11 @@ The story is done when the v2 runtime can accept governed audio transcript jobs
 and return owner-scoped `transcript_json` artifacts through the canonical
 Service API v2 lifecycle, with no formatter artifacts required yet.
 
-Current implementation state: the backend-profile blocker is resolved, but the
-done definition is not satisfied. Task 355 opens route admission only; Story 53
-still needs later tasks for sidecar execution, progress, cancellation, retry,
-retention cleanup, and canonical `transcript_json` persistence.
+Current implementation state: the backend-profile blocker is resolved, Task 355
+accepted route admission, and Task 356 deployed the JSON execution/persistence
+slice. The story remains in progress until Task 356's retained review accepts
+the deployed proof. Formatter artifacts and downstream product save semantics
+remain later stories.
 
 ## Checklist
 
@@ -140,6 +144,7 @@ retention cleanup, and canonical `transcript_json` persistence.
 - [x] Task 355 route-admission slice created
 - [x] Task 355 route-admission slice accepted
 - [x] Task 356 execution/persistence slice created
-- [ ] Runtime route implementation complete
-- [ ] Runtime tests and validations complete
-- [ ] Runtime docs synchronized
+- [x] Runtime route implementation complete
+- [x] Runtime tests and validations complete
+- [x] Runtime docs synchronized
+- [ ] Task 356 retained review accepted

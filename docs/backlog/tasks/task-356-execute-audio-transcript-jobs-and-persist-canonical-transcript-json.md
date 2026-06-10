@@ -2,7 +2,7 @@
 id: task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json
 title: Execute audio transcript jobs and persist canonical transcript JSON
 type: task
-status: proposed
+status: in_progress
 priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
@@ -81,74 +81,142 @@ core is accepted.
 
 ## Deliverables
 
-- [ ] Purpose-named domain/application/infrastructure modules for transcript
+- [x] Purpose-named domain/application/infrastructure modules for transcript
   bundle execution, sidecar client contracts, chunk checkpoints, and artifact
   packaging.
-- [ ] Red-first behavior tests for successful `transcript_json` persistence and
+- [x] Red-first behavior tests for successful `transcript_json` persistence and
   named artifact retrieval.
-- [ ] Red-first tests for sidecar unavailable, GPU unavailable, model/cache
+- [x] Red-first tests for sidecar unavailable, GPU unavailable, model/cache
   unavailable, transcription failure, diarization failure, alignment failure,
   media probe/normalization failures, retry-safe checkpoint behavior,
   cancellation cleanup, and owner-scoped access.
-- [ ] OpenAPI/converter/downstream docs synchronized to show JSON execution is
+- [x] OpenAPI/converter/downstream docs synchronized to show JSON execution is
   live while formatter artifacts remain blocked.
-- [ ] Hemma deploy and live tunnel proof that an English two-speaker fixture and
+- [x] Hemma deploy and live tunnel proof that an English two-speaker fixture and
   Swedish one-speaker fixture complete through the public v2 job lifecycle with
   `transcript_json` available for human review.
 - [ ] Retained ruthless review artifact accepted after deployed live proof.
 
 ## Acceptance Criteria
 
-- [ ] Valid admitted audio jobs are dispatchable by the v2 runtime only when
+- [x] Valid admitted audio jobs are dispatchable by the v2 runtime only when
   the accepted STT sidecar health/capability contract is ready and
   GPU-required execution is available. No CPU fallback is permitted.
-- [ ] Successful jobs persist a `transcript_json` artifact containing schema
+- [x] Successful jobs persist a `transcript_json` artifact containing schema
   version, ordered timestamped segments, speaker labels, language evidence,
   warnings, bounded runtime metadata, source/normalized media hashes in
   artifact metadata, and no raw model ids, token values, private cache paths,
   backend-native tuning knobs, unbounded stderr, or sidecar trust secrets.
-- [ ] Diarization is fail-closed: no successful artifact may contain placeholder
+- [x] Diarization is fail-closed: no successful artifact may contain placeholder
   speakers, missing speakers, or `diarization_unavailable`.
-- [ ] Segment alignment validates before artifact persistence; alignment
+- [x] Segment alignment validates before artifact persistence; alignment
   failure returns `audio_segment_alignment_failed` and exposes no terminal
   transcript artifact.
-- [ ] Audio progress is monotonic and uses `audio_total_media_seconds`,
+- [x] Audio progress is monotonic and uses `audio_total_media_seconds`,
   `audio_processed_media_seconds`, `audio_percent_complete`,
   `audio_current_chunk_index`, and `audio_total_chunks`; PDF page counters stay
   `null` for audio jobs.
-- [ ] Cancellation propagates to pending sidecar/chunk work and purges
+- [x] Cancellation propagates to pending sidecar/chunk work and purges
   incomplete normalized audio, sidecar temp chunks, checkpoints, and partial
   transcript state. Canceled or failed jobs do not expose partial transcript
   artifacts.
-- [ ] Transient retry is idempotent under the v2 job fingerprint and does not
+- [x] Transient retry is idempotent under the v2 job fingerprint and does not
   duplicate transcript segments, diarization windows, checkpoints, or named
   artifacts.
-- [ ] `GET /v2/convert/jobs/{job_id}/result`, `/artifact`, `/artifacts`, and
+- [x] `GET /v2/convert/jobs/{job_id}/result`, `/artifact`, `/artifacts`, and
   `/artifacts/transcript_json` behave consistently for successful, pending,
   failed, and canceled audio jobs.
-- [ ] Existing PDF, DOCX, Markdown, HTML, DigiExam, and admission-only
+- [x] Existing PDF, DOCX, Markdown, HTML, DigiExam, and admission-only
   validation behavior is unchanged except where shared artifact-bundle routing
   must become route-aware for `transcript_bundle`.
-- [ ] Live proof on Hemma demonstrates the accepted FasterWhisper ROCm plus
+- [x] Live proof on Hemma demonstrates the accepted FasterWhisper ROCm plus
   pyannote profile, FFmpeg/ffprobe boundary, exact and min/max speaker hints,
   no CPU fallback, and human-reviewable `transcript_json` output through the
   tunnel.
 
 ## Test Requirements
 
-- [ ] Red-first tests must fail on the current Task 355 state because audio
+- [x] Red-first tests must fail on the current Task 355 state because audio
   jobs remain queued and no `transcript_json` artifact exists.
-- [ ] Tests must exercise the public HTTP lifecycle where owner scope,
+- [x] Tests must exercise the public HTTP lifecycle where owner scope,
   status/result/artifact/cancel behavior is the contract.
-- [ ] Domain tests must cover transcript JSON schema, segment ordering,
+- [x] Domain tests must cover transcript JSON schema, segment ordering,
   speaker-label presence, language evidence, bounded runtime metadata, and
   content-safety exclusions.
-- [ ] Infrastructure tests must use a fake sidecar adapter at the internal
+- [x] Infrastructure tests must use a fake sidecar adapter at the internal
   boundary, not mocks of helper internals, so failures prove behavior the
   production service owns.
-- [ ] Live Hemma proof must be captured as ignored artifacts under
+- [x] Live Hemma proof must be captured as ignored artifacts under
   `build/verification/` and only bounded paths/statuses may be retained in
   governed docs.
+
+## Implementation Evidence
+
+- Implementation commit:
+  `a8ab0d1211fa4a0fb8e0d1efe5fd6a40d982e4ac`.
+- The runtime now dispatches `audio -> transcript_bundle` jobs only when the
+  internal STT sidecar health/capability contract is ready, with GPU-required
+  execution and no CPU fallback.
+- The main service owns the v2 job lifecycle, owner scope, progress, result,
+  artifact, cancellation, and retention semantics. The sidecar owns only
+  media probing, normalization, transcription, diarization, and bounded
+  transcript payload production behind the internal adapter contract.
+- Successful audio jobs expose the canonical `transcript_json` artifact through
+  `/result`, `/artifact`, `/artifacts`, and `/artifacts/transcript_json`.
+  Formatter artifacts remain unavailable until later Story 54 formatter
+  strategies are accepted.
+- Focused sidecar/runtime command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_benchmark_image_contract.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py -q`
+  passed with `28 passed`.
+- Broader focused regression command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_policy.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_benchmark_image_contract.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_create_job_route_registry_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py tests/sir_convert_a_lot/test_integration_adapter_conformance.py tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_webhook_delivery_v2.py -q`
+  passed with `141 passed, 3 skipped`.
+- Post-healthcheck focused regression command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_benchmark_image_contract.py -q`
+  passed with `23 passed`.
+- Quality gates passed: `pdm run format-all`, `pdm run lint-fix`,
+  `pdm run typecheck-all`, and `pdm run coverage-gate`. The coverage gate
+  passed with `1645 passed, 6 skipped`, `95.51%` total coverage.
+- Contract/documentation gates passed after `pdm run openapi-export-v2` and
+  `pdm run docs-sync`: `pdm run docs-validate`, `pdm run skills-validate`,
+  `pdm run handoff-validate`, and `git diff --check`.
+
+## Deployed Live Proof
+
+- Hemma deploy verification passed:
+  `pdm run hemma-deploy-and-verify --expected-revision a8ab0d1211fa4a0fb8e0d1efe5fd6a40d982e4ac --lane host`.
+  The report recorded expected, remote, and service revisions all equal to
+  `a8ab0d1211fa4a0fb8e0d1efe5fd6a40d982e4ac` on lane `host`.
+- The internal STT sidecar was live and healthy after deploy, with
+  `adapter_contract_version=stt-sidecar-v1`, `backend_profile_id=stt_sv_en_primary`,
+  `gpu_required=true`, `acceleration_family=rocm`, `acceleration_ready=true`,
+  `backend_family=faster_whisper`, and required diarization.
+- Live tunnel proof artifacts are ignored under
+  `build/verification/audio-transcript-live-api-proof/a8ab0d1/`.
+- English two-speaker proof:
+  - job id: `jobv2_26d3dbc95c9342ec931e45c116`
+  - status: `succeeded`
+  - detected language: `en`
+  - diarization status: `succeeded`
+  - segment count: `231`
+  - speaker labels: `SPEAKER_00`, `SPEAKER_01`
+  - transcript artifact:
+    `build/verification/audio-transcript-live-api-proof/a8ab0d1/english_dialogue_two_speakers/transcript_json.json`
+  - transcript SHA-256:
+    `f9ca1b3121345ebc40fa067b3f44ce80e5baac310161726b6fb685185218aa0d`
+- Swedish speaker-range proof:
+  - job id: `jobv2_21eeb0d974404d9f82f81e9cc7`
+  - status: `succeeded`
+  - detected language: `sv`
+  - diarization status: `succeeded`
+  - segment count: `4`
+  - speaker labels: `SPEAKER_00`
+  - transcript artifact:
+    `build/verification/audio-transcript-live-api-proof/a8ab0d1/swedish_monologue_speaker_range/transcript_json.json`
+  - transcript SHA-256:
+    `c3fc7e70c40a50aacf6fb40092b286bb2eb5114e111459953b8cc486a6aa02a3`
+- Live proof summary:
+  `build/verification/audio-transcript-live-api-proof/a8ab0d1/live-proof-summary.md`.
 
 ## Validation Plan
 
@@ -171,6 +239,6 @@ core is accepted.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

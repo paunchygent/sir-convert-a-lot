@@ -144,30 +144,33 @@ Supported v2 conversions (service-executed on Hemma):
 - `digiexam_dxe -> examnet_migration_bundle` (DigiExam `.dxe` parser -> IR ->
   Exam.net PDF + QTI package + named artifact bundle)
 
-## Admission-Registered Route Extensions
+## Route Extensions
 
-The following v2 route extensions have accepted contracts but are not yet fully
-service-executed conversion pipelines:
+The following v2 route extensions have accepted or active route-specific
+contracts:
 
 - `md -> wav` (sidecar-backed TTS on Hemma; see ADR-0006)
-- `audio -> transcript_bundle` is admission-registered for Service API v2 job
-  creation only. It validates request shape, owner scope, local-upload media
-  suffixes, day-one public audio options, route capacity, GPU-required policy,
-  and `retention.pin=false`, then leaves jobs queued until the later sidecar
-  execution and `transcript_json` persistence slice lands. See ADR-0013 and
-  `docs/converters/audio-transcription-service-api-artifact-contract.md`)
+- `audio -> transcript_bundle` is implemented for Service API v2 JSON transcript
+  execution pending retained Task 356 review. It validates request shape, owner
+  scope, local-upload media, day-one public audio options, route capacity,
+  GPU-required policy, and `retention.pin=false`, then executes through the
+  internal STT sidecar and persists canonical `transcript_json`. Formatter
+  artifacts remain future Story 54 work. See ADR-0013 and
+  `docs/converters/audio-transcription-service-api-artifact-contract.md`.
 
 Important:
 
 - These routes are approved for planning and contract publication.
-- The audio route is admitted but **not yet executed** by the runtime.
+- The audio route executes canonical JSON transcript jobs through the runtime;
+  retained review is pending before the task is marked complete.
 - The public contracts remain provider-neutral and the TTS/STT backends must
   remain Hemma sidecars, not in-process dependencies in the main service image.
 - Internal multi-backend TTS reuse is governed by ADR-0007; backend-native
   sidecar APIs are not the normative Sir-facing contract.
-- ADR-0013 is accepted, and Task 355 registers the first admission-only audio
-  route slice. Sidecar execution, route-specific progress, cancellation
-  cleanup, and transcript artifact persistence are now governed by Task 356.
+- ADR-0013 is accepted, Task 355 registered the first admission-only audio
+  route slice, and Task 356 implements sidecar execution, route-specific
+  progress, cancellation cleanup, and transcript artifact persistence pending
+  retained review.
 - For audio transcription, the first stable output authority is structured
   JSON; `txt`, `md`, `vtt`, and `srt` are later formatter artifacts over that
   JSON core.
@@ -227,10 +230,9 @@ PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes
 - `pages_per_minute` (`float | null`) (non-negative; best-effort)
 - `eta_seconds` (`int | null`) (non-negative; best-effort)
 
-Draft audio transcription work must add route-specific `audio_*` progress
-fields through its converter contract and OpenAPI update before runtime
-registration. It must not overload PDF page counters for processed duration or
-audio chunks.
+Audio transcription uses route-specific `audio_*` progress fields through its
+converter contract and OpenAPI update. It must not overload PDF page counters
+for processed duration or audio chunks.
 
 ### Metrics Label Policy (v2)
 

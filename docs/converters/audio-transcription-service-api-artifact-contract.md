@@ -38,18 +38,19 @@ ingest uploaded audio or video sources and produce a diarized transcript bundle.
 This is a draft route-specific contract. Task 355 registers Service API v2
 create-job admission for `audio -> transcript_bundle`, including request-shape,
 owner-scope, local-upload, public-option, capacity, GPU-required, and
-`retention.pin=false` checks. Full sidecar execution, audio progress,
-cancellation cleanup, `transcript_json` persistence, and formatter outputs are
-not implemented until later governed Story 53 and Story 54 tasks land.
+`retention.pin=false` checks. Task 356 deploys the first sidecar-backed runtime
+execution slice for audio progress, cancellation cleanup, and canonical
+`transcript_json` persistence. Formatter outputs remain blocked until later
+governed Story 54 tasks land.
 
-Task 356 is the active Story 53 execution slice for sidecar-backed processing
-and canonical `transcript_json` persistence. Formatter artifacts remain blocked
-until the JSON core is accepted.
+Task 356 remains in progress until retained ruthless review accepts the
+deployed live proof. Formatter artifacts remain blocked until the JSON core is
+accepted.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
 approved the remediated contract direction on 2026-06-09. This contract remains
-draft until later implementation tasks prove sidecar runtime behavior and
+draft until the Task 356 retained review accepts sidecar runtime behavior and
 canonical transcript artifact persistence through the public route.
 
 ## Relationship To Existing V2 API
@@ -275,7 +276,7 @@ Required response shape:
     "model_artifacts_present": true
   },
   "secrets": {
-    "required_secret_names": ["HUGGINGFACE_TOKEN"],
+    "required_secret_names": ["HF_TOKEN"],
     "required_secrets_present": true,
     "values_exposed": false
   }
@@ -554,10 +555,10 @@ Initial retention classes:
 accepted retention contract defines pin semantics for source media, normalized
 audio, transcript artifacts, and product-owned saves.
 
-## Implementation Gate
+## Implementation State
 
-Runtime implementation must not start until a PR-sized task or story links this
-contract and defines:
+Task 356 is the first PR-sized runtime implementation linked to this contract.
+It defines and deploys:
 
 - route model changes in `domain.specs_v2`;
 - route policy and create-job handler changes in `domain.service_routes_v2` and
@@ -571,3 +572,8 @@ contract and defines:
   diarization options, media safety limits, fail-closed diarization,
   cancellation cleanup, retry idempotency, retention cleanup, and 120-minute
   batch behavior.
+
+The implementation remains pending retained review before this contract can
+move from draft runtime authority to accepted runtime authority. Story 54
+formatter artifacts and Story 55 downstream save/product delivery remain
+separate work.
