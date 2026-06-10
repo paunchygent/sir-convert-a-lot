@@ -2,7 +2,7 @@
 id: task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2
 title: Register audio transcript bundle route admission in Service API v2
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md
   - docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md
   - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
+  - docs/backlog/reviews/review-41-ruthless-review-of-task-355-audio-transcript-route-admission.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
@@ -88,7 +89,7 @@ later Story 53 and Story 55 tasks after the route admission contract is green.
   main service image.
 - [x] OpenAPI/converter docs synchronized for the newly admitted route without
   claiming sidecar execution or transcript persistence is complete.
-- [ ] Retained ruthless review artifact that accepts this admission slice or
+- [x] Retained ruthless review artifact that accepts this admission slice or
   records concrete changes requested.
 
 ## Acceptance Criteria
@@ -109,7 +110,7 @@ later Story 53 and Story 55 tasks after the route admission contract is green.
   artifacts are persisted in governed docs or committed files.
 - [x] Route implementation remains compatible with Gateway `/sir-convert` and
   local tunnel access through the existing Service API v2 boundary.
-- [ ] The retained review artifact is accepted before this task is marked
+- [x] The retained review artifact is accepted before this task is marked
   completed.
 
 ## Test Requirements
@@ -222,9 +223,24 @@ later Story 53 and Story 55 tasks after the route admission contract is green.
   `pdm run lint-fix`, `pdm run typecheck-all`, and `pdm run coverage-gate`.
   The coverage gate passed with `1637 passed, 6 skipped`, `95.40%` total
   coverage.
+- Deployed Review 41 remediation proof:
+  `pdm run hemma-deploy-and-verify --expected-revision 9859b4a51dc94e9a6083a9fd7985b746cd75c380 --lane host`
+  passed. The report recorded expected, remote, and service revisions all equal
+  to `9859b4a51dc94e9a6083a9fd7985b746cd75c380` on lane `host`.
+- Live tunnel proof against the deployed revision admitted
+  `audio -> transcript_bundle` through `http://127.0.0.1:28085` with
+  `create_status=202`, job `jobv2_7d6c801106cb458199364f78c5`,
+  `status=queued`, `source_format=audio`, and
+  `output_format=transcript_bundle`; cancel returned `cancel_status=202` with
+  the same job `status=canceled`.
+- Review 41 re-review accepted the deployed fix. The reviewer ran
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`
+  with `72 passed`, plus `pdm run docs-sync`, `pdm run docs-validate`,
+  `pdm run skills-validate`, `pdm run handoff-validate`, and
+  `git diff --check`.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

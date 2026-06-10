@@ -15,7 +15,7 @@ related:
   - docs/converters/multi_format_conversion_service_api_v2.md
 labels:
   - review
-  - changes-requested
+  - approved
   - task-355
   - stt
   - audio
@@ -41,6 +41,8 @@ Structured review artifact for implementation or readiness checks.
   - `216ae2fe85d0cf029593b3a96018906ade1131fd`
   - `f7af68535a73b4cdecdd3ea0fdbd75f87fc0b046`
   - `de5ec5be0b9008dec57f808511b57e8ec5e79795`
+- Re-review pass 2 commit reviewed:
+  - `9859b4a51dc94e9a6083a9fd7985b746cd75c380`
 - Deployed proof reviewed:
   - `pdm run hemma-deploy-and-verify --expected-revision de5ec5be0b9008dec57f808511b57e8ec5e79795 --lane host`
     passed with expected, remote, and service revision all equal to
@@ -53,6 +55,19 @@ Structured review artifact for implementation or readiness checks.
     exposed `status=running`; the supervisor fix in
     `de5ec5be0b9008dec57f808511b57e8ec5e79795` added shared route-policy
     dispatch blocking for admission-only audio jobs.
+  - Re-review pass 2 deployment ran
+    `pdm run hemma-deploy-and-verify --expected-revision 9859b4a51dc94e9a6083a9fd7985b746cd75c380 --lane host`
+    and passed. The report at `build/verification/hemma-deploy-verify/report.md`
+    recorded expected, remote, and service revision all equal to
+    `9859b4a51dc94e9a6083a9fd7985b746cd75c380`, lane `host`, service URL
+    `http://127.0.0.1:28085`, env-backed API key, and passing structured LLM,
+    metrics, and public-edge checks.
+  - Re-review pass 2 live tunnel smoke against
+    `http://127.0.0.1:28085/v2/convert/jobs` admitted
+    `audio -> transcript_bundle` with `create_status=202`, job
+    `jobv2_7d6c801106cb458199364f78c5`, `status=queued`,
+    `source_format=audio`, and `output_format=transcript_bundle`; cancel
+    returned `cancel_status=202` and the same job `status=canceled`.
 - Files reviewed in the commit range:
   - `.codex/handoff.md`
   - `docs/_generated/openapi/sir-convert-a-lot-v2.openapi.json`
@@ -115,10 +130,50 @@ Structured review artifact for implementation or readiness checks.
   `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
   passed with `38 passed`.
 - `git diff --check` passed before this review artifact was written.
+- Re-review pass 2 code inspection confirmed the audio contract example no
+  longer contains `conversion.artifact_language`, and `JobSpecV2` accepts the
+  documented initial request shape.
+- Re-review pass 2 code inspection confirmed `RoutePolicyV2` now carries
+  `uses_route_specific_primary_upload_limit` and `required_execution_message`;
+  the audio route enables both while document routes keep the generic upload
+  gate and existing PDF execution diagnostic.
+- Re-review pass 2 code inspection confirmed `http_routes_jobs_v2` resolves the
+  validated route before reading the primary upload and applies
+  `runtime.config.max_upload_bytes` only when the route does not use a
+  route-specific primary-upload limit. Audio uploads therefore reach the audio
+  admission handler, which enforces `MAX_AUDIO_UPLOAD_BYTES` and emits
+  `audio_upload_size_exceeded`.
+- Re-review pass 2 shortcut search found no `Any`, `typing.cast`,
+  `# type: ignore`, `noqa`, shim, alias, wrapper, story-named, or task-named
+  active code/test additions in the reviewed fix paths.
+- Re-review pass 2 generated live-smoke artifacts under
+  `build/verification/task-355-live-audio-route-smoke-review41/` are ignored
+  and untracked.
+- Red-first evidence reviewed:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
+  failed with `4 failed, 39 passed` before the fixes. The failures matched the
+  three retained findings: the published contract example was rejected, an
+  audio upload above the generic cap was rejected before route admission,
+  oversize audio returned generic `payload_too_large`, and the docs guard
+  rejected the contract example.
+- Green evidence reviewed from implementation:
+  - Same command passed with `43 passed`.
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`
+    passed with `65 passed`.
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_policy.py tests/sir_convert_a_lot/test_create_job_route_registry_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_specs_v2.py`
+    passed with `129 passed`.
+  - `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`,
+    `pdm run coverage-gate`, `pdm run docs-sync`, `pdm run docs-validate`,
+    `pdm run skills-validate`, `pdm run handoff-validate`, and
+    `git diff --check` all passed. Coverage gate reported `1637 passed,
+    6 skipped`, total coverage `95.40%`.
+- Focused validation run during this re-review passed:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`
+  passed with `72 passed`.
 
 ## Findings
 
-1. [ ] `high` - The published audio request shape still includes
+1. [x] `high` - The published audio request shape still includes
    `conversion.artifact_language`, but the implemented route rejects that field.
 
    Evidence:
@@ -160,7 +215,16 @@ Structured review artifact for implementation or readiness checks.
    `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`,
    then the docs gates.
 
-1. [ ] `high` - The audio route's 500 MiB upload cap is shadowed by the generic
+   Re-review pass 2 disposition:
+   Resolved. The audio converter contract initial request example removes
+   `conversion.artifact_language` and uses the currently admissible
+   `document_timeout_seconds=7200`. The contract example is now parsed and
+   admitted through the HTTP create-job boundary by
+   `test_audio_contract_initial_request_shape_is_admitted`, and the docs guard
+   validates the same example with `JobSpecV2` in
+   `test_audio_contract_initial_request_shape_is_admissible`.
+
+1. [x] `high` - The audio route's 500 MiB upload cap is shadowed by the generic
    50 MiB Service API upload gate and returns the wrong public error code.
 
    Evidence:
@@ -213,7 +277,17 @@ Structured review artifact for implementation or readiness checks.
      a route-handler test so the suite does not allocate hundreds of MiB. Run:
      `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`.
 
-1. [ ] `medium` - Missing execution on the audio route reports a PDF-specific
+   Re-review pass 2 disposition:
+   Resolved. `RoutePolicyV2` now marks audio as using a route-specific primary
+   upload limit, and `http_routes_jobs_v2` bypasses the generic
+   `runtime.config.max_upload_bytes` check only for such routes. The audio
+   handler now owns audio size enforcement and returns
+   `audio_upload_size_exceeded`. The tests prove both an audio payload above
+   the generic cap but below the audio cap is admitted, and an audio payload
+   above the audio cap returns the governed audio error while existing document
+   route oversized uploads still return generic `payload_too_large`.
+
+1. [x] `medium` - Missing execution on the audio route reports a PDF-specific
    validation message.
 
    Evidence:
@@ -240,30 +314,44 @@ Structured review artifact for implementation or readiness checks.
    `execution`, asserting the corrected audio-specific diagnostic. Run:
    `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py`.
 
+   Re-review pass 2 disposition:
+   Resolved. The audio route policy now carries
+   `required_execution_message="execution is required for audio transcription routes"`.
+   `test_job_spec_requires_audio_execution_with_route_message` proves the
+   corrected diagnostic is present and the PDF-specific text is absent.
+
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
-CHANGES REQUESTED for Task 355.
+ACCEPTED for Task 355.
 
-The deployed revision proves the route can admit and cancel a tiny audio job and
-the supervisor no longer executes admission-only audio work. That is real
-progress. Approval is blocked because the public audio contract still contains a
-request field the validator rejects, and the implemented upload-size path cannot
-honor the governed 500 MiB audio cap before the generic Service API cap rejects
-the payload. These are client-visible contract defects, not cosmetic issues.
+Re-review pass 2 confirms the deployed revision
+`9859b4a51dc94e9a6083a9fd7985b746cd75c380` resolves all three original Review
+41 findings. The route remains admission-only, preserves API-key tunnel and
+Gateway signed-identity ownership behavior, keeps audio jobs queued rather than
+dispatching STT execution, and now aligns the published request contract,
+route-specific upload cap, and audio execution diagnostic.
 
 ## Follow-up Actions
 
-- Remediate the three findings above with red-first tests.
-- Redeploy the corrected revision and repeat the live tunnel proof before
-  requesting re-review.
+- No blocking follow-up actions remain for the Task 355 route-admission slice.
+- Later Story 53 tasks still own sidecar execution, media probing,
+  normalization, progress, cancellation cleanup, retry, short-retention cleanup,
+  and canonical `transcript_json` persistence.
+- Non-blocking maintainability note: before adding more audio-admission cases,
+  split `tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py`
+  into narrower purpose-based files. It is currently 550 lines; this did not
+  block approval because the added tests truthfully prove the reviewed public
+  behavior, but the file should not continue to grow.
 
 ## Completion
 
-Review completed on 2026-06-10. Decision is `changes_requested`.
+Initial review completed on 2026-06-10 with `changes_requested`. Re-review pass
+2 completed on 2026-06-10 after deployed live proof for
+`9859b4a51dc94e9a6083a9fd7985b746cd75c380`; final decision is `approved`.
 
 ## Checklist
 

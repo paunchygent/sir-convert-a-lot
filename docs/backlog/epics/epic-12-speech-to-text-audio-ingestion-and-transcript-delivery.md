@@ -141,8 +141,8 @@ Planned story slices:
   transcript-review acceptance.
 - `docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md`
   is the first Story 53 runtime slice. It registers Service API v2 route
-  admission only; sidecar execution and canonical `transcript_json` persistence
-  remain later Story 53 tasks.
+  admission only and is accepted in Review 41; sidecar execution and canonical
+  `transcript_json` persistence remain later Story 53 tasks.
 
 ## Acceptance Criteria
 

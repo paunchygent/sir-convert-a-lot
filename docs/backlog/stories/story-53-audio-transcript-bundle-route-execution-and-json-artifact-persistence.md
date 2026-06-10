@@ -56,8 +56,8 @@ progress, cancellation cleanup, retry, retention, and canonical
 Current runtime truth:
 
 - Service API v2 create-job route admission exists for
-  `audio -> transcript_bundle` through Task 355, with API-key tunnel and
-  Gateway signed-identity owner scopes.
+  `audio -> transcript_bundle` through Task 355 and is accepted in Review 41,
+  with API-key tunnel and Gateway signed-identity owner scopes.
 - `JobSpecV2` accepts the governed day-one audio transcription request shape,
   including Swedish/English auto language selection, exact speaker count, and
   min/max speaker range hints.
@@ -131,6 +131,7 @@ retention cleanup, and canonical `transcript_json` persistence.
 - [x] Backend-profile implementation gate resolved
 - [x] Runtime route admission slice created; execution remains unimplemented
 - [x] Task 355 route-admission slice created
+- [x] Task 355 route-admission slice accepted
 - [ ] Runtime route implementation complete
 - [ ] Runtime tests and validations complete
 - [ ] Runtime docs synchronized

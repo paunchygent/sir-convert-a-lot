@@ -34,15 +34,15 @@ durable implementation authority lives in governed docs.
   Human-reviewable transcript artifacts are ignored under
   `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/`; human
   review accepted those artifacts on 2026-06-10.
-- Task 355 local implementation is in progress for Story 53: Service API v2
-  `audio -> transcript_bundle` admission now accepts API-key tunnel and Gateway
+- Task 355 is complete and accepted in Review 41 for Story 53: Service API v2
+  `audio -> transcript_bundle` admission accepts API-key tunnel and Gateway
   signed-identity create-job requests, validates the governed day-one public
-  audio options, enforces active audio route capacity, and keeps admitted jobs
-  queued without sidecar execution or `transcript_json` persistence. Review 41
-  initially requested fixes for the contract example, route-specific audio
-  upload cap, and audio missing-execution diagnostic; those fixes are green
-  locally. Commit, deploy, live admission proof, and accepted re-review remain
-  pending.
+  audio options, enforces active audio route capacity, honors the audio-specific
+  upload cap/error contract, and keeps admitted jobs queued without sidecar
+  execution or `transcript_json` persistence. Revision
+  `9859b4a51dc94e9a6083a9fd7985b746cd75c380` was deployed to Hemma and proved
+  live through the tunnel with `202 queued` admission and `202 canceled`
+  cancellation for an `audio -> transcript_bundle` job.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -155,10 +155,11 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. Continue STT Story 53 by finishing Task 355 close-out: commit and deploy the
-   Review 41 remediation for the admission-only `audio -> transcript_bundle`
-   route, prove create-job admission live through the tunnel/public edge, then
-   run retained ruthless re-review before marking the task complete.
+1. Continue STT Story 53 with the next execution slice: wire the accepted
+   FasterWhisper ROCm plus pyannote sidecar into queued
+   `audio -> transcript_bundle` jobs, persist canonical `transcript_json`, and
+   prove progress, cancellation, retry, and short-retention cleanup without
+   enabling formatter artifacts yet.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -180,10 +181,13 @@ formula evidence with VLM output.
 ## Validation
 
 - Durable validation history is in the governed task/review docs. Current STT
-  proof validation is recorded in Review 40: focused suite `37 passed`,
+  profile proof validation is recorded in Review 40: focused suite `37 passed`,
   deploy verification passed for `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`,
   live profile proof returned `proof_ready=true`, and docs/skills/handoff
-  validators passed.
+  validators passed. Task 355 admission proof is recorded in Review 41:
+  deployed revision `9859b4a51dc94e9a6083a9fd7985b746cd75c380`, live tunnel
+  admission/cancel proof, red/green review remediation evidence, focused
+  re-review suite `72 passed`, and docs/skills/handoff validators passed.
 
 ## Stop Conditions
 
