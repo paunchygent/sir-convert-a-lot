@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md
+  - docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md
   - docs/backlog/reviews/review-33-ruthless-review-of-task-352-post-deploy-stt-sidecar-live-proof-blocker.md
   - docs/backlog/reviews/review-34-ruthless-review-of-task-353-stt-sidecar-backend-failure-classification.md
   - docs/backlog/reviews/review-35-ruthless-review-of-stt-sidecar-ctranslate2-rocm-image-contract.md
@@ -251,6 +252,15 @@ retained backend failure is `diarization=gated_model_access_denied`. Profile
 proof remains `proof_ready=false` because diarized segments, exclusive
 diarization, alignment-suitable evidence, exact speaker-count hints, min/max
 speaker-range hints, and Hugging Face model access are not ready.
+
+Task 354 now owns the remaining diarization slice. A same-day access recheck
+from the current `main` state confirmed that `HF_TOKEN` is present and the
+scratch-backed cache roots are ready, while pyannote still fails with
+`GatedRepoError` classified as `gated_model_access_denied`. FasterWhisper,
+codec probing, ROCm GPU execution, the synthetic 120-minute lifecycle, and
+content safety remain proven. Task 353 is therefore effectively reduced to the
+accepted FasterWhisper/codec remediation record, while Task 354 carries the
+pyannote access-first or governed replacement decision.
 
 ## Deliverables
 

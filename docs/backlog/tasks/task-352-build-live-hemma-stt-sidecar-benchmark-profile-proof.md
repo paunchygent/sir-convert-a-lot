@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
+  - docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md
   - docs/backlog/reviews/review-27-ruthless-review-of-story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
   - docs/backlog/reviews/review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
@@ -382,6 +383,19 @@ gated-model access or govern a library-backed diarization replacement that
 satisfies exact and min/max speaker hints. FasterWhisper remains the preferred
 first STT option and is now proven on the Hemma ROCm sidecar lane. CPU fallback
 and non-Whisper STT substitutes are not acceptable for this product lane.
+
+Task 354 now owns the remaining diarization remediation. A 2026-06-10 recheck
+from the current `main` state wrote ignored artifacts under
+`build/verification/stt-sidecar-live-observation-hemma-pyannote-access-recheck-33c0593/`
+and
+`build/verification/stt-sidecar-profile-proof-live-pyannote-access-recheck-33c0593/`.
+The recheck kept codec, FasterWhisper, ROCm GPU, 120-minute lifecycle, and
+content-safety evidence true, but still returned
+`pyannote_audio_runtime_blocked` with
+`diarization=gated_model_access_denied`. Task 352 therefore remains incomplete
+until pyannote access is provisioned or Task 354 governs a real library-backed
+replacement diarization profile and a retained review accepts complete live
+proof.
 
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
