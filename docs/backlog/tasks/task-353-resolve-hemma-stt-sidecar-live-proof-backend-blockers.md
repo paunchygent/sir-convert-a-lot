@@ -143,6 +143,29 @@ Review 34 approved this bounded diagnostic slice on 2026-06-10. That approval
 does not accept live STT or diarization backend execution and does not unblock
 Story 53.
 
+The slice was deployed at `14cd0da321e95ecd9644d8766b850b99feb4dc95` and rerun
+against the Hemma benchmark sidecar. The ignored live-observation artifact is:
+
+- `build/verification/stt-sidecar-live-observation-hemma-backend-failures/live-observation.json`.
+
+It records bounded backend failures without raw messages, private paths, model
+ids, token values, or transcript text:
+
+- STT: `backend_family=faster_whisper`,
+  `failure_code=gpu_backend_runtime_unavailable`,
+  `exception_class=RuntimeError`;
+- diarization: `backend_family=pyannote_audio`,
+  `failure_code=gated_model_access_denied`, `exception_class=GatedRepoError`.
+
+The ignored profile-proof artifacts are:
+
+- `build/verification/stt-sidecar-profile-proof-live-backend-failures/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-backend-failures/profile-proof.md`.
+
+Profile-proof ingestion still returns exit code `2` with `proof_ready=false`.
+The remaining product blockers are unchanged: GPU-backed Whisper-family STT
+execution and live diarization execution are still not accepted.
+
 ## Deliverables
 
 - [x] Current upstream/backend feasibility notes for FasterWhisper/CTranslate2
@@ -155,7 +178,7 @@ Story 53.
   blocked.
 - [ ] Diarization backend access is proven or explicitly rejected with governed
   replacement follow-up.
-- [ ] Post-remediation live observation and profile-proof artifacts are
+- [x] Post-remediation live observation and profile-proof artifacts are
   generated on Hemma from committed/pushed/deployed code.
 - [ ] Retained review accepts the live proof, or records concrete remaining
   blockers and keeps Story 53 blocked.

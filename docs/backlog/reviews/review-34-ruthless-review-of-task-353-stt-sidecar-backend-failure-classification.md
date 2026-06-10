@@ -123,6 +123,14 @@ fallback and non-Whisper STT substitution remain unacceptable.
 Review completed on 2026-06-10. Decision is `approved` for the bounded Task 353
 backend failure-classification slice only. The live-proof loop remains open.
 
+Post-deploy diagnostic confirmation was run after the approved slice reached
+Hemma at `14cd0da321e95ecd9644d8766b850b99feb4dc95`. The live observation wrote
+`build/verification/stt-sidecar-live-observation-hemma-backend-failures/live-observation.json`
+with bounded `backend_failures` for `gpu_backend_runtime_unavailable` and
+`gated_model_access_denied`. The corresponding profile proof wrote
+`build/verification/stt-sidecar-profile-proof-live-backend-failures/profile-proof.json`
+and `.md`, still with `proof_ready=false`.
+
 ## Checklist
 
 - [x] Findings captured

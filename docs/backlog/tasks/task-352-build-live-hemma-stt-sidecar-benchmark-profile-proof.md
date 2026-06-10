@@ -320,6 +320,20 @@ unregistered. It remains false for Hugging Face readiness, Swedish fixture,
 English fixture, exact speaker count, and min/max speaker range because neither
 backend completed runtime execution.
 
+Task 353's bounded diagnostic slice was committed, pushed, and deployed at
+`14cd0da321e95ecd9644d8766b850b99feb4dc95`. The post-deploy live observation
+was rerun from that revision and wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-backend-failures/live-observation.json`;
+- `build/verification/stt-sidecar-profile-proof-live-backend-failures/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-backend-failures/profile-proof.md`.
+
+The live observation now retains bounded `backend_failures`:
+`stt=gpu_backend_runtime_unavailable` and
+`diarization=gated_model_access_denied`. Profile-proof ingestion still returns
+exit code `2` with `proof_ready=false`, so this evidence improves blocker
+diagnostics only and does not complete Task 352.
+
 Story 53 remains blocked. The next governed decision is to provide pyannote
 gated-model access and prove GPU-backed Whisper-family STT on the governed
 execution lane. FasterWhisper remains the preferred first option; any
