@@ -2,7 +2,7 @@
 id: task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar
 title: Provision pyannote diarization access and replacement decision for STT sidecar
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
@@ -13,6 +13,7 @@ related:
   - docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md
   - docs/backlog/tasks/task-353-resolve-hemma-stt-sidecar-live-proof-backend-blockers.md
   - docs/backlog/reviews/review-37-ruthless-review-of-stt-sidecar-post-deploy-fasterwhisper-rocm-evidence.md
+  - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -131,6 +132,26 @@ English fixture and emit 151 exclusive speaker segments. The committed
 correction must therefore install those packages and project
 `miopen_hiprtc_headers_available=true` in the live observation/profile-proof
 chain.
+
+The ROCm JIT header correction was committed at
+`fe566bd4a489f46df55d8168ac8a3a13d3dcea30`, pushed to `main`, deployed, and
+verified with matching expected, remote, and service revisions. The subsequent
+full live proof passed and wrote ignored artifacts:
+
+- `build/verification/stt-sidecar-live-observation-hemma-hiprtc-fe566bd/live-observation.json`;
+- `build/verification/stt-sidecar-profile-proof-live-hiprtc-fe566bd/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-hiprtc-fe566bd/profile-proof.md`.
+
+The proof reports `proof_ready=true`, `observation_failure_reasons=[]`,
+`rejection_reasons=[]`, `torchcodec_audio_decoder_importable=true`,
+`miopen_hiprtc_headers_available=true`, FasterWhisper ROCm execution with
+`cpu_fallback_observed=false`, pyannote diarization on the GPU-required sidecar
+lane, exact speaker-count exercised, min/max speaker range exercised, 151
+English diarized speaker segments, and 3 Swedish diarized speaker segments.
+Human-reviewable ignored transcript artifacts were generated at:
+
+- `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/transcript-review.json`;
+- `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/transcript-review.md`.
 
 ## Upstream Docs Checked
 
@@ -270,62 +291,60 @@ can complete with the current first-choice diarization backend.
 
 ## Deliverables
 
-- [ ] Pyannote access verification evidence from Hemma using ignored live
+- [x] Pyannote access verification evidence from Hemma using ignored live
   observation/profile-proof artifacts.
 - [x] A purpose-named bounded diagnostic command that records the pyannote
   access state without leaking token values, private cache paths, raw model
   identifiers, transcripts, generated media, or model artifacts.
 - [x] A bounded Hemma access-denied diagnostic record that names the next
   operator action while preserving the content-safety contract.
-- [ ] Either accepted pyannote diarization proof with exact and min/max speaker
+- [x] Either accepted pyannote diarization proof with exact and min/max speaker
   hints, or a bounded Hemma access-denied record that names the next
   operator action.
-- [ ] A TorchCodec-compatible sidecar image that reports
+- [x] A TorchCodec-compatible sidecar image that reports
   `torchcodec_audio_decoder_importable=true`, reports
   `miopen_hiprtc_headers_available=true`, and runs pyannote diarization through
   exact speaker-count and min/max speaker-range calls on Hemma.
-- [ ] If access cannot be provisioned, a governed replacement decision or
-  reference that preserves library-backed diarization, GPU-required
-  execution, exact speaker-count hints, min/max speaker-range hints, and
-  alignment-suitable exclusive segments.
-- [ ] Task 352/353 and `.codex/handoff.md` updated with the resulting next
+- [x] Replacement decision not required because pyannote access and GPU live
+  proof succeeded with the selected maintained library-backed backend.
+- [x] Task 352/353 and `.codex/handoff.md` updated with the resulting next
   state.
-- [ ] Retained ruthless review artifact accepting either the complete
+- [x] Retained ruthless review artifact accepting either the complete
   diarization proof or the bounded access/replacement decision.
 
 ## Acceptance Criteria
 
-- [ ] FasterWhisper remains the preferred and accepted STT backend unless a
+- [x] FasterWhisper remains the preferred and accepted STT backend unless a
   separate governed STT task changes that decision; this task only resolves
   diarization.
-- [ ] Pyannote remains the first diarization option. Replacement work can begin
+- [x] Pyannote remains the first diarization option. Replacement work can begin
   only after the access-denied state is recorded as not provisionable for
   the current lane.
-- [ ] The accepted pyannote path must not hide a broken decoder behind
+- [x] The accepted pyannote path must not hide a broken decoder behind
   `torchaudio.load`, because that surface also depends on TorchCodec in the
   accepted Torchaudio version.
-- [ ] The accepted pyannote path must include the ROCm JIT header surface needed
+- [x] The accepted pyannote path must include the ROCm JIT header surface needed
   by MIOpen HIPRTC compilation. The benchmark image must install
   `librocrand-dev` for `rocrand/rocrand_xorwow.h` and `libc6-dev` for standard
   C headers, and live observation/profile proof must project
   `miopen_hiprtc_headers_available=true`.
-- [ ] Live proof succeeds only when diarization runs through the selected
+- [x] Live proof succeeds only when diarization runs through the selected
   backend on the GPU-required sidecar lane, exercises exact speaker-count
   and min/max speaker-range hints, provides exclusive speaker segments, and
   produces alignment-suitable evidence for the English and Swedish
   fixtures.
-- [ ] `HF_TOKEN` is the governed token environment variable. Reports and docs
+- [x] `HF_TOKEN` is the governed token environment variable. Reports and docs
   may record the key name and bounded readiness status, but never token
   values, private cache paths, raw transcripts, generated media, or model
   artifacts.
-- [ ] Any replacement candidate is governed before implementation and rejected
+- [x] Any replacement candidate is governed before implementation and rejected
   if it lacks maintained-library ownership, GPU execution, exact speaker
   hints, min/max speaker hints, or alignment-suitable segment output.
-- [ ] Story 53 remains blocked until Task 352 receives a final retained review
-  decision accepting complete live proof including diarization.
+- [x] Story 53 stayed blocked until Task 352 received Review 40's final
+  retained decision accepting complete live proof including diarization.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

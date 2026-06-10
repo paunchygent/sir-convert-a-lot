@@ -22,9 +22,17 @@ durable implementation authority lives in governed docs.
 - Active Gateway cutover lane: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in
   Review 26; Story 52 accepted in Review 27 as governed profile rejection; Task
-  351 adds the preflight runner; Story 53 remains blocked until live Hemma proof.
-- STT Task 352 is in progress; Review 31 approved `benchmark:stt-sidecar-profile-proof` as the content-safe runner/contract slice. Review 33 records `changes_requested`: codec boundary, sidecar launch, backend imports, HF token/cache presence, ROCm GPU/no CPU fallback, content safety, and 120-minute lifecycle are proven, but Story 53 remains blocked because backend execution and diarization are not yet jointly accepted. Task 353's bounded backend-failure diagnostic slice is approved in Review 34 and was deployed at `14cd0da321e95ecd9644d8766b850b99feb4dc95`; the post-deploy live observation recorded `stt=gpu_backend_runtime_unavailable` and `diarization=gated_model_access_denied`. Review 35 approved the first CTranslate2 ROCm image slice, which was deployed at `1b1576450d56eb16429ed1696e59c9f3ae504183`; live observation improved FasterWhisper to ROCm-backed `en`/`sv` detection with word timestamps, but invalidated global `ldconfig` because FFmpeg/FFprobe loaded Torch `libtinfo.so.6` and the codec boundary failed. Review 36 approved the corrective CTranslate2-owned ROCm runtime library directory plus CTranslate2 wheel RPATHs; the correction was deployed at `bcde92a04ce23a60aa88ac3bcb354cf5c9051b7a`. Review 37 approved the bounded post-deploy evidence: live observation now proves codec boundary and FasterWhisper ROCm execution with no CPU fallback; the only live-observation failure reason is `pyannote_audio_runtime_blocked`, with `diarization=gated_model_access_denied`. Profile proof remains `proof_ready=false`; Story 53 stays blocked. Task 354 now owns the remaining diarization lane: pyannote access is the first option, and replacement is allowed only as a governed real library-backed diarization decision if access cannot be provisioned. A current-state recheck from `main` wrote ignored artifacts under `build/verification/stt-sidecar-live-observation-hemma-pyannote-access-recheck-33c0593/` and `build/verification/stt-sidecar-profile-proof-live-pyannote-access-recheck-33c0593/`; it confirmed `HF_TOKEN` presence and scratch-backed cache readiness but still returned `gated_model_access_denied`. Task 354's diagnostic runner was approved in Review 38 and deployed at `f7a1eb61f4edbcd9530208d561baf9f59d89cf3d`; the Hemma diagnostic artifact `build/verification/stt-sidecar-diarization-access-hemma-f7a1eb6/diarization-access.json` confirms `HF_TOKEN` is present and authenticated, but pyannote access remains gated with operator action `accept_or_request_pyannote_gated_model_access_for_hf_token_account`.
-- STT current correction 2026-06-10: the operator accepted pyannote terms, so the blocker moved past gated access. Failure-stage diagnostics were approved in Review 39 and deployed at `17f7e265113b184209f01fae14f4700df147fe14`; they showed pyannote failing at `exact_speaker_count` because TorchCodec `0.14.0` expected CUDA `libnvrtc.so.13` under ROCm Torch `2.10.0+rocm7.1`. The TorchCodec pin to `0.10.0` was committed, pushed, and deployed at `36c8435fe372354f6b591d154338d843364c05ba`. The deployed recheck proved `torchcodec_audio_decoder_importable=true` but exposed the next real pyannote GPU blocker: MIOpen HIPRTC compilation needed `rocrand/rocrand_xorwow.h` and standard C headers. A one-off Hemma container proof showed `librocrand-dev` plus `libc6-dev` lets pyannote exact two-speaker diarization complete on the English fixture with 151 exclusive speaker segments. Current work is committing that image/runtime-contract fix, redeploying, running full live observation/profile proof with English+Swedish diarization, producing a human-reviewable output link/artifact, then and only then starting retained review.
+  351 adds the preflight runner; Task 352 and Task 354 are complete and
+  accepted in Review 40, so Story 53 may continue under its governed route and
+  artifact-persistence scope.
+- STT live-proof state 2026-06-10: Review 40 approved the deployed
+  `fe566bd4a489f46df55d8168ac8a3a13d3dcea30` proof with no findings. Full live
+  observation/profile proof reports `proof_ready=true`,
+  `observation_failure_reasons=[]`, FasterWhisper ROCm execution with no CPU
+  fallback, pyannote diarization, exact and min/max speaker hints exercised, 151
+  English diarized speaker segments, and 3 Swedish diarized speaker segments.
+  Human-reviewable transcript artifacts are ignored under
+  `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/`.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -137,7 +145,10 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. For STT Task 352/354, do not start retained review until the deployed fix is proven live. Commit the `librocrand-dev`/`libc6-dev` benchmark-image fix and `miopen_hiprtc_headers_available` evidence chain, push, redeploy, rerun live observation/profile proof through English+Swedish pyannote diarization, and provide a human-reviewable output artifact link. FasterWhisper remains the GPU-backed STT invariant; no CPU fallback.
+1. Continue STT Story 53 under governed route/artifact implementation scope:
+   register `audio -> transcript_bundle`, preserve the accepted GPU-backed
+   FasterWhisper plus pyannote sidecar profile, and keep no CPU fallback as the
+   invariant.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -158,36 +169,11 @@ formula evidence with VLM output.
 
 ## Validation
 
-- Older STT and Task 344 validation history is durable in governed task/review
-  docs; this handoff keeps only current conversion remediation evidence below.
-- Task 348/349 validation and artifacts are recorded in their task docs.
-- Task 350 local and Hemma focused tests passed:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
-  -> `9 passed`.
-- Task 345/350 local focused validation 2026-06-10:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_conversion_quality_warnings.py tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
-  -> `40 passed, 2 skipped`; focused `ruff check` -> `All checks passed!`;
-  focused mypy -> `Success: no issues found in 17 source files`.
-- Task 345/350 Hemma focused validation 2026-06-10:
-  `/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_runtime_conversion_quality_warnings.py tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
-  -> `42 passed`.
-- Task 345 Hemma accepted-output replay 2026-06-10:
-  `build/verification/task-345-source-backed-formula-authority-replay/docling-page-window-replay-20260610T055608Z/report.json`;
-  accepted Markdown marker scan for `</formula`, `\mathbmath`, `\mathbf`,
-  spaced `l o o l y`, `<loc_`, `<formula>`, and observed DeepSeek/vLLM markers
-  -> no matches.
-- Task 342 formula-authority presentation slice 2026-06-10:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py::test_pdf_to_md_lifecycle_result_and_artifact tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_auto_reruns_terminal_failed_idempotent_replay tests/sir_convert_a_lot/test_v2_pdf_chunk_conversion.py tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_v2.py`
-  -> `6 passed`.
-- Task 342 incremental manifest/replay visibility slice 2026-06-10:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callback tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_fresh_running_submit_to_progress_callback`
-  -> `8 passed`; Review 32 approved the slice after one remediation pass.
-- STT Task 354 HIPRTC header fix local red/green 2026-06-10:
-  red focused tests failed for missing Dockerfile packages, missing runtime
-  `miopen_hiprtc_headers` payload, and missing live-observation dependency
-  projection; after the fix,
-  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_sidecar_benchmark_image_contract.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_runtime_probe_output.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_live_observation_failure_projection.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_live_observation_runtime.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_profile_runner.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_profile_proof.py -q`
-  -> `37 passed`.
+- Durable validation history is in the governed task/review docs. Current STT
+  proof validation is recorded in Review 40: focused suite `37 passed`,
+  deploy verification passed for `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`,
+  live profile proof returned `proof_ready=true`, and docs/skills/handoff
+  validators passed.
 
 ## Stop Conditions
 

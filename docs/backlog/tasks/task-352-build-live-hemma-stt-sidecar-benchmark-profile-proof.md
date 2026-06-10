@@ -2,7 +2,7 @@
 id: task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof
 title: Build live Hemma STT sidecar benchmark profile proof
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
@@ -40,9 +40,9 @@ speaker-hint behavior, GPU-required execution, and 120-minute batch lifecycle
 shape before Story 53 can register `audio -> transcript_bundle`.
 
 This task still does not register the route, publish OpenAPI runtime fields,
-persist transcript artifacts, or implement formatter outputs. Story 53 remains
-blocked until this task and its retained review accept the live benchmark
-evidence.
+persist transcript artifacts, or implement formatter outputs. Review 40 accepts
+the live benchmark evidence, so Story 53 may now continue under its own
+governed implementation scope.
 
 ## PR Scope
 
@@ -83,37 +83,37 @@ evidence.
   execution.
 - [x] Retained ruthless review artifact that either accepts the live proof or
   records concrete changes requested.
-- [ ] Generated human-review output link for a full live pipeline run,
+- [x] Generated human-review output link for a full live pipeline run,
   including speaker diarization, available from the ignored proof artifact root.
 
 ## Acceptance Criteria
 
-- [ ] The benchmark proof refuses profile selection unless all required live
+- [x] The benchmark proof refuses profile selection unless all required live
   evidence exists: codec boundary, STT backend, diarization backend, GPU
   execution, cache/token readiness, Swedish fixture, English fixture, exact
   speaker count, min/max speaker range, and 120-minute lifecycle.
-- [ ] FFmpeg/ffprobe probing emits bounded metadata and fails closed for
+- [x] FFmpeg/ffprobe probing emits bounded metadata and fails closed for
   corrupt/no-audio/unsupported media without leaking source content.
-- [ ] `faster-whisper` execution is represented through bounded profile labels,
+- [x] `faster-whisper` execution is represented through bounded profile labels,
   GPU-required device policy, language evidence, duration evidence, segment
   count, and word-timestamp availability; transcript text is not retained
   in governed docs.
-- [ ] `pyannote.audio` execution is represented through bounded profile labels,
+- [x] `pyannote.audio` execution is represented through bounded profile labels,
   GPU-required device policy, exact and min/max speaker-hint evidence,
   exclusive diarization availability, and alignment-suitable segment shape.
-- [ ] Hugging Face readiness records only token env-var names, cache-root
+- [x] Hugging Face readiness records only token env-var names, cache-root
   readiness classes, and bounded model-access status; no token values,
   private cache paths, or raw model identifiers are persisted.
-- [ ] The 120-minute proof is detached/status-capable or otherwise exercises
+- [x] The 120-minute proof is detached/status-capable or otherwise exercises
   the long-job lifecycle assumptions required by ADR-0013.
-- [ ] Successful proof updates Story 52/Epic 12 state enough to unblock a later
+- [x] Successful proof updates Story 52/Epic 12 state enough to unblock a later
   Story 53 implementation task; failed proof records concrete blockers and
   keeps Story 53 blocked.
-- [ ] Complete live proof includes a human-reviewable output artifact link for
+- [x] Complete live proof includes a human-reviewable output artifact link for
   the English and Swedish fixture run. The artifact may contain editable
   transcript text and speaker labels for review, but retained governed docs must
   record only its path/link and bounded safety status.
-- [ ] No `audio -> transcript_bundle` runtime route registration, OpenAPI
+- [x] No `audio -> transcript_bundle` runtime route registration, OpenAPI
   publication, transcript persistence, formatter generation, or main-image
   STT dependency change occurs in this task.
 
@@ -387,19 +387,20 @@ evidence:
   120-minute lifecycle, content safety, and route-unregistered evidence remain
   true.
 
-Review 37 approves only this bounded STT/codec conclusion.
-Task 352 still is not complete. The only live-observation failure reason is now
+Review 37 approved only this bounded STT/codec conclusion at that point.
+Task 352 was not complete then. The only live-observation failure reason was
 `pyannote_audio_runtime_blocked`, with retained backend failure
-`diarization=gated_model_access_denied`. Profile-proof ingestion still reports
+`diarization=gated_model_access_denied`. Profile-proof ingestion still reported
 `proof_ready=false` because diarized segments, exclusive diarization,
 alignment-suitable evidence, exact speaker-count hints, min/max speaker-range
-hints, and Hugging Face model access are not ready.
+hints, and Hugging Face model access were not ready.
 
-Story 53 remains blocked. The next governed decision is to provide pyannote
-gated-model access or govern a library-backed diarization replacement that
-satisfies exact and min/max speaker hints. FasterWhisper remains the preferred
-first STT option and is now proven on the Hemma ROCm sidecar lane. CPU fallback
-and non-Whisper STT substitutes are not acceptable for this product lane.
+Story 53 therefore remained blocked at that Review 37 checkpoint. The next
+governed decision was to provide pyannote gated-model access or govern a
+library-backed diarization replacement that satisfies exact and min/max speaker
+hints. FasterWhisper remained the preferred first STT option and was already
+proven on the Hemma ROCm sidecar lane. CPU fallback and non-Whisper STT
+substitutes remained unacceptable for this product lane.
 
 Task 354 now owns the remaining diarization remediation. A 2026-06-10 recheck
 from the current `main` state wrote ignored artifacts under
@@ -409,10 +410,10 @@ and
 The recheck kept codec, FasterWhisper, ROCm GPU, 120-minute lifecycle, and
 content-safety evidence true, but still returned
 `pyannote_audio_runtime_blocked` with
-`diarization=gated_model_access_denied`. Task 352 therefore remains incomplete
-until pyannote access is provisioned or Task 354 governs a real library-backed
-replacement diarization profile and a retained review accepts complete live
-proof.
+`diarization=gated_model_access_denied`. Task 352 therefore remained incomplete
+until pyannote access was provisioned or Task 354 governed a real
+library-backed replacement diarization profile and a retained review accepted
+complete live proof.
 
 After the operator accepted the pyannote gated-model terms for the configured
 `HF_TOKEN` account, the deployed failure-stage diagnostic at
@@ -449,8 +450,39 @@ one-off Hemma diagnostic reproduced the deployed error as
 to missing `math.h`; installing both `librocrand-dev` and `libc6-dev` in the
 same benchmark image allowed pyannote to complete exact two-speaker
 diarization on the English fixture and emit 151 exclusive speaker segments.
-Task 354 now owns committing that ROCm JIT header surface, redeploying, and
+Task 354 then owned committing that ROCm JIT header surface, redeploying, and
 proving the complete live observation/profile proof before retained review.
+
+The ROCm JIT header correction was committed at
+`fe566bd4a489f46df55d8168ac8a3a13d3dcea30`, pushed to `main`, and deployed on
+2026-06-10. `pdm run hemma-deploy-and-verify --expected-revision
+fe566bd4a489f46df55d8168ac8a3a13d3dcea30 --lane host` passed with expected,
+remote, and service revisions all matching
+`fe566bd4a489f46df55d8168ac8a3a13d3dcea30`. The full live observation and
+profile proof then passed with ignored artifacts:
+
+- `build/verification/stt-sidecar-live-observation-hemma-hiprtc-fe566bd/live-observation.json`;
+- `build/verification/stt-sidecar-profile-proof-live-hiprtc-fe566bd/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-hiprtc-fe566bd/profile-proof.md`.
+
+The retained live proof reports `observation_failure_reasons=[]`,
+`proof_ready=true`, `rejection_reasons=[]`, FasterWhisper ROCm execution with
+`cpu_fallback_observed=false`, `torchcodec_audio_decoder_importable=true`,
+`miopen_hiprtc_headers_available=true`, exact speaker-count exercised,
+min/max speaker-range exercised, and alignment-suitable exclusive diarization
+segments for both fixtures. The English two-speaker fixture produced 151
+diarized speaker segments with word timestamps and detected `en`; the Swedish
+one-speaker fixture produced 3 diarized speaker segments with word timestamps
+and detected `sv`.
+
+Human-reviewable ignored transcript artifacts were generated under:
+
+- `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/transcript-review.json`;
+- `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/transcript-review.md`.
+
+The transcript review artifact contains diarized speaker labels and editable
+transcript text for human inspection; it is deliberately not committed to git or
+projected into retained governed docs.
 
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
@@ -480,6 +512,6 @@ artifacts are ignored under the repo `build/` rule.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
+- [x] Implementation complete
+- [x] Validation complete
 - [x] Docs updated
