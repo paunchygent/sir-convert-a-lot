@@ -93,8 +93,7 @@ posture.
     "format": "audio"
   },
   "conversion": {
-    "output_format": "transcript_bundle",
-    "artifact_language": "auto"
+    "output_format": "transcript_bundle"
   },
   "audio_transcription_options": {
     "language": "auto",
@@ -110,7 +109,7 @@ posture.
   "execution": {
     "acceleration_policy": "gpu_required",
     "priority": "normal",
-    "document_timeout_seconds": 14400
+    "document_timeout_seconds": 7200
   },
   "retention": {
     "pin": false

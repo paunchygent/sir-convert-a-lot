@@ -1,27 +1,34 @@
-"""downstream transcript coordination downstream transcript coordination docs guard.
+"""Downstream transcript coordination docs guard.
 
 Purpose:
-    Prove the completed downstream transcript coordination record remains truthful about Gateway and
-    downstream transcript delivery coordination after the current STT route and
-    formatter slices are sequenced behind Sir Convert's admission-only audio
-    route state.
+    Prove Gateway and downstream transcript-delivery coordination remains
+    truthful while Sir Convert exposes admission-only audio route behavior.
 
 Relationships:
-    - Reads downstream transcript coordination as the governed Sir Convert planning authority for
-    the
-      HuleEdu and Skriptoteket downstream transcript-delivery handoff.
-    - Guards links to retained audio-transcription profile selection, audio-transcription route
-      execution, and transcript formatter review records
-      without requiring sibling repositories to exist at absolute paths.
+    - Reads the governed Sir Convert planning authority for the HuleEdu and
+      Skriptoteket transcript-delivery handoff.
+    - Guards audio-transcription route and contract records without requiring
+      sibling repositories to exist at absolute paths.
 """
 
 from __future__ import annotations
 
+import json
+
+from scripts.sir_convert_a_lot.domain.specs_v2 import (
+    JobSpecV2,
+    OutputFormatV2,
+    SourceFormatV2,
+)
 from tests.sir_convert_a_lot.backlog_document_test_support import (
+    REPO_ROOT,
     backlog_document_path,
     repo_relative_path,
 )
 
+AUDIO_TRANSCRIPTION_CONTRACT_PATH = (
+    REPO_ROOT / "docs" / "converters" / "audio-transcription-service-api-artifact-contract.md"
+)
 DOWNSTREAM_TRANSCRIPT_COORDINATION_STORY_PATH = backlog_document_path(
     category="stories",
     title_slug="gateway-and-downstream-transcript-delivery-coordination",
@@ -85,6 +92,19 @@ def test_downstream_transcript_links_current_route_delivery_authority() -> None:
     assert "before downstream stories may treat transcript delivery as live" in story_text
 
 
+def test_audio_contract_initial_request_shape_is_admissible() -> None:
+    contract_source = AUDIO_TRANSCRIPTION_CONTRACT_PATH.read_text(encoding="utf-8")
+    payload = _json_block_after_heading(contract_source, "## Initial Request Shape")
+
+    spec = JobSpecV2.model_validate(payload)
+
+    assert spec.source.format == SourceFormatV2.AUDIO
+    assert spec.conversion.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    assert spec.conversion.artifact_language is None
+    assert spec.audio_transcription_options is not None
+    assert spec.audio_transcription_options.language == "auto"
+
+
 def _single_line(value: str) -> str:
     return " ".join(value.split())
 
@@ -97,3 +117,14 @@ def _frontmatter(value: str) -> str:
     if frontmatter_end == -1:
         raise AssertionError("Expected story document frontmatter to be closed.")
     return value[:frontmatter_end]
+
+
+def _json_block_after_heading(markdown: str, heading: str) -> dict[str, object]:
+    heading_start = markdown.index(heading)
+    fence_start = markdown.index("```json", heading_start)
+    payload_start = fence_start + len("```json")
+    fence_end = markdown.index("```", payload_start)
+    decoded = json.loads(markdown[payload_start:fence_end].strip())
+    if not isinstance(decoded, dict):
+        raise AssertionError("Expected contract JSON example to decode to an object.")
+    return {str(key): value for key, value in decoded.items()}

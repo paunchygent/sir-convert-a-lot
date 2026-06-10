@@ -144,22 +144,6 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 details={"filename": file_name},
             )
 
-        payload_bytes = await file.read()
-        if len(payload_bytes) == 0:
-            raise ServiceError(
-                status_code=422,
-                code="input_unreadable",
-                message="Uploaded file is empty or unreadable.",
-                retryable=False,
-            )
-        if len(payload_bytes) > runtime.config.max_upload_bytes:
-            raise ServiceError(
-                status_code=413,
-                code="payload_too_large",
-                message="Uploaded file exceeds configured size limit.",
-                retryable=False,
-            )
-
         try:
             raw_spec_object = json.loads(job_spec)
         except json.JSONDecodeError as exc:
@@ -239,6 +223,25 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 required_grant=route_handler.policy.create_optional_identity_grant,
             )
             owner_scope = auth_context.owner_api_key_scope
+
+        payload_bytes = await file.read()
+        if len(payload_bytes) == 0:
+            raise ServiceError(
+                status_code=422,
+                code="input_unreadable",
+                message="Uploaded file is empty or unreadable.",
+                retryable=False,
+            )
+        if (
+            not route_handler.policy.uses_route_specific_primary_upload_limit
+            and len(payload_bytes) > runtime.config.max_upload_bytes
+        ):
+            raise ServiceError(
+                status_code=413,
+                code="payload_too_large",
+                message="Uploaded file exceeds configured size limit.",
+                retryable=False,
+            )
         form = await request.form()
         prepared_route = await route_handler.prepare(
             spec=spec,

@@ -38,8 +38,11 @@ durable implementation authority lives in governed docs.
   `audio -> transcript_bundle` admission now accepts API-key tunnel and Gateway
   signed-identity create-job requests, validates the governed day-one public
   audio options, enforces active audio route capacity, and keeps admitted jobs
-  queued without sidecar execution or `transcript_json` persistence. Commit,
-  deploy, live admission proof, and retained review remain pending.
+  queued without sidecar execution or `transcript_json` persistence. Review 41
+  initially requested fixes for the contract example, route-specific audio
+  upload cap, and audio missing-execution diagnostic; those fixes are green
+  locally. Commit, deploy, live admission proof, and accepted re-review remain
+  pending.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -153,9 +156,9 @@ formula evidence with VLM output.
 ## Next Actions
 
 1. Continue STT Story 53 by finishing Task 355 close-out: commit and deploy the
-   admission-only `audio -> transcript_bundle` route, prove create-job
-   admission live through the tunnel/public edge, then run retained ruthless
-   review before marking the task complete.
+   Review 41 remediation for the admission-only `audio -> transcript_bundle`
+   route, prove create-job admission live through the tunnel/public edge, then
+   run retained ruthless re-review before marking the task complete.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task

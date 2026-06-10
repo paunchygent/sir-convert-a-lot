@@ -152,6 +152,8 @@ class RoutePolicyV2:
     allows_reference_docx_filename: bool = False
     allows_template: bool = False
     rejects_retention_pin: bool = False
+    uses_route_specific_primary_upload_limit: bool = False
+    required_execution_message: str = "execution is required when source.format is 'pdf'"
     create_required_grant: str | None = None
     create_optional_identity_grant: str | None = None
     dispatches_runtime_jobs: bool = True
@@ -219,6 +221,8 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
         requires_audio_transcription_options=True,
         allows_audio_transcription_options=True,
         rejects_retention_pin=True,
+        uses_route_specific_primary_upload_limit=True,
+        required_execution_message="execution is required for audio transcription routes",
         create_optional_identity_grant="sir-convert:jobs:create",
         dispatches_runtime_jobs=False,
         unsupported_option_context="audio transcription routes",
@@ -353,7 +357,7 @@ def _validate_pdf_runtime_options(
             )
         )
     if policy.requires_execution and spec.execution is None:
-        raise ValueError("execution is required when source.format is 'pdf'")
+        raise ValueError(policy.required_execution_message)
     if not policy.allows_execution and not policy.ignores_execution and spec.execution is not None:
         raise ValueError(
             _unsupported_option_message(

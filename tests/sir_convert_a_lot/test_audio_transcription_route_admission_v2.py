@@ -40,6 +40,10 @@ from tests.sir_convert_a_lot.digiexam_migration_bundle_api_fixtures import (
 )
 
 _KEY_ID = "gateway-identity-rs256-v1"
+AUDIO_TRANSCRIPTION_CONTRACT_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "docs/converters/audio-transcription-service-api-artifact-contract.md"
+)
 _MultipartFieldValue: TypeAlias = (
     IO[bytes]
     | bytes
@@ -162,6 +166,18 @@ def test_job_spec_requires_audio_transcription_options_for_audio_route() -> None
     assert "audio_transcription_options is required" in str(error_info.value)
 
 
+def test_job_spec_requires_audio_execution_with_route_message() -> None:
+    payload = _audio_job_spec()
+    payload.pop("execution")
+
+    with pytest.raises(ValidationError) as error_info:
+        JobSpecV2.model_validate(payload)
+
+    error_text = str(error_info.value)
+    assert "execution is required for audio transcription routes" in error_text
+    assert "source.format is 'pdf'" not in error_text
+
+
 def test_create_job_registry_registers_audio_transcript_bundle_route() -> None:
     registry = build_create_job_route_registry_v2()
     route_keys = {
@@ -202,7 +218,7 @@ def test_create_job_admits_identity_scoped_audio_without_dispatching_execution(
 ) -> None:
     def _unexpected_run_job_async(self: ServiceRuntimeV2, job_id: str) -> None:
         del self, job_id
-        raise AssertionError("audio admission must not dispatch STT execution in Task 355")
+        raise AssertionError("audio admission must not dispatch STT execution")
 
     monkeypatch.setattr(ServiceRuntimeV2, "run_job_async", _unexpected_run_job_async)
     identity = _IdentitySigner()
@@ -213,6 +229,29 @@ def test_create_job_admits_identity_scoped_audio_without_dispatching_execution(
         identity=identity,
         subject="teacher-audio-create",
         idempotency_key="idem-audio-admission",
+    )
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["job"]["status"] == JobStatus.QUEUED.value
+    assert payload["job"]["source_format"] == "audio"
+    assert payload["job"]["output_format"] == "transcript_bundle"
+
+
+def test_audio_contract_initial_request_shape_is_admitted(
+    tmp_path: Path,
+) -> None:
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, run_jobs_on_submit=False)
+    spec = _audio_contract_initial_request_shape()
+
+    response = _post_audio_job(
+        client=client,
+        identity=identity,
+        subject="teacher-contract-audio",
+        idempotency_key="idem-audio-contract-shape",
+        spec=spec,
+        file_bytes=b"contract audio bytes",
     )
 
     assert response.status_code == 202
@@ -247,6 +286,52 @@ def test_create_job_admits_audio_api_key_only_operator_call(tmp_path: Path) -> N
     )
     assert read_response.status_code == 200
     assert read_response.json()["job"]["status"] == JobStatus.QUEUED.value
+
+
+def test_create_job_audio_upload_uses_route_specific_size_cap(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts.sir_convert_a_lot.interfaces import http_create_job_routes_v2
+
+    monkeypatch.setattr(http_create_job_routes_v2, "MAX_AUDIO_UPLOAD_BYTES", 8)
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, run_jobs_on_submit=False, max_upload_bytes=4)
+
+    response = _post_audio_job(
+        client=client,
+        identity=identity,
+        subject="teacher-audio-route-cap",
+        idempotency_key="idem-audio-route-cap",
+        file_bytes=b"12345",
+    )
+
+    assert response.status_code == 202
+    assert response.json()["job"]["status"] == JobStatus.QUEUED.value
+
+
+def test_create_job_audio_upload_over_route_cap_uses_audio_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts.sir_convert_a_lot.interfaces import http_create_job_routes_v2
+
+    monkeypatch.setattr(http_create_job_routes_v2, "MAX_AUDIO_UPLOAD_BYTES", 8)
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, run_jobs_on_submit=False, max_upload_bytes=4)
+
+    response = _post_audio_job(
+        client=client,
+        identity=identity,
+        subject="teacher-audio-route-cap-over",
+        idempotency_key="idem-audio-route-cap-over",
+        file_bytes=b"123456789",
+    )
+
+    assert response.status_code == 413
+    error = response.json()["error"]
+    assert error["code"] == "audio_upload_size_exceeded"
+    assert error["details"] == {"limit_bytes": 8}
 
 
 def test_create_job_audio_idempotency_replays_and_conflicts_on_option_drift(
@@ -362,11 +447,13 @@ def _client(
     identity: _IdentitySigner,
     *,
     run_jobs_on_submit: bool,
+    max_upload_bytes: int = 50 * 1024 * 1024,
 ) -> TestClient:
     app = create_app(
         ServiceConfig(
             api_key=_API_KEY,
             data_root=tmp_path / "service_data",
+            max_upload_bytes=max_upload_bytes,
             enable_supervisor=False,
             processing_delay_seconds=0.0,
             run_jobs_on_submit=run_jobs_on_submit,
@@ -384,6 +471,7 @@ def _post_audio_job(
     idempotency_key: str,
     spec: dict[str, object] | None = None,
     headers: dict[str, str] | None = None,
+    file_bytes: bytes = b"audio bytes",
 ) -> Response:
     request_headers = headers or _headers(
         identity,
@@ -391,10 +479,10 @@ def _post_audio_job(
         grants={"sir-convert:jobs:create"},
     )
     request_headers["Idempotency-Key"] = idempotency_key
-    file_name = "teacher-meeting.m4a"
-    payload = spec if spec is not None else _audio_job_spec(filename=file_name)
+    payload = spec if spec is not None else _audio_job_spec(filename="teacher-meeting.m4a")
+    file_name = _source_filename_from_payload(payload)
     files: _MultipartFiles = [
-        ("file", (file_name, b"audio bytes", "application/octet-stream")),
+        ("file", (file_name, file_bytes, "application/octet-stream")),
         ("job_spec", (None, json.dumps(payload))),
     ]
     return client.post("/v2/convert/jobs", headers=request_headers, files=files)
@@ -437,4 +525,26 @@ def _audio_job_spec(
     }
     if include_audio_options:
         payload["audio_transcription_options"] = audio_options
+    return payload
+
+
+def _source_filename_from_payload(payload: Mapping[str, object]) -> str:
+    source = payload.get("source")
+    if not isinstance(source, Mapping):
+        raise AssertionError("Audio job payload must include a source object.")
+    filename = source.get("filename")
+    if not isinstance(filename, str):
+        raise AssertionError("Audio job payload source filename must be a string.")
+    return filename
+
+
+def _audio_contract_initial_request_shape() -> dict[str, object]:
+    source = AUDIO_TRANSCRIPTION_CONTRACT_PATH.read_text(encoding="utf-8")
+    section_start = source.index("## Initial Request Shape")
+    fence_start = source.index("```json", section_start)
+    payload_start = source.index("\n", fence_start) + 1
+    payload_end = source.index("```", payload_start)
+    payload = json.loads(source[payload_start:payload_end])
+    if not isinstance(payload, dict):
+        raise AssertionError("Audio contract request shape must decode to a JSON object.")
     return payload

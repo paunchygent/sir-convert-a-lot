@@ -197,6 +197,31 @@ later Story 53 and Story 55 tasks after the route admission contract is green.
   passed with `92 passed`.
 - Post-fix quality gates passed: `pdm run lint-fix`, `pdm run typecheck-all`,
   and `git diff --check`.
+- Retained review 41 initially recorded `changes_requested` for three
+  client-visible admission defects: the audio contract request example included
+  rejected `conversion.artifact_language`, the generic Service API upload cap
+  shadowed the governed audio route cap, and missing audio `execution` reported
+  a PDF-specific diagnostic.
+- Review 41 remediation red-first command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
+  failed with `4 failed, 39 passed`. The failing behaviors matched the review
+  findings: the published contract example was not admitted, valid audio
+  uploads above the generic cap were rejected before route admission, oversize
+  audio returned generic `payload_too_large`, and the docs guard rejected the
+  contract example.
+- Review 41 remediation green command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
+  passed with `43 passed`.
+- Review 41 HTTP cap regression command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`
+  passed with `65 passed`.
+- Review 41 broader focused regression command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_policy.py tests/sir_convert_a_lot/test_create_job_route_registry_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_specs_v2.py`
+  passed with `129 passed`.
+- Review 41 remediation quality gates passed: `pdm run format-all`,
+  `pdm run lint-fix`, `pdm run typecheck-all`, and `pdm run coverage-gate`.
+  The coverage gate passed with `1637 passed, 6 skipped`, `95.40%` total
+  coverage.
 
 ## Checklist
 
