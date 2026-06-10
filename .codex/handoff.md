@@ -23,7 +23,7 @@ durable implementation authority lives in governed docs.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in
   Review 26; Story 52 accepted in Review 27 as governed profile rejection; Task
   351 adds the preflight runner; Story 53 remains blocked until live Hemma proof.
-- STT Task 352 is in progress; Review 31 approved `benchmark:stt-sidecar-profile-proof` as the content-safe runner/contract slice. The live-observation producer now loads repo `.env` for `HF_TOKEN`, and Hemma's Sir Convert `.env` has the key present; complete live Hemma proof remains open until the post-deploy sidecar run accepts STT, diarization, speaker-hint, and fixture evidence.
+- STT Task 352 is in progress; Review 31 approved `benchmark:stt-sidecar-profile-proof` as the content-safe runner/contract slice. The post-deploy Hemma live proof has now been run from committed/pushed/deployed code at `5e63c9ce1bf2dbd7fc96d3525b9abb85294a4145`. Review 33 records `changes_requested`: codec boundary, sidecar launch, backend imports, HF token/cache presence, ROCm GPU/no CPU fallback, content safety, and 120-minute lifecycle are proven, but Story 53 remains blocked because `faster-whisper` fails on the Hemma ROCm lane with a CUDA runtime/driver mismatch and `pyannote.audio` pipeline loading fails with `GatedRepoError`.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -136,7 +136,7 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. After the next Sir Convert deploy, rerun STT Task 352's benchmark-only STT sidecar on Hemma with repo `.env` loaded, generate sanitized live observation JSON for the copied English two-speaker MP3 and Swedish one-speaker M4A fixtures, ingest it with `pdm run benchmark:stt-sidecar-profile-proof -- --mode live --live-observation-json <path>`, record the ignored report path in Task 352, and request final live-proof review before unblocking Story 53.
+1. For STT Task 352, do not start Story 53 yet. Govern the next backend decision first: either replace faster-whisper for the Hemma ROCm STT lane, provide a CUDA/NVIDIA execution lane for faster-whisper, or explicitly reject faster-whisper as the Hemma profile; then provision/accept the required Hugging Face gated access for the pyannote diarization pipeline or govern an alternative diarization backend that satisfies exact and min/max speaker hints.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task

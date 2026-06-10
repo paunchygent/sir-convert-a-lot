@@ -209,26 +209,57 @@ paths, token values, private cache paths, or raw model identifiers.
 
 ## Hemma Live Observation Attempt
 
-On 2026-06-10, the live-observation producer was synced to the Hemma checkout
-for implementation validation and run against the two ignored purpose-labeled
-fixtures under
-`build/verification/stt-sidecar-live-fixtures/source-media/`.
+On 2026-06-10, the live-observation producer was run from the deployed Hemma
+checkout against the two ignored purpose-labeled fixtures under
+`build/verification/stt-sidecar-live-fixtures/source-media/`. No code was
+synced to Hemma for the final attempts; fixes were committed to `main`, pushed,
+and redeployed before rerunning the live proof.
 
-Focused Hemma validation passed before the live observation run:
+Three implementation defects were found and corrected before the latest
+retained live observation:
+
+- the operator environment loaded from `.env` was not forwarded to subprocess
+  commands;
+- `sudo docker run -e HF_TOKEN` stripped the token before Docker received it,
+  so the runtime probe now preserves the `HF_TOKEN` environment name across the
+  sudo boundary without putting the secret value in argv;
+- the benchmark image installed `huggingface_hub` 1.x, which is incompatible
+  with `pyannote.audio`, so the sidecar now pins `huggingface-hub==0.34.4`;
+- third-party backend guidance polluted the runtime probe stdout stream, so the
+  probe now keeps only the final sanitized JSON on stdout.
+
+The latest deployed revision for this attempt was
+`5e63c9ce1bf2dbd7fc96d3525b9abb85294a4145`. Hemma deploy verification passed:
+
+- expected, remote, and service revisions matched
+  `5e63c9ce1bf2dbd7fc96d3525b9abb85294a4145`;
+- service URL `http://127.0.0.1:28085`;
+- structured LLM reachability and microprobe passed;
+- metrics scan, public reserved host, TLS, nginx proxy registration, and
+  default-host placeholder checks passed.
+
+Focused validation before redeploying the fixes:
 
 ```bash
-pdm run run-hemma -- pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_sidecar_live_observation_runtime.py -q
-pdm run run-hemma -- pdm run ruff check scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_live_observation_commands.py scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_live_observation_cache.py scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_live_observation_runtime.py scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_live_observation_projection.py scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_runtime_probe.py scripts/sir_convert_a_lot/devops/run_audio_transcription_sidecar_live_observation.py scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_live_observation_lifecycle.py scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_live_observations.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_live_observation_runtime.py
+pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_sidecar_live_observation_runtime.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_runtime_probe_output.py -q
+pdm run format-all
+pdm run lint-fix
+pdm run typecheck-all
+git diff --check
 ```
 
 Results:
 
-- focused Hemma pytest: `4 passed`;
-- focused Hemma ruff: `All checks passed!`.
+- focused pytest: `7 passed`;
+- format: `881 files left unchanged`;
+- lint/docs validation: `All checks passed!`, `Validated docs=529 rules=11`,
+  `Validated 454 backlog files`;
+- typecheck: `Success: no issues found in 832 source files`;
+- whitespace: clean.
 
-The live observation command returned exit code `2` and wrote:
+The post-deploy live observation command returned exit code `2` and wrote:
 
-- `build/verification/stt-sidecar-live-observation-hemma/live-observation.json`.
+- `build/verification/stt-sidecar-live-observation-hemma-post-stdout-fix/live-observation.json`.
 
 The observation proves these live Hemma surfaces:
 
@@ -240,8 +271,9 @@ The observation proves these live Hemma surfaces:
   fail closed;
 - isolated backend dependencies: `faster-whisper`, `pyannote.audio`,
   `huggingface_hub`, and ROCm Torch importable inside the benchmark image;
-- Hugging Face cache roots: canonical scratch-backed cache roots ready and
-  Docker-visible through the home-backed bind mount;
+- Hugging Face token/cache readiness: `HF_TOKEN` present by environment-variable
+  name only, scratch-backed cache roots ready, no token value or private path
+  retained;
 - GPU execution policy: ROCm acceleration family with GPU execution confirmed
   and no CPU fallback observed by the runtime probe;
 - 120-minute lifecycle shape: 12 chunks of 600 seconds with progress,
@@ -250,43 +282,49 @@ The observation proves these live Hemma surfaces:
   paths, generated committed artifacts, fixture names, or original source paths
   in the retained observation.
 
-The observation is intentionally blocked, not accepted. Remaining blockers:
+The observation is intentionally blocked, not accepted. Remaining blocker
+codes:
 
-- `hf_token_missing`;
 - `faster_whisper_runtime_blocked`;
 - `pyannote_audio_runtime_blocked`.
 
-This observation predates the operator environment correction added in this
-task. The live-observation command now loads the repo-local `.env` file before
-launching host or Docker probes, passes Hugging Face access into the sidecar as
-the standard `HF_TOKEN` environment variable, and records only the variable
-name in retained evidence. On 2026-06-10, `HF_TOKEN` was also added to the
-Hemma Sir Convert repo `.env` without printing or retaining the secret value.
+Sanitized backend diagnostics from the same benchmark image identify the root
+causes:
 
-Because the retained observation above was generated before that correction,
-the runtime probe did not run the Swedish or English transcription fixtures and
-did not exercise exact-count or min/max speaker diarization. Story 53 remains
-blocked until the post-deploy Hemma run produces accepted live evidence.
+- `faster-whisper` model loading fails with `RuntimeError`: `CUDA failed with
+  error CUDA driver version is insufficient for CUDA runtime version`. Current
+  upstream `faster-whisper`/CTranslate2 documentation remains CUDA/NVIDIA
+  oriented; this is not an accepted ROCm GPU proof.
+- `pyannote.audio` pipeline loading fails with `GatedRepoError` after the
+  Hub-version pin. The token is present and the container can authenticate, but
+  the pretrained diarization pipeline still requires accepted Hugging Face
+  gated-model access for the account/token before it can run.
 
 The blocked observation was ingested through the approved profile-proof runner:
 
 ```bash
 pdm run run-hemma -- pdm run benchmark:stt-sidecar-profile-proof \
   --mode live \
-  --live-observation-json build/verification/stt-sidecar-live-observation-hemma/live-observation.json \
-  --output-root build/verification/stt-sidecar-profile-proof-live
+  --live-observation-json build/verification/stt-sidecar-live-observation-hemma-post-stdout-fix/live-observation.json \
+  --output-root build/verification/stt-sidecar-profile-proof-live-post-stdout-fix
 ```
 
 The profile-proof runner returned exit code `2` and wrote:
 
-- `build/verification/stt-sidecar-profile-proof-live/profile-proof.json`;
-- `build/verification/stt-sidecar-profile-proof-live/profile-proof.md`.
+- `build/verification/stt-sidecar-profile-proof-live-post-stdout-fix/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-post-stdout-fix/profile-proof.md`.
 
 The profile proof has `proof_ready=false`. Its required evidence is true for
 live Hemma mode, sidecar launch, codec boundary, backend dependencies,
 GPU-required execution, 120-minute lifecycle, content safety, and route
 unregistered. It remains false for Hugging Face readiness, Swedish fixture,
-English fixture, exact speaker count, and min/max speaker range.
+English fixture, exact speaker count, and min/max speaker range because neither
+backend completed runtime execution.
+
+Story 53 remains blocked. The next governed decision is either to provide
+pyannote gated-model access and replace/re-govern the STT backend for Hemma
+ROCm, or move the faster-whisper proof to a CUDA/NVIDIA lane that satisfies the
+GPU-required no-CPU-fallback policy.
 
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
