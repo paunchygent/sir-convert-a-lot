@@ -102,6 +102,22 @@ safety, and route-unregistered state. It remains false for Hugging Face model
 access, English and Swedish diarized fixture completion, exact speaker-count
 hints, and min/max speaker-range hints.
 
+After the operator accepted the pyannote gated-model terms for the configured
+`HF_TOKEN` account, the access diagnostic and live observation were rerun. The
+diagnostic returned ready, proving the token can now fetch the selected pyannote
+model family. The deployed failure-stage live observation at
+`17f7e265113b184209f01fae14f4700df147fe14` wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-failure-stage-17f7e26/live-observation.json`.
+
+The command still returned exit code `2`, but the retained blocker changed to
+`failure_code=backend_runtime_blocked`, `exception_class=NameError`, and
+`failure_stage=exact_speaker_count`. A bounded sidecar probe showed the installed
+TorchCodec `0.14.0` decoder failed under ROCm Torch `2.10.0+rocm7.1` because the
+wheel expected CUDA `libnvrtc.so.13`; pyannote then hit `AudioDecoder` as an
+undefined name during the first diarization call. This task now owns the
+TorchCodec compatibility correction before complete Task 352 proof can pass.
+
 ## Upstream Docs Checked
 
 - Context7 `/pyannote/pyannote-audio`: current examples load pretrained
@@ -109,6 +125,13 @@ hints, and min/max speaker-range hints.
   the pipeline to GPU with `pipeline.to(torch.device("cuda"))`, support exact
   `num_speakers` and `min_speakers`/`max_speakers`, and expose exclusive
   diarization output suitable for transcript alignment.
+- Official TorchCodec documentation: TorchCodec is the media-decoding runtime
+  used by pyannote for local audio; the published compatibility table maps
+  TorchCodec `0.10` to Torch `2.10`, while TorchCodec `0.14` requires Torch
+  `>=2.11`.
+- Official Torchaudio `torchaudio.load` documentation: as of Torchaudio `2.9`,
+  `torchaudio.load` relies on TorchCodec's `AudioDecoder`, so it is not a safe
+  workaround for this ROCm decoder failure.
 - Context7 `/huggingface/huggingface_hub`: `HF_TOKEN` is the standard
   environment variable for authenticated Hub access, `whoami(token=...)`
   identifies the authenticated account, and `hf_hub_download(...)` resolves a
@@ -201,6 +224,11 @@ can complete with the current first-choice diarization backend.
 - Verify pyannote gated-model access from the Hemma sidecar lane using the
   existing `HF_TOKEN` environment variable name and the committed
   `benchmark:stt-sidecar-live-observation` surface.
+- Pin the benchmark sidecar's pyannote/TorchCodec dependency pair to the
+  currently selected pyannote Community-1 runtime and the TorchCodec version
+  compatible with the accepted ROCm Torch `2.10` base, then prove
+  `torchcodec.decoders.AudioDecoder` importability in sanitized dependency
+  evidence.
 - If access is available, rerun live observation and profile-proof ingestion
   against the two ignored fixtures, then record the sanitized ignored artifact
   paths in Task 352/353 and request retained review for complete Task 352
@@ -231,6 +259,9 @@ can complete with the current first-choice diarization backend.
 - [ ] Either accepted pyannote diarization proof with exact and min/max speaker
   hints, or a bounded Hemma access-denied record that names the next
   operator action.
+- [ ] A TorchCodec-compatible sidecar image that reports
+  `torchcodec_audio_decoder_importable=true` and runs pyannote diarization
+  through exact speaker-count and min/max speaker-range calls on Hemma.
 - [ ] If access cannot be provisioned, a governed replacement decision or
   reference that preserves library-backed diarization, GPU-required
   execution, exact speaker-count hints, min/max speaker-range hints, and
@@ -248,6 +279,9 @@ can complete with the current first-choice diarization backend.
 - [ ] Pyannote remains the first diarization option. Replacement work can begin
   only after the access-denied state is recorded as not provisionable for
   the current lane.
+- [ ] The accepted pyannote path must not hide a broken decoder behind
+  `torchaudio.load`, because that surface also depends on TorchCodec in the
+  accepted Torchaudio version.
 - [ ] Live proof succeeds only when diarization runs through the selected
   backend on the GPU-required sidecar lane, exercises exact speaker-count
   and min/max speaker-range hints, provides exclusive speaker segments, and

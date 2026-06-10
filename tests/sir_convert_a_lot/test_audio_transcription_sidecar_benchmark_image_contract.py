@@ -41,10 +41,13 @@ def test_benchmark_image_installs_official_ctranslate2_rocm_wheel_after_stt_deps
     ) in dockerfile
     assert "sha256sum --check" in dockerfile
     assert "python -m pip install --force-reinstall --no-deps" in dockerfile
+    assert '"pyannote.audio==4.0.4"' in dockerfile
+    assert '"torchcodec==0.10.0"' in dockerfile
     _assert_ordered(
         dockerfile,
         "faster-whisper",
-        "pyannote.audio",
+        '"pyannote.audio==4.0.4"',
+        '"torchcodec==0.10.0"',
         "sha256sum --check",
         "python -m pip install --force-reinstall --no-deps",
         "${CTRANSLATE2_ROCM_WHEEL}",

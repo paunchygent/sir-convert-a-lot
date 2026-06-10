@@ -161,6 +161,11 @@ def _backend_dependencies_from_mapping(
         pyannote_audio_importable=_bool_at(payload, "pyannote_audio_importable"),
         huggingface_hub_importable=_bool_at(payload, "huggingface_hub_importable"),
         torch_importable=_bool_at(payload, "torch_importable"),
+        torchaudio_importable=_bool_at(payload, "torchaudio_importable"),
+        torchcodec_audio_decoder_importable=_bool_at(
+            payload,
+            "torchcodec_audio_decoder_importable",
+        ),
         sidecar_runtime_isolated=_bool_at(payload, "sidecar_runtime_isolated"),
         main_service_dependency_change_observed=_bool_at(
             payload,
@@ -388,6 +393,8 @@ def _empty_backend_dependencies() -> AudioTranscriptionBackendDependencyEvidence
         pyannote_audio_importable=False,
         huggingface_hub_importable=False,
         torch_importable=False,
+        torchaudio_importable=False,
+        torchcodec_audio_decoder_importable=False,
         sidecar_runtime_isolated=True,
         main_service_dependency_change_observed=False,
     )

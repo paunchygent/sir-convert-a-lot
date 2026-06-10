@@ -52,8 +52,9 @@ evidence.
   dry-run/projection mode and on Hemma in live-proof mode.
 - Add a sidecar image/build contract or launch contract for a benchmark-only
   STT runtime containing FFmpeg/ffprobe, `faster-whisper`, `pyannote.audio`,
-  `huggingface_hub`, and GPU-aware Torch support without adding those runtime
-  dependencies to the main Sir Convert service image.
+  `huggingface_hub`, `torchaudio`, `torchcodec`, and GPU-aware Torch support
+  without adding those runtime dependencies to the main Sir Convert service
+  image.
 - Record sanitized benchmark evidence for:
   - FFmpeg/ffprobe media probing and fail-closed bad-media behavior;
   - selected bounded STT and diarization profile labels;
@@ -68,6 +69,10 @@ evidence.
 - Keep generated benchmark artifacts under `build/verification/` or a
   governed Hemma artifact root; do not commit media, transcripts, model files,
   tokens, private cache paths, or raw backend model identifiers.
+- When complete live proof succeeds, write a generated human-review output
+  artifact link from the full pipeline, including diarized speaker labels, under
+  an ignored verification root. The link is proof evidence only; transcript text
+  remains out of governed backlog/review docs.
 
 ## Deliverables
 
@@ -78,6 +83,8 @@ evidence.
   execution.
 - [x] Retained ruthless review artifact that either accepts the live proof or
   records concrete changes requested.
+- [ ] Generated human-review output link for a full live pipeline run,
+  including speaker diarization, available from the ignored proof artifact root.
 
 ## Acceptance Criteria
 
@@ -102,6 +109,10 @@ evidence.
 - [ ] Successful proof updates Story 52/Epic 12 state enough to unblock a later
   Story 53 implementation task; failed proof records concrete blockers and
   keeps Story 53 blocked.
+- [ ] Complete live proof includes a human-reviewable output artifact link for
+  the English and Swedish fixture run. The artifact may contain editable
+  transcript text and speaker labels for review, but retained governed docs must
+  record only its path/link and bounded safety status.
 - [ ] No `audio -> transcript_bundle` runtime route registration, OpenAPI
   publication, transcript persistence, formatter generation, or main-image
   STT dependency change occurs in this task.
@@ -116,6 +127,12 @@ evidence.
   `Pipeline.from_pretrained(..., token=...)`, move the pipeline to GPU with
   `pipeline.to(torch.device("cuda"))`, support exact `num_speakers`,
   `min_speakers`/`max_speakers`, and expose exclusive diarization output.
+- Official TorchCodec documentation: TorchCodec is the audio/video decoding
+  library pyannote uses for local media decoding; its compatibility table maps
+  TorchCodec `0.10` to Torch `2.10`, while `0.14` requires Torch `>=2.11`.
+- Official Torchaudio `torchaudio.load` documentation: as of Torchaudio `2.9`,
+  `torchaudio.load` uses TorchCodec's `AudioDecoder` under the hood, so it is
+  not a safe workaround for a broken TorchCodec decoder in this ROCm lane.
 - Context7 `/huggingface/huggingface_hub`: `HF_HOME`, `HF_HUB_CACHE`, and
   `HF_TOKEN` govern cache/token readiness; deprecated token/cache aliases do
   not take precedence over the standard variables.
@@ -396,6 +413,24 @@ content-safety evidence true, but still returned
 until pyannote access is provisioned or Task 354 governs a real library-backed
 replacement diarization profile and a retained review accepts complete live
 proof.
+
+After the operator accepted the pyannote gated-model terms for the configured
+`HF_TOKEN` account, the deployed failure-stage diagnostic at
+`17f7e265113b184209f01fae14f4700df147fe14` reran the live observation and
+wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-failure-stage-17f7e26/live-observation.json`.
+
+The run still returned exit code `2`, but the bounded blocker moved from gated
+access to runtime execution: `backend_failures.diarization.failure_code` is
+`backend_runtime_blocked`, `exception_class` is `NameError`, and
+`failure_stage` is `exact_speaker_count`. STT, codec boundary, ROCm GPU
+execution, cache readiness, no CPU fallback, 120-minute lifecycle, and
+content-safety evidence remain true. A bounded runtime probe confirmed
+TorchCodec `0.14.0` failed to load in the ROCm Torch `2.10.0+rocm7.1` sidecar
+because the installed wheel expected CUDA `libnvrtc.so.13`, which later surfaced
+inside pyannote as `NameError: AudioDecoder`. Task 354 owns the corrective
+pyannote ROCm decode slice before this task can complete.
 
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.

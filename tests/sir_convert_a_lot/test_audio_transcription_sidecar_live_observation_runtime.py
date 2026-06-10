@@ -468,6 +468,8 @@ def _complete_runtime_probe_payload() -> dict[str, object]:
             "pyannote_audio": True,
             "huggingface_hub": True,
             "torch": True,
+            "torchaudio": True,
+            "torchcodec_audio_decoder": True,
         },
         "torch": {
             "gpu_available": True,

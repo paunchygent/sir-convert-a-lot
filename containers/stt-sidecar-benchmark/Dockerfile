@@ -42,7 +42,8 @@ RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-pip,target=/root/.cache/
     python -m pip install --upgrade \
         faster-whisper \
         "huggingface-hub==0.34.4" \
-        pyannote.audio
+        "pyannote.audio==4.0.4" \
+        "torchcodec==0.10.0"
 
 RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-ctranslate2-rocm,target=/tmp/ctranslate2-rocm-download \
     set -eux; \

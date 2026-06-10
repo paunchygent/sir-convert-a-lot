@@ -84,6 +84,8 @@ class AudioTranscriptionBackendDependencyReport(TypedDict):
     pyannote_audio_importable: bool
     huggingface_hub_importable: bool
     torch_importable: bool
+    torchaudio_importable: bool
+    torchcodec_audio_decoder_importable: bool
     sidecar_runtime_isolated: bool
     main_service_dependency_change_observed: bool
 
@@ -181,6 +183,8 @@ class AudioTranscriptionBackendDependencyEvidence:
     pyannote_audio_importable: bool
     huggingface_hub_importable: bool
     torch_importable: bool
+    torchaudio_importable: bool
+    torchcodec_audio_decoder_importable: bool
     sidecar_runtime_isolated: bool
     main_service_dependency_change_observed: bool
 

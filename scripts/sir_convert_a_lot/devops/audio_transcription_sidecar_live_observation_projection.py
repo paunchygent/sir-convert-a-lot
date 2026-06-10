@@ -33,6 +33,7 @@ _KNOWN_BACKEND_FAILURE_STAGES = frozenset(
     (
         "pipeline_load",
         "gpu_transfer",
+        "audio_decode",
         "exact_speaker_count",
         "speaker_range",
         "swedish_speaker_count",
@@ -77,6 +78,10 @@ def failure_reasons(
         reasons.append("huggingface_hub_missing")
     if packages.get("torch") is not True:
         reasons.append("torch_missing")
+    if packages.get("torchaudio") is not True:
+        reasons.append("torchaudio_missing")
+    if packages.get("torchcodec_audio_decoder") is not True:
+        reasons.append("torchcodec_audio_decoder_missing")
     if environment.get("HF_TOKEN", "").strip() == "":
         reasons.append("hf_token_missing")
     stt = mapping_at(runtime_payload, "stt")
@@ -104,6 +109,8 @@ def backend_dependencies(runtime_payload: Mapping[str, object]) -> dict[str, obj
         "pyannote_audio_importable": packages.get("pyannote_audio") is True,
         "huggingface_hub_importable": packages.get("huggingface_hub") is True,
         "torch_importable": packages.get("torch") is True,
+        "torchaudio_importable": packages.get("torchaudio") is True,
+        "torchcodec_audio_decoder_importable": (packages.get("torchcodec_audio_decoder") is True),
         "sidecar_runtime_isolated": True,
         "main_service_dependency_change_observed": False,
     }

@@ -90,6 +90,16 @@ def test_live_observation_projects_bounded_backend_failures_without_raw_values(
             "status": "blocked",
         },
     }
+    assert _mapping_at(observation, "backend_dependencies") == {
+        "faster_whisper_importable": True,
+        "pyannote_audio_importable": True,
+        "huggingface_hub_importable": True,
+        "torch_importable": True,
+        "torchaudio_importable": True,
+        "torchcodec_audio_decoder_importable": True,
+        "sidecar_runtime_isolated": True,
+        "main_service_dependency_change_observed": False,
+    }
     assert "CUDA failed with error" not in persisted_text
     assert "Gated model access denied" not in persisted_text
     assert raw_model_id not in persisted_text
@@ -155,6 +165,8 @@ def _noisy_blocked_runtime_probe_payload(
             "pyannote_audio": True,
             "huggingface_hub": True,
             "torch": True,
+            "torchaudio": True,
+            "torchcodec_audio_decoder": True,
         },
         "torch": {
             "gpu_available": False,

@@ -53,6 +53,8 @@ REQUIRED_PYTHON_PACKAGES = (
     "huggingface_hub",
     "pyannote.audio",
     "torch",
+    "torchaudio",
+    "torchcodec",
 )
 REQUIRED_HF_TOKEN_ENV_VARS = ("HF_TOKEN",)
 REQUIRED_HF_CACHE_ENV_VARS = ("HF_HOME", "HF_HUB_CACHE")
@@ -241,6 +243,8 @@ def _backend_dependency_report(
         "pyannote_audio_importable": evidence.pyannote_audio_importable,
         "huggingface_hub_importable": evidence.huggingface_hub_importable,
         "torch_importable": evidence.torch_importable,
+        "torchaudio_importable": evidence.torchaudio_importable,
+        "torchcodec_audio_decoder_importable": (evidence.torchcodec_audio_decoder_importable),
         "sidecar_runtime_isolated": evidence.sidecar_runtime_isolated,
         "main_service_dependency_change_observed": (
             evidence.main_service_dependency_change_observed
@@ -318,6 +322,8 @@ def _backend_dependencies_ready(
         and evidence.pyannote_audio_importable
         and evidence.huggingface_hub_importable
         and evidence.torch_importable
+        and evidence.torchaudio_importable
+        and evidence.torchcodec_audio_decoder_importable
         and evidence.sidecar_runtime_isolated
         and not evidence.main_service_dependency_change_observed
     )

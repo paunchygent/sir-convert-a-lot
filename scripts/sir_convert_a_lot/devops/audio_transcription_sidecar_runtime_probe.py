@@ -88,6 +88,8 @@ def _probe_payload(
         "pyannote_audio": _module_available("pyannote.audio"),
         "huggingface_hub": _module_available("huggingface_hub"),
         "torch": _module_available("torch"),
+        "torchaudio": _module_available("torchaudio"),
+        "torchcodec_audio_decoder": _torchcodec_audio_decoder_available(),
     }
     torch_payload = _torch_payload()
     gpu_ready = (
@@ -157,6 +159,14 @@ def _module_available(module_name: str) -> bool:
         return importlib.util.find_spec(module_name) is not None
     except ModuleNotFoundError:
         return False
+
+
+def _torchcodec_audio_decoder_available() -> bool:
+    try:
+        torchcodec_decoders = importlib.import_module("torchcodec.decoders")
+    except Exception:
+        return False
+    return hasattr(torchcodec_decoders, "AudioDecoder")
 
 
 def _torch_payload() -> dict[str, object]:
