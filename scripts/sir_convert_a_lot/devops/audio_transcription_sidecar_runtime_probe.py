@@ -19,7 +19,9 @@ import importlib
 import importlib.util
 import json
 import os
+import sys
 from collections.abc import Iterable, Mapping
+from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Protocol
 
@@ -43,7 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     """Run the runtime probe and print bounded JSON evidence."""
 
     args = _build_parser().parse_args(argv)
-    payload = _probe_payload(args=args, environment=dict(os.environ))
+    with redirect_stdout(sys.stderr):
+        payload = _probe_payload(args=args, environment=dict(os.environ))
     print(json.dumps(payload, sort_keys=True))
     return 0
 
