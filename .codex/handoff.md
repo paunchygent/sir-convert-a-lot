@@ -23,7 +23,7 @@ durable implementation authority lives in governed docs.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in
   Review 26; Story 52 accepted in Review 27 as governed profile rejection; Task
   351 adds the preflight runner; Story 53 remains blocked until live Hemma proof.
-- STT Task 352 is in progress; Review 31 approved `benchmark:stt-sidecar-profile-proof` as the content-safe runner/contract slice, but complete live Hemma proof remains open.
+- STT Task 352 is in progress; Review 31 approved `benchmark:stt-sidecar-profile-proof` as the content-safe runner/contract slice. The live-observation producer now loads repo `.env` for `HF_TOKEN`, and Hemma's Sir Convert `.env` has the key present; complete live Hemma proof remains open until the post-deploy sidecar run accepts STT, diarization, speaker-hint, and fixture evidence.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -57,14 +57,9 @@ durable implementation authority lives in governed docs.
 - Task 350 owns the governed DeepSeek-OCR-2 HF eager Task 346 replay:
   `docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md`.
 
-Task 344 evidence localized the slow chunk to Docling formula VLM generation.
-The concrete root cause for the non-returning page-14 crop was a deterministic
-Granite-Docling greedy-decoding repetition loop on crop `#/texts/5`. The
-implemented remediation forwards active stop strings and adds deterministic
-Transformers generation controls for formula VLM calls
-(`no_repeat_ngram_size=64`, `renormalize_logits=true`) while preserving
-`do_sample=false`, `temperature=0.0`, `max_new_tokens=2048`, and active stop
-criteria.
+Task 344 localized the slow chunk to Docling formula VLM generation and fixed
+the deterministic Granite-Docling repetition loop with governed stop strings
+and deterministic Transformers generation controls.
 
 Task 344 does not close formula-output quality. Post-fix pages `13-16` replay
 completed without token-ceiling exhaustion but persisted Markdown still failed
@@ -106,9 +101,16 @@ The replay succeeded with `table_mode=accurate`, `formula_enrichment=false`,
 `formula_authority.source_evidence_state=usable`. Accepted Markdown review
 found no recurrence of leaked `</formula`, `\mathbmath`, repeated `\mathbf`,
 spaced `l o o l y`, `<loc_`, `<formula>`, or observed DeepSeek/vLLM repetition
-markers. Remaining work is governed consumption/refinement: Task 342
-CLI/manifest presentation, Task 343 decision/performance use, and optional
-future per-region merge once stable final-Markdown formula identifiers exist.
+markers. Initial Task 342 terminal status/result/manifest presentation now
+surfaces the same `formula_authority` metadata without adding a second
+authority policy. Task 342 now also writes the v2 CLI manifest incrementally
+when a job id is observed, emits submitted/replayed job lines, atomically
+refreshes terminal entries, and records `client_interrupted` running entries on
+KeyboardInterrupt after submission. Remaining governed work: first-class Task
+342 status/recovery UX, richer safe idempotency/request diagnostics, Task 343
+decision/performance use, and
+optional future per-region merge once stable final-Markdown formula identifiers
+exist.
 
 Task 346/350 final candidate-evaluation state: Granite baseline still shows
 known malformed formula markers; PyMuPDF source-layer extraction is fast,
@@ -134,10 +136,7 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. For STT Task 352, run the benchmark-only STT sidecar on Hemma, generate sanitized live observation JSON for the copied English two-speaker MP3 and Swedish one-speaker M4A fixtures, ingest it with `pdm run benchmark:stt-sidecar-profile-proof -- --mode live --live-observation-json <path>`, record the ignored report path in Task 352, and request final live-proof review before unblocking Story 53.
-1. Promote Task 345 `formula_authority` metadata into Task 342 CLI/manifest
-   presentation if user-facing progress/status work resumes. Do not create a
-   second source-layer extractor or authority policy.
+1. After the next Sir Convert deploy, rerun STT Task 352's benchmark-only STT sidecar on Hemma with repo `.env` loaded, generate sanitized live observation JSON for the copied English two-speaker MP3 and Swedish one-speaker M4A fixtures, ingest it with `pdm run benchmark:stt-sidecar-profile-proof -- --mode live --live-observation-json <path>`, record the ignored report path in Task 352, and request final live-proof review before unblocking Story 53.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -158,20 +157,8 @@ formula evidence with VLM output.
 
 ## Validation
 
-- STT Story 51 implementation: focused pytest `35 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed.
-- STT Story 52 governed rejection: focused pytest `7 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed; Review 27 approved the rejection outcome.
-- STT Task 351 preflight runner: focused pytest passed with `4 passed`; `benchmark:stt-sidecar-preflight` wrote sanitized report artifacts.
-- STT Task 352 runner/remediation slice: Review 31 approved the profile-proof runner surface; focused STT pytest `36 passed`; scoped ruff/format/mypy passed; projection exited `0`; live missing-observation exited `2`; generated reports were ignored and redaction-clean.
-- Task 344 focused local tests passed:
-  `pdm run test tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_docling_page_window_replay.py`
-  -> `20 passed`.
-- Task 344 live Hemma GPU replays:
-  page/window `14`
-  `/app/build/verification/task-344-page-window-replay/task344-page-window-replay-20260605T110626Z/report.json`
-  and incident window `13-16`
-  `/app/build/verification/task-344-page-window-replay/task344-page-window-replay-20260605T110852Z/report.json`.
-- Task 344 detailed replay interpretation is durable in the Task 344/345 docs;
-  current active formula-quality state is the Task 345 2026-06-10 replay below.
+- Older STT and Task 344 validation history is durable in governed task/review
+  docs; this handoff keeps only current conversion remediation evidence below.
 - Task 348/349 validation and artifacts are recorded in their task docs.
 - Task 350 local and Hemma focused tests passed:
   `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
@@ -188,6 +175,12 @@ formula evidence with VLM output.
   accepted Markdown marker scan for `</formula`, `\mathbmath`, `\mathbf`,
   spaced `l o o l y`, `<loc_`, `<formula>`, and observed DeepSeek/vLLM markers
   -> no matches.
+- Task 342 formula-authority presentation slice 2026-06-10:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py::test_pdf_to_md_lifecycle_result_and_artifact tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_auto_reruns_terminal_failed_idempotent_replay tests/sir_convert_a_lot/test_v2_pdf_chunk_conversion.py tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_v2.py`
+  -> `6 passed`.
+- Task 342 incremental manifest/replay visibility slice 2026-06-10:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callback`
+  -> `6 passed`.
 
 ## Stop Conditions
 

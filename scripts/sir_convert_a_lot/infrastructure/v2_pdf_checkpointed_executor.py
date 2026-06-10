@@ -149,7 +149,17 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
     is_cancel_requested: Callable[[], bool] | None,
     on_chunk_worker_start: Callable[[], None] | None = None,
     on_chunk_worker_finish: Callable[[], None] | None = None,
-) -> tuple[str, str | None, str | None, bool, str | None, list[str], list[str], dict[str, int]]:
+) -> tuple[
+    str,
+    str | None,
+    str | None,
+    bool,
+    str | None,
+    list[str],
+    list[str],
+    dict[str, int],
+    dict[str, object],
+]:
     """Return markdown content + metadata while persisting checkpoints/partials."""
     if job.spec.pdf_options is None or job.spec.execution is None:
         raise ServiceError(
@@ -255,6 +265,7 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
             list(pdf_metadata.ocr_languages_used) if ocr_enabled else [],
             list(pdf_warnings),
             normalize_phase_timings_map(dict(pdf_timings)),
+            dict(pdf_metadata.formula_authority),
         )
 
     total_pages = int(total_pages_obj)
@@ -338,4 +349,5 @@ def execute_pdf_to_markdown_with_checkpoints_v2(
         terminal_metadata.ocr_languages_used,
         terminal_metadata.warnings,
         terminal_metadata.phase_timings_ms,
+        terminal_metadata.formula_authority,
     )

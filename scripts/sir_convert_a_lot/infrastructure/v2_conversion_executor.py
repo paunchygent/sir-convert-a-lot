@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
@@ -68,6 +68,7 @@ class V2ExecutionResult:
     chunk_size_pages: int | None = None
     effective_gpu_stage_limit: int | None = None
     scheduling_mode: str | None = None
+    formula_authority: dict[str, object] = field(default_factory=dict)
 
 
 DEFAULT_NON_PDF_DOCUMENT_TIMEOUT_SECONDS = 300
@@ -162,6 +163,7 @@ def execute_v2_job_conversion(
 
     warnings: list[str] = []
     phase_timings_ms: dict[str, int] = {}
+    formula_authority: dict[str, object] = {}
     profile: PdfExecutionProfileV2 | None = None
 
     if (
@@ -189,6 +191,7 @@ def execute_v2_job_conversion(
             ocr_languages_used,
             pdf_warnings,
             pdf_timings,
+            pdf_formula_authority,
         ) = execute_pdf_to_markdown_with_checkpoints_v2(
             job=job,
             config=config,
@@ -204,6 +207,7 @@ def execute_v2_job_conversion(
         )
         warnings.extend(pdf_warnings)
         phase_timings_ms.update(pdf_timings)
+        formula_authority = dict(pdf_formula_authority)
 
         if job.output_format == OutputFormatV2.MD:
             job.artifact_path.write_text(markdown_content, encoding="utf-8")
@@ -265,4 +269,5 @@ def execute_v2_job_conversion(
         if profile is not None
         else None,
         scheduling_mode=profile.scheduling_mode if profile is not None else None,
+        formula_authority=dict(formula_authority),
     )

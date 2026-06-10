@@ -52,6 +52,11 @@ def test_chunk_conversion_outcome_records_worker_start_and_completion_times(
                 ocr_enabled=False,
                 table_mode=TableMode.ACCURATE,
                 options_fingerprint="sha256:chunk-timing",
+                formula_authority={
+                    "action": "rejected",
+                    "source_evidence_state": "usable",
+                    "reason": "source_layer_authoritative_and_generated_formula_quality_defect",
+                },
             ),
             [],
             {"ocr_layout_extract_ms": 7},
@@ -85,3 +90,8 @@ def test_chunk_conversion_outcome_records_worker_start_and_completion_times(
 
     assert outcome.started_at == "2026-06-04T12:00:00Z"
     assert outcome.completed_at == "2026-06-04T12:00:07Z"
+    assert outcome.formula_authority == {
+        "action": "rejected",
+        "source_evidence_state": "usable",
+        "reason": "source_layer_authoritative_and_generated_formula_quality_defect",
+    }

@@ -218,6 +218,7 @@ def run_runtime_job_v2(
             chunk_size_pages=result.chunk_size_pages,
             effective_gpu_stage_limit=result.effective_gpu_stage_limit,
             scheduling_mode=result.scheduling_mode,
+            formula_authority=dict(result.formula_authority),
             warnings=warnings,
             phase_timings_ms=phase_timings_ms,
         )

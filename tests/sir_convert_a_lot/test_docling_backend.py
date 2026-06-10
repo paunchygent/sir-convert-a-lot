@@ -425,11 +425,19 @@ def test_accurate_mode_attempts_formula_enrichment(monkeypatch) -> None:
         )
     )
 
-    assert result.markdown_content == "formula-enriched-output"
+    assert result.markdown_content.startswith("formula-enriched-output")
+    assert "sir-convert-a-lot:formula-authority" in result.markdown_content
+    assert "action=accepted" in result.markdown_content
+    assert "source=absent" in result.markdown_content
     assert formula_flags == [(True, "codeformulav2")]
     assert "docling_formula_enrichment_unavailable_fallback" not in result.warnings
     assert "ocr_layout_extract_ms" in result.phase_timings_ms
     assert "formula_enrichment_ms" not in result.phase_timings_ms
+    assert result.formula_authority["action"] == "accepted"
+    assert result.formula_authority["source_evidence_state"] == "absent"
+    assert result.formula_authority["representation"] == "generated_markdown"
+    assert result.formula_authority["vlm_attempted"] is True
+    assert result.formula_authority["reason"] == "generated_formula_output_allowed"
 
 
 def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> None:
@@ -523,7 +531,7 @@ def test_formula_enrichment_switches_to_granite_when_primary_has_placeholders(mo
     )
 
     assert calls == ["codeformulav2", "granite_docling"]
-    assert result.markdown_content == "formula resolved output"
+    assert result.markdown_content.startswith("formula resolved output")
     assert result.warnings == ["docling_formula_preset_switched_to_granite_docling"]
 
 
@@ -573,7 +581,7 @@ def test_formula_enrichment_switches_to_granite_on_structural_quality(monkeypatc
     )
 
     assert calls == ["codeformulav2", "granite_docling"]
-    assert result.markdown_content == "$$\\rho = \\frac { a } { b }$$\n"
+    assert result.markdown_content.startswith("$$\\rho = \\frac { a } { b }$$\n")
     assert result.warnings == [
         "docling_formula_preset_switched_to_granite_docling",
         "docling_formula_quality_switch_applied",
@@ -623,7 +631,7 @@ def test_formula_enrichment_switches_to_granite_on_leaked_formula_tags(monkeypat
     )
 
     assert calls == ["codeformulav2", "granite_docling"]
-    assert result.markdown_content == "$$\\alpha$$\n"
+    assert result.markdown_content.startswith("$$\\alpha$$\n")
     assert result.warnings == [
         "docling_formula_preset_switched_to_granite_docling",
         "docling_formula_quality_switch_applied",
@@ -680,7 +688,7 @@ def test_formula_enrichment_switches_to_granite_on_real_hard_case_excerpt(monkey
     )
 
     assert calls == ["codeformulav2", "granite_docling"]
-    assert result.markdown_content == "$$\\rho = \\frac { a } { b }$$\n"
+    assert result.markdown_content.startswith("$$\\rho = \\frac { a } { b }$$\n")
     assert result.warnings == [
         "docling_formula_preset_switched_to_granite_docling",
         "docling_formula_quality_switch_applied",
@@ -806,11 +814,19 @@ def test_absent_source_evidence_keeps_granite_formula_candidate(
         )
     )
 
-    assert result.markdown_content == "$$\\alpha$$\n"
+    assert result.markdown_content.startswith("$$\\alpha$$\n")
+    assert "sir-convert-a-lot:formula-authority" in result.markdown_content
+    assert "action=accepted" in result.markdown_content
+    assert "source=absent" in result.markdown_content
     assert result.warnings == [
         "docling_formula_preset_switched_to_granite_docling",
         "docling_formula_quality_switch_applied",
     ]
+    assert result.formula_authority["action"] == "accepted"
+    assert result.formula_authority["source_evidence_state"] == "absent"
+    assert result.formula_authority["representation"] == "generated_markdown"
+    assert result.formula_authority["vlm_attempted"] is True
+    assert result.formula_authority["reason"] == "generated_formula_output_allowed"
 
 
 def test_export_markdown_prefers_escape_html_false() -> None:

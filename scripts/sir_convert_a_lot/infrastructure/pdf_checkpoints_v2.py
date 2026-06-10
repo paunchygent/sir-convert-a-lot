@@ -82,6 +82,7 @@ class PdfChunkRecordV2(BaseModel):
     ocr_languages_used: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     phase_timings_ms: dict[str, int] = Field(default_factory=dict)
+    formula_authority: dict[str, object] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _validate_succeeded_metadata(self) -> Self:

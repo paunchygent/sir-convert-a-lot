@@ -172,6 +172,7 @@ def parse_stored_job_record(
     acceleration_used: str | None = None
     ocr_enabled: bool | None = None
     options_fingerprint: str | None = None
+    formula_authority: dict[str, object] = {}
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable = False
@@ -199,6 +200,11 @@ def parse_stored_job_record(
             acceleration_used = accel_obj if isinstance(accel_obj, str) else None
             ocr_enabled = ocr_obj if isinstance(ocr_obj, bool) else None
             options_fingerprint = options_obj if isinstance(options_obj, str) else None
+            formula_authority_obj = meta_obj.get("formula_authority")
+            if isinstance(formula_authority_obj, dict):
+                formula_authority = {
+                    str(key): value for key, value in formula_authority_obj.items()
+                }
 
     if isinstance(error_obj, dict):
         code_obj = error_obj.get("code")
@@ -236,6 +242,7 @@ def parse_stored_job_record(
         acceleration_used=acceleration_used,
         ocr_enabled=ocr_enabled,
         options_fingerprint=options_fingerprint,
+        formula_authority=formula_authority,
         failure_code=failure_code,
         failure_message=failure_message,
         failure_retryable=failure_retryable,

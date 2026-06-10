@@ -234,6 +234,7 @@ def parse_stored_job_record(
     chunk_size_pages: int | None = None
     effective_gpu_stage_limit: int | None = None
     scheduling_mode: str | None = None
+    formula_authority: dict[str, object] = {}
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable = False
@@ -273,6 +274,7 @@ def parse_stored_job_record(
             chunk_size_pages_obj = meta_obj.get("chunk_size_pages")
             effective_gpu_stage_limit_obj = meta_obj.get("effective_gpu_stage_limit")
             scheduling_mode_obj = meta_obj.get("scheduling_mode")
+            formula_authority_obj = meta_obj.get("formula_authority")
             pipeline_used = pipeline_obj if isinstance(pipeline_obj, str) else None
             backend_used = backend_obj if isinstance(backend_obj, str) else None
             acceleration_used = accel_obj if isinstance(accel_obj, str) else None
@@ -327,6 +329,10 @@ def parse_stored_job_record(
                 else None
             )
             scheduling_mode = scheduling_mode_obj if isinstance(scheduling_mode_obj, str) else None
+            if isinstance(formula_authority_obj, dict):
+                formula_authority = {
+                    str(key): value for key, value in formula_authority_obj.items()
+                }
 
     if isinstance(error_obj, dict):
         code_obj = error_obj.get("code")
@@ -389,6 +395,7 @@ def parse_stored_job_record(
         chunk_size_pages=chunk_size_pages,
         effective_gpu_stage_limit=effective_gpu_stage_limit,
         scheduling_mode=scheduling_mode,
+        formula_authority=formula_authority,
         failure_code=failure_code,
         failure_message=failure_message,
         failure_retryable=failure_retryable,

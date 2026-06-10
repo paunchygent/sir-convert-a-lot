@@ -138,6 +138,7 @@ class StoredJob:
     acceleration_used: str | None = None
     ocr_enabled: bool | None = None
     options_fingerprint: str | None = None
+    formula_authority: dict[str, object] = field(default_factory=dict)
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable: bool = False

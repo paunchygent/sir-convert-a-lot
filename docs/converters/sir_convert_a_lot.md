@@ -427,6 +427,13 @@ This manifest is the canonical audit artifact for assistant-driven batch convers
 
 Long-running note:
 
+- During service-backed v2 runs, the CLI updates this manifest incrementally
+  once a job id is observed. A local interruption after submission should leave
+  a valid manifest entry with the known `job_id`, non-terminal `status`, and an
+  interruption/error code instead of an empty output directory.
+- Submitted and idempotent-replay jobs are printed as explicit operator lines
+  before terminal artifact download, so a reused running job is not mistaken for
+  a duplicate fresh submission or a silent stall.
 - If `--max-poll-seconds` is exceeded, CLI records the entry as `status: running` with `job_id` and
   `error_code: job_poll_window_exceeded` instead of marking it as failed.
 - Conversion continues server-side; callers can query:

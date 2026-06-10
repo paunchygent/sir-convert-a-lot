@@ -45,6 +45,13 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
             ocr_enabled=True,
             ocr_engine_used="auto",
             ocr_languages_used=["en"],
+            formula_authority={
+                "action": "skipped",
+                "representation": "source_layer_markdown",
+                "source_evidence_state": "usable",
+                "vlm_attempted": False,
+                "reason": "source_layer_authoritative_formula_vlm_skipped",
+            },
         )
 
     monkeypatch.setattr(runtime_engine_v2, "execute_v2_job_conversion", _successful_executor)
@@ -95,7 +102,15 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
         headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr_pdf_md_status_v2"},
     )
     assert status_response.status_code == 200
-    progress = status_response.json()["job"]["progress"]
+    job_payload = status_response.json()["job"]
+    assert job_payload["formula_authority"] == {
+        "action": "skipped",
+        "representation": "source_layer_markdown",
+        "source_evidence_state": "usable",
+        "vlm_attempted": False,
+        "reason": "source_layer_authoritative_formula_vlm_skipped",
+    }
+    progress = job_payload["progress"]
     assert isinstance(progress, dict)
     for key in (
         "total_pages",
@@ -120,6 +135,13 @@ def test_pdf_to_md_lifecycle_result_and_artifact(tmp_path: Path, monkeypatch) ->
     assert result_payload["result"]["artifact"]["content_type"] == "text/markdown"
     metadata = result_payload["result"]["conversion_metadata"]
     assert metadata["pipeline_used"] == "pdf_to_md_v2"
+    assert metadata["formula_authority"] == {
+        "action": "skipped",
+        "representation": "source_layer_markdown",
+        "source_evidence_state": "usable",
+        "vlm_attempted": False,
+        "reason": "source_layer_authoritative_formula_vlm_skipped",
+    }
     assert metadata["ocr_enabled"] is True
     assert metadata["ocr_engine_used"] == "auto"
     assert metadata["ocr_languages_used"] == ["en"]

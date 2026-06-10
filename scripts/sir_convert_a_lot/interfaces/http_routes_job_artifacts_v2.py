@@ -19,8 +19,6 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from scripts.sir_convert_a_lot.application.contracts_v2 import (
     ArtifactMetadataV2,
-    ConversionMetadataV2,
-    DigiExamMigrationConversionMetadataV2,
     JobPendingResultResponseV2,
     JobResultResponseV2,
     ResultPayloadV2,
@@ -31,13 +29,9 @@ from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
 from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
     DigiExamMigrationArtifactKey,
 )
-from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
-    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
-)
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifacts import (
-    load_digiexam_migration_result_metadata,
     resolve_digiexam_migration_artifact,
 )
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
@@ -54,6 +48,9 @@ from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_r
 from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
     auth_context_for_job_access_v2,
     require_job_access_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_job_result_metadata_v2 import (
+    conversion_metadata_for_job_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 import (
     is_public_job_v2,
@@ -152,7 +149,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                     sha256=job.artifact_sha256,
                     content_type=_content_type_for_output(job.output_format),
                 ),
-                conversion_metadata=_conversion_metadata_for_job(job),
+                conversion_metadata=conversion_metadata_for_job_v2(job),
                 warnings=job.warnings,
             ),
         )
@@ -449,86 +446,3 @@ def _pending_or_unsuccessful_response(job: StoredJobV2) -> Response | None:
             details={"status": job.status.value},
         )
     return None
-
-
-def _conversion_metadata_for_job(
-    job: StoredJobV2,
-) -> ConversionMetadataV2 | DigiExamMigrationConversionMetadataV2:
-    if job.output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
-        bundle_metadata = load_digiexam_migration_result_metadata(job=job)
-        return DigiExamMigrationConversionMetadataV2(
-            pipeline_used=_required_pipeline_used(job),
-            backend_used=job.backend_used,
-            acceleration_used=job.acceleration_used,
-            ocr_enabled=job.ocr_enabled,
-            ocr_engine_used=job.ocr_engine_used,
-            ocr_languages_used=job.ocr_languages_used,
-            acceleration_policy_requested=job.acceleration_policy_requested,
-            gpu_runtime_kind=job.gpu_runtime_kind,
-            gpu_device_count=job.gpu_device_count,
-            gpu_busy_percent=job.gpu_busy_percent,
-            gpu_memory_used_percent=job.gpu_memory_used_percent,
-            options_fingerprint=_required_options_fingerprint(job),
-            template_id=job.template_id,
-            template_version=job.template_version,
-            template_artifact_sha256=job.template_artifact_sha256,
-            parallel_enabled=job.parallel_enabled,
-            max_chunk_workers=job.max_chunk_workers,
-            chunk_size_pages=job.chunk_size_pages,
-            effective_gpu_stage_limit=job.effective_gpu_stage_limit,
-            scheduling_mode=job.scheduling_mode,
-            route_key="digiexam_dxe_to_examnet_migration_bundle",
-            bundle_schema_version=DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
-            bundle_status=bundle_metadata.bundle_status,
-            source_sha256=bundle_metadata.source_sha256,
-            target_readiness_report_artifact_key=(
-                bundle_metadata.target_readiness_report_artifact_key
-            ),
-            manual_follow_up_required=bundle_metadata.manual_follow_up_required,
-            warning_count=bundle_metadata.warning_count,
-            artifact_count=bundle_metadata.artifact_count,
-        )
-    return ConversionMetadataV2(
-        pipeline_used=_required_pipeline_used(job),
-        backend_used=job.backend_used,
-        acceleration_used=job.acceleration_used,
-        ocr_enabled=job.ocr_enabled,
-        ocr_engine_used=job.ocr_engine_used,
-        ocr_languages_used=job.ocr_languages_used,
-        acceleration_policy_requested=job.acceleration_policy_requested,
-        gpu_runtime_kind=job.gpu_runtime_kind,
-        gpu_device_count=job.gpu_device_count,
-        gpu_busy_percent=job.gpu_busy_percent,
-        gpu_memory_used_percent=job.gpu_memory_used_percent,
-        options_fingerprint=_required_options_fingerprint(job),
-        template_id=job.template_id,
-        template_version=job.template_version,
-        template_artifact_sha256=job.template_artifact_sha256,
-        parallel_enabled=job.parallel_enabled,
-        max_chunk_workers=job.max_chunk_workers,
-        chunk_size_pages=job.chunk_size_pages,
-        effective_gpu_stage_limit=job.effective_gpu_stage_limit,
-        scheduling_mode=job.scheduling_mode,
-    )
-
-
-def _required_pipeline_used(job: StoredJobV2) -> str:
-    if job.pipeline_used is None:
-        raise ServiceError(
-            status_code=500,
-            code="result_missing_metadata",
-            message="Successful job is missing conversion metadata.",
-            retryable=False,
-        )
-    return job.pipeline_used
-
-
-def _required_options_fingerprint(job: StoredJobV2) -> str:
-    if job.options_fingerprint is None:
-        raise ServiceError(
-            status_code=500,
-            code="result_missing_metadata",
-            message="Successful job is missing conversion metadata.",
-            retryable=False,
-        )
-    return job.options_fingerprint

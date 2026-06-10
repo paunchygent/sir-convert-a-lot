@@ -187,6 +187,11 @@
             ],
             "title": "Effective Gpu Stage Limit"
           },
+          "formula_authority": {
+            "additionalProperties": true,
+            "title": "Formula Authority",
+            "type": "object"
+          },
           "gpu_busy_percent": {
             "anyOf": [
               {
@@ -1766,6 +1771,11 @@
               }
             ],
             "title": "Effective Gpu Stage Limit"
+          },
+          "formula_authority": {
+            "additionalProperties": true,
+            "title": "Formula Authority",
+            "type": "object"
           },
           "gpu_busy_percent": {
             "anyOf": [
@@ -4712,6 +4722,11 @@
             ],
             "title": "Expires At"
           },
+          "formula_authority": {
+            "additionalProperties": true,
+            "title": "Formula Authority",
+            "type": "object"
+          },
           "job_id": {
             "title": "Job Id",
             "type": "string"
@@ -5022,6 +5037,11 @@
             "minimum": 1.0,
             "title": "End Page",
             "type": "integer"
+          },
+          "formula_authority": {
+            "additionalProperties": true,
+            "title": "Formula Authority",
+            "type": "object"
           },
           "ocr_enabled": {
             "title": "Ocr Enabled",

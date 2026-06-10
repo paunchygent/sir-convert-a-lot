@@ -190,7 +190,15 @@ def convert_once_guarded_formula(
             return source_rejection
         warnings.append(formula_preset_switch_warning)
         warnings.extend(ordering_warnings_resolver(fallback_attempt))
-        return fallback_attempt, warnings, timings, {}
+        return (
+            fallback_attempt,
+            warnings,
+            timings,
+            _accepted_formula_authority_metadata(
+                source_evidence=source_evidence,
+                warning_codes=warnings,
+            ),
+        )
 
     if primary_attempt is not None and fallback_attempt is not None:
         primary_placeholder_count = formula_placeholder_count(primary_attempt.markdown_content)
@@ -214,7 +222,15 @@ def convert_once_guarded_formula(
                 return source_rejection
             warnings.append(formula_preset_switch_warning)
             warnings.extend(ordering_warnings_resolver(fallback_attempt))
-            return fallback_attempt, warnings, timings, {}
+            return (
+                fallback_attempt,
+                warnings,
+                timings,
+                _accepted_formula_authority_metadata(
+                    source_evidence=source_evidence,
+                    warning_codes=warnings,
+                ),
+            )
         if (
             fallback_placeholder_count == primary_placeholder_count
             and fallback_quality_penalty < primary_quality_penalty
@@ -239,9 +255,25 @@ def convert_once_guarded_formula(
             warnings.append(formula_preset_switch_warning)
             warnings.append(formula_quality_switch_warning)
             warnings.extend(ordering_warnings_resolver(fallback_attempt))
-            return fallback_attempt, warnings, timings, {}
+            return (
+                fallback_attempt,
+                warnings,
+                timings,
+                _accepted_formula_authority_metadata(
+                    source_evidence=source_evidence,
+                    warning_codes=warnings,
+                ),
+            )
         warnings.extend(ordering_warnings_resolver(primary_attempt))
-        return primary_attempt, warnings, timings, {}
+        return (
+            primary_attempt,
+            warnings,
+            timings,
+            _accepted_formula_authority_metadata(
+                source_evidence=source_evidence,
+                warning_codes=warnings,
+            ),
+        )
 
     if primary_attempt is not None:
         source_rejection = _source_backed_rejection_attempt(
@@ -260,7 +292,15 @@ def convert_once_guarded_formula(
         if source_rejection is not None:
             return source_rejection
         warnings.extend(ordering_warnings_resolver(primary_attempt))
-        return primary_attempt, warnings, timings, {}
+        return (
+            primary_attempt,
+            warnings,
+            timings,
+            _accepted_formula_authority_metadata(
+                source_evidence=source_evidence,
+                warning_codes=warnings,
+            ),
+        )
 
     if primary_error is not None or fallback_error is not None:
         attempt = convert_once(
@@ -288,6 +328,21 @@ def convert_once_guarded_formula(
         )
 
     raise BackendExecutionError("Docling formula enrichment failed without runtime diagnostics.")
+
+
+def _accepted_formula_authority_metadata(
+    *,
+    source_evidence: docling_formula_authority.SourceLayerFormulaEvidence,
+    warning_codes: list[str],
+) -> FormulaAuthorityMetadata:
+    return docling_formula_authority.build_formula_authority_metadata(
+        source_evidence=source_evidence,
+        action="accepted",
+        representation="generated_markdown",
+        vlm_attempted=True,
+        reason="generated_formula_output_allowed",
+        warning_codes=warning_codes,
+    )
 
 
 def _source_backed_rejection_attempt(

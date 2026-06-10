@@ -181,6 +181,7 @@ class JobStoreV2(JobStoreV2Core):
         chunk_size_pages: int | None = None,
         effective_gpu_stage_limit: int | None = None,
         scheduling_mode: str | None = None,
+        formula_authority: dict[str, object] | None = None,
         warnings: list[str],
         phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecordV2:
@@ -272,6 +273,7 @@ class JobStoreV2(JobStoreV2Core):
                     "chunk_size_pages": chunk_size_pages,
                     "effective_gpu_stage_limit": effective_gpu_stage_limit,
                     "scheduling_mode": scheduling_mode,
+                    "formula_authority": dict(formula_authority or {}),
                 },
                 "warnings": list(warnings),
             }

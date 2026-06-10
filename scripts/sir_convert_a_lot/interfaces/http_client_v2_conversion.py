@@ -57,6 +57,11 @@ class ArtifactConversionClientV2(Protocol):
     def download_artifact(self, job_id: str, *, correlation_id: str | None = None) -> bytes:
         """Download terminal artifact bytes."""
 
+    def get_result_payload(
+        self, job_id: str, *, correlation_id: str | None = None
+    ) -> dict[str, object]:
+        """Fetch one terminal result payload."""
+
 
 def convert_upload_to_artifact_v2(
     *,
@@ -95,6 +100,7 @@ def convert_upload_to_artifact_v2(
         resources_zip_bytes=resources_zip_bytes,
         reference_docx_bytes=reference_docx_bytes,
     )
+    _report_submitted_job_v2(progress_callback=progress_callback, submitted=submitted)
 
     rerun_of_job_id: str | None = None
     if (
@@ -112,6 +118,7 @@ def convert_upload_to_artifact_v2(
             resources_zip_bytes=resources_zip_bytes,
             reference_docx_bytes=reference_docx_bytes,
         )
+        _report_submitted_job_v2(progress_callback=progress_callback, submitted=submitted)
 
     final_status = submitted.status
     if final_status not in TERMINAL_JOB_STATUSES:
@@ -134,6 +141,8 @@ def convert_upload_to_artifact_v2(
             job_id=submitted.job_id,
         )
 
+    result_payload = client.get_result_payload(submitted.job_id, correlation_id=correlation_id)
+    formula_authority = _formula_authority_from_result_payload(result_payload)
     artifact_bytes = client.download_artifact(submitted.job_id, correlation_id=correlation_id)
     if len(artifact_bytes) == 0:
         raise ClientErrorV2(
@@ -149,4 +158,36 @@ def convert_upload_to_artifact_v2(
         status=JobStatus.SUCCEEDED,
         artifact_bytes=artifact_bytes,
         rerun_of_job_id=rerun_of_job_id,
+        formula_authority=formula_authority,
+    )
+
+
+def _formula_authority_from_result_payload(payload: dict[str, object]) -> dict[str, object]:
+    result_obj = payload.get("result")
+    if not isinstance(result_obj, dict):
+        return {}
+    metadata_obj = result_obj.get("conversion_metadata")
+    if not isinstance(metadata_obj, dict):
+        return {}
+    formula_authority_obj = metadata_obj.get("formula_authority")
+    if not isinstance(formula_authority_obj, dict):
+        return {}
+    return {str(key): value for key, value in formula_authority_obj.items()}
+
+
+def _report_submitted_job_v2(
+    *,
+    progress_callback: Callable[[dict[str, object]], None] | None,
+    submitted: SubmittedJobV2,
+) -> None:
+    if progress_callback is None:
+        return
+    progress_callback(
+        {
+            "job": {
+                "job_id": submitted.job_id,
+                "status": submitted.status.value,
+                "idempotent_replay": submitted.idempotent_replay,
+            }
+        }
     )

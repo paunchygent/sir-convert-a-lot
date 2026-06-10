@@ -49,11 +49,22 @@ def format_running_progress_message_v2(
 ) -> str | None:
     """Format one running progress payload or return None for non-running state."""
     job_obj = payload.get("job")
-    if not isinstance(job_obj, dict) or job_obj.get("status") != "running":
+    if not isinstance(job_obj, dict):
         return None
+    status = job_obj.get("status")
+    if status != "running":
+        return _format_submitted_progress_message_v2(
+            relative_label=relative_label,
+            job_obj=job_obj,
+        )
     progress_obj = job_obj.get("progress")
     if not isinstance(progress_obj, dict):
-        return None
+        if job_obj.get("idempotent_replay") is not True:
+            return None
+        return _format_submitted_progress_message_v2(
+            relative_label=relative_label,
+            job_obj=job_obj,
+        )
 
     job_id = job_obj.get("job_id")
     stage = progress_obj.get("stage")
@@ -75,6 +86,23 @@ def format_running_progress_message_v2(
     if isinstance(job_id, str):
         parts.append(job_id)
     return ", ".join(parts)
+
+
+def _format_submitted_progress_message_v2(
+    *,
+    relative_label: str,
+    job_obj: dict[object, object],
+) -> str | None:
+    job_id = job_obj.get("job_id")
+    status = job_obj.get("status")
+    if not isinstance(job_id, str) or not isinstance(status, str):
+        return None
+    if status not in {"queued", "running", "succeeded", "failed", "canceled"}:
+        return None
+
+    idempotent_replay = job_obj.get("idempotent_replay") is True
+    verb = "Reusing existing job for" if idempotent_replay else "Submitted"
+    return f"... {verb} {relative_label}: {job_id} ({status})"
 
 
 def _format_duration_seconds_v2(seconds: int) -> str:

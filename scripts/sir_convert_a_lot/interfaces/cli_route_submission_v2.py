@@ -31,6 +31,9 @@ from scripts.sir_convert_a_lot.interfaces.cli_helpers import (
     relative_source_label,
     sha256_bytes,
 )
+from scripts.sir_convert_a_lot.interfaces.cli_incremental_manifest_v2 import (
+    CliIncrementalManifestRecorderV2,
+)
 from scripts.sir_convert_a_lot.interfaces.cli_manifest_writer_v2 import (
     build_failed_manifest_entry_v2,
     build_running_manifest_entry_v2,
@@ -114,6 +117,7 @@ class CliRouteSubmissionOptionsV2:
     ocr_languages: tuple[str, ...]
     table_mode: str
     normalize: str
+    manifest_name: str = "sir_convert_a_lot_manifest.json"
 
 
 @dataclass(frozen=True)
@@ -150,6 +154,11 @@ def submit_service_route_batch_v2(
 
     manifest_entries: list[CliManifestEntry] = []
     has_failures = False
+    manifest_recorder = CliIncrementalManifestRecorderV2(
+        source=options.source,
+        output_dir=options.output_dir,
+        manifest_name=options.manifest_name,
+    )
 
     with client_factory(base_url=options.service_url, api_key=options.api_key) as client:
         for source_path in options.source_files:
@@ -162,8 +171,10 @@ def submit_service_route_batch_v2(
                 pipeline_used=pipeline_used,
                 companion_payload=companion_payload,
                 message_sink=message_sink,
+                manifest_recorder=manifest_recorder,
             )
             manifest_entries.append(outcome.entry)
+            manifest_recorder.upsert_entry(outcome.entry)
             if outcome.failed:
                 has_failures = True
 
@@ -317,6 +328,7 @@ def _submit_one_source_file_v2(
     pipeline_used: str,
     companion_payload: CliRouteCompanionPayloadV2,
     message_sink: Callable[[str], None],
+    manifest_recorder: CliIncrementalManifestRecorderV2,
 ) -> _SingleSubmissionOutcomeV2:
     relative_label = relative_source_label(options.source, source_path)
     target_path = _target_path_for_source_file(
@@ -355,6 +367,19 @@ def _submit_one_source_file_v2(
         reference_docx_sha256=companion_payload.reference_docx_sha256,
     )
     correlation_id = _correlation_id_for_relative_label(relative_label)
+    progress_message_callback = progress_callback_for_source_v2(
+        relative_label=relative_label,
+        message_sink=message_sink,
+    )
+
+    def _progress_callback(payload: dict[str, object]) -> None:
+        manifest_recorder.record_progress_payload(
+            relative_label=relative_label,
+            route=options.route,
+            pipeline_used=pipeline_used,
+            payload=payload,
+        )
+        progress_message_callback(payload)
 
     try:
         v2_outcome: ArtifactOutcomeV2 = client.convert_upload_to_artifact(
@@ -368,10 +393,7 @@ def _submit_one_source_file_v2(
             correlation_id=correlation_id,
             resources_zip_bytes=companion_payload.resources_zip_bytes,
             reference_docx_bytes=companion_payload.reference_docx_bytes,
-            progress_callback=progress_callback_for_source_v2(
-                relative_label=relative_label,
-                message_sink=message_sink,
-            ),
+            progress_callback=_progress_callback,
         )
         if v2_outcome.rerun_of_job_id is not None:
             message_sink(
@@ -387,9 +409,17 @@ def _submit_one_source_file_v2(
                 pipeline_used=pipeline_used,
                 job_id=v2_outcome.job_id,
                 output_path=target_path,
+                formula_authority=dict(v2_outcome.formula_authority),
             ),
             failed=False,
         )
+    except KeyboardInterrupt:
+        manifest_recorder.mark_interrupted(
+            relative_label=relative_label,
+            route=options.route,
+            pipeline_used=pipeline_used,
+        )
+        raise
     except ClientErrorV2 as exc:
         return _entry_from_client_error_v2(
             options=options,

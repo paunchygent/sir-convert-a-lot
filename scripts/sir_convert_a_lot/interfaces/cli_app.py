@@ -282,6 +282,7 @@ def convert_command(
             ocr_languages=tuple(ocr_language),
             table_mode=table_mode,
             normalize=normalize,
+            manifest_name=manifest_name,
         ),
         client_factory=SirConvertALotClientV2,
         message_sink=typer.echo,

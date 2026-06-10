@@ -77,6 +77,7 @@ class JobRecordDataV2(BaseModel):
     output_format: OutputFormatV2
     progress: JobProgressV2
     links: JobLinksV2
+    formula_authority: dict[str, object] = Field(default_factory=dict)
 
 
 class JobRecordResponseV2(BaseModel):
@@ -131,6 +132,7 @@ class ConversionMetadataV2(BaseModel):
     chunk_size_pages: int | None = Field(default=None, ge=1)
     effective_gpu_stage_limit: int | None = Field(default=None, ge=1)
     scheduling_mode: str | None = None
+    formula_authority: dict[str, object] = Field(default_factory=dict)
 
 
 class DigiExamMigrationConversionMetadataV2(ConversionMetadataV2):

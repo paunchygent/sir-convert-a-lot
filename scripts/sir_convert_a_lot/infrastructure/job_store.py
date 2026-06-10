@@ -288,6 +288,7 @@ class JobStore:
         ocr_enabled: bool,
         options_fingerprint: str,
         warnings: list[str],
+        formula_authority: dict[str, object] | None = None,
         phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecord:
         persist_started = utc_now()
@@ -327,6 +328,7 @@ class JobStore:
                     "acceleration_used": acceleration_used,
                     "ocr_enabled": ocr_enabled,
                     "options_fingerprint": options_fingerprint,
+                    "formula_authority": dict(formula_authority or {}),
                 },
                 "warnings": list(warnings),
             }

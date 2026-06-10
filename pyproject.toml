@@ -154,6 +154,7 @@ distribution = false
 "benchmark:chatterbox-speech-stitching-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_chatterbox_speech_stitching_hemma_experiment"
 "benchmark:chatterbox-restitch" = "python -m scripts.sir_convert_a_lot.devops.run_chatterbox_saved_chunk_restitch"
 "benchmark:stt-sidecar-preflight" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_benchmark_preflight"
+"benchmark:stt-sidecar-live-observation" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_live_observation"
 "benchmark:stt-sidecar-profile-proof" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_profile_proof"
 "qwen-acquire" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_acquire"
 "qwen-batch-plan" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_batch_plan"

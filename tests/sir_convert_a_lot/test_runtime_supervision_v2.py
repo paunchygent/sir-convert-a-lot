@@ -105,6 +105,7 @@ def _record(tmp_path: Path, *, job_id: str, status: JobStatus) -> StoredJobRecor
         chunk_size_pages=None,
         effective_gpu_stage_limit=None,
         scheduling_mode=None,
+        formula_authority={},
         failure_code=None,
         failure_message=None,
         failure_retryable=False,

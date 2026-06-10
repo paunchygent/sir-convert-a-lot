@@ -524,7 +524,8 @@ formula region.
   reasons.
 - [x] Incident replay validation for pages `13-16` with accepted-output review.
 - [x] Documentation updates tying the behavior to Tasks 342, 343, and 344.
-- [ ] Task 342 CLI/manifest presentation of formula-authority metadata.
+- [x] Initial Task 342 CLI/manifest/status presentation of formula-authority
+  metadata for terminal results.
 - [ ] Task 343 conversion-decision consumption of formula-authority metadata.
 
 ## Implementation Plan
@@ -584,8 +585,9 @@ first.
 - [x] No-source/raster formula regions still have a governed formula VLM path
   with the Task 344 stop/compile runtime controls intact.
 - [x] Result/replay metadata tells the caller whether formula VLM was skipped,
-  advisory, accepted, rejected, or fell back, and why. CLI/manifest rendering
-  remains Task 342 presentation work.
+  advisory, accepted, rejected, or fell back, and why. The initial Task 342
+  terminal status/result/manifest presentation slice now surfaces that metadata
+  without adding a second authority policy.
 - [x] The pages `13-16` incident replay contains no accepted-output recurrence
   of the known leaked `</formula`, `\mathbmath`, repeated `\mathbf`, or
   pre-remediation corrupted formula/prose markers when source-layer evidence is

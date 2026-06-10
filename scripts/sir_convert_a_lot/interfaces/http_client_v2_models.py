@@ -12,7 +12,7 @@ Relationships:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import IO, Literal, TypeAlias
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
@@ -51,3 +51,4 @@ class ArtifactOutcomeV2:
     status: Literal[JobStatus.SUCCEEDED]
     artifact_bytes: bytes
     rerun_of_job_id: str | None = None
+    formula_authority: dict[str, object] = field(default_factory=dict)

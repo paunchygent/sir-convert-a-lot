@@ -261,6 +261,7 @@ class ServiceRuntimeV2:
             chunk_size_pages=record.chunk_size_pages,
             effective_gpu_stage_limit=record.effective_gpu_stage_limit,
             scheduling_mode=record.scheduling_mode,
+            formula_authority=dict(record.formula_authority),
             failure_code=record.failure_code,
             failure_message=record.failure_message,
             failure_retryable=record.failure_retryable,

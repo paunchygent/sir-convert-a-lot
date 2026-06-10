@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
 from scripts.sir_convert_a_lot.infrastructure.job_store_models import JobStateConflict
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
@@ -285,3 +286,55 @@ def test_mark_succeeded_persists_phase_timings(tmp_path: Path) -> None:
     assert persisted.phase_timings_ms["backend_convert_ms"] == 123
     assert persisted.phase_timings_ms["normalize_ms"] == 2
     assert persisted.phase_timings_ms["persist_ms"] >= 0
+
+
+def test_runtime_success_persists_formula_authority_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    data_root = tmp_path / "service_data"
+    runtime = ServiceRuntime(_runtime_config(data_root))
+    job = runtime.create_job(_spec("paper.pdf"), _pdf_bytes("formula-authority"), "paper.pdf")
+    formula_authority = {
+        "action": "accepted",
+        "representation": "generated_markdown",
+        "source_evidence_state": "absent",
+        "source_evidence_reason": "test_no_authoritative_source_layer",
+        "vlm_attempted": True,
+        "reason": "generated_formula_output_allowed",
+        "warning_codes": ["docling_formula_preset_switched_to_granite_docling"],
+    }
+    metadata = ConversionMetadata(
+        backend_used="docling",
+        acceleration_used="cuda",
+        ocr_enabled=False,
+        table_mode=job.spec.conversion.table_mode,
+        options_fingerprint="sha256:formula-authority",
+        formula_authority=formula_authority,
+    )
+
+    def _execute_conversion(_job) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
+        return (
+            "# converted\n",
+            metadata,
+            ["docling_formula_preset_switched_to_granite_docling"],
+            {"backend_convert_ms": 7},
+        )
+
+    monkeypatch.setattr(runtime, "_execute_conversion", _execute_conversion)
+
+    runtime._run_job(job.job_id)
+
+    persisted = runtime.get_job(job.job_id)
+    assert persisted is not None
+    assert persisted.status == JobStatus.SUCCEEDED
+    assert persisted.formula_authority == formula_authority
+
+    manifest_path = data_root / "jobs" / job.job_id / "manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    result_metadata = payload.get("result_metadata")
+    assert isinstance(result_metadata, dict)
+    conversion_metadata = result_metadata.get("conversion_metadata")
+    assert isinstance(conversion_metadata, dict)
+    assert conversion_metadata.get("formula_authority") == formula_authority

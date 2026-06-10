@@ -37,6 +37,7 @@ def build_success_manifest_entry_v2(
     pipeline_used: str,
     job_id: str,
     output_path: Path,
+    formula_authority: dict[str, object] | None = None,
 ) -> CliManifestEntry:
     """Return one deterministic succeeded conversion manifest entry."""
     return CliManifestEntry(
@@ -48,6 +49,7 @@ def build_success_manifest_entry_v2(
         status=JobStatus.SUCCEEDED,
         output_path=output_path.as_posix(),
         error_code=None,
+        formula_authority=dict(formula_authority or {}),
     )
 
 
@@ -60,13 +62,33 @@ def build_running_manifest_entry_v2(
     error_code: str,
 ) -> CliManifestEntry:
     """Return one deterministic running conversion manifest entry."""
+    return build_nonterminal_manifest_entry_v2(
+        source_file_path=source_file_path,
+        route=route,
+        pipeline_used=pipeline_used,
+        job_id=job_id,
+        status=JobStatus.RUNNING,
+        error_code=error_code,
+    )
+
+
+def build_nonterminal_manifest_entry_v2(
+    *,
+    source_file_path: str,
+    route: CliRoute,
+    pipeline_used: str,
+    job_id: str,
+    status: JobStatus,
+    error_code: str,
+) -> CliManifestEntry:
+    """Return one deterministic non-terminal conversion manifest entry."""
     return CliManifestEntry(
         source_file_path=source_file_path,
         source_format=route.source.value,
         target_format=route.target.value,
         pipeline_used=pipeline_used,
         job_id=job_id,
-        status=JobStatus.RUNNING,
+        status=status,
         output_path=None,
         error_code=error_code,
     )
@@ -109,8 +131,8 @@ def write_cli_manifest_v2(
         entries=sorted_entries,
     )
     manifest_path = output_dir / manifest_name
-    manifest_path.write_text(
-        json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
+    manifest_text = json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True)
+    temporary_path = output_dir / f".{manifest_name}.tmp"
+    temporary_path.write_text(manifest_text, encoding="utf-8")
+    temporary_path.replace(manifest_path)
     return CliManifestWriteResultV2(manifest_path=manifest_path, manifest=manifest)

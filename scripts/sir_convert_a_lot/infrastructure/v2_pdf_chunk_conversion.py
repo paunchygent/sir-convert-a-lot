@@ -118,6 +118,7 @@ def convert_pending_pdf_chunk_v2(
             chunk_ocr_languages_used,
             chunk_warnings,
             chunk_phase_timings,
+            chunk_formula_authority,
         ) = _convert_one_pdf_chunk_v2(
             v1_spec=v1_spec,
             chunk_pdf_bytes=chunk_pdf_bytes,
@@ -143,6 +144,7 @@ def convert_pending_pdf_chunk_v2(
             ocr_languages_used=chunk_ocr_languages_used,
             warnings=chunk_warnings,
             phase_timings_ms=chunk_phase_timings,
+            formula_authority=chunk_formula_authority,
             chunk_elapsed_ms=chunk_elapsed_ms,
             started_at=chunk_started_at,
             completed_at=chunk_completed_at,
@@ -163,7 +165,17 @@ def _convert_one_pdf_chunk_v2(
     pymupdf_backend: ConversionBackend,
     resolved_ocr: ResolvedPdfOcrRequestV2 | None,
     execute_chunk_conversion: PdfChunkConversionFunctionV2,
-) -> tuple[str, str | None, str | None, bool, str | None, list[str], list[str], dict[str, int]]:
+) -> tuple[
+    str,
+    str | None,
+    str | None,
+    bool,
+    str | None,
+    list[str],
+    list[str],
+    dict[str, int],
+    dict[str, object],
+]:
     try:
         markdown_content, pdf_metadata, pdf_warnings, pdf_timings = execute_chunk_conversion(
             spec=v1_spec,
@@ -216,4 +228,5 @@ def _convert_one_pdf_chunk_v2(
         list(pdf_metadata.ocr_languages_used),
         list(pdf_warnings),
         dict(pdf_timings),
+        dict(pdf_metadata.formula_authority),
     )

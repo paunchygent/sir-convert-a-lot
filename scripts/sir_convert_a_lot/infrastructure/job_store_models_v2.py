@@ -76,6 +76,7 @@ class StoredJobRecordV2:
     chunk_size_pages: int | None
     effective_gpu_stage_limit: int | None
     scheduling_mode: str | None
+    formula_authority: dict[str, object]
     failure_code: str | None
     failure_message: str | None
     failure_retryable: bool

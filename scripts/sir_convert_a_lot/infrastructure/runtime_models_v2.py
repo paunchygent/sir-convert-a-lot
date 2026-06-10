@@ -73,6 +73,7 @@ class StoredJobV2:
     chunk_size_pages: int | None = None
     effective_gpu_stage_limit: int | None = None
     scheduling_mode: str | None = None
+    formula_authority: dict[str, object] = field(default_factory=dict)
     failure_code: str | None = None
     failure_message: str | None = None
     failure_retryable: bool = False

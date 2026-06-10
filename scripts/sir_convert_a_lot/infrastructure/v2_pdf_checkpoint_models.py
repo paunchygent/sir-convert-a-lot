@@ -69,6 +69,7 @@ class PdfChunkConversionOutcomeV2:
     ocr_languages_used: list[str]
     warnings: list[str]
     phase_timings_ms: dict[str, int]
+    formula_authority: dict[str, object]
     chunk_elapsed_ms: int
     started_at: str | None
     completed_at: str | None

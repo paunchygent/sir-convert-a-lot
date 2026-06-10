@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-06-04'
-last_updated: '2026-06-05'
+last_updated: '2026-06-10'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/tasks/fix-01-harden-cli-timeout-handling-for-long-running-background-jobs.md
@@ -283,6 +283,74 @@ Still open:
 - Safe idempotency/replay diagnostics in persisted evidence.
 - Product decision on submit-ahead queueing vs visible sequential execution.
 
+## 2026-06-10 Formula-Authority Presentation Slice
+
+Implemented a presentation-only slice that consumes Task 345
+`formula_authority` metadata without reimplementing source-layer extraction,
+formula candidate quality checks, or authority decisions.
+
+User-visible changes:
+
+- v2 terminal job status payloads include `job.formula_authority` when a
+  completed job has Task 345 metadata.
+- v2 result payloads include
+  `result.conversion_metadata.formula_authority`.
+- The v2 HTTP client reads `formula_authority` from result metadata and carries
+  it on the artifact outcome used by the CLI.
+- Final CLI batch manifest entries include optional `formula_authority` while
+  preserving existing required manifest fields.
+- Chunked PDF checkpoints preserve per-page-window formula-authority metadata
+  and aggregate multiple windows into a document-level `page_windows` list so
+  users can inspect `skipped`, `accepted`, `fallback`, and `rejected` actions
+  with source evidence state and reason.
+
+Implementation boundaries:
+
+- No new PDF extraction, source-evidence classification, formula-quality
+  scoring, or authority policy was added in Task 342.
+- `interfaces.http_routes_jobs_v2` and
+  `interfaces.http_routes_job_artifacts_v2` were split by response-mapping
+  responsibility so touched route modules remain below the repo LoC guideline.
+- This slice does not complete the broader incremental manifest, interrupt, or
+  first-class `convert-a-lot status` work below.
+
+## 2026-06-10 Incremental Manifest and Replay Visibility Slice
+
+Implemented the next progress-visible sequential path slice without changing
+service queue semantics or adding DeepSeek/OCR integration code.
+
+User-visible changes:
+
+- The v2 client emits a progress callback immediately after job submission, so
+  the CLI can show the accepted `job_id` before terminal completion or artifact
+  download.
+- The CLI emits submitted/replayed lines for queued/running/succeeded/failed/
+  canceled submission responses. A non-terminal idempotent replay is shown as an
+  existing job rather than a silent wait.
+- The CLI writes `sir_convert_a_lot_manifest.json` incrementally as soon as a
+  non-terminal job id is observed from submission/progress payloads, then
+  atomically replaces the same manifest entry on terminal success/failure.
+- `KeyboardInterrupt` after a job id has been observed writes a manifest entry
+  with the known `job_id`, `status: running`, and
+  `error_code: client_interrupted` before propagating the interrupt.
+
+Implementation boundaries:
+
+- The batch execution model remains visible sequential execution; no
+  submit-ahead queue was added.
+- The service idempotency semantics are unchanged.
+- No new status/recover command was added in this slice.
+- No DeepSeek integration, OCR candidate promotion, or formula-authority policy
+  change was added; DeepSeek remains a governed follow-up behind Task 345
+  source-backed authority.
+
+Validation:
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callback`
+  -> `6 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_convert_a_lot_cli.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py::test_pdf_to_md_lifecycle_result_and_artifact`
+  -> `15 passed`.
+
 ## PR Scope
 
 - Add a progress-aware per-file submission path for the service-backed CLI that
@@ -322,9 +390,9 @@ Still open:
 - [ ] CLI emits bounded periodic progress lines while waiting, including status,
   stage, pages processed/total, percent, pages per minute, ETA, heartbeat age,
   and partial artifact/checkpoint availability when present.
-- [ ] Batch manifest persistence is incremental and atomic enough that a killed
+- [x] Batch manifest persistence is incremental and atomic enough that a killed
   local client leaves a valid manifest/state artifact with known jobs.
-- [ ] Interrupt handling writes known running entries before propagating the
+- [x] Interrupt handling writes known running entries before propagating the
   interrupt outcome.
 - [ ] Client/service persisted evidence can explain duplicate-looking jobs by
   exposing safe idempotency/replay diagnostics.
@@ -333,14 +401,19 @@ Still open:
   conversion request.
 - [ ] Converter docs describe active-running, stalled, idempotent replay, and
   existing-artifact behaviors using the current v2 taxonomy.
+- [x] Terminal status/result responses and final CLI manifests surface Task 345
+  formula-authority metadata as safe presentation data.
+- [x] Terminal status/result payloads and final CLI manifests surface Task 345
+  formula-authority action, source evidence state, and reason without exposing
+  prompts, crops, generated formula internals, or uploaded content.
 
 ## Acceptance Criteria
 
-- [ ] A long-running second file in a multi-file batch produces visible progress
+- [x] A long-running second file in a multi-file batch produces visible progress
   and a persisted job id before the file reaches terminal state.
-- [ ] A batch interrupted after job submission preserves a manifest entry with
+- [x] A batch interrupted after job submission preserves a manifest entry with
   `status: running`, `job_id`, and the current non-terminal error/status code.
-- [ ] A non-terminal idempotent replay is displayed as an existing running job,
+- [x] A non-terminal idempotent replay is displayed as an existing running job,
   not as an unexplained hang or a duplicate fresh submission.
 - [ ] A terminal successful idempotent replay downloads the existing artifact,
   writes a succeeded manifest entry, and proceeds to the next file.
@@ -374,6 +447,8 @@ Still open:
 1. Add a CLI status/resume test that starts from an existing manifest/job id,
    polls status, downloads a succeeded artifact, and updates the manifest
    without resubmitting the source upload.
+1. Add a formula-authority presentation test proving terminal status/result and
+   CLI manifest outputs preserve Task 345 metadata as opaque presentation data.
 
 ## Implementation Plan
 
@@ -404,6 +479,8 @@ Still open:
 - `pdm run pytest-root tests/sir_convert_a_lot/test_convert_a_lot_cli.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py`
 - `pdm run pytest-root tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_v2_pdf_chunk_conversion.py`
+- `pdm run pytest-root tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_v2.py`
 - `pdm run coverage-gate`
 - `pdm run docs-sync`
 - `pdm run docs-validate`

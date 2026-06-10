@@ -183,6 +183,7 @@ class ServiceRuntime:
             acceleration_used=record.acceleration_used,
             ocr_enabled=record.ocr_enabled,
             options_fingerprint=record.options_fingerprint,
+            formula_authority=dict(record.formula_authority),
             failure_code=record.failure_code,
             failure_message=record.failure_message,
             failure_retryable=record.failure_retryable,
@@ -418,6 +419,7 @@ class ServiceRuntime:
                     ocr_enabled=metadata.ocr_enabled,
                     options_fingerprint=metadata.options_fingerprint,
                     warnings=warnings,
+                    formula_authority=dict(metadata.formula_authority),
                     phase_timings_ms=phase_timings_ms,
                 )
             except JobStateConflict:

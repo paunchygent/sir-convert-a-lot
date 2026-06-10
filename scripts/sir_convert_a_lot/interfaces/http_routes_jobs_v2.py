@@ -25,9 +25,6 @@ from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.application.contracts_v2 import (
     JobCreateResponseV2,
-    JobLinksV2,
-    JobProgressV2,
-    JobRecordDataV2,
     JobRecordResponseV2,
 )
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
@@ -44,7 +41,6 @@ from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
-from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
     StructuredLLMAdmissionError,
     resolve_structured_llm_admission_snapshot,
@@ -59,6 +55,9 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     CreateJobCompanionPartsV2,
     build_create_job_route_registry_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_job_record_response_v2 import (
+    job_record_response_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 import (
     is_public_job_v2,
@@ -77,43 +76,6 @@ from scripts.sir_convert_a_lot.interfaces.http_routes_job_resume_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_structured_llm_settings_state_v2 import (
     structured_llm_hot_settings_store_for_request,
 )
-
-
-def _make_job_links(job_id: str) -> JobLinksV2:
-    return JobLinksV2(
-        self=f"/v2/convert/jobs/{job_id}",
-        result=f"/v2/convert/jobs/{job_id}/result",
-        artifact=f"/v2/convert/jobs/{job_id}/artifact",
-        cancel=f"/v2/convert/jobs/{job_id}/cancel",
-    )
-
-
-def _job_record_response(job: StoredJobV2) -> JobRecordResponseV2:
-    return JobRecordResponseV2(
-        job=JobRecordDataV2(
-            job_id=job.job_id,
-            status=job.status,
-            created_at=job.created_at,
-            updated_at=job.updated_at,
-            expires_at=job.expires_at,
-            source_filename=job.source_filename,
-            source_format=job.source_format,
-            output_format=job.output_format,
-            progress=JobProgressV2(
-                stage=job.progress_stage,
-                last_heartbeat_at=job.last_heartbeat_at,
-                current_phase_started_at=job.current_phase_started_at,
-                phase_timings_ms=job.phase_timings_ms,
-                total_pages=job.total_pages,
-                processed_pages=job.processed_pages,
-                failed_pages=job.failed_pages,
-                percent_complete=job.percent_complete,
-                pages_per_minute=job.pages_per_minute,
-                eta_seconds=job.eta_seconds,
-            ),
-            links=_make_job_links(job.job_id),
-        )
-    )
 
 
 def _infer_format_from_filename(filename: str) -> SourceFormatV2 | None:
@@ -323,7 +285,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                     message="Idempotent job no longer exists.",
                     retryable=False,
                 )
-            body = _job_record_response(existing_job).model_dump(mode="json")
+            body = job_record_response_v2(existing_job).model_dump(mode="json")
             if public_grant_access is not None:
                 body["public_artifact_read_lease"] = issue_public_artifact_read_lease_fragment_v2(
                     request=request,
@@ -377,7 +339,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             )
 
         response_status = 200 if current.status in TERMINAL_JOB_STATUSES else 202
-        payload = _job_record_response(current).model_dump(mode="json")
+        payload = job_record_response_v2(current).model_dump(mode="json")
         if public_grant_access is not None:
             payload["public_artifact_read_lease"] = issue_public_artifact_read_lease_fragment_v2(
                 request=request,
@@ -405,7 +367,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 service_started_at=service_started_at,
                 job=job,
             )
-            payload = _job_record_response(job).model_dump(mode="json")
+            payload = job_record_response_v2(job).model_dump(mode="json")
             return JSONResponse(status_code=200, content=payload)
         auth_context = auth_context_for_job_access_v2(
             request,
@@ -418,7 +380,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             job=job,
             required_grant="sir-convert:jobs:read-own",
         )
-        payload = _job_record_response(job).model_dump(mode="json")
+        payload = job_record_response_v2(job).model_dump(mode="json")
         return JSONResponse(status_code=200, content=payload)
 
     @router.post(
@@ -466,7 +428,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             )
 
         status_code = 202 if result == "accepted" else 200
-        payload = _job_record_response(job).model_dump(mode="json")
+        payload = job_record_response_v2(job).model_dump(mode="json")
         return JSONResponse(status_code=status_code, content=payload)
 
     return router

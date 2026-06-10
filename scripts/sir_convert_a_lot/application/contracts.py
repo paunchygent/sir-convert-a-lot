@@ -195,6 +195,7 @@ class CliManifestEntry(BaseModel):
     status: JobStatus
     output_path: str | None
     error_code: str | None
+    formula_authority: dict[str, object] = Field(default_factory=dict)
 
 
 class CliManifest(BaseModel):

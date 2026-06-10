@@ -47,6 +47,7 @@ class StoredJobRecord:
     acceleration_used: str | None
     ocr_enabled: bool | None
     options_fingerprint: str | None
+    formula_authority: dict[str, object]
     failure_code: str | None
     failure_message: str | None
     failure_retryable: bool

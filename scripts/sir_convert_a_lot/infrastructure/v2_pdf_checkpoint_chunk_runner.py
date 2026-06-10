@@ -315,6 +315,7 @@ def _build_chunk_record_v2(
         ),
         warnings=list(outcome.warnings),
         phase_timings_ms=chunk_phase_timings_ms,
+        formula_authority=dict(outcome.formula_authority),
     )
 
 

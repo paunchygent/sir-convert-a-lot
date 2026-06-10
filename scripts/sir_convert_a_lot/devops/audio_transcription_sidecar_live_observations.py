@@ -112,6 +112,7 @@ def build_live_profile_proof_evidence_from_observation(
         benchmark_evidence=_benchmark_evidence_from_mapping(payload),
         batch_lifecycle=_batch_lifecycle_from_mapping(_mapping_at(payload, "batch_lifecycle")),
         audio_transcript_route_registered=False,
+        observation_failure_reasons=_string_tuple_at(payload, "observation_failure_reasons"),
     )
 
 

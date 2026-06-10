@@ -39,6 +39,7 @@ class PdfCheckpointTerminalMetadataV2:
     ocr_languages_used: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     phase_timings_ms: dict[str, int] = field(default_factory=dict)
+    formula_authority: dict[str, object] = field(default_factory=dict)
 
 
 def _succeeded_chunks(checkpoint: PdfCheckpointV2) -> list[PdfChunkRecordV2]:
@@ -68,6 +69,33 @@ def _append_unique(target: list[str], values: list[str]) -> None:
         if value in target:
             continue
         target.append(value)
+
+
+def _formula_authority_page_window(record: PdfChunkRecordV2) -> dict[str, object] | None:
+    if not record.formula_authority:
+        return None
+    return {
+        "start_page": record.start_page,
+        "end_page": record.end_page,
+        **dict(record.formula_authority),
+    }
+
+
+def _aggregate_formula_authority(succeeded: list[PdfChunkRecordV2]) -> dict[str, object]:
+    page_windows: list[dict[str, object]] = []
+    for record in succeeded:
+        window = _formula_authority_page_window(record)
+        if window is None:
+            continue
+        page_windows.append(window)
+    if len(page_windows) == 0:
+        return {}
+    if len(page_windows) == 1:
+        return dict(page_windows[0])
+    return {
+        "scope": "document",
+        "page_windows": page_windows,
+    }
 
 
 def aggregate_pdf_checkpoint_terminal_metadata(
@@ -121,4 +149,5 @@ def aggregate_pdf_checkpoint_terminal_metadata(
         ocr_languages_used=ocr_languages_used if ocr_enabled else [],
         warnings=warnings,
         phase_timings_ms=phase_timings_ms,
+        formula_authority=_aggregate_formula_authority(succeeded),
     )
