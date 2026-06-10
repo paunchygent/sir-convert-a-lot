@@ -34,6 +34,8 @@ RUN apt-get update \
         ca-certificates \
         curl \
         ffmpeg \
+        libc6-dev \
+        librocrand-dev \
         patchelf \
         unzip \
     && rm -rf /var/lib/apt/lists/*

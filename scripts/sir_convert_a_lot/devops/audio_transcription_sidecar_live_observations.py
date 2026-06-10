@@ -166,6 +166,10 @@ def _backend_dependencies_from_mapping(
             payload,
             "torchcodec_audio_decoder_importable",
         ),
+        miopen_hiprtc_headers_available=_bool_at(
+            payload,
+            "miopen_hiprtc_headers_available",
+        ),
         sidecar_runtime_isolated=_bool_at(payload, "sidecar_runtime_isolated"),
         main_service_dependency_change_observed=_bool_at(
             payload,
@@ -395,6 +399,7 @@ def _empty_backend_dependencies() -> AudioTranscriptionBackendDependencyEvidence
         torch_importable=False,
         torchaudio_importable=False,
         torchcodec_audio_decoder_importable=False,
+        miopen_hiprtc_headers_available=False,
         sidecar_runtime_isolated=True,
         main_service_dependency_change_observed=False,
     )

@@ -432,6 +432,26 @@ because the installed wheel expected CUDA `libnvrtc.so.13`, which later surfaced
 inside pyannote as `NameError: AudioDecoder`. Task 354 owns the corrective
 pyannote ROCm decode slice before this task can complete.
 
+The TorchCodec correction was committed, pushed, and deployed at
+`36c8435fe372354f6b591d154338d843364c05ba`. The deployed recheck wrote ignored
+artifacts under:
+
+- `build/verification/stt-sidecar-live-observation-hemma-torchcodec-36c8435/live-observation.json`;
+- `build/verification/stt-sidecar-profile-proof-live-torchcodec-36c8435/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-torchcodec-36c8435/profile-proof.md`.
+
+That recheck proved `torchcodec_audio_decoder_importable=true`, preserved
+FasterWhisper ROCm execution without CPU fallback, and moved the diarization
+blocker to MIOpen HIPRTC compilation inside pyannote's GPU LSTM path. A
+one-off Hemma diagnostic reproduced the deployed error as
+`RuntimeError: miopenStatusUnknownError` with MIOpen failing to include
+`rocrand/rocrand_xorwow.h`. Installing Debian `librocrand-dev` moved the error
+to missing `math.h`; installing both `librocrand-dev` and `libc6-dev` in the
+same benchmark image allowed pyannote to complete exact two-speaker
+diarization on the English fixture and emit 151 exclusive speaker segments.
+Task 354 now owns committing that ROCm JIT header surface, redeploying, and
+proving the complete live observation/profile proof before retained review.
+
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
 

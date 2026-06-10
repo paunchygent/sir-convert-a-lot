@@ -118,6 +118,20 @@ wheel expected CUDA `libnvrtc.so.13`; pyannote then hit `AudioDecoder` as an
 undefined name during the first diarization call. This task now owns the
 TorchCodec compatibility correction before complete Task 352 proof can pass.
 
+The TorchCodec correction was committed, pushed, and deployed at
+`36c8435fe372354f6b591d154338d843364c05ba`. The follow-up live observation
+proved the decoder import (`torchcodec_audio_decoder_importable=true`) but still
+returned `pyannote_audio_runtime_blocked` at `failure_stage=exact_speaker_count`.
+A one-off Hemma diagnostic inside the same benchmark image and GPU lane captured
+MIOpen HIPRTC compilation failing in pyannote's LSTM path:
+`rocrand/rocrand_xorwow.h` was missing. Installing Debian `librocrand-dev`
+moved the failure to missing `math.h`; installing both `librocrand-dev` and
+`libc6-dev` allowed exact two-speaker pyannote diarization to complete on the
+English fixture and emit 151 exclusive speaker segments. The committed
+correction must therefore install those packages and project
+`miopen_hiprtc_headers_available=true` in the live observation/profile-proof
+chain.
+
 ## Upstream Docs Checked
 
 - Context7 `/pyannote/pyannote-audio`: current examples load pretrained
@@ -132,6 +146,13 @@ TorchCodec compatibility correction before complete Task 352 proof can pass.
 - Official Torchaudio `torchaudio.load` documentation: as of Torchaudio `2.9`,
   `torchaudio.load` relies on TorchCodec's `AudioDecoder`, so it is not a safe
   workaround for this ROCm decoder failure.
+- Official ROCm rocRAND documentation: the Debian `-dev` package variant
+  provides rocRAND library files and headers, and the documented package family
+  owns the `rocrand/rocrand_xorwow.h` header required by MIOpen HIPRTC kernel
+  compilation.
+- ROCm MIOpen issue #3314: MIOpen kernels include
+  `rocrand/rocrand_xorwow.h`; missing include paths or missing headers surface
+  as HIPRTC compilation failures before the model can finish GPU inference.
 - Context7 `/huggingface/huggingface_hub`: `HF_TOKEN` is the standard
   environment variable for authenticated Hub access, `whoami(token=...)`
   identifies the authenticated account, and `hf_hub_download(...)` resolves a
@@ -260,8 +281,9 @@ can complete with the current first-choice diarization backend.
   hints, or a bounded Hemma access-denied record that names the next
   operator action.
 - [ ] A TorchCodec-compatible sidecar image that reports
-  `torchcodec_audio_decoder_importable=true` and runs pyannote diarization
-  through exact speaker-count and min/max speaker-range calls on Hemma.
+  `torchcodec_audio_decoder_importable=true`, reports
+  `miopen_hiprtc_headers_available=true`, and runs pyannote diarization through
+  exact speaker-count and min/max speaker-range calls on Hemma.
 - [ ] If access cannot be provisioned, a governed replacement decision or
   reference that preserves library-backed diarization, GPU-required
   execution, exact speaker-count hints, min/max speaker-range hints, and
@@ -282,6 +304,11 @@ can complete with the current first-choice diarization backend.
 - [ ] The accepted pyannote path must not hide a broken decoder behind
   `torchaudio.load`, because that surface also depends on TorchCodec in the
   accepted Torchaudio version.
+- [ ] The accepted pyannote path must include the ROCm JIT header surface needed
+  by MIOpen HIPRTC compilation. The benchmark image must install
+  `librocrand-dev` for `rocrand/rocrand_xorwow.h` and `libc6-dev` for standard
+  C headers, and live observation/profile proof must project
+  `miopen_hiprtc_headers_available=true`.
 - [ ] Live proof succeeds only when diarization runs through the selected
   backend on the GPU-required sidecar lane, exercises exact speaker-count
   and min/max speaker-range hints, provides exclusive speaker segments, and

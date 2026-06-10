@@ -470,6 +470,7 @@ def _complete_runtime_probe_payload() -> dict[str, object]:
             "torch": True,
             "torchaudio": True,
             "torchcodec_audio_decoder": True,
+            "miopen_hiprtc_headers": True,
         },
         "torch": {
             "gpu_available": True,

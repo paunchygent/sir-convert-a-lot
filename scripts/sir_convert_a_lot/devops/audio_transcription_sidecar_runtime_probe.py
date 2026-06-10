@@ -26,6 +26,10 @@ from pathlib import Path
 from typing import Protocol
 
 SCHEMA_VERSION = "audio_transcription_sidecar_runtime_probe_v1"
+_MIOPEN_HIPRTC_HEADER_PATHS = (
+    Path("/usr/include/rocrand/rocrand_xorwow.h"),
+    Path("/usr/include/math.h"),
+)
 _KNOWN_FAILURE_STAGES = frozenset(
     (
         "pipeline_load",
@@ -90,6 +94,7 @@ def _probe_payload(
         "torch": _module_available("torch"),
         "torchaudio": _module_available("torchaudio"),
         "torchcodec_audio_decoder": _torchcodec_audio_decoder_available(),
+        "miopen_hiprtc_headers": _miopen_hiprtc_headers_available(),
     }
     torch_payload = _torch_payload()
     gpu_ready = (
@@ -167,6 +172,10 @@ def _torchcodec_audio_decoder_available() -> bool:
     except Exception:
         return False
     return hasattr(torchcodec_decoders, "AudioDecoder")
+
+
+def _miopen_hiprtc_headers_available() -> bool:
+    return all(path.is_file() for path in _MIOPEN_HIPRTC_HEADER_PATHS)
 
 
 def _torch_payload() -> dict[str, object]:

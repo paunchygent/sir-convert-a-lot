@@ -320,6 +320,7 @@ def complete_sidecar_profile_proof() -> AudioTranscriptionSidecarProfileProofEvi
             torch_importable=True,
             torchaudio_importable=True,
             torchcodec_audio_decoder_importable=True,
+            miopen_hiprtc_headers_available=True,
             sidecar_runtime_isolated=True,
             main_service_dependency_change_observed=False,
         ),

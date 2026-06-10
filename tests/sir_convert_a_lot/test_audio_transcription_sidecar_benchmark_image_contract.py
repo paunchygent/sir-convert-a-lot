@@ -54,6 +54,21 @@ def test_benchmark_image_installs_official_ctranslate2_rocm_wheel_after_stt_deps
     )
 
 
+def test_benchmark_image_installs_miopen_hiprtc_header_dependencies() -> None:
+    dockerfile = _dockerfile_text()
+
+    assert "librocrand-dev" in dockerfile
+    assert "libc6-dev" in dockerfile
+    _assert_ordered(
+        dockerfile,
+        "ffmpeg",
+        "libc6-dev",
+        "librocrand-dev",
+        "patchelf",
+        "python -m pip install --upgrade",
+    )
+
+
 def test_benchmark_image_keeps_ctranslate2_rocm_libraries_out_of_global_linker_state() -> None:
     dockerfile = _dockerfile_text()
     args = _arg_values(dockerfile)

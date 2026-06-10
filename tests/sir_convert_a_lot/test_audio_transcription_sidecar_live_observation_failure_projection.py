@@ -97,6 +97,7 @@ def test_live_observation_projects_bounded_backend_failures_without_raw_values(
         "torch_importable": True,
         "torchaudio_importable": True,
         "torchcodec_audio_decoder_importable": True,
+        "miopen_hiprtc_headers_available": True,
         "sidecar_runtime_isolated": True,
         "main_service_dependency_change_observed": False,
     }
@@ -167,6 +168,7 @@ def _noisy_blocked_runtime_probe_payload(
             "torch": True,
             "torchaudio": True,
             "torchcodec_audio_decoder": True,
+            "miopen_hiprtc_headers": True,
         },
         "torch": {
             "gpu_available": False,

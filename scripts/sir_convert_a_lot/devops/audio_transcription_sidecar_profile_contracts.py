@@ -86,6 +86,7 @@ class AudioTranscriptionBackendDependencyReport(TypedDict):
     torch_importable: bool
     torchaudio_importable: bool
     torchcodec_audio_decoder_importable: bool
+    miopen_hiprtc_headers_available: bool
     sidecar_runtime_isolated: bool
     main_service_dependency_change_observed: bool
 
@@ -185,6 +186,7 @@ class AudioTranscriptionBackendDependencyEvidence:
     torch_importable: bool
     torchaudio_importable: bool
     torchcodec_audio_decoder_importable: bool
+    miopen_hiprtc_headers_available: bool
     sidecar_runtime_isolated: bool
     main_service_dependency_change_observed: bool
 

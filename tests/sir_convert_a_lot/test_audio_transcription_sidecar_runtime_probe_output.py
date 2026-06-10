@@ -17,6 +17,7 @@ import importlib
 import json
 import sys
 from importlib.machinery import ModuleSpec
+from pathlib import Path
 from types import ModuleType
 
 import pytest
@@ -69,6 +70,7 @@ def test_runtime_probe_classifies_backend_exceptions_without_raw_values(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     probe = _runtime_probe_module()
+    _set_ready_miopen_headers(monkeypatch, probe)
     raw_model_id = "pyannote/speaker-diarization-community-1"
     raw_token_value = "hf_private_token_value"
     private_fixture_root = "/private/operator/fixtures"
@@ -119,6 +121,7 @@ def test_runtime_probe_reports_bounded_diarization_failure_stage(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     probe = _runtime_probe_module()
+    _set_ready_miopen_headers(monkeypatch, probe)
     raw_token_value = "hf_private_token_value"
     raw_model_id = "pyannote/speaker-diarization-community-1"
     _install_exact_speaker_count_name_error_modules(monkeypatch)
@@ -155,6 +158,7 @@ def test_runtime_probe_uses_torchcodec_ready_pyannote_file_path_execution(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     probe = _runtime_probe_module()
+    _set_ready_miopen_headers(monkeypatch, probe)
     raw_token_value = "hf_private_token_value"
     raw_model_id = "pyannote/speaker-diarization-community-1"
     _install_torchcodec_ready_diarization_modules(monkeypatch)
@@ -183,9 +187,52 @@ def test_runtime_probe_uses_torchcodec_ready_pyannote_file_path_execution(
     assert "/private/operator" not in captured.out
 
 
+def test_runtime_probe_reports_miopen_hiprtc_header_readiness(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    probe = _runtime_probe_module()
+    rocrand_header = tmp_path / "rocrand" / "rocrand_xorwow.h"
+    libc_header = tmp_path / "math.h"
+    rocrand_header.parent.mkdir(parents=True)
+    rocrand_header.write_text("rocrand header\n", encoding="utf-8")
+    libc_header.write_text("libc header\n", encoding="utf-8")
+    monkeypatch.setattr(
+        probe,
+        "_MIOPEN_HIPRTC_HEADER_PATHS",
+        (rocrand_header, libc_header),
+    )
+    _install_torchcodec_ready_diarization_modules(monkeypatch)
+    monkeypatch.setenv("HF_TOKEN", "hf_private_token_value")
+
+    exit_code = probe.main(
+        [
+            "--english-fixture",
+            "/private/operator/english-dialogue-two-speakers.mp3",
+            "--swedish-fixture",
+            "/private/operator/swedish-monologue-one-speaker.m4a",
+        ],
+    )
+
+    captured = capsys.readouterr()
+    payload = _read_json_object(captured.out)
+    packages = _mapping_at(payload, "packages")
+    assert exit_code == 0
+    assert packages["miopen_hiprtc_headers"] is True
+
+
 def _runtime_probe_module() -> ModuleType:
     return importlib.import_module(
         "scripts.sir_convert_a_lot.devops.audio_transcription_sidecar_runtime_probe"
+    )
+
+
+def _set_ready_miopen_headers(monkeypatch: pytest.MonkeyPatch, probe: ModuleType) -> None:
+    monkeypatch.setattr(
+        probe,
+        "_MIOPEN_HIPRTC_HEADER_PATHS",
+        (Path(__file__), Path(__file__)),
     )
 
 

@@ -245,6 +245,7 @@ def _backend_dependency_report(
         "torch_importable": evidence.torch_importable,
         "torchaudio_importable": evidence.torchaudio_importable,
         "torchcodec_audio_decoder_importable": (evidence.torchcodec_audio_decoder_importable),
+        "miopen_hiprtc_headers_available": evidence.miopen_hiprtc_headers_available,
         "sidecar_runtime_isolated": evidence.sidecar_runtime_isolated,
         "main_service_dependency_change_observed": (
             evidence.main_service_dependency_change_observed
@@ -324,6 +325,7 @@ def _backend_dependencies_ready(
         and evidence.torch_importable
         and evidence.torchaudio_importable
         and evidence.torchcodec_audio_decoder_importable
+        and evidence.miopen_hiprtc_headers_available
         and evidence.sidecar_runtime_isolated
         and not evidence.main_service_dependency_change_observed
     )

@@ -82,6 +82,8 @@ def failure_reasons(
         reasons.append("torchaudio_missing")
     if packages.get("torchcodec_audio_decoder") is not True:
         reasons.append("torchcodec_audio_decoder_missing")
+    if packages.get("miopen_hiprtc_headers") is not True:
+        reasons.append("miopen_hiprtc_headers_missing")
     if environment.get("HF_TOKEN", "").strip() == "":
         reasons.append("hf_token_missing")
     stt = mapping_at(runtime_payload, "stt")
@@ -111,6 +113,7 @@ def backend_dependencies(runtime_payload: Mapping[str, object]) -> dict[str, obj
         "torch_importable": packages.get("torch") is True,
         "torchaudio_importable": packages.get("torchaudio") is True,
         "torchcodec_audio_decoder_importable": (packages.get("torchcodec_audio_decoder") is True),
+        "miopen_hiprtc_headers_available": packages.get("miopen_hiprtc_headers") is True,
         "sidecar_runtime_isolated": True,
         "main_service_dependency_change_observed": False,
     }
