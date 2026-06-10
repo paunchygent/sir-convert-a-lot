@@ -1,9 +1,9 @@
 ---
-id: 'review-32-ruthless-review-of-task-342-incremental-manifest-and-replay-visibility-slice'
-title: 'Ruthless review of Task 342 incremental manifest and replay visibility slice'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-32-ruthless-review-of-task-342-incremental-manifest-and-replay-visibility-slice
+title: Ruthless review of Task 342 incremental manifest and replay visibility slice
+type: review
+status: completed
+priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
 related:
@@ -18,6 +18,7 @@ labels:
   - progress
   - idempotency
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

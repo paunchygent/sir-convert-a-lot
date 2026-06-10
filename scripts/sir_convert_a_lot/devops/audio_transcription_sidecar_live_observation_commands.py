@@ -13,7 +13,7 @@ Relationships:
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -43,6 +43,8 @@ class CommandRunner(Protocol):
 class SubprocessCommandRunner:
     """Subprocess-backed command runner for operator CLI execution."""
 
+    environment: Mapping[str, str] | None = None
+
     def run(
         self,
         command: Sequence[str],
@@ -59,6 +61,7 @@ class SubprocessCommandRunner:
                 text=True,
                 timeout=timeout_seconds,
                 stdin=subprocess.DEVNULL,
+                env=dict(self.environment) if self.environment is not None else None,
             )
         except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
             return CompletedCommand(returncode=127, stdout="", stderr=str(exc))

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import tomllib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -259,6 +260,21 @@ def test_operator_command_loads_repo_env_without_exposing_secret_values(
     assert secret_value not in flattened_commands
     assert secret_value not in persisted_text
     assert hf_home.as_posix() not in persisted_text
+
+
+def test_subprocess_runner_forwards_loaded_operator_environment() -> None:
+    command_module = importlib.import_module(
+        "scripts.sir_convert_a_lot.devops.audio_transcription_sidecar_live_observation_commands"
+    )
+    secret_value = "hf_private_token_value_for_child_process"
+    runner = command_module.SubprocessCommandRunner(
+        environment={**os.environ, "HF_TOKEN": secret_value}
+    )
+
+    result = runner.run(("/usr/bin/env",), timeout_seconds=5.0)
+
+    assert result.returncode == 0
+    assert f"HF_TOKEN={secret_value}" in result.stdout
 
 
 def test_docker_mode_uses_buildkit_buildx_for_benchmark_sidecar(

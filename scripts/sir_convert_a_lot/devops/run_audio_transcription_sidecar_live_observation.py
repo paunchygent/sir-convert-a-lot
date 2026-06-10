@@ -81,7 +81,7 @@ def main(
         runtime_timeout_seconds=float(args.runtime_timeout_seconds),
         ffprobe_timeout_seconds=float(args.ffprobe_timeout_seconds),
     )
-    runner = command_runner or SubprocessCommandRunner()
+    runner = command_runner or SubprocessCommandRunner(environment=env)
     observation = build_live_observation(
         settings=settings,
         command_runner=runner,
