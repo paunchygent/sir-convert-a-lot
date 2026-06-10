@@ -3,7 +3,7 @@
 Purpose:
     Provide v2 job create/status/result/artifact/cancel endpoints as an isolated
     router for the unified conversion API surface, enabling multi-format
-    conversions (pdf/md/html -> md/pdf/docx).
+    document conversions and audio transcript-bundle admission.
 
 Relationships:
     - Included by `interfaces.http_api` app factory.
