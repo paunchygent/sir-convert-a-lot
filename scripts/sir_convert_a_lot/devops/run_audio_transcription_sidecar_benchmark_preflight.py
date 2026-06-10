@@ -8,8 +8,9 @@ Relationships:
     - Wraps `devops.audio_transcription_sidecar_benchmark` for CLI use.
     - Uses the `pdm run run-hemma -- pdm run benchmark:stt-sidecar-preflight`
       operator lane.
-    - Writes preflight reports under `build/verification/` while the
-      `audio -> transcript_bundle` route remains blocked.
+    - Writes preflight reports under `build/verification/` for sidecar
+      readiness evidence; transcript execution is governed by the runtime
+      audio route.
 """
 
 from __future__ import annotations

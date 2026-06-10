@@ -74,8 +74,7 @@ Structured review artifact for implementation or readiness checks.
 
 ## Evidence Reviewed
 
-- Context7 `/systran/faster-whisper` current docs show `WhisperModel(...,
-  device="cuda", compute_type="float16")` as the explicit GPU path.
+- Context7 `/systran/faster-whisper` current docs show `WhisperModel(..., device="cuda", compute_type="float16")` as the explicit GPU path.
 - Context7 `/pyannote/pyannote-audio` current docs show authenticated
   `Pipeline.from_pretrained(..., token=...)`, GPU placement through
   `pipeline.to(torch.device("cuda"))`, exact `num_speakers`, min/max

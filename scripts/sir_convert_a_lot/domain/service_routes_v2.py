@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
     OutputFormatV2,
     PdfPageCssModeV2,
@@ -73,6 +74,22 @@ class ConversionRoutePolicySubjectV2(Protocol):
         """Return DOCX template selector."""
 
 
+class ExecutionRoutePolicySubjectV2(Protocol):
+    """Execution fields required for route-policy validation."""
+
+    @property
+    def acceleration_policy(self) -> AccelerationPolicy:
+        """Return requested acceleration policy."""
+
+
+class RetentionRoutePolicySubjectV2(Protocol):
+    """Retention fields required for route-policy validation."""
+
+    @property
+    def pin(self) -> bool:
+        """Return whether the caller requested pinned retention."""
+
+
 class JobSpecRoutePolicySubjectV2(Protocol):
     """Structural contract required for route-policy validation."""
 
@@ -89,12 +106,20 @@ class JobSpecRoutePolicySubjectV2(Protocol):
         """Return PDF route options."""
 
     @property
-    def execution(self) -> object | None:
+    def execution(self) -> ExecutionRoutePolicySubjectV2 | None:
         """Return execution options."""
 
     @property
     def digiexam_migration_options(self) -> object | None:
         """Return DigiExam migration options."""
+
+    @property
+    def audio_transcription_options(self) -> object | None:
+        """Return audio transcription options."""
+
+    @property
+    def retention(self) -> RetentionRoutePolicySubjectV2:
+        """Return retention options."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +142,8 @@ class RoutePolicyV2:
     allows_execution: bool = False
     ignores_execution: bool = False
     allows_digiexam_migration_options: bool = False
+    requires_audio_transcription_options: bool = False
+    allows_audio_transcription_options: bool = False
     allows_targets: bool = False
     allows_artifact_language: bool = False
     allows_css_filenames: bool = False
@@ -124,7 +151,9 @@ class RoutePolicyV2:
     allows_page_css_mode: bool = False
     allows_reference_docx_filename: bool = False
     allows_template: bool = False
+    rejects_retention_pin: bool = False
     create_required_grant: str | None = None
+    create_optional_identity_grant: str | None = None
     unsupported_option_context: str | None = None
 
 
@@ -156,6 +185,11 @@ DIGIEXAM_MIGRATION_ROUTE_KEY_V2 = RouteKeyV2(
     output_format=OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
 )
 
+AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2 = RouteKeyV2(
+    source_format=SourceFormatV2.AUDIO,
+    output_format=OutputFormatV2.TRANSCRIPT_BUNDLE,
+)
+
 
 SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
     _generic_route_policy(SourceFormatV2.PDF, OutputFormatV2.MD),
@@ -176,6 +210,16 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
         allows_artifact_language=True,
         create_required_grant="sir-convert:jobs:create",
         unsupported_option_context="DigiExam migration routes",
+    ),
+    RoutePolicyV2(
+        key=AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
+        requires_execution=True,
+        allows_execution=True,
+        requires_audio_transcription_options=True,
+        allows_audio_transcription_options=True,
+        rejects_retention_pin=True,
+        create_optional_identity_grant="sir-convert:jobs:create",
+        unsupported_option_context="audio transcription routes",
     ),
 )
 
@@ -237,6 +281,7 @@ def validate_job_spec_route_policy_v2(spec: JobSpecRoutePolicySubjectV2) -> None
 
     _validate_pdf_runtime_options(spec=spec, policy=policy)
     _validate_exam_migration_options(spec=spec, policy=policy)
+    _validate_audio_transcription_options(spec=spec, policy=policy)
     _validate_pdf_output_options(spec=spec, policy=policy)
     _validate_docx_output_options(spec=spec, policy=policy)
 
@@ -316,6 +361,36 @@ def _validate_exam_migration_options(
     if not policy.allows_artifact_language and spec.conversion.artifact_language is not None:
         raise ValueError(
             "conversion.artifact_language is only supported for exam migration outputs"
+        )
+
+
+def _validate_audio_transcription_options(
+    *,
+    spec: JobSpecRoutePolicySubjectV2,
+    policy: RoutePolicyV2,
+) -> None:
+    if policy.requires_audio_transcription_options and spec.audio_transcription_options is None:
+        raise ValueError("audio_transcription_options is required for audio transcription routes")
+    if (
+        not policy.allows_audio_transcription_options
+        and spec.audio_transcription_options is not None
+    ):
+        raise ValueError(
+            "audio_transcription_options is only supported for audio transcription routes"
+        )
+    if policy.rejects_retention_pin and spec.retention.pin:
+        raise ValueError(
+            "audio_retention_pin_unsupported: retention.pin=true is not supported "
+            "for audio transcription routes"
+        )
+    if policy.key != AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2:
+        return
+    if spec.execution is None:
+        return
+    if spec.execution.acceleration_policy != AccelerationPolicy.GPU_REQUIRED:
+        raise ValueError(
+            "audio_gpu_required_unavailable: execution.acceleration_policy must be "
+            "'gpu_required' for audio transcription routes"
         )
 
 

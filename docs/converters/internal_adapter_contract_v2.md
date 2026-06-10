@@ -77,7 +77,7 @@ headers, and error propagation), not service runtime policy internals.
   - `source.format: "digiexam_dxe"`
   - `conversion.output_format: "examnet_migration_bundle"`
   - `retention.pin: false`
-- For future audio transcription, required defaults are owned by
+- For admission-registered audio transcription, required defaults are owned by
   `docs/converters/audio-transcription-service-api-artifact-contract.md` and
   begin with:
   - `api_version: "v2"`

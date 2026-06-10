@@ -23,6 +23,7 @@ labels:
   - codec-boundary
   - diarization
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope

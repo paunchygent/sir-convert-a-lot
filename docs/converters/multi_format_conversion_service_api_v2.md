@@ -144,28 +144,31 @@ Supported v2 conversions (service-executed on Hemma):
 - `digiexam_dxe -> examnet_migration_bundle` (DigiExam `.dxe` parser -> IR ->
   Exam.net PDF + QTI package + named artifact bundle)
 
-## Approved Route Extensions (Not Yet Implemented)
+## Admission-Registered Route Extensions
 
-The approved v2 route extensions that are not yet implemented in the runtime
-are:
+The following v2 route extensions have accepted contracts but are not yet fully
+service-executed conversion pipelines:
 
 - `md -> wav` (sidecar-backed TTS on Hemma; see ADR-0006)
-- `audio -> transcript_bundle` (sidecar-backed speech-to-text with
-  diarization; see ADR-0013 and
+- `audio -> transcript_bundle` is admission-registered for Service API v2 job
+  creation only. It validates request shape, owner scope, local-upload media
+  suffixes, day-one public audio options, route capacity, GPU-required policy,
+  and `retention.pin=false`, then leaves jobs queued until the later sidecar
+  execution and `transcript_json` persistence slice lands. See ADR-0013 and
   `docs/converters/audio-transcription-service-api-artifact-contract.md`)
 
 Important:
 
 - These routes are approved for planning and contract publication.
-- They are **not yet implemented** in the runtime.
+- The audio route is admitted but **not yet executed** by the runtime.
 - The public contracts remain provider-neutral and the TTS/STT backends must
   remain Hemma sidecars, not in-process dependencies in the main service image.
 - Internal multi-backend TTS reuse is governed by ADR-0007; backend-native
   sidecar APIs are not the normative Sir-facing contract.
-- ADR-0013 is accepted, but audio transcription runtime work still requires
-  governed implementation tasks and route registration.
-- The first audio implementation task must define route-level
-  concurrency/admission caps before runtime registration.
+- ADR-0013 is accepted, and Task 355 registers the first admission-only audio
+  route slice. Sidecar execution, route-specific progress, cancellation
+  cleanup, and transcript artifact persistence still require later governed
+  implementation tasks.
 - For audio transcription, the first stable output authority is structured
   JSON; `txt`, `md`, `vtt`, and `srt` are later formatter artifacts over that
   JSON core.

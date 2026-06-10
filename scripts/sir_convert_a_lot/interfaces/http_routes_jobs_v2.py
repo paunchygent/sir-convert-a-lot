@@ -17,7 +17,6 @@ import asyncio
 import hashlib
 import json
 import time
-from pathlib import Path
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
@@ -33,6 +32,7 @@ from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
     JobSpecV2,
+    OutputFormatV2,
     SourceFormatV2,
     normalized_exam_migration_targets_v2,
 )
@@ -48,6 +48,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
 from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
     auth_context_for_job_access_v2,
+    internal_identity_headers_present_v2,
     require_api_key_v2,
     require_internal_identity_auth_context_v2,
     require_job_access_v2,
@@ -55,6 +56,8 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     CreateJobCompanionPartsV2,
     build_create_job_route_registry_v2,
+    enforce_audio_transcription_route_capacity_v2,
+    infer_source_format_from_filename_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_job_record_response_v2 import (
     job_record_response_v2,
@@ -78,19 +81,13 @@ from scripts.sir_convert_a_lot.interfaces.http_structured_llm_settings_state_v2 
 )
 
 
-def _infer_format_from_filename(filename: str) -> SourceFormatV2 | None:
-    suffix = Path(filename).suffix.lower()
-    if suffix == ".pdf":
-        return SourceFormatV2.PDF
-    if suffix in {".md", ".markdown"}:
-        return SourceFormatV2.MD
-    if suffix in {".html", ".htm"}:
-        return SourceFormatV2.HTML
-    if suffix == ".docx":
-        return SourceFormatV2.DOCX
-    if suffix == ".dxe":
-        return SourceFormatV2.DIGIEXAM_DXE
-    return None
+def _should_dispatch_submitted_job_v2(spec: JobSpecV2) -> bool:
+    if (
+        spec.source.format == SourceFormatV2.AUDIO
+        and spec.conversion.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    ):
+        return False
+    return True
 
 
 def build_job_router_v2(*, service_started_at: str) -> APIRouter:
@@ -140,7 +137,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             )
 
         file_name = file.filename.rsplit("/", maxsplit=1)[-1].rsplit("\\", maxsplit=1)[-1]
-        inferred_format = _infer_format_from_filename(file_name)
+        inferred_format = infer_source_format_from_filename_v2(file_name)
         if inferred_format is None:
             raise ServiceError(
                 status_code=415,
@@ -235,6 +232,16 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                     required_grant=route_handler.policy.create_required_grant,
                 )
                 owner_scope = auth_context.owner_api_key_scope
+        elif (
+            route_handler.policy.create_optional_identity_grant is not None
+            and internal_identity_headers_present_v2(request)
+        ):
+            auth_context = require_internal_identity_auth_context_v2(
+                request,
+                service_started_at=service_started_at,
+                required_grant=route_handler.policy.create_optional_identity_grant,
+            )
+            owner_scope = auth_context.owner_api_key_scope
         form = await request.form()
         prepared_route = await route_handler.prepare(
             spec=spec,
@@ -299,6 +306,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             response.headers["X-Idempotent-Replay"] = "true"
             return response
 
+        enforce_audio_transcription_route_capacity_v2(spec=spec, runtime=runtime)
         structured_llm_admission = _structured_llm_admission_for_create_request(
             spec=spec,
             request=request,
@@ -317,7 +325,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             structured_llm_admission=structured_llm_admission,
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
-        if runtime.config.run_jobs_on_submit:
+        if runtime.config.run_jobs_on_submit and _should_dispatch_submitted_job_v2(spec):
             runtime.run_job_async(job.job_id)
 
         deadline = time.monotonic() + wait_seconds

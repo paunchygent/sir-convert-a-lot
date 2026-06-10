@@ -20,6 +20,10 @@ from fastapi import Request
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
 from scripts.sir_convert_a_lot.interfaces.http_internal_identity_v2 import (
+    INTERNAL_IDENTITY_CONTEXT_HEADER,
+    INTERNAL_IDENTITY_CONTEXT_VERSION_HEADER,
+    INTERNAL_IDENTITY_KEY_ID_HEADER,
+    INTERNAL_IDENTITY_SIGNATURE_HEADER,
     require_verified_internal_identity_v2,
 )
 
@@ -48,6 +52,18 @@ def build_owner_scope_v2() -> str:
     """Return the stable persisted owner scope for the single v2 service key."""
 
     return "service-api-key"
+
+
+def internal_identity_headers_present_v2(request: Request) -> bool:
+    """Return whether a request attempts signed internal identity authentication."""
+
+    identity_headers = (
+        INTERNAL_IDENTITY_CONTEXT_VERSION_HEADER,
+        INTERNAL_IDENTITY_CONTEXT_HEADER,
+        INTERNAL_IDENTITY_KEY_ID_HEADER,
+        INTERNAL_IDENTITY_SIGNATURE_HEADER,
+    )
+    return any(request.headers.get(header_name) is not None for header_name in identity_headers)
 
 
 def _job_not_found_error() -> ServiceError:

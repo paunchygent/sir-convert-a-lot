@@ -1,15 +1,14 @@
 """Speech-to-text audio route policy and sidecar capability contracts.
 
 Purpose:
-    Define the initial domain boundary for audio transcription admission,
-    route-level capacity caps, public option rejection, and STT sidecar
-    readiness parsing before the v2 runtime route is registered.
+    Define the domain boundary for audio transcription admission, route-level
+    capacity caps, public option rejection, and STT sidecar readiness parsing.
 
 Relationships:
     - Implements the policy slice authorized by the governed STT backlog lane
       and ADR-0013.
-    - Complements `service_routes_v2` by keeping `audio -> transcript_bundle`
-      disabled until a later runtime implementation story registers handlers.
+    - Complements `service_routes_v2` by keeping audio admission decisions
+      provider-neutral before sidecar execution is wired.
     - Supplies deterministic public error codes for future HTTP and sidecar
       integration layers without importing codec, model, or infrastructure
       dependencies.
@@ -76,7 +75,7 @@ def evaluate_audio_transcription_route_policy(
     capacity: AudioTranscriptionCapacitySnapshot,
     caps: AudioTranscriptionCaps,
 ) -> AudioTranscriptionPolicyDecision:
-    """Evaluate admission rules for the planned audio route."""
+    """Evaluate admission rules for the audio route."""
 
     if not request.route_enabled:
         return _reject(AudioTranscriptionErrorCode.ROUTE_DISABLED)
@@ -200,7 +199,7 @@ def evaluate_stt_sidecar_readiness(
 
 
 def required_audio_transcription_public_error_codes() -> frozenset[AudioTranscriptionErrorCode]:
-    """Return the public error-code authority for the planned audio route."""
+    """Return the public error-code authority for the audio route."""
 
     return frozenset(AudioTranscriptionErrorCode)
 

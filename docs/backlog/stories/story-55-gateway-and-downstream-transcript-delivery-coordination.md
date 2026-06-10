@@ -13,10 +13,12 @@ related:
   - docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md
+  - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
   - docs/backlog/reviews/review-26-ruthless-review-of-story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
   - docs/backlog/reviews/review-27-ruthless-review-of-story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
   - docs/backlog/reviews/review-28-ruthless-review-of-story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/reviews/review-29-ruthless-review-of-story-54-transcript-formatter-strategies-over-canonical-json.md
+  - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
@@ -46,14 +48,13 @@ Skriptoteket downstream planning so product access uses the existing
 Convert.
 
 Story 55 coordination is completed as planning/alignment only. It is not
-runtime Gateway proxy, route registration, formatter, or UI work. Story 52 was
-accepted in Review 27 as a governed production-profile rejection. Story 53
-remains `proposed` and blocked until accepted Hemma STT sidecar
-benchmark-runner/profile proof exists, and Story 54 remains `proposed` and
-blocked until Story 53 has accepted route execution plus canonical
-`transcript_json` persistence. Therefore no downstream story may treat the
-route as live before Sir Convert registers it through a later governed runtime
-slice.
+runtime Gateway proxy, sidecar execution, formatter, or UI work. Story 52's
+governed production-profile rejection has been superseded by Task 352/354 and
+Review 40. Task 355 registers the first Sir Convert Service API v2
+`audio -> transcript_bundle` route-admission slice, but Story 53 still requires
+accepted sidecar execution plus canonical `transcript_json` persistence before
+downstream stories may treat transcript delivery as live. Story 54 remains
+`proposed` and blocked until the JSON core is live.
 
 ## Scope
 
@@ -80,8 +81,9 @@ slice.
   - polling and transcript artifact retrieval through Gateway;
   - durable transcript save and product retention;
   - JSON-first formatter strategy consumption.
-- Preserve cross-repo stop conditions so downstream repos do not implement
-  against an unregistered route or bypass the Gateway edge.
+- Preserve cross-repo stop conditions so downstream repos do not treat
+  admission-registered audio jobs as completed transcript delivery or bypass the
+  Gateway edge.
 
 ## Alignment Record
 
@@ -91,8 +93,9 @@ slice.
 - The shared access model is Gateway-only `/sir-convert/v2/convert` product
   access with HuleEdu-signed `InternalIdentityContextV1` for user-originated
   Sir Convert work.
-- The Sir Convert audio route is accepted planning authority but not an
-  implemented runtime surface while Story 53 remains blocked.
+- The Sir Convert audio route is admission-registered planning authority, but
+  not a transcript execution or artifact-delivery surface until later Story 53
+  tasks complete.
 - Retention ownership is split intentionally: short Sir Convert operational
   retention for uploaded media and generated artifacts, durable Skriptoteket
   transcript retention after product save.
@@ -107,8 +110,9 @@ slice.
 
 - [x] HuleEdu and Skriptoteket have corresponding governed stories linked from
   their local backlog lanes.
-- [x] Sir Convert downstream/internal adapter docs name the route as accepted
-  planning authority but not an implemented runtime surface.
+- [x] Sir Convert downstream/internal adapter docs name the route as
+  admission-registered while transcript execution and artifact persistence
+  remain pending.
 - [x] Cross-repo stories agree on Gateway-only product access and
   `InternalIdentityContextV1` ownership.
 - [x] Cross-repo stories agree that Skriptoteket owns durable transcript
@@ -125,8 +129,9 @@ slice.
 ## Done Definition
 
 The story is done when Sir Convert, HuleEdu, and Skriptoteket have aligned
-governed planning records for transcript delivery and no repo treats the route
-as live before Sir Convert registers it.
+governed planning records for transcript delivery and no repo treats admitted
+audio jobs as live transcript delivery before Sir Convert sidecar execution and
+`transcript_json` persistence are accepted.
 
 ## Checklist
 

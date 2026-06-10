@@ -22,6 +22,7 @@ from pydantic import ValidationError
 
 import scripts.sir_convert_a_lot.domain.service_routes_v2 as service_routes_v2
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
+    AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
     DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
     RouteKeyV2,
     RoutePolicyV2,
@@ -34,6 +35,7 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2,
+    AudioTranscriptionAdmissionCreateJobRouteHandlerV2,
     CreateJobCompanionPartsV2,
     DefaultCreateJobRouteHandlerV2,
     DigiExamMigrationCreateJobRouteHandlerV2,
@@ -47,6 +49,7 @@ def test_create_job_registry_registers_current_route_policy_keys_only() -> None:
     assert registry.registered_route_keys() == (
         *DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2,
         DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
+        AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
     )
     assert all(
         key.source_format.value != "examnet_artifact"
@@ -62,9 +65,11 @@ def test_create_job_registry_resolves_default_and_digiexam_handlers() -> None:
         RouteKeyV2(source_format=SourceFormatV2.MD, output_format=OutputFormatV2.PDF)
     )
     digiexam_handler = registry.require_handler(DIGIEXAM_MIGRATION_ROUTE_KEY_V2)
+    audio_handler = registry.require_handler(AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2)
 
     assert isinstance(default_handler, DefaultCreateJobRouteHandlerV2)
     assert isinstance(digiexam_handler, DigiExamMigrationCreateJobRouteHandlerV2)
+    assert isinstance(audio_handler, AudioTranscriptionAdmissionCreateJobRouteHandlerV2)
 
 
 def test_create_job_registry_does_not_auto_register_supported_policy_without_handler(

@@ -46,9 +46,6 @@ from scripts.sir_convert_a_lot.domain.audio_transcription_benchmark_profiles imp
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
     AudioTranscriptionErrorCode,
 )
-from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
-    build_create_job_route_registry_v2,
-)
 
 
 def test_live_profile_proof_accepts_complete_sanitized_sidecar_evidence(
@@ -264,14 +261,11 @@ def test_live_profile_proof_report_redacts_leak_samples_even_when_rejected(
     assert "hej detta ska inte synas" not in persisted_text
 
 
-def test_service_api_audio_route_remains_unregistered_during_profile_proof() -> None:
-    registry = build_create_job_route_registry_v2()
-    route_keys = {
-        (key.source_format.value, key.output_format.value)
-        for key in registry.registered_route_keys()
-    }
+def test_profile_proof_records_historical_route_unregistered_evidence() -> None:
+    report = build_live_profile_proof_report(complete_sidecar_profile_proof())
 
-    assert ("audio", "transcript_bundle") not in route_keys
+    assert report["required_evidence"]["route_unregistered"] is True
+    assert report["route_registration"]["audio_transcript_bundle_registered"] is False
 
 
 def complete_sidecar_profile_proof() -> AudioTranscriptionSidecarProfileProofEvidence:

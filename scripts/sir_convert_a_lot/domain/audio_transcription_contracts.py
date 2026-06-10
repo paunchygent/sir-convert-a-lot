@@ -8,7 +8,7 @@ Relationships:
     - Imported by `domain.audio_transcription_policy` for admission and sidecar
       readiness decisions.
     - Aligns code-level route contracts with ADR-0013 and the audio converter
-      contract before runtime registration exists.
+      contract across admission, sidecar readiness, and later execution slices.
     - Reuses `domain.specs.AccelerationPolicy` so GPU-required policy stays
       consistent with existing Sir Convert execution language.
 """
@@ -79,7 +79,7 @@ _ALLOWED_PUBLIC_OPTION_KEYS: frozenset[str] = frozenset(
 
 
 class AudioTranscriptionErrorCode(StrEnum):
-    """Deterministic public error codes for the planned audio route."""
+    """Deterministic public error codes for the audio route."""
 
     ROUTE_DISABLED = "audio_route_disabled"
     ROUTE_CAPACITY_EXCEEDED = "audio_route_capacity_exceeded"

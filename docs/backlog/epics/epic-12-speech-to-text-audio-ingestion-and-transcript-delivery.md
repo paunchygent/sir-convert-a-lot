@@ -132,6 +132,17 @@ Planned story slices:
   cache/token names, and the live evidence still required before a production
   profile can be selected. It does not satisfy the Hemma benchmark acceptance
   gate and does not register `audio -> transcript_bundle`.
+- `docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md`
+  and
+  `docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md`
+  now provide accepted live Hemma proof for the selected FasterWhisper ROCm plus
+  pyannote profile, including Swedish/English fixtures, exact and min/max
+  speaker hints, GPU-required execution, content-safe proof artifacts, and human
+  transcript-review acceptance.
+- `docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md`
+  is the first Story 53 runtime slice. It registers Service API v2 route
+  admission only; sidecar execution and canonical `transcript_json` persistence
+  remain later Story 53 tasks.
 
 ## Acceptance Criteria
 

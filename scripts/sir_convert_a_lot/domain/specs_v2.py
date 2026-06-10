@@ -7,7 +7,6 @@ Purpose:
 Relationships:
     - Imported by v2 HTTP routes for request validation.
     - Imported by v2 runtime/job-store layers for execution policy enforcement.
-    - Coexists with the locked v1 spec models in `scripts.sir_convert_a_lot.domain.specs`.
 """
 
 from __future__ import annotations
@@ -18,6 +17,15 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
+    FORBIDDEN_PUBLIC_BACKEND_OPTION_KEYS,
+    AudioDiarizationMode,
+    AudioTranscriptionErrorCode,
+    AudioTranscriptionPublicOptions,
+)
+from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
+    AudioDiarizationOptions as DomainAudioDiarizationOptions,
+)
 from scripts.sir_convert_a_lot.domain.specs import (
     AccelerationPolicy,
     BackendStrategy,
@@ -37,6 +45,7 @@ class SourceKindV2(StrEnum):
 class SourceFormatV2(StrEnum):
     """Supported uploaded source formats for v2."""
 
+    AUDIO = "audio"
     PDF = "pdf"
     MD = "md"
     HTML = "html"
@@ -50,6 +59,7 @@ class OutputFormatV2(StrEnum):
     MD = "md"
     PDF = "pdf"
     DOCX = "docx"
+    TRANSCRIPT_BUNDLE = "transcript_bundle"
     EXAMNET_MIGRATION_BUNDLE = "examnet_migration_bundle"
 
 
@@ -230,6 +240,76 @@ class DigiExamMigrationOptionsV2(BaseModel):
         return self
 
 
+_AUDIO_TRANSCRIPTION_OPTION_KEYS_V2 = frozenset(
+    {"diarization", "language", "max_duration_seconds", "output_artifacts"}
+)
+
+
+def _audio_public_options_error(detail: str) -> ValueError:
+    return ValueError(f"{AudioTranscriptionErrorCode.PUBLIC_OPTIONS_UNSUPPORTED.value}: {detail}")
+
+
+class AudioDiarizationOptionsV2(BaseModel):
+    """Public speaker-hint options for audio transcription route admission."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mode: AudioDiarizationMode
+    num_speakers: int | None = None
+    min_speakers: int | None = None
+    max_speakers: int | None = None
+
+
+class AudioTranscriptionOptionsV2(BaseModel):
+    """Public audio transcription options admitted through Service API v2."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    language: str = "auto"
+    diarization: AudioDiarizationOptionsV2
+    max_duration_seconds: int = 7200
+    output_artifacts: tuple[str, ...] = ("json",)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_unsupported_option_keys(cls, value: object) -> object:
+        del cls
+        if not isinstance(value, Mapping):
+            return value
+        keys = frozenset(key for key in value.keys() if isinstance(key, str))
+        forbidden = sorted(keys.intersection(FORBIDDEN_PUBLIC_BACKEND_OPTION_KEYS))
+        if forbidden:
+            raise _audio_public_options_error(f"unsupported option '{forbidden[0]}'")
+        unsupported = sorted(keys.difference(_AUDIO_TRANSCRIPTION_OPTION_KEYS_V2))
+        if unsupported:
+            raise _audio_public_options_error(f"unsupported option '{unsupported[0]}'")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_public_options(self) -> "AudioTranscriptionOptionsV2":
+        if self.output_artifacts != ("json",):
+            raise _audio_public_options_error("unsupported option 'output_artifacts'")
+        diarization = DomainAudioDiarizationOptions(
+            mode=self.diarization.mode,
+            num_speakers=self.diarization.num_speakers,
+            min_speakers=self.diarization.min_speakers,
+            max_speakers=self.diarization.max_speakers,
+        )
+        options = AudioTranscriptionPublicOptions(
+            language=self.language,
+            diarization=diarization,
+            max_duration_seconds=self.max_duration_seconds,
+            output_artifacts=self.output_artifacts,
+            raw_option_keys=_AUDIO_TRANSCRIPTION_OPTION_KEYS_V2,
+        )
+        failure = options.validation_failure()
+        if failure is not None:
+            code, details = failure
+            detail_text = ", ".join(f"{key}={value}" for key, value in sorted(details.items()))
+            raise ValueError(f"{code.value}: {detail_text}")
+        return self
+
+
 class PdfOptionsV2(BaseModel):
     """PDF-to-intermediate options for v2 routes that start from a PDF."""
 
@@ -376,6 +456,7 @@ class JobSpecV2(BaseModel):
     pdf_options: PdfOptionsV2 | None = None
     execution: ExecutionSpecV2 | None = None
     digiexam_migration_options: DigiExamMigrationOptionsV2 | None = None
+    audio_transcription_options: AudioTranscriptionOptionsV2 | None = None
     retention: RetentionSpecV2 = Field(default_factory=RetentionSpecV2)
 
     @model_validator(mode="before")

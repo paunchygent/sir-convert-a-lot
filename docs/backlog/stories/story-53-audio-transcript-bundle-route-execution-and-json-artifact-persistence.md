@@ -10,6 +10,10 @@ related:
   - docs/backlog/epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md
   - docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
   - docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md
+  - docs/backlog/tasks/task-352-build-live-hemma-stt-sidecar-benchmark-profile-proof.md
+  - docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md
+  - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
+  - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
@@ -33,34 +37,33 @@ Implement the accepted `audio -> transcript_bundle` Service API v2 route once
 Story 51 defines route policy/admission caps and Story 52 proves the backend
 profile, producing a canonical owner-scoped JSON transcript artifact.
 
-## Blocked Implementation Decision
+## Implementation Gate Resolution
 
-Story 53 remains `proposed` and is blocked by Story 52 production profile
-rejection. Review 27 approved Story 52 only as a governed rejection outcome:
-production `stt_profile` and `diarization_profile` are rejected until a later
-governed STT sidecar benchmark image/runner proves FFmpeg/ffprobe, backend
-dependencies, token/cache readiness, Swedish/English fixtures, diarization
-speaker hints, and 120-minute lifecycle behavior on Hemma.
+Story 53 previously remained blocked by Story 52's governed production-profile
+rejection. That gate is now superseded by Task 352 and Task 354. Review 40
+accepted the deployed Hemma proof for the FasterWhisper ROCm plus pyannote
+sidecar profile, and human review accepted the ignored transcript-review
+artifacts for the English two-speaker and Swedish one-speaker fixtures on
+2026-06-10.
 
-Task 351 supplies the first benchmark preflight runner for that lane. It records
-environment readiness and remaining live-evidence gaps, but it does not select a
-production profile and does not change this story's blocked route-registration
-state.
-
-Do not register the route, persist transcript artifacts, publish OpenAPI route
-fields, or implement formatter outputs from this story state. The next
-production-enabling slice must first provide accepted sidecar benchmark-runner
-and backend-profile evidence, then return to this story or a smaller linked
-task for route registration.
+The story may now proceed through small runtime tasks. Task 355 is the first
+runtime slice and is limited to Service API v2 route admission. It must not
+persist transcript artifacts, call the sidecar for production transcription, or
+implement formatter outputs. Later Story 53 tasks own sidecar execution,
+progress, cancellation cleanup, retry, retention, and canonical
+`transcript_json` artifact persistence.
 
 Current runtime truth:
 
-- Service API v2 create-job route registration remains absent for
-  `audio -> transcript_bundle`.
-- `JobSpecV2` does not accept an `audio -> transcript_bundle` create-job
-  request.
-- Downstream and internal adapter docs describe audio transcription as a draft
-  or planned route, not a live runtime surface.
+- Service API v2 create-job route admission exists for
+  `audio -> transcript_bundle` through Task 355, with API-key tunnel and
+  Gateway signed-identity owner scopes.
+- `JobSpecV2` accepts the governed day-one audio transcription request shape,
+  including Swedish/English auto language selection, exact speaker count, and
+  min/max speaker range hints.
+- Downstream and internal adapter docs must continue to distinguish admitted
+  route requests from completed transcript generation until later execution and
+  artifact tasks are accepted.
 
 ## Scope
 
@@ -118,16 +121,16 @@ The story is done when the v2 runtime can accept governed audio transcript jobs
 and return owner-scoped `transcript_json` artifacts through the canonical
 Service API v2 lifecycle, with no formatter artifacts required yet.
 
-Current blocked state: this done definition is not satisfied. Story 53 cannot
-move to implementation completion until Story 52's rejected production profile
-is superseded by accepted Hemma sidecar benchmark-runner/profile proof. Task 351
-is the preflight surface for that proof, not the proof itself.
+Current implementation state: the backend-profile blocker is resolved, but the
+done definition is not satisfied. Task 355 opens route admission only; Story 53
+still needs later tasks for sidecar execution, progress, cancellation, retry,
+retention cleanup, and canonical `transcript_json` persistence.
 
 ## Checklist
 
-- [x] Blocked implementation decision recorded
-- [x] Runtime route remains unregistered
-- [x] Story 52 rejection linked as current blocker
+- [x] Backend-profile implementation gate resolved
+- [x] Runtime route admission slice created; execution remains unimplemented
+- [x] Task 355 route-admission slice created
 - [ ] Runtime route implementation complete
 - [ ] Runtime tests and validations complete
 - [ ] Runtime docs synchronized

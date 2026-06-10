@@ -4,7 +4,7 @@ id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
 status: draft
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-10
 owners:
   - platform
 tags:
@@ -35,16 +35,18 @@ links:
 Define the draft Service API v2 route contract for speech-to-text jobs that
 ingest uploaded audio or video sources and produce a diarized transcript bundle.
 
-This is a draft route-specific contract. It is not an implemented runtime
-surface until a later governed implementation task registers the route,
-publishes OpenAPI updates, proves sidecar runtime behavior, and passes the
-route-specific conformance tests.
+This is a draft route-specific contract. Task 355 registers Service API v2
+create-job admission for `audio -> transcript_bundle`, including request-shape,
+owner-scope, local-upload, public-option, capacity, GPU-required, and
+`retention.pin=false` checks. Full sidecar execution, audio progress,
+cancellation cleanup, `transcript_json` persistence, and formatter outputs are
+not implemented until later governed Story 53 and Story 54 tasks land.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
 approved the remediated contract direction on 2026-06-09. This contract remains
-draft until later implementation tasks publish OpenAPI updates, prove sidecar
-runtime behavior, and register the route.
+draft until later implementation tasks prove sidecar runtime behavior and
+canonical transcript artifact persistence through the public route.
 
 ## Relationship To Existing V2 API
 
@@ -447,9 +449,10 @@ transcription, diarization, alignment, or packaging work is active.
 
 ### Checkpoints, Retry, And Cancellation
 
-The first STT implementation must define deterministic duration-based audio
-chunks before runtime registration. Chunk checkpoints must record enough
-metadata to prevent duplicate transcript segment persistence on retry:
+The first sidecar execution implementation must define deterministic
+duration-based audio chunks before sidecar-backed processing is enabled. Chunk
+checkpoints must record enough metadata to prevent duplicate transcript segment
+persistence on retry:
 
 - source media hash and normalized audio hash;
 - chunk index, start/end seconds, overlap seconds, and processing profile;

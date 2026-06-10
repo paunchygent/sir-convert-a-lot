@@ -107,22 +107,22 @@ Deterministic route constraints:
 | `pdf` | `docx` | `pdf -> docx` | Service pipeline |
 | `docx` | `pdf` | `docx -> pdf` | Service pipeline |
 
-## Planned Specialized Routes
+## Specialized Routes
 
-These routes have accepted or active contracts but are not runtime surfaces
-until their implementation tasks land:
+These routes have accepted or active contracts with route-specific readiness
+states:
 
-| Source | Target | Route key | Contract |
-| --- | --- | --- | --- |
-| `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
-| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+| Source | Target | Route key | State | Contract |
+| --- | --- | --- | --- | --- |
+| `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | Runtime route | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
+| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Admission registered; execution and `transcript_json` persistence pending | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
 `/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion
 jobs. The initial product contract is authenticated Gateway plus tunnel API
 only; no public grant or anonymous transcription lane is part of the accepted
 ADR-0013 boundary. The route is not a runtime surface until its implementation
-tasks register it and publish OpenAPI updates.
+tasks register execution and publish transcript artifact updates.
 
 ## PDF Page CSS Modes
 

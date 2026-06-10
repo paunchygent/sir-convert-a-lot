@@ -24,6 +24,9 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRu
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces import http_routes_job_artifacts_v2, http_routes_jobs_v2
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
+from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
+    infer_source_format_from_filename_v2,
+)
 from tests.sir_convert_a_lot.http_routes_jobs_v2_edge_cases_test_support import (
     build_client,
     disable_run_job_async,
@@ -87,15 +90,15 @@ def test_create_job_can_defer_execution_to_supervisor_worker(
 
 
 def test_infer_format_from_filename_returns_none_for_unsupported_suffix() -> None:
-    assert http_routes_jobs_v2._infer_format_from_filename("archive.txt") is None
-    assert http_routes_jobs_v2._infer_format_from_filename("README") is None
+    assert infer_source_format_from_filename_v2("archive.txt") is None
+    assert infer_source_format_from_filename_v2("README") is None
 
 
 def test_infer_format_from_filename_returns_expected_supported_formats() -> None:
-    assert http_routes_jobs_v2._infer_format_from_filename("paper.pdf") == SourceFormatV2.PDF
-    assert http_routes_jobs_v2._infer_format_from_filename("note.md") == SourceFormatV2.MD
-    assert http_routes_jobs_v2._infer_format_from_filename("index.htm") == SourceFormatV2.HTML
-    assert http_routes_jobs_v2._infer_format_from_filename("template.docx") == SourceFormatV2.DOCX
+    assert infer_source_format_from_filename_v2("paper.pdf") == SourceFormatV2.PDF
+    assert infer_source_format_from_filename_v2("note.md") == SourceFormatV2.MD
+    assert infer_source_format_from_filename_v2("index.htm") == SourceFormatV2.HTML
+    assert infer_source_format_from_filename_v2("template.docx") == SourceFormatV2.DOCX
 
 
 def test_content_type_for_output_raises_for_unsupported_enum_simulation() -> None:

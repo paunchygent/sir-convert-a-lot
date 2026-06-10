@@ -455,8 +455,7 @@ proving the complete live observation/profile proof before retained review.
 
 The ROCm JIT header correction was committed at
 `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`, pushed to `main`, and deployed on
-2026-06-10. `pdm run hemma-deploy-and-verify --expected-revision
-fe566bd4a489f46df55d8168ac8a3a13d3dcea30 --lane host` passed with expected,
+2026-06-10. `pdm run hemma-deploy-and-verify --expected-revision fe566bd4a489f46df55d8168ac8a3a13d3dcea30 --lane host` passed with expected,
 remote, and service revisions all matching
 `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`. The full live observation and
 profile proof then passed with ignored artifacts:

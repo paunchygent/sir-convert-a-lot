@@ -15,7 +15,6 @@ Relationships:
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
     AudioDiarizationMode,
@@ -24,9 +23,6 @@ from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
     AudioTranscriptionPublicOptions,
 )
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
-from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
-    build_create_job_route_registry_v2,
-)
 from tests.sir_convert_a_lot.backlog_document_test_support import (
     backlog_document_path,
     repo_relative_path,
@@ -43,34 +39,44 @@ TRANSCRIPT_ROUTE_REVIEW_PATH = backlog_document_path(
 
 
 def test_transcript_formatters_stay_blocked_without_canonical_json_runtime() -> None:
-    registry = build_create_job_route_registry_v2()
-    route_keys = {
-        (key.source_format.value, key.output_format.value)
-        for key in registry.registered_route_keys()
-    }
-
-    assert ("audio", "transcript_bundle") not in route_keys
-
-    with pytest.raises(ValidationError):
-        JobSpecV2.model_validate(
-            {
-                "api_version": "v2",
-                "source": {
-                    "kind": "upload",
-                    "filename": "teacher-meeting.m4a",
-                    "format": "audio",
+    spec = JobSpecV2.model_validate(
+        {
+            "api_version": "v2",
+            "source": {
+                "kind": "upload",
+                "filename": "teacher-meeting.m4a",
+                "format": "audio",
+            },
+            "conversion": {"output_format": "transcript_bundle"},
+            "audio_transcription_options": {
+                "language": "auto",
+                "diarization": {
+                    "mode": "auto",
+                    "num_speakers": None,
+                    "min_speakers": None,
+                    "max_speakers": None,
                 },
-                "conversion": {"output_format": "transcript_bundle"},
-                "retention": {"pin": False},
-            }
-        )
+                "max_duration_seconds": 7200,
+                "output_artifacts": ["json"],
+            },
+            "execution": {
+                "acceleration_policy": "gpu_required",
+                "priority": "normal",
+                "document_timeout_seconds": 7200,
+            },
+            "retention": {"pin": False},
+        }
+    )
+
+    assert spec.source.format.value == "audio"
+    assert spec.conversion.output_format.value == "transcript_bundle"
 
 
 @pytest.mark.parametrize(
     "formatter_artifact",
     ["transcript_txt", "transcript_md", "transcript_vtt", "transcript_srt"],
 )
-def test_formatter_artifact_requests_are_rejected_while_audio_transcript_route_is_blocked(
+def test_formatter_artifact_requests_are_rejected_until_transcript_json_persists(
     formatter_artifact: str,
 ) -> None:
     options = AudioTranscriptionPublicOptions(
@@ -104,7 +110,6 @@ def test_transcript_formatter_records_blocked_decision_without_runtime_completio
     assert "- [x] Blocked implementation decision recorded" in story_text
     assert "- [x] Formatter runtime remains unimplemented" in story_text
     assert "- [ ] Runtime formatter implementation complete" in story_text
-    assert "This review does not authorize route registration" in route_review_text
     assert "transcript artifact persistence" in route_review_text
 
 

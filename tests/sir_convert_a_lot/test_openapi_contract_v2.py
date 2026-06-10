@@ -124,11 +124,13 @@ def test_corrections_apply_openapi_contract_exposes_unified_request_body_route()
     }
 
 
-def test_digiexam_consumer_components_are_published() -> None:
+def test_service_api_v2_consumer_components_are_published() -> None:
     schema = build_openapi_contract_v2()
     schemas = _mapping(_mapping(schema["components"])["schemas"])
 
     for component_name in (
+        "AudioDiarizationOptionsV2",
+        "AudioTranscriptionOptionsV2",
         "JobSpecV2",
         "DigiExamMigrationOptionsV2",
         "DigiExamIngestionOverlay",
@@ -158,6 +160,16 @@ def test_digiexam_consumer_components_are_published() -> None:
         "DigiExamEffectivePointCorrectionV1",
     ):
         assert component_name in schemas
+
+    source_format = _mapping(schemas["SourceFormatV2"])
+    output_format = _mapping(schemas["OutputFormatV2"])
+    source_format_enum = source_format["enum"]
+    output_format_enum = output_format["enum"]
+
+    assert isinstance(source_format_enum, list)
+    assert isinstance(output_format_enum, list)
+    assert "audio" in source_format_enum
+    assert "transcript_bundle" in output_format_enum
 
     readiness_report = _mapping(schemas["DigiExamTargetReadinessReportV1"])
     readiness_properties = _mapping(readiness_report["properties"])

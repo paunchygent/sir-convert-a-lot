@@ -1,9 +1,9 @@
 """Behavioral tests for audio transcription route admission.
 
 Purpose:
-    Prove the planned audio route rejects unsupported inputs, invalid public
-    options, exhausted capacity, and runtime registration before execution
-    stories enable the route.
+    Prove the audio route policy rejects unsupported inputs, invalid public
+    options, exhausted capacity, and execution drift while Service API v2 admits
+    the route without sidecar execution.
 
 Relationships:
     - Exercises the audio transcription route-admission domain boundary.
@@ -29,9 +29,6 @@ from scripts.sir_convert_a_lot.domain.audio_transcription_policy import (
     required_audio_transcription_public_error_codes,
 )
 from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy
-from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
-    build_create_job_route_registry_v2,
-)
 from tests.sir_convert_a_lot.audio_transcription_test_support import (
     probe,
     public_options_with,
@@ -283,10 +280,15 @@ def test_audio_public_error_code_set_covers_route_and_pipeline_failures() -> Non
     }.issubset(required_codes)
 
 
-def test_audio_transcription_policy_does_not_register_live_create_job_route() -> None:
-    registry = build_create_job_route_registry_v2()
-
-    assert all(key.source_format.value != "audio" for key in registry.registered_route_keys())
-    assert all(
-        key.output_format.value != "transcript_bundle" for key in registry.registered_route_keys()
+def test_audio_transcription_policy_registers_admission_only_create_job_route() -> None:
+    from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
+        build_create_job_route_registry_v2,
     )
+
+    registry = build_create_job_route_registry_v2()
+    route_keys = {
+        (key.source_format.value, key.output_format.value)
+        for key in registry.registered_route_keys()
+    }
+
+    assert ("audio", "transcript_bundle") in route_keys

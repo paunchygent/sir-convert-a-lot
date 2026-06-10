@@ -45,6 +45,100 @@
         "title": "ArtifactMetadataV2",
         "type": "object"
       },
+      "AudioDiarizationMode": {
+        "description": "Public diarization speaker-hint modes accepted by the audio route policy.",
+        "enum": [
+          "auto",
+          "known_speaker_count",
+          "speaker_range"
+        ],
+        "title": "AudioDiarizationMode",
+        "type": "string"
+      },
+      "AudioDiarizationOptionsV2": {
+        "additionalProperties": false,
+        "description": "Public speaker-hint options for audio transcription route admission.",
+        "properties": {
+          "max_speakers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Speakers"
+          },
+          "min_speakers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Speakers"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AudioDiarizationMode"
+          },
+          "num_speakers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Num Speakers"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "AudioDiarizationOptionsV2",
+        "type": "object"
+      },
+      "AudioTranscriptionOptionsV2": {
+        "additionalProperties": false,
+        "description": "Public audio transcription options admitted through Service API v2.",
+        "properties": {
+          "diarization": {
+            "$ref": "#/components/schemas/AudioDiarizationOptionsV2"
+          },
+          "language": {
+            "default": "auto",
+            "title": "Language",
+            "type": "string"
+          },
+          "max_duration_seconds": {
+            "default": 7200,
+            "title": "Max Duration Seconds",
+            "type": "integer"
+          },
+          "output_artifacts": {
+            "default": [
+              "json"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "title": "Output Artifacts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "diarization"
+        ],
+        "title": "AudioTranscriptionOptionsV2",
+        "type": "object"
+      },
       "BackendStrategy": {
         "description": "Backend strategy values supported by v1.",
         "enum": [
@@ -4830,6 +4924,17 @@
             "title": "Api Version",
             "type": "string"
           },
+          "audio_transcription_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AudioTranscriptionOptionsV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "conversion": {
             "$ref": "#/components/schemas/ConversionSpecV2"
           },
@@ -4929,6 +5034,7 @@
           "md",
           "pdf",
           "docx",
+          "transcript_bundle",
           "examnet_migration_bundle"
         ],
         "title": "OutputFormatV2",
@@ -5340,6 +5446,7 @@
       "SourceFormatV2": {
         "description": "Supported uploaded source formats for v2.",
         "enum": [
+          "audio",
           "pdf",
           "md",
           "html",
