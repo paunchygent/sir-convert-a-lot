@@ -1,9 +1,9 @@
 ---
-id: 'task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar'
-title: 'Provision pyannote diarization access and replacement decision for STT sidecar'
-type: 'task'
-status: 'in_progress'
-priority: 'high'
+id: task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar
+title: Provision pyannote diarization access and replacement decision for STT sidecar
+type: task
+status: in_progress
+priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
 related:
@@ -25,6 +25,7 @@ labels:
   - hemma
   - gpu
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -108,6 +109,53 @@ hints, and min/max speaker-range hints.
   the pipeline to GPU with `pipeline.to(torch.device("cuda"))`, support exact
   `num_speakers` and `min_speakers`/`max_speakers`, and expose exclusive
   diarization output suitable for transcript alignment.
+- Context7 `/huggingface/huggingface_hub`: `HF_TOKEN` is the standard
+  environment variable for authenticated Hub access, `whoami(token=...)`
+  identifies the authenticated account, and `hf_hub_download(...)` resolves a
+  specific repository file through the cache without requiring token values to
+  appear in command output.
+
+## Diagnostic Runner Surface
+
+Task 354 adds a purpose-named access diagnostic command:
+
+```bash
+pdm run diagnose:stt-sidecar-diarization-access
+```
+
+The command writes `diarization-access.json` under
+`build/verification/stt-sidecar-diarization-access` by default and returns exit
+code `0` only when the configured `HF_TOKEN` can fetch the selected pyannote
+pipeline configuration artifact. Blocked reports return exit code `2` and
+record one bounded operator action:
+
+- `configure_hf_token_for_stt_sidecar_operator` when `HF_TOKEN` is missing or
+  unauthorized;
+- `accept_or_request_pyannote_gated_model_access_for_hf_token_account` when the
+  Hub returns gated-model denial;
+- `verify_pyannote_hugging_face_access_for_hf_token_account` for other bounded
+  Hub access errors.
+
+The report records only bounded labels: backend family, profile label, model
+family, artifact label, token environment variable name, token presence,
+authenticated-account observation, failure code, exception class, and operator
+action. It does not retain token values, private cache paths, raw model
+identifiers, transcript text, generated media, or model artifacts.
+
+Local red/green implementation evidence:
+
+- red:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_sidecar_diarization_access.py -q`
+  failed during collection because the purpose-named diagnostic module did not
+  exist;
+- green:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_sidecar_diarization_access.py -q`
+  passed `8 passed`;
+- local fail-closed smoke:
+  `env -u HF_TOKEN pdm run diagnose:stt-sidecar-diarization-access --env-file /tmp/sir-convert-a-lot-no-env --output-root build/verification/stt-sidecar-diarization-access-local-missing-token`
+  returned exit code `2` and wrote an ignored report with
+  `failure_code=hf_token_missing`, `token_env_vars_present=false`, and
+  `operator_action=configure_hf_token_for_stt_sidecar_operator`.
 
 ## PR Scope
 
@@ -135,41 +183,44 @@ hints, and min/max speaker-range hints.
 ## Deliverables
 
 - [ ] Pyannote access verification evidence from Hemma using ignored live
-      observation/profile-proof artifacts.
+  observation/profile-proof artifacts.
+- [x] A purpose-named bounded diagnostic command that records the pyannote
+  access state without leaking token values, private cache paths, raw model
+  identifiers, transcripts, generated media, or model artifacts.
 - [ ] Either accepted pyannote diarization proof with exact and min/max speaker
-      hints, or a bounded access-denied record that names the next operator
-      action.
+  hints, or a bounded Hemma access-denied record that names the next
+  operator action.
 - [ ] If access cannot be provisioned, a governed replacement decision or
-      reference that preserves library-backed diarization, GPU-required
-      execution, exact speaker-count hints, min/max speaker-range hints, and
-      alignment-suitable exclusive segments.
+  reference that preserves library-backed diarization, GPU-required
+  execution, exact speaker-count hints, min/max speaker-range hints, and
+  alignment-suitable exclusive segments.
 - [ ] Task 352/353 and `.codex/handoff.md` updated with the resulting next
-      state.
+  state.
 - [ ] Retained ruthless review artifact accepting either the complete
-      diarization proof or the bounded access/replacement decision.
+  diarization proof or the bounded access/replacement decision.
 
 ## Acceptance Criteria
 
 - [ ] FasterWhisper remains the preferred and accepted STT backend unless a
-      separate governed STT task changes that decision; this task only resolves
-      diarization.
+  separate governed STT task changes that decision; this task only resolves
+  diarization.
 - [ ] Pyannote remains the first diarization option. Replacement work can begin
-      only after the access-denied state is recorded as not provisionable for
-      the current lane.
+  only after the access-denied state is recorded as not provisionable for
+  the current lane.
 - [ ] Live proof succeeds only when diarization runs through the selected
-      backend on the GPU-required sidecar lane, exercises exact speaker-count
-      and min/max speaker-range hints, provides exclusive speaker segments, and
-      produces alignment-suitable evidence for the English and Swedish
-      fixtures.
+  backend on the GPU-required sidecar lane, exercises exact speaker-count
+  and min/max speaker-range hints, provides exclusive speaker segments, and
+  produces alignment-suitable evidence for the English and Swedish
+  fixtures.
 - [ ] `HF_TOKEN` is the governed token environment variable. Reports and docs
-      may record the key name and bounded readiness status, but never token
-      values, private cache paths, raw transcripts, generated media, or model
-      artifacts.
+  may record the key name and bounded readiness status, but never token
+  values, private cache paths, raw transcripts, generated media, or model
+  artifacts.
 - [ ] Any replacement candidate is governed before implementation and rejected
-      if it lacks maintained-library ownership, GPU execution, exact speaker
-      hints, min/max speaker hints, or alignment-suitable segment output.
+  if it lacks maintained-library ownership, GPU execution, exact speaker
+  hints, min/max speaker hints, or alignment-suitable segment output.
 - [ ] Story 53 remains blocked until Task 352 receives a final retained review
-      decision accepting complete live proof including diarization.
+  decision accepting complete live proof including diarization.
 
 ## Checklist
 
