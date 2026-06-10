@@ -130,6 +130,7 @@ def build_live_observation(
         "sidecar_launch": _sidecar_launch(settings),
         "codec_boundary": codec_boundary,
         "backend_dependencies": projection.backend_dependencies(runtime_payload),
+        "backend_failures": projection.backend_failures(runtime_payload),
         "huggingface_readiness": projection.huggingface_readiness(
             runtime_payload=runtime_payload,
             environment=environment,

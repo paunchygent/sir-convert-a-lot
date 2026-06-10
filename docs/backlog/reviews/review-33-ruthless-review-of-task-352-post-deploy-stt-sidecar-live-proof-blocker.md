@@ -1,9 +1,9 @@
 ---
-id: 'review-33-ruthless-review-of-task-352-post-deploy-stt-sidecar-live-proof-blocker'
-title: 'Ruthless review of Task 352 post-deploy STT sidecar live proof blocker'
-type: 'review'
-status: 'completed'
-priority: 'high'
+id: review-33-ruthless-review-of-task-352-post-deploy-stt-sidecar-live-proof-blocker
+title: Ruthless review of Task 352 post-deploy STT sidecar live proof blocker
+type: review
+status: completed
+priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
 related:
@@ -23,6 +23,7 @@ labels:
   - sidecar
   - gpu
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -82,8 +83,7 @@ Structured review artifact for implementation or readiness checks.
   English fixture, Swedish fixture, exact speaker count, and min/max speaker
   range because neither backend completed runtime execution.
 - Sanitized backend diagnostics from the same benchmark image show:
-  - `faster-whisper` load fails with `RuntimeError`: `CUDA failed with error
-    CUDA driver version is insufficient for CUDA runtime version`;
+  - `faster-whisper` load fails with `RuntimeError`: `CUDA failed with error CUDA driver version is insufficient for CUDA runtime version`;
   - `pyannote.audio` pipeline loading fails with `GatedRepoError` after the
     Hub-version pin.
 - Context7 `/systran/faster-whisper` documentation confirms the documented GPU
@@ -112,10 +112,10 @@ with a CUDA runtime/driver mismatch. Because the accepted profile requires
 bounded STT runtime evidence for English and Swedish fixtures, Task 352 cannot
 claim the STT backend criterion or unblock Story 53.
 
-Required resolution: re-govern the STT backend for Hemma ROCm with a
-GPU-required no-CPU-fallback backend that actually runs on Hemma, or move the
-`faster-whisper` proof to a CUDA/NVIDIA lane and record that as the governed
-execution environment.
+Required resolution: prove GPU-backed Whisper-family STT with no CPU fallback
+on the governed execution lane. FasterWhisper remains the preferred first
+option; any replacement must be a governed Whisper-family backend, not a
+non-Whisper STT substitute.
 
 ### High: Task 352 still lacks accepted diarization execution on Hemma
 
@@ -143,6 +143,11 @@ Required resolution: before the next acceptance review, make backend runtime
 failure classification a bounded, redacted evidence field or a governed
 sidecar diagnostic artifact.
 
+Disposition on 2026-06-10: resolved by Task 353's bounded diagnostic slice and
+approved in Review 34. The high STT and diarization execution blockers in this
+review remain open, and Task 352 is still not accepted as complete live Hemma
+proof.
+
 ## Decision
 
 changes_requested
@@ -159,14 +164,16 @@ STT and diarization runtime evidence are green on the governed execution lane.
 
 ## Follow-up Actions
 
-1. Create a governed follow-up slice for the Hemma ROCm STT backend decision:
-   replace faster-whisper on Hemma, provide a CUDA/NVIDIA execution lane, or
-   explicitly reject faster-whisper as the Hemma STT profile.
-2. Provision/accept the required Hugging Face gated-model access for the
+1. Create a governed follow-up slice for GPU-backed Whisper-family execution:
+   first prove CTranslate2/FasterWhisper on the Hemma GPU lane, preferably
+   HIP/ROCm if viable; if not viable, govern and prove another Whisper-family
+   backend before unblocking Task 352.
+1. Provision/accept the required Hugging Face gated-model access for the
    pyannote diarization pipeline token, or govern an alternative diarization
    backend/profile that satisfies exact and min/max speaker hints.
-3. Add bounded backend failure classification to the live observation or a
+1. Add bounded backend failure classification to the live observation or a
    retained diagnostic artifact before the next live-proof acceptance review.
+   Completed by Task 353 and approved in Review 34.
 
 ## Completion
 

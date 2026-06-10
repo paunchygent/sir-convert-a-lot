@@ -193,12 +193,13 @@ def _stt_payload(*, args: argparse.Namespace) -> dict[str, object]:
                 language="sv",
             ),
         )
-    except Exception:
+    except Exception as exc:
         return {
             "profile_label": "stt_sv_en_primary",
             "backend_family": "faster_whisper",
             "cache_reuse_observed": False,
             "status": "blocked",
+            "failure": _failure_payload(exc),
             "fixtures": [],
         }
     return {
@@ -259,11 +260,12 @@ def _diarization_payload(*, args: argparse.Namespace, token: str) -> dict[str, o
             ),
         )
         range_segments = _diarization_segment_count(english_range)
-    except Exception:
+    except Exception as exc:
         return {
             "profile_label": "diarization_sv_en_primary",
             "backend_family": "pyannote_audio",
             "status": "blocked",
+            "failure": _failure_payload(exc),
             "exclusive_diarization_available": False,
             "alignment_suitable": False,
             "exact_speaker_count_supported": True,
@@ -296,6 +298,44 @@ def _diarization_fixture(*, output: object, fixture_label: str) -> dict[str, obj
         "exclusive_speaker_segments": segment_count > 0,
         "alignment_suitable": segment_count > 0,
     }
+
+
+def _failure_payload(exc: Exception) -> dict[str, object]:
+    exception_class = exc.__class__.__name__
+    return {
+        "exception_class": _bounded_exception_class(exception_class),
+        "failure_code": _failure_code(exc, exception_class=exception_class),
+    }
+
+
+def _failure_code(exc: Exception, *, exception_class: str) -> str:
+    message = str(exc).lower()
+    if exception_class == "GatedRepoError":
+        return "gated_model_access_denied"
+    if "cuda" in message and ("driver" in message or "runtime" in message):
+        return "gpu_backend_runtime_unavailable"
+    if exception_class in {"ImportError", "ModuleNotFoundError"}:
+        return "backend_dependency_incompatible"
+    return "backend_runtime_blocked"
+
+
+def _bounded_exception_class(value: str) -> str:
+    if value in {"Exception", "Unavailable"}:
+        return value
+    if _ascii_identifier(value) and value.endswith(("Error", "Exception")):
+        return value
+    return "Exception"
+
+
+def _ascii_identifier(value: str) -> bool:
+    if not value:
+        return False
+    first_character = value[0]
+    if not (first_character.isascii() and (first_character.isalpha() or first_character == "_")):
+        return False
+    return all(
+        character.isascii() and (character.isalnum() or character == "_") for character in value
+    )
 
 
 def _has_diarized_segments(fixture: Mapping[str, object]) -> bool:

@@ -19,6 +19,17 @@ from scripts.sir_convert_a_lot.devops.audio_transcription_sidecar_profile_proof 
     REQUIRED_HF_TOKEN_ENV_VARS,
 )
 
+_KNOWN_BACKEND_FAMILIES = frozenset(("faster_whisper", "pyannote_audio"))
+_KNOWN_BACKEND_FAILURE_CODES = frozenset(
+    (
+        "backend_dependency_incompatible",
+        "backend_runtime_blocked",
+        "gated_model_access_denied",
+        "gpu_backend_runtime_unavailable",
+    )
+)
+_KNOWN_BACKEND_FAILURE_STATUSES = frozenset(("blocked",))
+
 
 def failure_reasons(
     *,
@@ -86,6 +97,25 @@ def backend_dependencies(runtime_payload: Mapping[str, object]) -> dict[str, obj
         "sidecar_runtime_isolated": True,
         "main_service_dependency_change_observed": False,
     }
+
+
+def backend_failures(runtime_payload: Mapping[str, object]) -> dict[str, object]:
+    """Project bounded backend failure classifications without raw messages."""
+
+    stt = mapping_at(runtime_payload, "stt")
+    diarization = mapping_at(runtime_payload, "diarization")
+    failures: dict[str, object] = {}
+    if stt.get("status") != "ready":
+        failures["stt"] = _backend_failure(
+            stt,
+            backend_family_default="faster_whisper",
+        )
+    if diarization.get("status") != "ready":
+        failures["diarization"] = _backend_failure(
+            diarization,
+            backend_family_default="pyannote_audio",
+        )
+    return failures
 
 
 def huggingface_readiness(
@@ -257,6 +287,29 @@ def mapping_at(payload: Mapping[str, object], key: str) -> Mapping[str, object]:
     return {str(item_key): item for item_key, item in value.items() if isinstance(item_key, str)}
 
 
+def _backend_failure(
+    payload: Mapping[str, object],
+    *,
+    backend_family_default: str,
+) -> dict[str, object]:
+    failure = mapping_at(payload, "failure")
+    return {
+        "backend_family": _bounded_backend_family(
+            string_at(payload, "backend_family", backend_family_default),
+            default=backend_family_default,
+        ),
+        "status": _bounded_backend_failure_status(
+            string_at(payload, "status", "blocked"),
+        ),
+        "failure_code": _bounded_backend_failure_code(
+            string_at(failure, "failure_code", "backend_runtime_blocked"),
+        ),
+        "exception_class": _bounded_exception_class(
+            string_at(failure, "exception_class", "Unavailable")
+        ),
+    }
+
+
 def string_at(payload: Mapping[str, object], key: str, default: str) -> str:
     """Return a string value from a mapping, or a default."""
 
@@ -264,6 +317,43 @@ def string_at(payload: Mapping[str, object], key: str, default: str) -> str:
     if isinstance(value, str):
         return value
     return default
+
+
+def _bounded_backend_family(value: str, *, default: str) -> str:
+    if value in _KNOWN_BACKEND_FAMILIES:
+        return value
+    return default
+
+
+def _bounded_backend_failure_status(value: str) -> str:
+    if value in _KNOWN_BACKEND_FAILURE_STATUSES:
+        return value
+    return "blocked"
+
+
+def _bounded_backend_failure_code(value: str) -> str:
+    if value in _KNOWN_BACKEND_FAILURE_CODES:
+        return value
+    return "backend_runtime_blocked"
+
+
+def _bounded_exception_class(value: str) -> str:
+    if value in {"Exception", "Unavailable"}:
+        return value
+    if _ascii_identifier(value) and value.endswith(("Error", "Exception")):
+        return value
+    return "Unavailable"
+
+
+def _ascii_identifier(value: str) -> bool:
+    if not value:
+        return False
+    first_character = value[0]
+    if not (first_character.isascii() and (first_character.isalpha() or first_character == "_")):
+        return False
+    return all(
+        character.isascii() and (character.isalnum() or character == "_") for character in value
+    )
 
 
 def int_at(payload: Mapping[str, object], key: str) -> int:

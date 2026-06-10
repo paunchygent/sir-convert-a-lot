@@ -136,7 +136,7 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. For STT Task 352, do not start Story 53 yet. Govern the next backend decision first: either replace faster-whisper for the Hemma ROCm STT lane, provide a CUDA/NVIDIA execution lane for faster-whisper, or explicitly reject faster-whisper as the Hemma profile; then provision/accept the required Hugging Face gated access for the pyannote diarization pipeline or govern an alternative diarization backend that satisfies exact and min/max speaker hints.
+1. For STT Task 352, do not start Story 53 yet. The STT backend must remain GPU-backed Whisper-family STT with no CPU fallback; the next remediation is to prove a CTranslate2/FasterWhisper GPU lane for Hemma first, preferably HIP/ROCm if viable, while also provisioning/accepting the required Hugging Face gated access for the pyannote diarization pipeline or governing an alternative real diarization backend that satisfies exact and min/max speaker hints.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task

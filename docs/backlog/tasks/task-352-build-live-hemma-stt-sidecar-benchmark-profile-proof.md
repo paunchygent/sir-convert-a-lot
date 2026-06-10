@@ -291,8 +291,7 @@ codes:
 Sanitized backend diagnostics from the same benchmark image identify the root
 causes:
 
-- `faster-whisper` model loading fails with `RuntimeError`: `CUDA failed with
-  error CUDA driver version is insufficient for CUDA runtime version`. Current
+- `faster-whisper` model loading fails with `RuntimeError`: `CUDA failed with error CUDA driver version is insufficient for CUDA runtime version`. Current
   upstream `faster-whisper`/CTranslate2 documentation remains CUDA/NVIDIA
   oriented; this is not an accepted ROCm GPU proof.
 - `pyannote.audio` pipeline loading fails with `GatedRepoError` after the
@@ -321,10 +320,11 @@ unregistered. It remains false for Hugging Face readiness, Swedish fixture,
 English fixture, exact speaker count, and min/max speaker range because neither
 backend completed runtime execution.
 
-Story 53 remains blocked. The next governed decision is either to provide
-pyannote gated-model access and replace/re-govern the STT backend for Hemma
-ROCm, or move the faster-whisper proof to a CUDA/NVIDIA lane that satisfies the
-GPU-required no-CPU-fallback policy.
+Story 53 remains blocked. The next governed decision is to provide pyannote
+gated-model access and prove GPU-backed Whisper-family STT on the governed
+execution lane. FasterWhisper remains the preferred first option; any
+replacement must be governed as a Whisper-family backend. CPU fallback and
+non-Whisper STT substitutes are not acceptable for this product lane.
 
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
