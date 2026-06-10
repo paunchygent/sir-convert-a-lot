@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-09'
+last_updated: '2026-06-10'
 ---
 
 ## Purpose
@@ -18,21 +18,15 @@ durable implementation authority lives in governed docs.
 - Active planning and session handoff: `.codex/handoff.md`.
 - Long-term handoff history compacted on 2026-06-05:
   `.codex/long-term-memory/entries/session-2026-06-05-handoff-compaction.md`.
-- Active DevOps story:
-  `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
-- Active Gateway cutover lane:
-  `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
+- Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
+- Active Gateway cutover lane: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in
   Review 26; Story 52 accepted in Review 27 as governed profile rejection; Task
   351 adds the preflight runner; Story 53 remains blocked until live Hemma proof.
-- Active exam artifact conversion/authoring lane:
-  `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Active public-edge recovery/follow-up tasks:
-  `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md`
-  and
-  `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
-- Active dependency-image cleanup task:
-  `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
+- STT Task 352 is in progress; Review 31 approved `benchmark:stt-sidecar-profile-proof` as the content-safe runner/contract slice, but complete live Hemma proof remains open.
+- Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
+- Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
+- Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
 ## Conversion Remediation
 
@@ -134,6 +128,7 @@ formula evidence with VLM output.
 
 ## Next Actions
 
+1. For STT Task 352, run the benchmark-only STT sidecar on Hemma, generate sanitized live observation JSON for the copied English two-speaker MP3 and Swedish one-speaker M4A fixtures, ingest it with `pdm run benchmark:stt-sidecar-profile-proof -- --mode live --live-observation-json <path>`, record the ignored report path in Task 352, and request final live-proof review before unblocking Story 53.
 1. Continue Task 345 by implementing the best-effort formula representation
    ladder and per-region/page-window reconciliation on top of the new
    `docling_formula_authority` substrate. Do not create a second source-layer
@@ -162,6 +157,7 @@ formula evidence with VLM output.
 - STT Story 51 implementation: focused pytest `35 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed.
 - STT Story 52 governed rejection: focused pytest `7 passed`; focused ruff/mypy passed; docs-sync/docs/skills/handoff/diff gates passed; Review 27 approved the rejection outcome.
 - STT Task 351 preflight runner: focused pytest passed with `4 passed`; `benchmark:stt-sidecar-preflight` wrote sanitized report artifacts.
+- STT Task 352 runner/remediation slice: Review 31 approved the profile-proof runner surface; focused STT pytest `36 passed`; scoped ruff/format/mypy passed; projection exited `0`; live missing-observation exited `2`; generated reports were ignored and redaction-clean.
 - Task 344 focused local tests passed:
   `pdm run test tests/sir_convert_a_lot/test_docling_formula_diagnostics.py tests/sir_convert_a_lot/test_docling_page_window_replay.py`
   -> `20 passed`.

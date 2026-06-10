@@ -151,6 +151,7 @@ def _fixture_report(
         "fixture_label": language.fixture_label,
         "language": language.language,
         "alignment_suitable": language.alignment_suitable,
+        "word_timestamps_available": language.word_timestamps_available,
     }
 
 
@@ -233,6 +234,8 @@ def _single_language_rejection_reasons(
         reasons.append(f"{required_language}_exclusive_diarization_not_proven")
     if not evidence.alignment_suitable:
         reasons.append(f"{required_language}_alignment_not_suitable")
+    if not evidence.word_timestamps_available:
+        reasons.append(f"{required_language}_word_timestamps_missing")
     if evidence.transcript_text_retained:
         reasons.append(f"{required_language}_transcript_text_retained")
     return reasons

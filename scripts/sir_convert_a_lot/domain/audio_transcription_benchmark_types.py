@@ -61,6 +61,7 @@ class AudioBenchmarkFixtureReport(TypedDict):
     fixture_label: str
     language: str
     alignment_suitable: bool
+    word_timestamps_available: bool
 
 
 class AudioBenchmarkRuntimeReport(TypedDict):
@@ -145,6 +146,7 @@ class AudioBenchmarkLanguageEvidence:
     diarized_segment_count: int
     exclusive_speaker_segments: bool
     alignment_suitable: bool
+    word_timestamps_available: bool
     transcript_text_retained: bool
     transcript_text_samples: tuple[str, ...]
 

@@ -13,6 +13,8 @@ Relationships:
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from scripts.sir_convert_a_lot.domain.audio_transcription_benchmark_profiles import (
     AudioBenchmarkContentSafetyEvidence,
     AudioBenchmarkEvidence,
@@ -68,6 +70,7 @@ def valid_evidence() -> AudioBenchmarkEvidence:
                 diarized_segment_count=18,
                 exclusive_speaker_segments=True,
                 alignment_suitable=True,
+                word_timestamps_available=True,
                 transcript_text_retained=False,
                 transcript_text_samples=("hej detta ska inte synas",),
             ),
@@ -78,6 +81,7 @@ def valid_evidence() -> AudioBenchmarkEvidence:
                 diarized_segment_count=21,
                 exclusive_speaker_segments=True,
                 alignment_suitable=True,
+                word_timestamps_available=True,
                 transcript_text_retained=False,
                 transcript_text_samples=("hello this must not render",),
             ),
@@ -188,6 +192,7 @@ def test_content_safe_report_excludes_transcript_text_model_ids_tokens_and_priva
             "fixture_label": "operator_sv_fixture",
             "language": "sv",
             "alignment_suitable": True,
+            "word_timestamps_available": True,
         },
         {
             "detected_language": "en",
@@ -196,5 +201,29 @@ def test_content_safe_report_excludes_transcript_text_model_ids_tokens_and_priva
             "fixture_label": "operator_en_fixture",
             "language": "en",
             "alignment_suitable": True,
+            "word_timestamps_available": True,
         },
     ]
+
+
+def test_profile_selection_rejects_missing_word_timestamps() -> None:
+    language_evidence = (
+        valid_evidence().language_evidence[0],
+        AudioBenchmarkLanguageEvidence(
+            fixture_label="operator_en_fixture",
+            language="en",
+            detected_language="en",
+            diarized_segment_count=21,
+            exclusive_speaker_segments=True,
+            alignment_suitable=True,
+            word_timestamps_available=False,
+            transcript_text_retained=False,
+            transcript_text_samples=(),
+        ),
+    )
+    evidence = replace(valid_evidence(), language_evidence=language_evidence)
+
+    decision = evaluate_audio_benchmark_profile_selection(evidence)
+
+    assert decision.status == BenchmarkProfileSelectionStatus.REJECTED
+    assert "en_word_timestamps_missing" in decision.rejection_reasons
