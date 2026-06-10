@@ -180,7 +180,7 @@ formula evidence with VLM output.
   -> `6 passed`.
 - Task 342 incremental manifest/replay visibility slice 2026-06-10:
   `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callback tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_fresh_running_submit_to_progress_callback`
-  -> `8 passed`.
+  -> `8 passed`; Review 32 approved the slice after one remediation pass.
 
 ## Stop Conditions
 

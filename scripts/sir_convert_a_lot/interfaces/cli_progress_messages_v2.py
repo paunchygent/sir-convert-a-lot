@@ -56,7 +56,7 @@ def format_running_progress_message_v2(
         return _format_submitted_progress_message_v2(
             relative_label=relative_label,
             job_obj=job_obj,
-    )
+        )
     progress_obj = job_obj.get("progress")
     if not isinstance(progress_obj, dict):
         return _format_submitted_progress_message_v2(

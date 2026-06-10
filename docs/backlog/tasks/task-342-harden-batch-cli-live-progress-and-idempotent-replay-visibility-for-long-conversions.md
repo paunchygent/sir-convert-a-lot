@@ -16,6 +16,7 @@ related:
   - docs/backlog/tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md
   - docs/converters/sir_convert_a_lot.md
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/backlog/reviews/review-32-ruthless-review-of-task-342-incremental-manifest-and-replay-visibility-slice.md
   - scripts/sir_convert_a_lot/interfaces/cli_app.py
   - scripts/sir_convert_a_lot/interfaces/cli_route_submission_v2.py
   - scripts/sir_convert_a_lot/interfaces/cli_manifest_writer_v2.py
