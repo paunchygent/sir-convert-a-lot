@@ -27,5 +27,5 @@ RUN apt-get update \
 RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-pip,target=/root/.cache/pip \
     python -m pip install --upgrade \
         faster-whisper \
-        huggingface_hub \
+        "huggingface-hub==0.34.4" \
         pyannote.audio

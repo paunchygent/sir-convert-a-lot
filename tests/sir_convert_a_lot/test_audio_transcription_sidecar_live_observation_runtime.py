@@ -332,7 +332,7 @@ def test_docker_mode_uses_buildkit_buildx_for_benchmark_sidecar(
     dockerfile = Path("containers/stt-sidecar-benchmark/Dockerfile").read_text(encoding="utf-8")
     assert "faster-whisper" in dockerfile
     assert "pyannote.audio" in dockerfile
-    assert "huggingface_hub" in dockerfile
+    assert '"huggingface-hub==0.34.4"' in dockerfile
 
 
 class FakeCommandRunner:
