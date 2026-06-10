@@ -20,6 +20,9 @@ ARG CTRANSLATE2_RELEASE_BASE_URL=https://github.com/OpenNMT/CTranslate2/releases
 ARG CTRANSLATE2_ROCM_WHEELS_ARCHIVE=rocm-python-wheels-Linux.zip
 ARG CTRANSLATE2_ROCM_WHEELS_SHA256=9ec6d82e5682b27af6c535f56525665c949cc63fbef14a9028c47b0164717143
 ARG CTRANSLATE2_ROCM_WHEEL=ctranslate2-4.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+ARG CTRANSLATE2_PYTHON_PACKAGE_DIR=/app/.venv/lib/python3.11/site-packages/ctranslate2
+ARG CTRANSLATE2_WHEEL_LIBRARY_DIR=/app/.venv/lib/python3.11/site-packages/ctranslate2.libs
+ARG CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR=/opt/ctranslate2-rocm-libraries
 ARG TORCH_ROCM_LIBRARY_DIR=/app/.venv/lib/python3.11/site-packages/torch/lib
 
 ENV HF_HOME=/cache/huggingface
@@ -31,6 +34,7 @@ RUN apt-get update \
         ca-certificates \
         curl \
         ffmpeg \
+        patchelf \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -52,6 +56,20 @@ RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-ctranslate2-rocm,target=
     unzip -q "${archive_path}" -d "${extract_dir}"; \
     test -f "${extract_dir}/temp-linux/${CTRANSLATE2_ROCM_WHEEL}"; \
     python -m pip install --force-reinstall --no-deps "${extract_dir}/temp-linux/${CTRANSLATE2_ROCM_WHEEL}"; \
-    printf '%s\n' "${TORCH_ROCM_LIBRARY_DIR}" > /etc/ld.so.conf.d/torch-rocm.conf; \
-    ldconfig; \
+    mkdir -p "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}"; \
+    find "${TORCH_ROCM_LIBRARY_DIR}" -maxdepth 1 \( -type f -o -type l \) -name 'lib*.so*' ! -name 'libtinfo.so*' -exec ln -sf '{}' "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/" \;; \
+    test -e "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhiprand.so"; \
+    test -e "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhipblas.so"; \
+    test -e "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libamdhip64.so"; \
+    ln -sf "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhiprand.so" "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhiprand.so.1"; \
+    ln -sf "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhipblas.so" "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhipblas.so.3"; \
+    ln -sf "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libamdhip64.so" "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libamdhip64.so.7"; \
+    for binary_path in "${CTRANSLATE2_PYTHON_PACKAGE_DIR}"/_ext*.so; do \
+        test -f "${binary_path}"; \
+        patchelf --set-rpath "\$ORIGIN/../ctranslate2.libs:${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}" "${binary_path}"; \
+    done; \
+    for binary_path in "${CTRANSLATE2_WHEEL_LIBRARY_DIR}"/libctranslate2*.so*; do \
+        test -f "${binary_path}"; \
+        patchelf --set-rpath "\$ORIGIN:${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}" "${binary_path}"; \
+    done; \
     rm -rf "${extract_dir}" "${archive_path}.sha256"

@@ -51,17 +51,47 @@ def test_benchmark_image_installs_official_ctranslate2_rocm_wheel_after_stt_deps
     )
 
 
-def test_benchmark_image_registers_torch_rocm_libraries_for_ctranslate2() -> None:
+def test_benchmark_image_keeps_ctranslate2_rocm_libraries_out_of_global_linker_state() -> None:
     dockerfile = _dockerfile_text()
     args = _arg_values(dockerfile)
 
     assert args["TORCH_ROCM_LIBRARY_DIR"] == ("/app/.venv/lib/python3.11/site-packages/torch/lib")
+    assert args["CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR"] == "/opt/ctranslate2-rocm-libraries"
+    assert "patchelf" in dockerfile
+    assert 'find "${TORCH_ROCM_LIBRARY_DIR}" -maxdepth 1' in dockerfile
+    assert "-name 'lib*.so*'" in dockerfile
+    assert "! -name 'libtinfo.so*'" in dockerfile
+    assert "-exec ln -sf '{}' \"${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/\"" in dockerfile
     assert (
-        "printf '%s\\n' \"${TORCH_ROCM_LIBRARY_DIR}\" > /etc/ld.so.conf.d/torch-rocm.conf"
-        in dockerfile
+        'ln -sf "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhiprand.so" '
+        '"${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhiprand.so.1"'
+    ) in dockerfile
+    assert (
+        'ln -sf "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhipblas.so" '
+        '"${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libhipblas.so.3"'
+    ) in dockerfile
+    assert (
+        'ln -sf "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libamdhip64.so" '
+        '"${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}/libamdhip64.so.7"'
+    ) in dockerfile
+    assert (
+        'patchelf --set-rpath "\\$ORIGIN/../ctranslate2.libs:'
+        '${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}"'
+    ) in dockerfile
+    assert (
+        'patchelf --set-rpath "\\$ORIGIN:${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}"'
+    ) in dockerfile
+    _assert_ordered(
+        dockerfile,
+        "python -m pip install --force-reinstall --no-deps",
+        'mkdir -p "${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}"',
+        'find "${TORCH_ROCM_LIBRARY_DIR}"',
+        "libhiprand.so.1",
+        'patchelf --set-rpath "\\$ORIGIN/../ctranslate2.libs:',
+        'patchelf --set-rpath "\\$ORIGIN:${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}"',
     )
-    assert "ldconfig" in dockerfile
-    assert "ln -sf" not in dockerfile
+    assert "/etc/ld.so.conf" not in dockerfile
+    assert "ldconfig" not in dockerfile
     assert "LD_LIBRARY_PATH" not in dockerfile
 
 

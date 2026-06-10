@@ -40,7 +40,8 @@ Structured review artifact for implementation or readiness checks.
   - replace the failed normal CTranslate2 CUDA wheel path in the benchmark-only
     sidecar image with the official CTranslate2 ROCm release wheel;
   - register Torch ROCm libraries through the dynamic linker so
-    FasterWhisper can use the GPU-backed CTranslate2 lane on Hemma;
+    FasterWhisper can use the GPU-backed CTranslate2 lane on Hemma, which was
+    later invalidated by post-deploy live codec evidence recorded below;
   - retain the existing no-CPU-fallback invariant and FasterWhisper-first
     product preference;
   - clean docstrings away from task/story/meta wording in touched tests.
@@ -59,7 +60,8 @@ Structured review artifact for implementation or readiness checks.
   - clean replacement inside the benchmark sidecar image only.
   - no legacy command, route, file, import, or provider contract is preserved.
   - the dynamic-linker registration is system library configuration for the
-    selected ROCm runtime, not an application shim, alias, or wrapper surface.
+    selected ROCm runtime in the reviewed slice, but is no longer accepted as
+    the current implementation approach after post-deploy live observation.
 
 ## Review Evidence
 
@@ -91,8 +93,9 @@ Structured review artifact for implementation or readiness checks.
 - A Hemma read-only container probe confirmed `ldconfig` against
   `/app/.venv/lib/python3.11/site-packages/torch/lib` creates the required
   versioned HIP soname links for `libhiprand.so.1`, `libhipblas.so.3`, and
-  `libamdhip64.so.7`. This supports the Dockerfile's dynamic-linker approach at
-  `containers/stt-sidecar-benchmark/Dockerfile:55`.
+  `libamdhip64.so.7`. This supported the pre-deploy static review only; the
+  post-deploy live observation recorded below invalidated using global
+  dynamic-linker registration for the benchmark image.
 - Static review found no task/story-number filenames in the new test file and
   no task/story/meta wording in the changed module docstrings.
 - Forbidden-pattern review found no application shim, alias, wrapper, hidden
@@ -101,7 +104,7 @@ Structured review artifact for implementation or readiness checks.
 
 ## Findings
 
-No blocking findings remain.
+No blocking findings remained for the pre-deploy static image-contract slice.
 
 The scoped implementation is accepted because it keeps FasterWhisper as the
 first STT backend, replaces only the failed CTranslate2 package path inside the
@@ -112,6 +115,28 @@ GPU-required/no-CPU-fallback contract.
 This review does not accept Task 352 as complete live proof. The image change
 still must be committed, pushed, deployed to Hemma, and exercised by the live
 observation/profile-proof commands before Story 53 can move.
+
+## Post-Deploy Correction
+
+The reviewed slice was later committed, pushed, and deployed at
+`1b1576450d56eb16429ed1696e59c9f3ae504183`. The live Hemma observation wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-ctranslate2-rocm-1b15764/live-observation.json`.
+
+That observation improved the STT backend state but invalidated this review's
+dynamic-linker implementation approach. FasterWhisper no longer recorded an STT
+backend failure, ROCm execution remained active with no CPU fallback, the
+fixtures detected `en` and `sv`, and word timestamps were present. The codec
+boundary failed in the same deployed image with `ffmpeg_available=false`,
+`ffprobe_available=false`, and `valid_audio_probe_exercised=false`.
+
+A direct Hemma probe traced the codec failure to global registration of the
+full Torch library directory, which made FFmpeg and FFprobe load Torch's bundled
+`libtinfo.so.6`. The corrective implementation direction is therefore to keep
+the official CTranslate2 ROCm wheel but contain ROCm runtime discovery to
+CTranslate2 wheel binaries by using a CTranslate2-owned runtime library
+directory and wheel-local RPATHs. That corrected implementation requires a
+separate retained review and live Hemma proof before Task 352 can be accepted.
 
 ## Decision
 
@@ -140,8 +165,10 @@ FasterWhisper execution and real diarization execution.
 
 ## Completion
 
-Review completed on 2026-06-10. Decision is `approved` for the bounded STT
-sidecar CTranslate2 ROCm image-contract slice only.
+Review completed on 2026-06-10. Decision is `approved` for the bounded
+pre-deploy STT sidecar CTranslate2 ROCm image-contract slice only. The
+post-deploy codec failure recorded above means the dynamic-linker approach is
+not accepted as current implementation guidance.
 
 Validation run during review:
 

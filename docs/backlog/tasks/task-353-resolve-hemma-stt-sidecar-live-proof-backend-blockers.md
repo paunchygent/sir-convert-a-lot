@@ -14,6 +14,7 @@ related:
   - docs/backlog/reviews/review-33-ruthless-review-of-task-352-post-deploy-stt-sidecar-live-proof-blocker.md
   - docs/backlog/reviews/review-34-ruthless-review-of-task-353-stt-sidecar-backend-failure-classification.md
   - docs/backlog/reviews/review-35-ruthless-review-of-stt-sidecar-ctranslate2-rocm-image-contract.md
+  - docs/backlog/reviews/review-36-ruthless-review-of-stt-sidecar-ctranslate2-rocm-rpath-image-correction.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -175,19 +176,49 @@ image contract for the preferred FasterWhisper path:
   `9ec6d82e5682b27af6c535f56525665c949cc63fbef14a9028c47b0164717143`;
 - the image installs the exact Python 3.11 CTranslate2 ROCm wheel after
   `faster-whisper`, `pyannote.audio`, and `huggingface-hub==0.34.4`;
-- the image registers the Torch ROCm library directory with the system dynamic
-  linker so the CTranslate2 ROCm extension can resolve the HIP sonames already
-  declared by the Torch ROCm wheel;
+- the initially reviewed image registered the full Torch ROCm library directory
+  with the system dynamic linker so the CTranslate2 ROCm extension could
+  resolve the HIP sonames already declared by the Torch ROCm wheel;
 - the slice does not add CPU fallback, route registration, transcript
   persistence, formatter output, Gateway publication, main-service STT
   dependencies, or diarization replacement behavior.
 
 Review 35 approved this bounded image-contract slice on 2026-06-10. That
-approval does not accept Task 352 live proof. The updated image must still be
-committed, pushed, deployed, and exercised through live observation/profile-proof
-ingestion before the STT backend blocker can be removed. Pyannote gated access
-or a governed library-backed diarization replacement remains a separate live
-proof blocker.
+approval did not accept Task 352 live proof. The slice was committed, pushed,
+and deployed at `1b1576450d56eb16429ed1696e59c9f3ae504183`. The post-deploy
+live observation returned exit code `2` and wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-ctranslate2-rocm-1b15764/live-observation.json`.
+
+The deployed image improved the STT backend evidence: FasterWhisper no longer
+records an STT backend failure, the runtime confirms ROCm acceleration with no
+CPU fallback, both fixtures detect the expected `en` and `sv` languages, and
+word timestamps are present. The same observation invalidated the global
+dynamic-linker approach because the codec boundary regressed:
+`ffmpeg_available=false`, `ffprobe_available=false`, and
+`valid_audio_probe_exercised=false`. A direct Hemma probe traced the failure to
+global registration of the full Torch library directory, which made FFmpeg and
+FFprobe load Torch's bundled `libtinfo.so.6`.
+
+The corrective implementation slice keeps the official CTranslate2 ROCm wheel
+and FasterWhisper-first path, but replaces global linker registration with a
+CTranslate2-owned ROCm runtime library directory:
+
+- the image installs `patchelf`;
+- the image links Torch ROCm runtime libraries into
+  `/opt/ctranslate2-rocm-libraries` while excluding `libtinfo.so*`;
+- the image adds the required versioned HIP soname links for `libhiprand.so.1`,
+  `libhipblas.so.3`, and `libamdhip64.so.7`;
+- the image patches only CTranslate2 wheel binaries with RPATHs pointing at
+  the wheel-local CTranslate2 libraries and
+  `/opt/ctranslate2-rocm-libraries`;
+- the image does not use `LD_LIBRARY_PATH`, `ldconfig`, or
+  `/etc/ld.so.conf.d` for this lane.
+
+Review 36 approved this corrective pre-deploy image slice on 2026-06-10. The
+slice is not yet committed, pushed, deployed, or accepted as Task 352 live
+proof. Pyannote gated access or a governed library-backed diarization
+replacement remains a separate live proof blocker.
 
 ## Deliverables
 
@@ -198,8 +229,9 @@ proof blocker.
   private paths, or raw model identifiers.
 - [ ] GPU-backed Whisper-family execution is proven, preferably through
   FasterWhisper, or the task records that Task 352 remains blocked. The
-  CTranslate2 ROCm image contract is approved but still needs post-deploy live
-  observation.
+  CTranslate2 ROCm image improved deployed STT execution but the codec-boundary
+  regression correction must be committed, deployed, and rerun before this can
+  be accepted.
 - [ ] Diarization backend access is proven or explicitly rejected with governed
   replacement follow-up.
 - [x] Post-remediation live observation and profile-proof artifacts are
@@ -238,6 +270,10 @@ proof blocker.
   `git diff --check`.
 - [x] Runtime change validation includes focused `format-all`, `lint-fix`,
   `typecheck-all`, and focused `pytest-root` commands.
+- [x] Red-first image contract validation covers the corrected
+  CTranslate2-owned ROCm runtime library directory, wheel-local RPATHs, and the
+  absence of `LD_LIBRARY_PATH`, `ldconfig`, and global Torch library
+  registration.
 
 ## Checklist
 
