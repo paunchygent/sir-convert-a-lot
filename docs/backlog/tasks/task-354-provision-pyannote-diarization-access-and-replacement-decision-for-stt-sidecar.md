@@ -157,6 +157,45 @@ Local red/green implementation evidence:
   `failure_code=hf_token_missing`, `token_env_vars_present=false`, and
   `operator_action=configure_hf_token_for_stt_sidecar_operator`.
 
+## Hemma Access Diagnostic Attempt
+
+The diagnostic runner was committed, pushed, and deployed at
+`f7a1eb61f4edbcd9530208d561baf9f59d89cf3d`. Hemma deploy verification passed
+with expected, remote, and service revisions all matching that revision.
+
+The remote diagnostic command was then run from the canonical Hemma checkout:
+
+```bash
+pdm run run-hemma -- pdm run diagnose:stt-sidecar-diarization-access \
+  --output-root build/verification/stt-sidecar-diarization-access-hemma-f7a1eb6
+```
+
+The command returned exit code `2` and wrote the ignored artifact:
+
+- `build/verification/stt-sidecar-diarization-access-hemma-f7a1eb6/diarization-access.json`.
+
+The bounded report records:
+
+- `status=blocked`;
+- `backend_family=pyannote_audio`;
+- `profile_label=diarization_sv_en_primary`;
+- `model_family=pyannote_community_diarization`;
+- `artifact_label=pipeline_config`;
+- `token_env_var_names=[HF_TOKEN]`;
+- `token_env_vars_present=true`;
+- `authenticated_account_observed=true`;
+- `failure_code=gated_model_access_denied`;
+- `exception_class=GatedRepoError`;
+- `operator_action=accept_or_request_pyannote_gated_model_access_for_hf_token_account`;
+- `secret_values_exposed=false`;
+- `private_cache_paths_exposed=false`;
+- `raw_model_identifiers_exposed=false`.
+
+This evidence confirms the current blocker is not missing token plumbing or a
+missing cache root. The Hemma `HF_TOKEN` account must accept or request access
+for the selected pyannote gated model family before the full Task 352 live proof
+can complete with the current first-choice diarization backend.
+
 ## PR Scope
 
 - Verify pyannote gated-model access from the Hemma sidecar lane using the
@@ -187,6 +226,8 @@ Local red/green implementation evidence:
 - [x] A purpose-named bounded diagnostic command that records the pyannote
   access state without leaking token values, private cache paths, raw model
   identifiers, transcripts, generated media, or model artifacts.
+- [x] A bounded Hemma access-denied diagnostic record that names the next
+  operator action while preserving the content-safety contract.
 - [ ] Either accepted pyannote diarization proof with exact and min/max speaker
   hints, or a bounded Hemma access-denied record that names the next
   operator action.

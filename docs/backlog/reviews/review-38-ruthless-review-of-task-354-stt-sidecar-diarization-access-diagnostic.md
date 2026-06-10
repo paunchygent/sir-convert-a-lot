@@ -492,11 +492,86 @@ truthful runner-boundary coverage for ready, missing-token, and gated-access
 outcomes; generated evidence remains content-safe; and the retained docs state
 does not claim Task 352 live proof completion or unblock Story 53.
 
+## Hemma Access-Denied Evidence Review
+
+Date: 2026-06-10
+
+Decision: `approved`
+
+This evidence pass reviewed only the bounded Hemma access-denied diagnostic
+record for Task 354. It does not approve Task 352 live proof completion, does
+not claim pyannote diarization ran, and does not unblock Story 53.
+
+### Evidence Scope
+
+- Committed/deployed runner revision:
+  `f7a1eb61f4edbcd9530208d561baf9f59d89cf3d`.
+- Ignored deploy verification report reviewed locally:
+  `build/verification/hemma-deploy-verify/report.md`.
+- Ignored Hemma diagnostic artifact reviewed remotely:
+  `build/verification/stt-sidecar-diarization-access-hemma-f7a1eb6/diarization-access.json`.
+- Docs updated in this evidence slice:
+  - `docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md`
+  - `.codex/handoff.md`
+
+### Evidence Reviewed
+
+- Local deploy report records `status=passed`, `expected_revision`,
+  `remote_revision`, and `service_revision` all equal to
+  `f7a1eb61f4edbcd9530208d561baf9f59d89cf3d`.
+- Remote `pdm run run-hemma -- git rev-parse HEAD` returned
+  `f7a1eb61f4edbcd9530208d561baf9f59d89cf3d`.
+- Remote `pdm run run-hemma -- git status --short --branch` reported a clean
+  `main...origin/main` checkout.
+- Remote diagnostic JSON records:
+  - `status=blocked`;
+  - `backend_family=pyannote_audio`;
+  - `profile_label=diarization_sv_en_primary`;
+  - `model_family=pyannote_community_diarization`;
+  - `artifact_label=pipeline_config`;
+  - `token_env_var_names=["HF_TOKEN"]`;
+  - `token_env_vars_present=true`;
+  - `authenticated_account_observed=true`;
+  - `failure_code=gated_model_access_denied`;
+  - `exception_class=GatedRepoError`;
+  - `operator_action=accept_or_request_pyannote_gated_model_access_for_hf_token_account`;
+  - `secret_values_exposed=false`;
+  - `private_cache_paths_exposed=false`;
+  - `raw_model_identifiers_exposed=false`.
+- `docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md`
+  records the Hemma command, ignored artifact path, bounded JSON fields, and
+  operator action.
+- `.codex/handoff.md` points to the exact ignored Hemma diagnostic artifact and
+  preserves the next action without token values, private cache paths, raw
+  model identifiers, transcript text, generated media, or model artifacts.
+- `git diff -- docs/backlog/reviews/review-37-ruthless-review-of-stt-sidecar-post-deploy-fasterwhisper-rocm-evidence.md`
+  produced no output.
+
+### Findings
+
+No blocking findings.
+
+The evidence proves that the Hemma `HF_TOKEN` variable is present, the
+authenticated account is observable, the pyannote artifact request still fails
+as gated, and the retained diagnostic payload is content-safe. It does not prove
+pyannote diarization execution, exact speaker-count hints, min/max speaker-range
+hints, exclusive speaker segments, English/Swedish fixture diarization, or Task
+352 profile-proof readiness.
+
+### Response
+
+Approved for the bounded Task 354 access-denied evidence update. The next
+product action remains external or governed: accept/request access for the
+selected pyannote model family, or govern a real library-backed replacement
+diarization decision if that access cannot be provisioned for this lane.
+
 ## Completion
 
-Review retained with `approved` after the fourth pass. This approval is
-intentionally bounded to the Task 354 diarization-access diagnostic runner. It
-does not accept Task 352 live proof completion and does not unblock Story 53.
+Review retained with `approved` after the fourth implementation-review pass and
+the Hemma access-denied evidence review. This approval is intentionally bounded
+to the Task 354 diarization-access diagnostic runner and access-denied evidence
+record. It does not accept Task 352 live proof completion and does not unblock
+Story 53.
 
 ## Checklist
 
