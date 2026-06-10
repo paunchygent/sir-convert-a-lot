@@ -484,6 +484,11 @@ The transcript review artifact contains diarized speaker labels and editable
 transcript text for human inspection; it is deliberately not committed to git or
 projected into retained governed docs.
 
+Human review accepted these transcript-review artifacts on 2026-06-10. This
+acceptance records the operator inspection outcome only; it does not promote
+transcript text into governed docs, register the route, or change the ignored
+artifact retention boundary.
+
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
 

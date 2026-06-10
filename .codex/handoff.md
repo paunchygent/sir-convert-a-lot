@@ -32,7 +32,8 @@ durable implementation authority lives in governed docs.
   fallback, pyannote diarization, exact and min/max speaker hints exercised, 151
   English diarized speaker segments, and 3 Swedish diarized speaker segments.
   Human-reviewable transcript artifacts are ignored under
-  `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/`.
+  `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/`; human
+  review accepted those artifacts on 2026-06-10.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.

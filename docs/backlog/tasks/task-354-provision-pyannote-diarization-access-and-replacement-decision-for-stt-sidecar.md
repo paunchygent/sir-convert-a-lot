@@ -153,6 +153,10 @@ Human-reviewable ignored transcript artifacts were generated at:
 - `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/transcript-review.json`;
 - `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/transcript-review.md`.
 
+Human review accepted these transcript-review artifacts on 2026-06-10. The
+acceptance confirms the pyannote diarization output is usable for the live proof
+fixtures while keeping transcript text and generated artifacts outside git.
+
 ## Upstream Docs Checked
 
 - Context7 `/pyannote/pyannote-audio`: current examples load pretrained
