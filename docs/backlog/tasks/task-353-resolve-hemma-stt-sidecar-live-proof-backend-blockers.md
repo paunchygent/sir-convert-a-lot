@@ -15,6 +15,7 @@ related:
   - docs/backlog/reviews/review-34-ruthless-review-of-task-353-stt-sidecar-backend-failure-classification.md
   - docs/backlog/reviews/review-35-ruthless-review-of-stt-sidecar-ctranslate2-rocm-image-contract.md
   - docs/backlog/reviews/review-36-ruthless-review-of-stt-sidecar-ctranslate2-rocm-rpath-image-correction.md
+  - docs/backlog/reviews/review-37-ruthless-review-of-stt-sidecar-post-deploy-fasterwhisper-rocm-evidence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -216,9 +217,40 @@ CTranslate2-owned ROCm runtime library directory:
   `/etc/ld.so.conf.d` for this lane.
 
 Review 36 approved this corrective pre-deploy image slice on 2026-06-10. The
-slice is not yet committed, pushed, deployed, or accepted as Task 352 live
-proof. Pyannote gated access or a governed library-backed diarization
-replacement remains a separate live proof blocker.
+slice was committed, pushed, and deployed at
+`bcde92a04ce23a60aa88ac3bcb354cf5c9051b7a`. Hemma deploy verification passed
+with expected, remote, and service revisions all matching
+`bcde92a04ce23a60aa88ac3bcb354cf5c9051b7a`.
+
+The post-deploy live observation returned exit code `2` and wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-ctranslate2-rpath-bcde92a/live-observation.json`.
+
+The post-deploy profile-proof ingestion returned exit code `2` and wrote:
+
+- `build/verification/stt-sidecar-profile-proof-live-ctranslate2-rpath-bcde92a/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-ctranslate2-rpath-bcde92a/profile-proof.md`.
+
+This deployed evidence removes the prior FasterWhisper and codec blockers:
+
+- codec boundary is proven: `ffmpeg_available=true`,
+  `ffprobe_available=true`, `valid_audio_probe_exercised=true`,
+  `bounded_metadata_projected=true`, and corrupt/no-audio/unsupported media all
+  fail closed;
+- FasterWhisper is importable and executes on ROCm with
+  `gpu_execution_confirmed=true`, `cpu_fallback_observed=false`, expected
+  `en`/`sv` language detection, and word timestamps present for both fixtures;
+- sidecar isolation, backend imports, scratch-backed Hugging Face cache roots,
+  120-minute lifecycle, and content safety remain proven.
+
+Review 37 approved this bounded post-deploy evidence as sufficient for the
+STT/codec blockers only. Task 352 still is not accepted as complete live proof
+because pyannote remains blocked by gated model access. The only
+live-observation failure reason is `pyannote_audio_runtime_blocked`; the
+retained backend failure is `diarization=gated_model_access_denied`. Profile
+proof remains `proof_ready=false` because diarized segments, exclusive
+diarization, alignment-suitable evidence, exact speaker-count hints, min/max
+speaker-range hints, and Hugging Face model access are not ready.
 
 ## Deliverables
 
@@ -227,23 +259,21 @@ replacement remains a separate live proof blocker.
 - [x] The live observation schema or retained diagnostic artifact records
   bounded backend failure classifications without transcript text, token values,
   private paths, or raw model identifiers.
-- [ ] GPU-backed Whisper-family execution is proven, preferably through
-  FasterWhisper, or the task records that Task 352 remains blocked. The
-  CTranslate2 ROCm image improved deployed STT execution but the codec-boundary
-  regression correction must be committed, deployed, and rerun before this can
-  be accepted.
+- [x] GPU-backed Whisper-family execution is proven through FasterWhisper on
+  the deployed ROCm sidecar lane without CPU fallback.
 - [ ] Diarization backend access is proven or explicitly rejected with governed
   replacement follow-up.
 - [x] Post-remediation live observation and profile-proof artifacts are
   generated on Hemma from committed/pushed/deployed code.
-- [ ] Retained review accepts the live proof, or records concrete remaining
-  blockers and keeps Story 53 blocked.
+- [x] Retained review accepts the post-deploy evidence as sufficient for the
+  STT/codec blockers while recording concrete remaining diarization blockers
+  and keeping Story 53 blocked.
 
 ## Acceptance Criteria
 
-- [ ] The task does not promote dry-run, projection, or partial sidecar evidence
+- [x] The task does not promote dry-run, projection, or partial sidecar evidence
   as accepted live proof.
-- [ ] Live evidence proves a Whisper-family STT backend executes on a
+- [x] Live evidence proves a Whisper-family STT backend executes on a
   GPU-required no-CPU-fallback lane for both fixtures and records bounded
   language/duration/segment/word-timestamp evidence.
 - [ ] If GPU-backed FasterWhisper cannot be proven, any alternative STT backend
@@ -253,7 +283,7 @@ replacement remains a separate live proof blocker.
   count and min/max speaker range hints run through the backend for the fixtures.
 - [ ] If pyannote gated access cannot be provisioned, the rejection is recorded
   with a governed replacement decision that preserves library-backed diarization.
-- [ ] The live observation and profile proof remain content-safe: no transcript
+- [x] The live observation and profile proof remain content-safe: no transcript
   text, token values, private cache paths, fixture source paths, raw model ids,
   generated media, or model artifacts are committed.
 - [ ] Story 53 remains blocked unless Task 352 receives a final retained review

@@ -334,11 +334,54 @@ The live observation now retains bounded `backend_failures`:
 exit code `2` with `proof_ready=false`, so this evidence improves blocker
 diagnostics only and does not complete Task 352.
 
+Task 353 then remediated the FasterWhisper/CTranslate2 ROCm image path. The
+first deployed CTranslate2 ROCm image at
+`1b1576450d56eb16429ed1696e59c9f3ae504183` improved FasterWhisper to ROCm-backed
+`en`/`sv` language detection with word timestamps, but invalidated the global
+dynamic-linker approach because FFmpeg/FFprobe loaded Torch `libtinfo.so.6` and
+the codec boundary failed.
+
+The corrective CTranslate2-owned ROCm runtime library/RPATH image slice was
+approved in Review 36, committed, pushed, and deployed at
+`bcde92a04ce23a60aa88ac3bcb354cf5c9051b7a`. Hemma deploy verification passed
+with expected, remote, and service revisions all matching that revision.
+
+The post-deploy live observation returned exit code `2` and wrote:
+
+- `build/verification/stt-sidecar-live-observation-hemma-ctranslate2-rpath-bcde92a/live-observation.json`.
+
+The post-deploy profile-proof ingestion returned exit code `2` and wrote:
+
+- `build/verification/stt-sidecar-profile-proof-live-ctranslate2-rpath-bcde92a/profile-proof.json`;
+- `build/verification/stt-sidecar-profile-proof-live-ctranslate2-rpath-bcde92a/profile-proof.md`.
+
+This deployed observation proves the codec and STT portions of the live sidecar
+evidence:
+
+- FFmpeg and FFprobe availability are true, valid audio probing is exercised,
+  bounded metadata is projected, and bad/no-audio/unsupported media fail
+  closed;
+- FasterWhisper is importable and executes on ROCm with
+  `gpu_execution_confirmed=true`, `cpu_fallback_observed=false`, expected
+  `en`/`sv` language detection, and word timestamps available for both
+  fixtures;
+- sidecar isolation, backend imports, scratch-backed Hugging Face cache roots,
+  120-minute lifecycle, content safety, and route-unregistered evidence remain
+  true.
+
+Review 37 approves only this bounded STT/codec conclusion.
+Task 352 still is not complete. The only live-observation failure reason is now
+`pyannote_audio_runtime_blocked`, with retained backend failure
+`diarization=gated_model_access_denied`. Profile-proof ingestion still reports
+`proof_ready=false` because diarized segments, exclusive diarization,
+alignment-suitable evidence, exact speaker-count hints, min/max speaker-range
+hints, and Hugging Face model access are not ready.
+
 Story 53 remains blocked. The next governed decision is to provide pyannote
-gated-model access and prove GPU-backed Whisper-family STT on the governed
-execution lane. FasterWhisper remains the preferred first option; any
-replacement must be governed as a Whisper-family backend. CPU fallback and
-non-Whisper STT substitutes are not acceptable for this product lane.
+gated-model access or govern a library-backed diarization replacement that
+satisfies exact and min/max speaker hints. FasterWhisper remains the preferred
+first STT option and is now proven on the Hemma ROCm sidecar lane. CPU fallback
+and non-Whisper STT substitutes are not acceptable for this product lane.
 
 `git check-ignore -v` confirmed the generated live-observation and profile-proof
 artifacts are ignored under the repo `build/` rule.
