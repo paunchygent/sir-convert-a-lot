@@ -48,6 +48,7 @@ class ConversionResultData:
     ocr_languages_used: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     phase_timings_ms: dict[str, int] = field(default_factory=dict)
+    formula_authority: dict[str, object] = field(default_factory=dict)
 
 
 class ConversionBackend(Protocol):

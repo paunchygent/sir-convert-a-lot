@@ -109,6 +109,7 @@ def execute_job_conversion(
         ocr_languages_used=list(backend_result.ocr_languages_used),
         table_mode=spec.conversion.table_mode,
         options_fingerprint=f"sha256:{options_fingerprint}",
+        formula_authority=dict(backend_result.formula_authority),
     )
     warnings: list[str] = list(backend_result.warnings)
     if spec.conversion.normalize == NormalizeMode.STRICT:

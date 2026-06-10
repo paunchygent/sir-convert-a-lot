@@ -88,6 +88,7 @@ class ConversionMetadata(BaseModel):
     ocr_languages_used: list[str] = Field(default_factory=list)
     table_mode: TableMode
     options_fingerprint: str
+    formula_authority: dict[str, object] = Field(default_factory=dict)
 
 
 class ResultPayload(BaseModel):

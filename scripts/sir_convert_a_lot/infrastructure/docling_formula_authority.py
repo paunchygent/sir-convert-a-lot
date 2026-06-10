@@ -19,6 +19,16 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 FORMULA_SOURCE_BACKED_VLM_REJECTED_WARNING = "docling_formula_source_backed_vlm_rejected"
+FORMULA_SOURCE_BACKED_VLM_SKIPPED_WARNING = "docling_formula_source_backed_vlm_skipped"
+FORMULA_AUTHORITY_MARKER_PREFIX = "sir-convert-a-lot:formula-authority"
+_FORMULA_AUTHORITY_MARKER_FIELDS = (
+    ("scope", "scope"),
+    ("action", "action"),
+    ("representation", "representation"),
+    ("source", "source_evidence_state"),
+    ("vlm_attempted", "vlm_attempted"),
+    ("reason", "reason"),
+)
 
 
 class SourceFormulaEvidenceState(StrEnum):
@@ -75,6 +85,52 @@ def decide_formula_authority(
         warning_codes=(),
         reason="generated_formula_output_allowed",
     )
+
+
+def build_formula_authority_metadata(
+    *,
+    source_evidence: SourceLayerFormulaEvidence,
+    action: str,
+    representation: str,
+    vlm_attempted: bool,
+    reason: str,
+    warning_codes: Sequence[str] = (),
+) -> dict[str, object]:
+    """Build safe page-window metadata for formula authority decisions."""
+    return {
+        "scope": "page_window",
+        "action": action,
+        "representation": representation,
+        "source_evidence_state": source_evidence.state.value,
+        "source_evidence_reason": source_evidence.reason,
+        "source_evidence_method": source_evidence.method,
+        "source_page_count": source_evidence.page_count,
+        "source_word_count": source_evidence.word_count,
+        "source_raw_character_count": source_evidence.raw_character_count,
+        "source_text_character_count": source_evidence.text_character_count,
+        "source_pages_with_words": source_evidence.pages_with_words,
+        "source_pages_with_raw_characters": source_evidence.pages_with_raw_characters,
+        "vlm_attempted": vlm_attempted,
+        "reason": reason,
+        "warning_codes": list(warning_codes),
+    }
+
+
+def reconcile_formula_markdown_representation(
+    *,
+    markdown_content: str,
+    metadata: Mapping[str, object],
+) -> str:
+    """Append a deterministic formula-authority marker to accepted Markdown."""
+    if not metadata:
+        return markdown_content
+    if FORMULA_AUTHORITY_MARKER_PREFIX in markdown_content:
+        return markdown_content
+    marker = _formula_authority_marker(metadata)
+    body = markdown_content.rstrip()
+    if not body:
+        return f"{marker}\n"
+    return f"{body}\n\n{marker}\n"
 
 
 def collect_source_layer_formula_evidence(source_bytes: bytes) -> SourceLayerFormulaEvidence:
@@ -202,3 +258,25 @@ def _count_rawdict_characters(node: object) -> int:
 
 def _is_number(value: object) -> bool:
     return isinstance(value, int | float)
+
+
+def _formula_authority_marker(metadata: Mapping[str, object]) -> str:
+    fields = [
+        f"{marker_key}={_marker_value(metadata.get(metadata_key))}"
+        for marker_key, metadata_key in _FORMULA_AUTHORITY_MARKER_FIELDS
+    ]
+    return f"<!-- {FORMULA_AUTHORITY_MARKER_PREFIX} {' '.join(fields)} -->"
+
+
+def _marker_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float | str):
+        return _marker_token(str(value))
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes):
+        return _marker_token(",".join(str(item) for item in value))
+    return "unknown"
+
+
+def _marker_token(value: str) -> str:
+    return value.strip().replace("\r", " ").replace("\n", " ").replace(" ", "_")

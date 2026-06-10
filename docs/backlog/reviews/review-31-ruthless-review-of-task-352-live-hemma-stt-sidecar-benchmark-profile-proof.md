@@ -98,8 +98,7 @@ Structured review artifact for implementation or readiness checks.
   `pdm run ruff check scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_profile_proof.py scripts/sir_convert_a_lot/domain/audio_transcription_benchmark_types.py scripts/sir_convert_a_lot/domain/audio_transcription_benchmark_profiles.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_profile_proof.py tests/sir_convert_a_lot/test_audio_transcription_profile_selection.py`
   -> `I001` unsorted import block in
   `tests/sir_convert_a_lot/test_audio_transcription_sidecar_profile_proof.py`.
-- Forbidden typing shortcut search found no `Any`, `typing.cast`, `type:
-  ignore`, or lint bypasses in the reviewed files.
+- Forbidden typing shortcut search found no `Any`, `typing.cast`, `type: ignore`, or lint bypasses in the reviewed files.
 
 ## Test Truthfulness Audit
 

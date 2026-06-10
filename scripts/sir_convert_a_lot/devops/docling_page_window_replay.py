@@ -167,6 +167,7 @@ def convert_child_payload(*, args: argparse.Namespace, started: float) -> dict[s
             "ocr_enabled": metadata.ocr_enabled,
             "ocr_engine_used": metadata.ocr_engine_used,
             "ocr_languages_used": list(metadata.ocr_languages_used),
+            "formula_authority": dict(metadata.formula_authority),
             "warnings": warnings,
             "phase_timings_ms": phase_timings,
             "gpu_probe": probe.as_details(),

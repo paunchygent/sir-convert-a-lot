@@ -84,25 +84,31 @@ incident pages `13-16`, Poppler bbox extraction crashes on page `14`, and the
 implementation must preserve explicit `usable`, `partial_or_unusable`, and
 `absent` evidence states.
 
-Task 345 implementation checkpoint 2026-06-06: the initial source-layer
-formula authority substrate is implemented. The new module
-`scripts/sir_convert_a_lot/infrastructure/docling_formula_authority.py`
-classifies document source evidence as `usable`, `partial_or_unusable`, or
-`absent` using PyMuPDF coordinate words/rawdict/text extraction. The Docling
-fallback boundary now rejects generated formula candidates when source evidence
-is `usable` and the formula-generation path has already shown structural
-quality defects, rerunning the same Docling conversion with
-`formula_enrichment=false` and warning
-`docling_formula_source_backed_vlm_rejected`. Absent-source behavior is
-preserved: CodeFormulaV2 -> Granite fallback remains available and can commit
-a structurally clean generated candidate. Remaining Task 345 work: per-region
-best-effort Markdown representation/merge, formula-authority metadata for
-Task 342, conversion-decision metrics for Task 343, and incident pages `13-16`
-accepted-output replay.
-Task 345 now contains the durable internal tranche contract: substrate first,
-representation ladder second, reconciliation third, runtime metadata fourth,
-Task 342 presentation fifth, Task 343 decision/performance consumption sixth,
-and incident replay/accepted-artifact review last.
+Task 345 formula hardening checkpoint 2026-06-10: source-backed formula
+authority now skips formula VLM before generation when PyMuPDF
+coordinate/raw/text evidence is `usable`, while preserving accurate table mode.
+The current production reconciliation unit is page-window: accepted Markdown
+gets a deterministic `sir-convert-a-lot:formula-authority` marker, and backend
+results / `ConversionMetadata` / page-window replay reports carry safe
+structured `formula_authority` metadata with no raw prompts, crops, or
+generated formula internals. No-source/absent-source behavior is preserved:
+CodeFormulaV2 -> Granite fallback remains available and can commit a
+structurally clean generated candidate; runtime-unavailable formula enrichment
+falls back to source-layer Markdown with explicit `fallback` metadata. The
+candidate harness module
+`scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py` was
+split into focused spec/command/output/execution modules before any further
+DeepSeek integration work. Hemma accepted-output replay for pages `13-16`:
+`build/verification/task-345-source-backed-formula-authority-replay/docling-page-window-replay-20260610T055608Z/report.json`.
+The replay succeeded with `table_mode=accurate`, `formula_enrichment=false`,
+`formula_vlm_batch_count=0`, `transformers_call_count=0`,
+`formula_authority.action=skipped`, and
+`formula_authority.source_evidence_state=usable`. Accepted Markdown review
+found no recurrence of leaked `</formula`, `\mathbmath`, repeated `\mathbf`,
+spaced `l o o l y`, `<loc_`, `<formula>`, or observed DeepSeek/vLLM repetition
+markers. Remaining work is governed consumption/refinement: Task 342
+CLI/manifest presentation, Task 343 decision/performance use, and optional
+future per-region merge once stable final-Markdown formula identifiers exist.
 
 Task 346/350 final candidate-evaluation state: Granite baseline still shows
 known malformed formula markers; PyMuPDF source-layer extraction is fast,
@@ -129,10 +135,9 @@ formula evidence with VLM output.
 ## Next Actions
 
 1. For STT Task 352, run the benchmark-only STT sidecar on Hemma, generate sanitized live observation JSON for the copied English two-speaker MP3 and Swedish one-speaker M4A fixtures, ingest it with `pdm run benchmark:stt-sidecar-profile-proof -- --mode live --live-observation-json <path>`, record the ignored report path in Task 352, and request final live-proof review before unblocking Story 53.
-1. Continue Task 345 by implementing the best-effort formula representation
-   ladder and per-region/page-window reconciliation on top of the new
-   `docling_formula_authority` substrate. Do not create a second source-layer
-   extractor or authority policy.
+1. Promote Task 345 `formula_authority` metadata into Task 342 CLI/manifest
+   presentation if user-facing progress/status work resumes. Do not create a
+   second source-layer extractor or authority policy.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -140,14 +145,13 @@ formula evidence with VLM output.
 1. If vLLM remains desired, first prove a different vLLM/ROCm runtime whose
    DeepSeek-OCR-2 decode path produces coherent output on page-14. Do not reuse
    the current Hemma vLLM lane as a candidate.
-1. Extend Task 345 metadata so rejected/accepted/advisory/skipped formula
-   authority decisions can be surfaced by Task 342 CLI/manifest work, but only
-   after representation and reconciliation decisions exist.
-1. Decouple accurate table mode from committing generative formula VLM output.
-1. Feed Task 345 formula-authority metadata into Task 342 CLI/manifest progress
-   and Task 343 conversion-decision metrics.
-1. Re-run the Task 344 incident pages `13-16` replay and inspect accepted
-   Markdown for known hallucination/leakage recurrence.
+1. Feed Task 345 formula-authority metadata into Task 343 conversion-decision
+   metrics when broader conversion decisioning resumes.
+1. Any DeepSeek-OCR production integration must be a governed follow-up: keep
+   HF eager as the viable candidate, keep current vLLM/ROCm rejected until a
+   different coherent path is proven, use DeepSeek only advisory or for
+   absent/unusable source evidence, and never blindly overwrite born-digital
+   source-backed formula evidence.
 1. Continue Story 46 with Tasks 288/289 before further Exam.net runtime.
 1. Continue HuleEdu/Skriptoteket cutover only through governed Gateway and
    artifact-route tasks; do not widen the DigiExam migration lane.
@@ -166,28 +170,24 @@ formula evidence with VLM output.
   `/app/build/verification/task-344-page-window-replay/task344-page-window-replay-20260605T110626Z/report.json`
   and incident window `13-16`
   `/app/build/verification/task-344-page-window-replay/task344-page-window-replay-20260605T110852Z/report.json`.
-- Both live replays ran without target filtering or no-repeat env override; all
-  Granite formula generate calls recorded `no_repeat_ngram_size=64`,
-  `renormalize_logits=true`, terminal stop counts matching decoded rows, and
-  `max_new_tokens_exhausted=false`.
-- Timing interpretation remains split: the stopless page-14 loop now exits by
-  stop string, while the `13-16` replay still spent `200977 ms` inside
-  correctly completed Granite formula generation calls. Treat remaining latency
-  as GPU/runtime/model-throughput work for Task 343/Task 74.
-- Output correctness remains open under Task 345. Markdown persistence replay:
-  `/app/build/verification/task-344-page-window-replay/task344-page-window-replay-20260605T112725Z/report.json`.
+- Task 344 detailed replay interpretation is durable in the Task 344/345 docs;
+  current active formula-quality state is the Task 345 2026-06-10 replay below.
 - Task 348/349 validation and artifacts are recorded in their task docs.
 - Task 350 local and Hemma focused tests passed:
   `pdm run pytest-root tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
   -> `9 passed`.
-- Task 345 red/green local validation:
-  `pdm run pytest tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py`
-  -> `25 passed, 2 skipped`.
-- Task 345 focused static validation:
-  `pdm run ruff check scripts/sir_convert_a_lot/infrastructure/docling_formula_authority.py scripts/sir_convert_a_lot/infrastructure/docling_formula_fallback.py tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py`
-  -> `All checks passed!`;
-  `pdm run mypy scripts/sir_convert_a_lot/infrastructure/docling_formula_authority.py scripts/sir_convert_a_lot/infrastructure/docling_formula_fallback.py tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py`
-  -> `Success: no issues found in 4 source files`.
+- Task 345/350 local focused validation 2026-06-10:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_runtime_conversion_quality_warnings.py tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
+  -> `40 passed, 2 skipped`; focused `ruff check` -> `All checks passed!`;
+  focused mypy -> `Success: no issues found in 17 source files`.
+- Task 345/350 Hemma focused validation 2026-06-10:
+  `/home/paunchygent/.local/bin/pdm run pytest-root tests/sir_convert_a_lot/test_runtime_conversion_quality_warnings.py tests/sir_convert_a_lot/test_docling_formula_authority.py tests/sir_convert_a_lot/test_docling_backend.py tests/sir_convert_a_lot/test_formula_candidate_eval.py tests/sir_convert_a_lot/test_deepseek_ocr2_hf_command.py`
+  -> `42 passed`.
+- Task 345 Hemma accepted-output replay 2026-06-10:
+  `build/verification/task-345-source-backed-formula-authority-replay/docling-page-window-replay-20260610T055608Z/report.json`;
+  accepted Markdown marker scan for `</formula`, `\mathbmath`, `\mathbf`,
+  spaced `l o o l y`, `<loc_`, `<formula>`, and observed DeepSeek/vLLM markers
+  -> no matches.
 
 ## Stop Conditions
 

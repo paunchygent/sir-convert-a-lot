@@ -34,7 +34,7 @@ from scripts.sir_convert_a_lot.infrastructure.docling_backend import (
     _resolve_layout_model_config,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_formula_authority import (
-    FORMULA_SOURCE_BACKED_VLM_REJECTED_WARNING,
+    FORMULA_SOURCE_BACKED_VLM_SKIPPED_WARNING,
     SourceFormulaEvidenceState,
     SourceLayerFormulaEvidence,
 )
@@ -466,13 +466,18 @@ def test_formula_enrichment_falls_back_when_runtime_unavailable(monkeypatch) -> 
         )
     )
 
-    assert result.markdown_content == "fallback-without-formula"
+    assert result.markdown_content.startswith("fallback-without-formula")
+    assert "sir-convert-a-lot:formula-authority" in result.markdown_content
+    assert "action=fallback" in result.markdown_content
+    assert "source=absent" in result.markdown_content
     assert formula_flags == [
         (True, "codeformulav2"),
         (True, "granite_docling"),
         (False, "codeformulav2"),
     ]
     assert result.warnings == ["docling_formula_enrichment_unavailable_fallback"]
+    assert result.formula_authority["action"] == "fallback"
+    assert result.formula_authority["reason"] == "formula_vlm_runtime_unavailable"
 
 
 def test_formula_enrichment_switches_to_granite_when_primary_has_placeholders(monkeypatch) -> None:
@@ -682,7 +687,7 @@ def test_formula_enrichment_switches_to_granite_on_real_hard_case_excerpt(monkey
     ]
 
 
-def test_source_backed_formula_defect_rejects_generated_candidate(
+def test_source_backed_accurate_table_mode_skips_formula_vlm_with_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     backend = DoclingConversionBackend()
@@ -736,17 +741,17 @@ def test_source_backed_formula_defect_rejects_generated_candidate(
         )
     )
 
-    assert calls == [
-        (True, "codeformulav2"),
-        (True, "granite_docling"),
-        (False, "codeformulav2"),
-    ]
-    assert result.markdown_content == "docling-output-without-generated-formula"
-    assert result.warnings == [
-        FORMULA_SOURCE_BACKED_VLM_REJECTED_WARNING,
-        "docling_formula_preset_switched_to_granite_docling",
-        "docling_formula_quality_switch_applied",
-    ]
+    assert calls == [(False, "codeformulav2")]
+    assert result.markdown_content.startswith("docling-output-without-generated-formula")
+    assert "$$<formula><loc_34>\\alpha</formula$$" not in result.markdown_content
+    assert "sir-convert-a-lot:formula-authority" in result.markdown_content
+    assert "action=skipped" in result.markdown_content
+    assert "source=usable" in result.markdown_content
+    assert result.warnings == [FORMULA_SOURCE_BACKED_VLM_SKIPPED_WARNING]
+    assert result.formula_authority["action"] == "skipped"
+    assert result.formula_authority["source_evidence_state"] == "usable"
+    assert result.formula_authority["representation"] == "source_layer_markdown"
+    assert result.formula_authority["vlm_attempted"] is False
 
 
 def test_absent_source_evidence_keeps_granite_formula_candidate(

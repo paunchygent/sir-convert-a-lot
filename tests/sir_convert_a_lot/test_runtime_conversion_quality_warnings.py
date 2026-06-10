@@ -33,10 +33,14 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_conversion import execute_
 
 class _Backend:
     def __init__(
-        self, markdown_content: str, phase_timings_ms: dict[str, int] | None = None
+        self,
+        markdown_content: str,
+        phase_timings_ms: dict[str, int] | None = None,
+        formula_authority: dict[str, object] | None = None,
     ) -> None:
         self._markdown_content = markdown_content
         self._phase_timings_ms = phase_timings_ms or {}
+        self._formula_authority = formula_authority or {}
 
     def convert(self, request: ConversionRequest) -> ConversionResultData:
         del request
@@ -46,6 +50,7 @@ class _Backend:
             acceleration_used="cuda",
             ocr_enabled=False,
             phase_timings_ms=dict(self._phase_timings_ms),
+            formula_authority=dict(self._formula_authority),
         )
 
 
@@ -153,6 +158,43 @@ def test_execute_job_conversion_exposes_canonical_v2_timing_keys() -> None:
     assert "normalize_ms" in timings
     assert "ocr_layout_extract_ms" in timings
     assert "markdown_normalize_ms" in timings
+
+
+def test_execute_job_conversion_preserves_formula_authority_metadata() -> None:
+    spec = JobSpec(
+        api_version="v1",
+        source=SourceSpec(kind=SourceKind.UPLOAD, filename="paper.pdf"),
+        conversion=ConversionSpec(
+            output_format="md",
+            backend_strategy=BackendStrategy.DOCLING,
+            ocr_mode=OcrMode.OFF,
+            table_mode=TableMode.ACCURATE,
+            normalize=NormalizeMode.STANDARD,
+        ),
+        execution=ExecutionSpec(
+            acceleration_policy=AccelerationPolicy.GPU_REQUIRED,
+            priority=Priority.NORMAL,
+            document_timeout_seconds=1800,
+        ),
+    )
+    formula_authority = {
+        "scope": "page_window",
+        "action": "skipped",
+        "source_evidence_state": "usable",
+        "vlm_attempted": False,
+    }
+
+    _, metadata, _, _ = execute_job_conversion(
+        spec=spec,
+        source_filename="paper.pdf",
+        source_bytes=b"%PDF-1.4 fixture",
+        gpu_available=True,
+        gpu_runtime_probe=None,
+        docling_backend=_Backend("# converted\n", formula_authority=formula_authority),
+        pymupdf_backend=_Backend("unused"),
+    )
+
+    assert metadata.formula_authority == formula_authority
 
 
 def test_execute_job_conversion_passes_document_timeout_to_backend_request() -> None:

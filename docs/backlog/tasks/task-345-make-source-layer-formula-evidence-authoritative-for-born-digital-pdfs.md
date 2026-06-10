@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-06-05'
-last_updated: '2026-06-06'
+last_updated: '2026-06-10'
 related:
   - docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md
   - docs/backlog/stories/story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md
@@ -18,8 +18,11 @@ related:
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/sir_convert_a_lot.md
   - scripts/sir_convert_a_lot/infrastructure/docling_backend.py
+  - scripts/sir_convert_a_lot/infrastructure/docling_formula_authority.py
   - scripts/sir_convert_a_lot/infrastructure/docling_formula_fallback.py
   - scripts/sir_convert_a_lot/infrastructure/docling_formula_quality.py
+  - scripts/sir_convert_a_lot/infrastructure/runtime_conversion.py
+  - scripts/sir_convert_a_lot/devops/docling_page_window_replay.py
 labels:
   - pdf
   - docling
@@ -365,13 +368,54 @@ formula region.
   per-region Markdown merge/reconciliation, CLI/manifest metadata, or the
   incident pages `13-16` accepted-output replay.
 
-1. Formula enrichment is coupled too broadly to table accuracy.
+2026-06-10 formula-hardening checkpoint:
 
-   - Current behavior: accurate table mode enables formula enrichment.
-   - Gap: a user asking for accurate table extraction can unknowingly authorize
-     a generative formula VLM path even for born-digital formulas that already
-     have usable source evidence.
-   - Recommendation: separate table accuracy from formula-authority decisions.
+- Split the oversized Task 350 candidate adapter
+  `scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py` into
+  focused candidate spec, command, output, and execution modules before adding
+  any further DeepSeek code.
+- Changed source-backed formula authority from post-generation rejection to a
+  pre-generation skip for usable source-layer evidence. When PyMuPDF
+  coordinate/raw/text evidence is classified `usable`, Docling now runs with
+  `formula_enrichment=false` while preserving `table_mode=accurate`; generative
+  formula VLM output is not attempted for that page window.
+- Preserved the no-source/absent-source ladder: CodeFormulaV2 remains the
+  primary formula path, Granite remains the fallback candidate when the primary
+  path has placeholders/structural defects, and a runtime-unavailable formula
+  lane falls back to non-formula source-layer Markdown with explicit authority
+  metadata.
+- Added page-window reconciliation for the current production surface by
+  appending a deterministic
+  `sir-convert-a-lot:formula-authority` marker to accepted Markdown when a
+  formula authority decision changes representation. The current stable unit is
+  page-window because reliable final Markdown formula-region identifiers are
+  not yet available.
+- Added structured `formula_authority` metadata to backend results,
+  `ConversionMetadata`, and the page-window replay report. The metadata reports
+  `scope`, `action`, source evidence state/method/counts, representation,
+  `vlm_attempted`, reason, and warning codes; it does not expose prompts, crops,
+  or generated formula internals.
+- Reran the accepted pages `13-16` Markdown path on Hemma:
+  `build/verification/task-345-source-backed-formula-authority-replay/docling-page-window-replay-20260610T055608Z/report.json`.
+  The replay succeeded in `15325 ms` parent elapsed / `7880 ms` child payload
+  elapsed with `formula_enrichment=false`, `table_mode=accurate`,
+  `formula_vlm_batch_count=0`, `transformers_call_count=0`,
+  `formula_authority.action=skipped`, and
+  `formula_authority.source_evidence_state=usable`.
+- Accepted Markdown review found no recurrence of the known bad accepted-output
+  markers `</formula`, `\mathbmath`, repeated `\mathbf`, spaced `l o o l y`,
+  `<loc_`, `<formula>`, or observed DeepSeek/vLLM repetition markers. The
+  accepted artifact still contains explicit `<!-- formula-not-decoded -->`
+  placeholders for non-generative formula regions; that is the current
+  best-effort source-layer representation instead of hallucinated generated
+  LaTeX.
+
+1. Formula enrichment was coupled too broadly to table accuracy.
+
+   - 2026-06-10 status: fixed for usable source-backed page windows. Accurate
+     table mode remains active while formula VLM enrichment is skipped.
+   - Remaining gap: a later per-region implementation may refine this when
+     stable formula-region identifiers exist in the accepted Markdown path.
 
 1. Formula quality checks are candidate-only.
 
@@ -383,30 +427,22 @@ formula region.
    - Recommendation: add source-backed acceptance checks before committing
      generated formula text.
 
-1. Gating is not yet connected to artifact representation.
+1. Gating is now connected to page-window artifact representation.
 
-   - Current behavior: diagnostics can identify malformed or hallucinated
-     formula output, but there is no governed representation ladder that says
-     what the Markdown artifact should contain when the preferred formula
-     representation cannot be accepted.
-   - Gap: a gate that merely says `partial_or_unusable` or `rejected` risks
-     pushing the same unresolved conversion problem back to the user.
-   - Recommendation: add a best-effort formula representation ladder that always
-     chooses and records the least-lossy artifact representation available:
-     source-layer representation, accepted generated LaTeX, source text
-     approximation, deterministic unresolved marker with page/region metadata,
-     or future linked visual artifact where a governed artifact task provides
-     that surface.
+   - 2026-06-10 status: usable source-backed page windows choose
+     `source_layer_markdown`; no-source formula paths can still commit a clean
+     generated candidate; runtime-unavailable formula paths emit an explicit
+     `fallback` metadata decision.
+   - Remaining gap: a future governed refinement can replace page-window
+     markers with per-region source/candidate merges when stable identifiers
+     exist.
 
-1. Runtime metadata does not explain formula authority.
+1. Runtime metadata explains formula authority at the backend/result boundary.
 
-   - Current behavior: users can see that a long job is running, but not
-     whether formula VLM enrichment was required, skipped, advisory, rejected,
-     or committed.
-   - Gap: the same blindness that Task 342 addresses at job/progress level
-     still exists inside formula-heavy page windows.
-   - Recommendation: emit formula-authority decisions and reasons into the
-     conversion result metadata and CLI manifest/progress surface.
+   - 2026-06-10 status: backend results, conversion metadata, replay reports,
+     warnings, and accepted Markdown carry safe formula-authority decisions.
+   - Remaining gap: Task 342 still owns CLI/manifest presentation of this
+     metadata.
 
 1. Conversion decision logic lacks source-layer formula evidence.
 
@@ -480,12 +516,16 @@ formula region.
   document-level substrate.
 - [x] Formula authority policy integrated with Docling conversion/fallback,
   initial generated-defect rejection guard.
-- [ ] Best-effort formula representation policy integrated with artifact
-  assembly.
-- [ ] Decoupled table accuracy and formula authority behavior.
-- [ ] CLI/manifest/result metadata for formula-authority decisions and reasons.
-- [ ] Incident replay validation for pages `13-16` with accepted-output review.
-- [ ] Documentation updates tying the behavior to Tasks 342, 343, and 344.
+- [x] Best-effort page-window formula representation policy integrated with
+  artifact assembly.
+- [x] Decoupled table accuracy and formula authority behavior for usable
+  source-backed page windows.
+- [x] Backend/result/replay metadata for formula-authority decisions and
+  reasons.
+- [x] Incident replay validation for pages `13-16` with accepted-output review.
+- [x] Documentation updates tying the behavior to Tasks 342, 343, and 344.
+- [ ] Task 342 CLI/manifest presentation of formula-authority metadata.
+- [ ] Task 343 conversion-decision consumption of formula-authority metadata.
 
 ## Implementation Plan
 
@@ -530,25 +570,27 @@ first.
 
 ## Acceptance Criteria
 
-- [ ] Born-digital/source-backed formula regions preserve source-layer evidence
+- [x] Born-digital/source-backed formula regions preserve source-layer evidence
   unless a generated formula candidate passes a source-backed acceptance gate.
-- [ ] Source-layer authority is applied only after the evidence model classifies
+- [x] Source-layer authority is applied only after the evidence model classifies
   the region as `usable`; `partial_or_unusable` and `absent` evidence remain
   explicit states with governed fallback behavior.
-- [ ] Every encountered formula region has an explicit best-effort artifact
-  representation decision; no accepted terminal Markdown silently drops a
-  rejected, partial, unusable, or absent formula region.
-- [ ] Accurate table mode can run without automatically committing generative
+- [x] Every encountered source-backed formula page window has an explicit
+  best-effort artifact representation decision; the accepted terminal Markdown
+  uses deterministic `formula-not-decoded` placeholders plus safe authority
+  metadata instead of hallucinated generated formula text.
+- [x] Accurate table mode can run without automatically committing generative
   formula VLM output.
-- [ ] No-source/raster formula regions still have a governed formula VLM path
+- [x] No-source/raster formula regions still have a governed formula VLM path
   with the Task 344 stop/compile runtime controls intact.
-- [ ] CLI/manifest/result metadata tells the user whether formula VLM was
-  skipped, advisory, accepted, or rejected, and why.
-- [ ] The pages `13-16` incident replay contains no accepted-output recurrence
+- [x] Result/replay metadata tells the caller whether formula VLM was skipped,
+  advisory, accepted, rejected, or fell back, and why. CLI/manifest rendering
+  remains Task 342 presentation work.
+- [x] The pages `13-16` incident replay contains no accepted-output recurrence
   of the known leaked `</formula`, `\mathbmath`, repeated `\mathbf`, or
   pre-remediation corrupted formula/prose markers when source-layer evidence is
   usable.
-- [ ] Any remaining Granite/ROCm latency is explicitly attributed as residual
+- [x] Any remaining Granite/ROCm latency is explicitly attributed as residual
   model-throughput work for Task 343/Task 74, not mistaken for successful
   formula-authority remediation.
 - [ ] Docs index and validation gates pass.
@@ -557,10 +599,10 @@ first.
 
 - [x] Red-first tests committed
 - [x] Pre-implementation scrutiny gate complete
-- [ ] Implementation complete
-- [ ] Best-effort artifact representation behavior complete
-- [ ] Incident replay validated
+- [x] Implementation complete
+- [x] Best-effort artifact representation behavior complete
+- [x] Incident replay validated
 - [ ] CLI/manifest alignment complete
 - [ ] Conversion-decision alignment complete
-- [ ] Docs updated
-- [ ] Validation complete
+- [x] Docs updated
+- [x] Validation complete

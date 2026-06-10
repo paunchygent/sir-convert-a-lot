@@ -1,4 +1,4 @@
-"""Tests for the parallel PDF throughput parallel throughput benchmark runner.
+"""Tests for the parallel PDF throughput benchmark runner.
 
 Purpose:
     Validate payload shape and output-path policy for deterministic parallel PDF throughput
@@ -31,7 +31,7 @@ def test_run_benchmark_writes_expected_payload(tmp_path: Path) -> None:
         repeats=3,
         chunk_size_pages=1,
         max_chunk_workers=4,
-        stub_work_seconds=0.01,
+        stub_work_seconds=0.05,
     )
 
     assert output_json.exists()

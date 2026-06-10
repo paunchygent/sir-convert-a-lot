@@ -74,9 +74,9 @@ evidence.
 - [x] Focused red/green tests for profile-proof acceptance and rejection.
 - [x] Content-safe JSON and Markdown evidence schema for live proof results.
 - [ ] Hemma live-proof instructions and command evidence recorded here after
-      execution.
+  execution.
 - [x] Retained ruthless review artifact that either accepts the live proof or
-      records concrete changes requested.
+  records concrete changes requested.
 
 ## Acceptance Criteria
 

@@ -5,7 +5,7 @@ type: task
 status: completed
 priority: high
 created: '2026-06-06'
-last_updated: '2026-06-06'
+last_updated: '2026-06-10'
 labels:
   - pdf
   - formula
@@ -199,6 +199,31 @@ Recommendation: promote DeepSeek-OCR-2 HF eager to a later governed integration
 design/evaluation task, but only behind source-backed authority,
 page-window/cross-page reconciliation, and best-effort representation policy.
 Do not use it as a blind overwrite path for born-digital formula regions.
+
+## 2026-06-10 Path and Follow-Up Governance
+
+The Hemma evidence path mismatch was resolved by renaming the remote evidence
+directory to match the governed docs path:
+
+```text
+build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/report.json
+```
+
+The obsolete pre-deploy Hemma stash containing superseded task-named command
+surfaces was dropped after confirming the canonical Hemma checkout no longer
+had active task-prefixed devops/test files.
+
+DeepSeek-OCR-2 remains governed as follows:
+
+- Keep the Hugging Face eager lane as the only viable observed DeepSeek
+  candidate from Task 350.
+- Keep the current vLLM/ROCm lane rejected/diagnostic until a different
+  vLLM/ROCm path is proven coherent on page `14` and pages `13-16`.
+- Use DeepSeek output only as advisory evidence or for absent/unusable
+  source-layer evidence.
+- Never let DeepSeek blindly overwrite born-digital source-backed formula
+  evidence. Any production integration must preserve Task 345 formula authority
+  and best-effort representation metadata.
 
 ## Validation
 

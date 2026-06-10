@@ -41,6 +41,9 @@ from scripts.sir_convert_a_lot.infrastructure.conversion_backend import (
 from scripts.sir_convert_a_lot.infrastructure.docling_confidence import (
     is_docling_low_confidence,
 )
+from scripts.sir_convert_a_lot.infrastructure.docling_formula_authority import (
+    reconcile_formula_markdown_representation,
+)
 from scripts.sir_convert_a_lot.infrastructure.docling_formula_diagnostics import (
     begin_docling_formula_diagnostics,
     end_docling_formula_diagnostics,
@@ -196,13 +199,19 @@ class DoclingConversionBackend(ConversionBackend):
 
         warnings: list[str] = []
         phase_timings_ms: dict[str, int] = {}
+        formula_authority: dict[str, object] = {}
         acceleration_device, acceleration_used = self._resolve_acceleration(
             request.gpu_available,
             request.gpu_runtime_probe,
         )
 
         if request.ocr_mode == OcrMode.OFF:
-            attempt, attempt_warnings, attempt_timings = self._convert_once_guarded_formula(
+            (
+                attempt,
+                attempt_warnings,
+                attempt_timings,
+                attempt_formula_authority,
+            ) = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=False,
                 force_full_page_ocr=False,
@@ -210,9 +219,15 @@ class DoclingConversionBackend(ConversionBackend):
             )
             warnings.extend(attempt_warnings)
             phase_timings_ms.update(attempt_timings)
+            formula_authority = attempt_formula_authority
             ocr_enabled = False
         elif request.ocr_mode == OcrMode.FORCE:
-            attempt, attempt_warnings, attempt_timings = self._convert_once_guarded_formula(
+            (
+                attempt,
+                attempt_warnings,
+                attempt_timings,
+                attempt_formula_authority,
+            ) = self._convert_once_guarded_formula(
                 request,
                 ocr_enabled=True,
                 force_full_page_ocr=True,
@@ -220,13 +235,16 @@ class DoclingConversionBackend(ConversionBackend):
             )
             warnings.extend(attempt_warnings)
             phase_timings_ms.update(attempt_timings)
+            formula_authority = attempt_formula_authority
             ocr_enabled = True
         else:
-            first, first_warnings, first_timings = self._convert_once_guarded_formula(
-                request,
-                ocr_enabled=False,
-                force_full_page_ocr=False,
-                acceleration_device=acceleration_device,
+            first, first_warnings, first_timings, first_formula_authority = (
+                self._convert_once_guarded_formula(
+                    request,
+                    ocr_enabled=False,
+                    force_full_page_ocr=False,
+                    acceleration_device=acceleration_device,
+                )
             )
             warnings.extend(first_warnings)
             phase_timings_ms = self._merge_phase_timings(phase_timings_ms, first_timings)
@@ -238,7 +256,12 @@ class DoclingConversionBackend(ConversionBackend):
                 or first.low_confidence
             )
             if needs_ocr_retry:
-                attempt, retry_warnings, retry_timings = self._convert_once_guarded_formula(
+                (
+                    attempt,
+                    retry_warnings,
+                    retry_timings,
+                    retry_formula_authority,
+                ) = self._convert_once_guarded_formula(
                     request,
                     ocr_enabled=True,
                     force_full_page_ocr=True,
@@ -247,13 +270,19 @@ class DoclingConversionBackend(ConversionBackend):
                 warnings.extend(retry_warnings)
                 warnings.append("docling_auto_ocr_retry_applied")
                 phase_timings_ms = self._merge_phase_timings(phase_timings_ms, retry_timings)
+                formula_authority = retry_formula_authority
                 ocr_enabled = True
             else:
                 attempt = first
+                formula_authority = first_formula_authority
                 ocr_enabled = False
 
-        return ConversionResultData(
+        markdown_content = reconcile_formula_markdown_representation(
             markdown_content=attempt.markdown_content,
+            metadata=formula_authority,
+        )
+        return ConversionResultData(
+            markdown_content=markdown_content,
             backend_used="docling",
             acceleration_used=acceleration_used,
             ocr_enabled=ocr_enabled,
@@ -263,6 +292,7 @@ class DoclingConversionBackend(ConversionBackend):
             ocr_languages_used=list(request.ocr_languages) if ocr_enabled else [],
             warnings=warnings,
             phase_timings_ms=phase_timings_ms,
+            formula_authority=formula_authority,
         )
 
     def _convert_once_guarded_formula(
@@ -272,7 +302,7 @@ class DoclingConversionBackend(ConversionBackend):
         ocr_enabled: bool,
         force_full_page_ocr: bool,
         acceleration_device: AcceleratorDevice,
-    ) -> tuple[_DoclingAttempt, list[str], dict[str, int]]:
+    ) -> tuple[_DoclingAttempt, list[str], dict[str, int], dict[str, object]]:
         return convert_once_guarded_formula(
             request=request,
             ocr_enabled=ocr_enabled,
