@@ -49,14 +49,16 @@ Skriptoteket downstream planning so product access uses the existing
 Convert.
 
 Story 55 coordination is completed as planning/alignment only. It is not
-runtime Gateway proxy, formatter, or UI work. Story 52's governed
-production-profile rejection has been superseded by Task 352/354 and Review
-40. Task 355 registers the first Sir Convert Service API v2
+runtime Gateway proxy, sidecar execution, formatter, or UI work. Story 52's
+governed production-profile rejection has been superseded by Task 352/354 and
+Review 40. Task 355 registers the first Sir Convert Service API v2
 `audio -> transcript_bundle` route-admission slice, and Task 356 deploys the
 first sidecar-backed canonical `transcript_json` execution slice. Downstream
 stories may treat JSON transcript delivery as an implementation target after
-Task 356 retained review accepts the deployed proof. Story 54 formatter
-artifacts remain follow-on work after the JSON core is accepted.
+Task 356 retained review accepts the deployed proof, but retained review must
+accept live proof before downstream stories may treat transcript delivery as
+live. Story 54 formatter artifacts remain follow-on work after the JSON core is
+accepted.
 
 ## Scope
 
@@ -98,6 +100,9 @@ artifacts remain follow-on work after the JSON core is accepted.
 - The Sir Convert audio route is JSON transcript execution authority after Task
   356 review acceptance. Product UX, durable transcript saves, and formatter
   artifacts remain downstream/follow-on work.
+- Until that retained review accepts live proof, Sir Convert remains
+  admission-registered planning authority, not a transcript execution or
+  artifact-delivery surface for downstream delivery commitments.
 - Retention ownership is split intentionally: short Sir Convert operational
   retention for uploaded media and generated artifacts, durable Skriptoteket
   transcript retention after product save.

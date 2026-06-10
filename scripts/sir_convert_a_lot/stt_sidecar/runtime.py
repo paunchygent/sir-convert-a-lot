@@ -224,8 +224,13 @@ class SttSidecarRuntime:
         language = language_option(options)
         with TemporaryDirectory(prefix="sir-stt-") as temp_dir:
             normalized_path = Path(temp_dir) / "normalized.wav"
-            normalize_audio(source_path=input_path, target_path=normalized_path)
-            duration = duration_seconds(normalized_path)
+            duration = duration_seconds(input_path)
+            _enforce_duration_limit(duration_seconds=duration, options=options)
+            normalize_audio(
+                source_path=input_path,
+                target_path=normalized_path,
+                media_duration_seconds=duration,
+            )
             segments = self._transcribe_segments(
                 normalized_path=normalized_path,
                 language=language,
@@ -378,3 +383,20 @@ class SttSidecarRuntime:
                 message="Audio transcription request was canceled.",
                 status_code=409,
             )
+
+
+def _enforce_duration_limit(
+    *,
+    duration_seconds: float,
+    options: Mapping[str, object],
+) -> None:
+    max_duration = optional_int(options, "max_duration_seconds")
+    if max_duration is None:
+        max_duration = MAX_AUDIO_DURATION_SECONDS
+    effective_max_duration = min(max_duration, MAX_AUDIO_DURATION_SECONDS)
+    if duration_seconds > float(effective_max_duration):
+        raise SttSidecarRequestError(
+            code="audio_duration_exceeded",
+            message="Uploaded audio exceeds the configured duration limit.",
+            status_code=422,
+        )

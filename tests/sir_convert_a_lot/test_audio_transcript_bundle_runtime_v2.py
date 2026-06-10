@@ -15,8 +15,11 @@ Relationships:
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+import threading
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import IO, TypeAlias
 
@@ -31,6 +34,11 @@ from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_runtime im
     AudioProgressUpdateV2,
     execute_audio_transcript_bundle_job,
 )
+from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
+    AudioTranscriptionSidecarClient,
+    HttpAudioTranscriptionSidecarClient,
+)
+from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpoint_models import (
@@ -76,6 +84,24 @@ class _FakeAudioTranscriptionSidecar:
 
     def cancel(self, request_handle: str) -> None:
         self.canceled_handles.append(request_handle)
+
+
+class _BlockingAudioTranscriptionSidecar(_FakeAudioTranscriptionSidecar):
+    def __init__(self) -> None:
+        super().__init__()
+        self.transcribe_started = threading.Event()
+        self.cancel_received = threading.Event()
+        self.release_transcribe = threading.Event()
+
+    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        self.transcribe_requests.append(dict(request))
+        self.transcribe_started.set()
+        self.release_transcribe.wait(timeout=5.0)
+        return self.transcribe_payload
+
+    def cancel(self, request_handle: str) -> None:
+        self.canceled_handles.append(request_handle)
+        self.cancel_received.set()
 
 
 def test_audio_job_persists_transcript_json_and_named_artifact(tmp_path: Path) -> None:
@@ -216,6 +242,107 @@ def test_audio_sidecar_readiness_failure_is_terminal_without_artifact(tmp_path: 
     assert checkpoint_response.json()["error"]["code"] == "checkpoint_not_supported"
 
 
+@pytest.mark.parametrize(
+    ("sidecar_code", "sidecar_status", "expected_retryable"),
+    [
+        ("unsupported_audio_codec", 415, False),
+        ("audio_diarization_failed", 502, False),
+        ("audio_model_access_denied", 503, False),
+        ("audio_sidecar_canceled", 409, False),
+    ],
+)
+def test_real_http_sidecar_error_codes_are_preserved_in_stored_job_failure(
+    tmp_path: Path,
+    sidecar_code: str,
+    sidecar_status: int,
+    expected_retryable: bool,
+) -> None:
+    with _failing_sidecar_http_app(
+        sidecar_code=sidecar_code,
+        sidecar_status=sidecar_status,
+    ) as sidecar_url:
+        sidecar = HttpAudioTranscriptionSidecarClient(
+            base_url=sidecar_url,
+            timeout_seconds=2.0,
+        )
+        app = _app(tmp_path, sidecar=sidecar)
+        client = TestClient(app)
+
+        create_response = _post_audio_job(
+            client=client,
+            idempotency_key=f"idem-http-sidecar-{sidecar_code}",
+            wait_seconds=20,
+        )
+
+    assert create_response.status_code == 200
+    job = create_response.json()["job"]
+    assert job["status"] == "failed"
+    stored_job = app.state.runtime_v2.get_job(job["job_id"])
+    assert stored_job is not None
+    assert stored_job.failure_code == sidecar_code
+    assert stored_job.failure_retryable is expected_retryable
+    serialized_failure = json.dumps(
+        {
+            "message": stored_job.failure_message,
+            "details": stored_job.failure_details,
+        },
+        sort_keys=True,
+    )
+    assert "/srv/scratch" not in serialized_failure
+    assert "large-v3" not in serialized_failure
+    assert "hf_deadbeef" not in serialized_failure
+    assert "private transcript text" not in serialized_failure
+
+
+def test_canceling_running_audio_job_propagates_to_sidecar_and_keeps_no_artifact(
+    tmp_path: Path,
+) -> None:
+    sidecar = _BlockingAudioTranscriptionSidecar()
+    app = _app(tmp_path, sidecar=sidecar)
+    client = TestClient(app)
+    create_response = _post_audio_job(
+        client=client,
+        idempotency_key="idem-audio-runtime-in-flight-cancel",
+        wait_seconds=0,
+    )
+    assert create_response.status_code == 202
+    job_id = create_response.json()["job"]["job_id"]
+    assert sidecar.transcribe_started.wait(timeout=5.0)
+
+    cancel_response = client.post(
+        f"/v2/convert/jobs/{job_id}/cancel",
+        headers=_headers(),
+    )
+
+    assert cancel_response.status_code == 202
+    assert sidecar.cancel_received.is_set()
+    assert sidecar.canceled_handles == [job_id]
+    sidecar.release_transcribe.set()
+    runtime = app.state.runtime_v2
+    stored_job = runtime.get_job(job_id)
+    assert stored_job is not None
+    assert stored_job.status == JobStatus.CANCELED
+    assert _eventually_canceled(runtime=runtime, job_id=job_id)
+    stored_job = runtime.get_job(job_id)
+    assert stored_job is not None
+    assert stored_job.status == JobStatus.CANCELED
+    assert not stored_job.artifact_path.exists()
+
+    result_response = client.get(
+        f"/v2/convert/jobs/{job_id}/result",
+        headers=_headers(),
+    )
+    assert result_response.status_code == 409
+    assert result_response.json()["error"]["code"] == "job_not_succeeded"
+
+    artifact_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/transcript_json",
+        headers=_headers(),
+    )
+    assert artifact_response.status_code == 409
+    assert artifact_response.json()["error"]["code"] == "job_not_succeeded"
+
+
 def test_audio_cancellation_cancels_sidecar_without_publishing_artifact(
     tmp_path: Path,
 ) -> None:
@@ -242,11 +369,98 @@ def test_audio_cancellation_cancels_sidecar_without_publishing_artifact(
     assert [update.stage for update in progress_updates] == ["probing_media"]
 
 
-def _client(tmp_path: Path, *, sidecar: _FakeAudioTranscriptionSidecar) -> TestClient:
+def _eventually_canceled(*, runtime: ServiceRuntimeV2, job_id: str) -> bool:
+    deadline = threading.Event()
+    for _ in range(50):
+        stored_job = runtime.get_job(job_id)
+        if stored_job is not None and stored_job.status == JobStatus.CANCELED:
+            return True
+        deadline.wait(timeout=0.02)
+    return False
+
+
+@contextmanager
+def _failing_sidecar_http_app(*, sidecar_code: str, sidecar_status: int) -> Iterator[str]:
+    handler = _failing_sidecar_handler(
+        sidecar_code=sidecar_code,
+        sidecar_status=sidecar_status,
+    )
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2.0)
+
+
+def _failing_sidecar_handler(
+    *,
+    sidecar_code: str,
+    sidecar_status: int,
+) -> type[BaseHTTPRequestHandler]:
+    class _FailingSidecarHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            if self.path == "/health":
+                self._write_json(status_code=200, payload=_healthy_sidecar())
+                return
+            if self.path == "/capabilities":
+                self._write_json(status_code=200, payload=_ready_capabilities())
+                return
+            self._write_json(
+                status_code=404,
+                payload={"code": "not_found", "error": "Not found."},
+            )
+
+        def do_POST(self) -> None:
+            length_header = self.headers.get("content-length", "0")
+            content_length = int(length_header) if length_header.isdigit() else 0
+            if content_length > 0:
+                self.rfile.read(content_length)
+            if self.path == "/transcribe":
+                self._write_json(
+                    status_code=sidecar_status,
+                    payload={
+                        "code": sidecar_code,
+                        "error": (
+                            "private transcript text /srv/scratch "
+                            "Systran/faster-whisper-large-v3 hf_deadbeef"
+                        ),
+                    },
+                )
+                return
+            if self.path == "/cancel":
+                self._write_json(
+                    status_code=200,
+                    payload={"status": "cancel_requested"},
+                )
+                return
+            self._write_json(
+                status_code=404,
+                payload={"code": "not_found", "error": "Not found."},
+            )
+
+        def log_message(self, format: str, *args: object) -> None:
+            del format, args
+
+        def _write_json(self, *, status_code: int, payload: Mapping[str, object]) -> None:
+            body = json.dumps(payload).encode("utf-8")
+            self.send_response(status_code)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    return _FailingSidecarHandler
+
+
+def _client(tmp_path: Path, *, sidecar: AudioTranscriptionSidecarClient) -> TestClient:
     return TestClient(_app(tmp_path, sidecar=sidecar))
 
 
-def _app(tmp_path: Path, *, sidecar: _FakeAudioTranscriptionSidecar) -> FastAPI:
+def _app(tmp_path: Path, *, sidecar: AudioTranscriptionSidecarClient) -> FastAPI:
     return create_app(
         ServiceConfig(
             api_key=_API_KEY,
@@ -401,7 +615,7 @@ def _ready_capabilities() -> dict[str, object]:
             "model_artifacts_present": True,
         },
         "secrets": {
-            "required_secret_names": ["HUGGINGFACE_TOKEN"],
+            "required_secret_names": ["HF_TOKEN"],
             "required_secrets_present": True,
             "values_exposed": False,
         },

@@ -97,6 +97,9 @@ class HttpAudioTranscriptionSidecarClient:
             except httpx.RequestError as exc:
                 raise _sidecar_unavailable("sidecar_request_failed") from exc
             except httpx.HTTPStatusError as exc:
+                mapped_error = _recognized_sidecar_error(exc.response)
+                if mapped_error is not None:
+                    raise mapped_error from exc
                 raise _sidecar_unavailable(
                     "sidecar_http_status",
                     status_code=str(exc.response.status_code),
@@ -113,6 +116,9 @@ class HttpAudioTranscriptionSidecarClient:
             except httpx.RequestError as exc:
                 raise _sidecar_unavailable("sidecar_request_failed") from exc
             except httpx.HTTPStatusError as exc:
+                mapped_error = _recognized_sidecar_error(exc.response)
+                if mapped_error is not None:
+                    raise mapped_error from exc
                 raise _sidecar_unavailable(
                     "sidecar_http_status",
                     status_code=str(exc.response.status_code),
@@ -143,6 +149,64 @@ def _response_json_object(response: httpx.Response) -> Mapping[str, object]:
     if not isinstance(payload, Mapping):
         raise _sidecar_unavailable("sidecar_json_response_not_object")
     return {str(key): value for key, value in payload.items() if isinstance(key, str)}
+
+
+def _recognized_sidecar_error(response: httpx.Response) -> ServiceError | None:
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    code_obj = payload.get("code")
+    if not isinstance(code_obj, str):
+        return None
+    try:
+        error_code = AudioTranscriptionErrorCode(code_obj)
+    except ValueError:
+        return None
+    return ServiceError(
+        status_code=response.status_code,
+        code=error_code.value,
+        message=_audio_error_message(error_code),
+        retryable=_audio_error_retryable(error_code),
+        details={
+            "reason": "sidecar_reported_error",
+            "sidecar_status_code": response.status_code,
+        },
+    )
+
+
+def _audio_error_message(error_code: AudioTranscriptionErrorCode) -> str:
+    if error_code == AudioTranscriptionErrorCode.UNSUPPORTED_CODEC:
+        return "Uploaded audio uses an unsupported codec."
+    if error_code == AudioTranscriptionErrorCode.DURATION_EXCEEDED:
+        return "Uploaded audio exceeds the configured duration limit."
+    if error_code == AudioTranscriptionErrorCode.PROBE_TIMEOUT:
+        return "Audio media probing timed out."
+    if error_code == AudioTranscriptionErrorCode.NORMALIZATION_TIMEOUT:
+        return "Audio normalization timed out."
+    if error_code == AudioTranscriptionErrorCode.MODEL_ACCESS_DENIED:
+        return "Audio transcription model access is unavailable."
+    if error_code == AudioTranscriptionErrorCode.SIDECAR_CANCELED:
+        return "Audio transcription sidecar canceled the request."
+    if error_code == AudioTranscriptionErrorCode.DIARIZATION_FAILED:
+        return "Audio diarization failed."
+    if error_code == AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED:
+        return "Audio transcription failed."
+    return "Audio transcription sidecar failed the job."
+
+
+def _audio_error_retryable(error_code: AudioTranscriptionErrorCode) -> bool:
+    return error_code in {
+        AudioTranscriptionErrorCode.SIDECAR_UNAVAILABLE,
+        AudioTranscriptionErrorCode.TRANSCRIPTION_BACKEND_UNAVAILABLE,
+        AudioTranscriptionErrorCode.DIARIZATION_BACKEND_UNAVAILABLE,
+        AudioTranscriptionErrorCode.MODEL_CACHE_UNAVAILABLE,
+        AudioTranscriptionErrorCode.GPU_REQUIRED_UNAVAILABLE,
+        AudioTranscriptionErrorCode.PROBE_TIMEOUT,
+        AudioTranscriptionErrorCode.NORMALIZATION_TIMEOUT,
+    }
 
 
 def _sidecar_unavailable(reason: str, **details: str) -> ServiceError:

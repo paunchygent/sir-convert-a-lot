@@ -18,7 +18,7 @@ from typing import Literal
 from uuid import uuid4
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
+from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
 )
@@ -421,6 +421,8 @@ class ServiceRuntimeV2:
                 return "missing"
             except JobStateConflictV2:
                 return "conflict"
+            if _uses_audio_transcription_sidecar(job):
+                self.audio_transcription_sidecar.cancel(job_id)
             self.webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
             canceled = self._safe_get_job(job_id)
             if canceled is not None:
@@ -468,3 +470,10 @@ class ServiceRuntimeV2:
             with self._lock:
                 self._active_job_ids.discard(job_id)
             self._emit_runtime_capacity_metrics()
+
+
+def _uses_audio_transcription_sidecar(job: StoredJobV2) -> bool:
+    return (
+        job.source_format == SourceFormatV2.AUDIO
+        and job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    )
