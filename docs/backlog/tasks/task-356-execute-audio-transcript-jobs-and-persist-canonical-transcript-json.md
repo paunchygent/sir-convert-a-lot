@@ -218,6 +218,48 @@ core is accepted.
 - Live proof summary:
   `build/verification/audio-transcript-live-api-proof/a8ab0d1/live-proof-summary.md`.
 
+## Review 42 Remediation Evidence
+
+- Remediation commit:
+  `d036271155d0dde005e12a9a228ca0f6a13dd848`.
+- Review 42 fixes preserve structured sidecar HTTP error codes across the real
+  HTTP adapter boundary, enforce duration and timeout contract values before
+  model work, and propagate v2 cancellation to active STT sidecar requests.
+- Red-first remediation command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py -q`
+  failed with `8 failed, 3 passed`.
+- Green focused command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py -q`
+  passed with `17 passed`.
+- Review 42 remediation quality gates passed: `pdm run format-all`,
+  `pdm run lint-fix`, `pdm run typecheck-all`, and `pdm run coverage-gate`.
+  The coverage gate passed with `1653 passed, 6 skipped`, `95.54%` total
+  coverage. Docs gates passed after `pdm run docs-sync`.
+- Hemma deploy verification passed:
+  `pdm run hemma-deploy-and-verify --expected-revision d036271155d0dde005e12a9a228ca0f6a13dd848 --lane host`.
+  The report recorded expected, remote, and service revisions all equal to
+  `d036271155d0dde005e12a9a228ca0f6a13dd848` on lane `host`.
+- Fresh live tunnel proof artifacts are ignored under
+  `build/verification/audio-transcript-live-api-proof/d036271/`.
+- English two-speaker proof after remediation:
+  - job id: `jobv2_796bead89df64c679afb373ebf`
+  - status: `succeeded`
+  - detected language: `en`
+  - diarization status: `succeeded`
+  - segment count: `231`
+  - speaker labels: `SPEAKER_00`, `SPEAKER_01`
+  - transcript SHA-256:
+    `9b5c8c8e0a3c27c6a94d066b73214379eafaca0ed03b7b044fc63143767815dd`
+- Swedish speaker-range proof after remediation:
+  - job id: `jobv2_646a9ce564b4498989c2040ebe`
+  - status: `succeeded`
+  - detected language: `sv`
+  - diarization status: `succeeded`
+  - segment count: `4`
+  - speaker labels: `SPEAKER_00`
+  - transcript SHA-256:
+    `5962a1ce927a5cf106539638fba8180c62f12ff2b5ef060a1ccc34a63b216450`
+
 ## Validation Plan
 
 - Focused red/green pytest for audio runtime execution and artifact routes.

@@ -43,9 +43,9 @@ durable implementation authority lives in governed docs.
   `9859b4a51dc94e9a6083a9fd7985b746cd75c380` was deployed to Hemma and proved
   live through the tunnel with `202 queued` admission and `202 canceled`
   cancellation for an `audio -> transcript_bundle` job.
-- Task 356 is implemented and deployed pending retained review: revision
-  `a8ab0d1211fa4a0fb8e0d1efe5fd6a40d982e4ac` passed Hemma deploy verification
-  and live tunnel proof for English/Swedish `transcript_json` artifacts.
+- Task 356 Review 42 remediation is implemented/deployed pending retained
+  re-review: revision `d036271155d0dde005e12a9a228ca0f6a13dd848` passed Hemma
+  deploy verification and live English/Swedish `transcript_json` proof.
   Bounded evidence is in Task 356.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
