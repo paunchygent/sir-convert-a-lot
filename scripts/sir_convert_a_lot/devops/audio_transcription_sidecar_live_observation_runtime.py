@@ -397,9 +397,11 @@ def _runtime_probe_command(
     ]
     if environment.get("HF_TOKEN", "").strip():
         env_args.extend(["-e", "HF_TOKEN"])
+    sudo_args = ["sudo", "-n"]
+    if environment.get("HF_TOKEN", "").strip():
+        sudo_args.append("--preserve-env=HF_TOKEN")
     command = [
-        "sudo",
-        "-n",
+        *sudo_args,
         "docker",
         "run",
         "--rm",

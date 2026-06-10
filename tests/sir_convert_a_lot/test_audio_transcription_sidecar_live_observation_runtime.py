@@ -254,9 +254,11 @@ def test_operator_command_loads_repo_env_without_exposing_secret_values(
     observation = _read_json_object(observation_path)
     persisted_text = observation_path.read_text(encoding="utf-8")
     flattened_commands = "\n".join(" ".join(command) for command in fake_runner.commands)
+    runtime_probe_command = _runtime_probe_command(fake_runner.commands)
     assert exit_code == 0
     assert _mapping_at(observation, "huggingface_readiness")["token_env_vars_present"] is True
     assert "-e HF_TOKEN" in flattened_commands
+    assert "--preserve-env=HF_TOKEN" in runtime_probe_command
     assert secret_value not in flattened_commands
     assert secret_value not in persisted_text
     assert hf_home.as_posix() not in persisted_text
@@ -441,6 +443,13 @@ def _contains_suffix(command: Sequence[str], suffix: str) -> bool:
 
 def _runs_runtime_probe(command: Sequence[str]) -> bool:
     return "scripts.sir_convert_a_lot.devops.audio_transcription_sidecar_runtime_probe" in command
+
+
+def _runtime_probe_command(commands: Sequence[Sequence[str]]) -> Sequence[str]:
+    for command in commands:
+        if _runs_runtime_probe(command):
+            return command
+    raise AssertionError("runtime probe command was not captured")
 
 
 def _runs_tool(command: Sequence[str], tool: str) -> bool:
