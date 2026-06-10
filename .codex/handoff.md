@@ -43,10 +43,10 @@ durable implementation authority lives in governed docs.
   `9859b4a51dc94e9a6083a9fd7985b746cd75c380` was deployed to Hemma and proved
   live through the tunnel with `202 queued` admission and `202 canceled`
   cancellation for an `audio -> transcript_bundle` job.
-- Task 356 Review 42 remediation is implemented/deployed pending retained
-  re-review: revision `d036271155d0dde005e12a9a228ca0f6a13dd848` passed Hemma
-  deploy verification and live English/Swedish `transcript_json` proof.
-  Bounded evidence is in Task 356.
+- Task 356 is complete and accepted in Review 42. Revision
+  `d036271155d0dde005e12a9a228ca0f6a13dd848` passed Hemma deploy verification
+  and live English/Swedish `transcript_json` proof. Bounded evidence is in Task
+  356 and Review 42.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -159,12 +159,9 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. Run retained ruthless review for Task 356 now that the deployed
-   `audio -> transcript_bundle` JSON pipeline proof succeeded. If review
-   requests changes, route them back through the implementer, redeploy, and
-   rerun live proof before re-review. If accepted, mark Task 356 complete and
-   continue the downstream/Gateway/Skriptoteket JSON consumption lane without
-   enabling formatter artifacts yet.
+1. Continue the downstream HuleEdu Gateway and Skriptoteket JSON transcript
+   consumption lane from the accepted Sir Convert `audio -> transcript_bundle`
+   runtime, without enabling formatter artifacts yet.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -190,8 +187,8 @@ formula evidence with VLM output.
   deploy verification passed for `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`,
   live profile proof returned `proof_ready=true`, and docs/skills/handoff
   validators passed. Task 355 admission proof is recorded in Review 41. Task
-  356 implementation, quality, docs, Hemma deploy, and live tunnel proof
-  evidence is recorded in Task 356 and awaits retained review.
+  356 implementation, quality, docs, Hemma deploy, live tunnel proof, and
+  re-review acceptance are recorded in Task 356 and Review 42.
 
 ## Stop Conditions
 

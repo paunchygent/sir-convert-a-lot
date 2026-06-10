@@ -54,11 +54,9 @@ governed production-profile rejection has been superseded by Task 352/354 and
 Review 40. Task 355 registers the first Sir Convert Service API v2
 `audio -> transcript_bundle` route-admission slice, and Task 356 deploys the
 first sidecar-backed canonical `transcript_json` execution slice. Downstream
-stories may treat JSON transcript delivery as an implementation target after
-Task 356 retained review accepts the deployed proof, but retained review must
-accept live proof before downstream stories may treat transcript delivery as
-live. Story 54 formatter artifacts remain follow-on work after the JSON core is
-accepted.
+stories may treat JSON transcript delivery as live Sir Convert runtime
+authority after Review 42 accepted the deployed proof. Story 54 formatter
+artifacts remain follow-on work after the JSON core is accepted.
 
 ## Scope
 
@@ -97,12 +95,9 @@ accepted.
 - The shared access model is Gateway-only `/sir-convert/v2/convert` product
   access with HuleEdu-signed `InternalIdentityContextV1` for user-originated
   Sir Convert work.
-- The Sir Convert audio route is JSON transcript execution authority after Task
-  356 review acceptance. Product UX, durable transcript saves, and formatter
-  artifacts remain downstream/follow-on work.
-- Until that retained review accepts live proof, Sir Convert remains
-  admission-registered planning authority, not a transcript execution or
-  artifact-delivery surface for downstream delivery commitments.
+- The Sir Convert audio route is JSON transcript execution authority. Product
+  UX, durable transcript saves, and formatter artifacts remain
+  downstream/follow-on work.
 - Retention ownership is split intentionally: short Sir Convert operational
   retention for uploaded media and generated artifacts, durable Skriptoteket
   transcript retention after product save.
@@ -118,8 +113,8 @@ accepted.
 - [x] HuleEdu and Skriptoteket have corresponding governed stories linked from
   their local backlog lanes.
 - [x] Sir Convert downstream/internal adapter docs name the route as canonical
-  JSON execution pending retained Task 356 review while formatter artifacts and
-  product-owned saves remain separate.
+  JSON execution while formatter artifacts and product-owned saves remain
+  separate.
 - [x] Cross-repo stories agree on Gateway-only product access and
   `InternalIdentityContextV1` ownership.
 - [x] Cross-repo stories agree that Skriptoteket owns durable transcript

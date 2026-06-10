@@ -2,7 +2,7 @@
 type: converter
 id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
-status: draft
+status: active
 created: 2026-06-09
 updated: 2026-06-10
 owners:
@@ -32,26 +32,26 @@ links:
 
 ## Purpose
 
-Define the draft Service API v2 route contract for speech-to-text jobs that
+Define the Service API v2 route contract for speech-to-text jobs that
 ingest uploaded audio or video sources and produce a diarized transcript bundle.
 
-This is a draft route-specific contract. Task 355 registers Service API v2
-create-job admission for `audio -> transcript_bundle`, including request-shape,
-owner-scope, local-upload, public-option, capacity, GPU-required, and
-`retention.pin=false` checks. Task 356 deploys the first sidecar-backed runtime
-execution slice for audio progress, cancellation cleanup, and canonical
-`transcript_json` persistence. Formatter outputs remain blocked until later
-governed Story 54 tasks land.
+This is the active route-specific JSON-core contract. Task 355 registers
+Service API v2 create-job admission for `audio -> transcript_bundle`, including
+request-shape, owner-scope, local-upload, public-option, capacity,
+GPU-required, and `retention.pin=false` checks. Task 356 deploys and Review 42
+accepts the first sidecar-backed runtime execution slice for audio progress,
+cancellation cleanup, and canonical `transcript_json` persistence. Formatter
+outputs remain blocked until later governed Story 54 tasks land.
 
-Task 356 remains in progress until retained ruthless review accepts the
-deployed live proof. Formatter artifacts remain blocked until the JSON core is
-accepted.
+Task 356's accepted runtime authority covers canonical JSON transcript
+delivery only. Formatter artifacts remain blocked until later formatter
+strategies over the JSON core are accepted.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
-approved the remediated contract direction on 2026-06-09. This contract remains
-draft until the Task 356 retained review accepts sidecar runtime behavior and
-canonical transcript artifact persistence through the public route.
+approved the remediated contract direction on 2026-06-09. Review 42 accepted
+sidecar runtime behavior and canonical transcript artifact persistence through
+the public route on 2026-06-10.
 
 ## Relationship To Existing V2 API
 
@@ -64,7 +64,7 @@ Audio transcription uses the existing Service API v2 lifecycle:
 - `GET /v2/convert/jobs/{job_id}/artifacts/{artifact_key}`
 - `POST /v2/convert/jobs/{job_id}/cancel`
 
-The proposed route key is:
+The route key is:
 
 ```json
 {
@@ -573,7 +573,6 @@ It defines and deploys:
   cancellation cleanup, retry idempotency, retention cleanup, and 120-minute
   batch behavior.
 
-The implementation remains pending retained review before this contract can
-move from draft runtime authority to accepted runtime authority. Story 54
-formatter artifacts and Story 55 downstream save/product delivery remain
-separate work.
+Review 42 accepts this implementation as the runtime authority for the
+canonical JSON core. Story 54 formatter artifacts and downstream
+save/product-delivery work remain separate governed work.

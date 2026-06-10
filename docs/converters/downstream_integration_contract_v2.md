@@ -115,7 +115,7 @@ states:
 | Source | Target | Route key | State | Contract |
 | --- | --- | --- | --- | --- |
 | `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | Runtime route | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
-| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Runtime JSON execution deployed; retained Task 356 review pending | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Runtime JSON execution accepted | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
 `/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion

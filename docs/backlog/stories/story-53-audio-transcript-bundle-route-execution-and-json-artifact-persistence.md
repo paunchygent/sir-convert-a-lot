@@ -2,7 +2,7 @@
 id: story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence
 title: Audio transcript bundle route execution and JSON artifact persistence
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-09'
 last_updated: '2026-06-10'
@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
   - docs/backlog/tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md
   - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
+  - docs/backlog/reviews/review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
@@ -47,17 +48,11 @@ sidecar profile, and human review accepted the ignored transcript-review
 artifacts for the English two-speaker and Swedish one-speaker fixtures on
 2026-06-10.
 
-The story may now proceed through small runtime tasks. Task 355 is the first
-runtime slice and is limited to Service API v2 route admission. It must not
-persist transcript artifacts, call the sidecar for production transcription, or
-implement formatter outputs. Later Story 53 tasks own sidecar execution,
-progress, cancellation cleanup, retry, retention, and canonical
-`transcript_json` artifact persistence.
-
-Task 356 is the active runtime slice. It has deployed sidecar-backed execution
-and canonical `transcript_json` persistence through the v2 job lifecycle, with
-retained ruthless review still pending. It still excludes formatter artifacts
-and downstream UI/storage lanes.
+The story proceeded through small runtime tasks. Task 355 delivered Service API
+v2 route admission. Task 356 delivered sidecar execution, progress,
+cancellation cleanup, retry-safe failure handling, retention-safe artifact
+behavior, and canonical `transcript_json` artifact persistence. Formatter
+artifacts and downstream UI/storage lanes remain separate governed work.
 
 Current runtime truth:
 
@@ -66,8 +61,7 @@ Current runtime truth:
   with API-key tunnel and Gateway signed-identity owner scopes.
 - Task 356 turns queued jobs into succeeded jobs with canonical
   `transcript_json` through the accepted FasterWhisper ROCm plus pyannote
-  sidecar profile. The slice remains in progress until retained review accepts
-  the deployed proof.
+  sidecar profile. Review 42 accepted the deployed proof and remediation.
 - `JobSpecV2` accepts the governed day-one audio transcription request shape,
   including Swedish/English auto language selection, exact speaker count, and
   min/max speaker range hints.
@@ -132,10 +126,9 @@ and return owner-scoped `transcript_json` artifacts through the canonical
 Service API v2 lifecycle, with no formatter artifacts required yet.
 
 Current implementation state: the backend-profile blocker is resolved, Task 355
-accepted route admission, and Task 356 deployed the JSON execution/persistence
-slice. The story remains in progress until Task 356's retained review accepts
-the deployed proof. Formatter artifacts and downstream product save semantics
-remain later stories.
+accepted route admission, and Task 356 accepted the deployed JSON
+execution/persistence slice in Review 42. Formatter artifacts and downstream
+product save semantics remain later stories.
 
 ## Checklist
 
@@ -147,4 +140,4 @@ remain later stories.
 - [x] Runtime route implementation complete
 - [x] Runtime tests and validations complete
 - [x] Runtime docs synchronized
-- [ ] Task 356 retained review accepted
+- [x] Task 356 retained review accepted

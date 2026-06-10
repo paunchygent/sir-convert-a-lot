@@ -2,7 +2,7 @@
 id: task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json
 title: Execute audio transcript jobs and persist canonical transcript JSON
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
   - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/backlog/reviews/review-41-ruthless-review-of-task-355-audio-transcript-route-admission.md
+  - docs/backlog/reviews/review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
   - docs/converters/multi_format_conversion_service_api_v2.md
@@ -95,7 +96,7 @@ core is accepted.
 - [x] Hemma deploy and live tunnel proof that an English two-speaker fixture and
   Swedish one-speaker fixture complete through the public v2 job lifecycle with
   `transcript_json` available for human review.
-- [ ] Retained ruthless review artifact accepted after deployed live proof.
+- [x] Retained ruthless review artifact accepted after deployed live proof.
 
 ## Acceptance Criteria
 

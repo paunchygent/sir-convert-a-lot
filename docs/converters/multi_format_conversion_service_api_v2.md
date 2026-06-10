@@ -150,9 +150,9 @@ The following v2 route extensions have accepted or active route-specific
 contracts:
 
 - `md -> wav` (sidecar-backed TTS on Hemma; see ADR-0006)
-- `audio -> transcript_bundle` is implemented for Service API v2 JSON transcript
-  execution pending retained Task 356 review. It validates request shape, owner
-  scope, local-upload media, day-one public audio options, route capacity,
+- `audio -> transcript_bundle` is implemented and accepted for Service API v2
+  JSON transcript execution. It validates request shape, owner scope,
+  local-upload media, day-one public audio options, route capacity,
   GPU-required policy, and `retention.pin=false`, then executes through the
   internal STT sidecar and persists canonical `transcript_json`. Formatter
   artifacts remain future Story 54 work. See ADR-0013 and
@@ -161,16 +161,14 @@ contracts:
 Important:
 
 - These routes are approved for planning and contract publication.
-- The audio route executes canonical JSON transcript jobs through the runtime;
-  retained review is pending before the task is marked complete.
+- The audio route executes canonical JSON transcript jobs through the runtime.
 - The public contracts remain provider-neutral and the TTS/STT backends must
   remain Hemma sidecars, not in-process dependencies in the main service image.
 - Internal multi-backend TTS reuse is governed by ADR-0007; backend-native
   sidecar APIs are not the normative Sir-facing contract.
 - ADR-0013 is accepted, Task 355 registered the first admission-only audio
   route slice, and Task 356 implements sidecar execution, route-specific
-  progress, cancellation cleanup, and transcript artifact persistence pending
-  retained review.
+  progress, cancellation cleanup, and transcript artifact persistence.
 - For audio transcription, the first stable output authority is structured
   JSON; `txt`, `md`, `vtt`, and `srt` are later formatter artifacts over that
   JSON core.
