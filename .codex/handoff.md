@@ -179,8 +179,8 @@ formula evidence with VLM output.
   `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py::test_pdf_to_md_lifecycle_result_and_artifact tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_auto_reruns_terminal_failed_idempotent_replay tests/sir_convert_a_lot/test_v2_pdf_chunk_conversion.py tests/sir_convert_a_lot/test_pdf_checkpoint_metadata_v2.py`
   -> `6 passed`.
 - Task 342 incremental manifest/replay visibility slice 2026-06-10:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callback`
-  -> `6 passed`.
+  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callback tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_convert_upload_to_artifact_reports_fresh_running_submit_to_progress_callback`
+  -> `8 passed`.
 
 ## Stop Conditions
 

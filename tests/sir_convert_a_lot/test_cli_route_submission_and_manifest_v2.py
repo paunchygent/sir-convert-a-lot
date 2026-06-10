@@ -338,6 +338,52 @@ def test_cli_route_submission_emits_replayed_running_job_message(
     ]
 
 
+def test_cli_route_submission_emits_fresh_running_job_message(
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "fresh-running.md"
+    source_file.write_text("# Fresh running\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    route = resolve_route(source=SourceFormat.MD, target=TargetFormat.PDF)
+    assert route is not None
+    messages: list[str] = []
+
+    class _FreshRunningClient(_FakeClient):
+        def convert_upload_to_artifact(self, **kwargs) -> ArtifactOutcomeV2:
+            progress_callback = kwargs["progress_callback"]
+            assert progress_callback is not None
+            progress_callback(
+                {
+                    "job": {
+                        "job_id": "job_fresh_running",
+                        "status": "running",
+                        "idempotent_replay": False,
+                    }
+                }
+            )
+            return ArtifactOutcomeV2(
+                job_id="job_fresh_running",
+                status=JobStatus.SUCCEEDED,
+                artifact_bytes=b"%PDF-1.4\nfake\n",
+            )
+
+    submit_service_route_batch_v2(
+        options=_submission_options_for_md_pdf(
+            source_file=source_file,
+            output_dir=output_dir,
+            route=route,
+        ),
+        client_factory=_FreshRunningClient,
+        message_sink=messages.append,
+    )
+
+    assert messages == [
+        "... Submitted fresh-running.md: job_fresh_running (running)",
+        f"✓ Converted fresh-running.md -> {output_dir / 'fresh-running.pdf'}",
+    ]
+
+
 def test_cli_manifest_writer_sorts_entries_by_source_path(tmp_path: Path) -> None:
     output_dir = tmp_path / "out"
     output_dir.mkdir()

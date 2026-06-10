@@ -270,3 +270,90 @@ def test_convert_upload_to_artifact_reports_submitted_replay_to_progress_callbac
             "idempotent_replay": True,
         }
     }
+
+
+def test_convert_upload_to_artifact_reports_fresh_running_submit_to_progress_callback(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "paper.pdf"
+    source.write_bytes(b"%PDF-1.4\n% stable\n%%EOF\n")
+    job_spec: dict[str, object] = {
+        "api_version": "v2",
+        "source": {"kind": "upload", "filename": "paper.pdf", "format": "pdf"},
+        "conversion": {"output_format": "docx"},
+        "pdf_options": {},
+        "execution": None,
+        "retention": {"pin": False},
+    }
+    events: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/v2/convert/jobs":
+            return httpx.Response(
+                202,
+                json=_job_payload(job_id="job_fresh", status=JobStatus.RUNNING),
+            )
+
+        if request.method == "GET" and request.url.path == "/v2/convert/jobs/job_fresh":
+            return httpx.Response(
+                200,
+                json=_job_payload(job_id="job_fresh", status=JobStatus.SUCCEEDED),
+            )
+
+        if request.method == "GET" and request.url.path == "/v2/convert/jobs/job_fresh/result":
+            return httpx.Response(
+                200,
+                json={
+                    "api_version": "v2",
+                    "job_id": "job_fresh",
+                    "status": "succeeded",
+                    "result": {
+                        "artifact": {
+                            "filename": "output.docx",
+                            "format": "docx",
+                            "size_bytes": 10,
+                            "sha256": "abc",
+                            "content_type": (
+                                "application/vnd.openxmlformats-officedocument"
+                                ".wordprocessingml.document"
+                            ),
+                        },
+                        "conversion_metadata": {
+                            "pipeline_used": "pdf_to_docx_v2",
+                            "options_fingerprint": "sha256:test",
+                            "formula_authority": {},
+                        },
+                        "warnings": [],
+                    },
+                },
+            )
+
+        if request.method == "GET" and request.url.path == "/v2/convert/jobs/job_fresh/artifact":
+            return httpx.Response(200, content=b"docx-bytes")
+
+        return httpx.Response(404, json={"api_version": "v2", "error": {"code": "not_found"}})
+
+    transport = httpx.MockTransport(handler)
+    http_client = httpx.Client(base_url="http://test", transport=transport)
+
+    with SirConvertALotClientV2(
+        base_url="http://test", api_key="k", http_client=http_client
+    ) as client:
+        outcome = client.convert_upload_to_artifact(
+            source_path=source,
+            job_spec=job_spec,
+            idempotency_key="idemv2_base",
+            wait_seconds=0,
+            max_poll_seconds=1.0,
+            retry_mode="auto",
+            progress_callback=events.append,
+        )
+
+    assert outcome.job_id == "job_fresh"
+    assert events[0] == {
+        "job": {
+            "job_id": "job_fresh",
+            "status": "running",
+            "idempotent_replay": False,
+        }
+    }
