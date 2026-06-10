@@ -43,6 +43,11 @@ def job_record_response_v2(job: StoredJobV2) -> JobRecordResponseV2:
                 percent_complete=job.percent_complete,
                 pages_per_minute=job.pages_per_minute,
                 eta_seconds=job.eta_seconds,
+                audio_total_media_seconds=job.audio_total_media_seconds,
+                audio_processed_media_seconds=job.audio_processed_media_seconds,
+                audio_percent_complete=job.audio_percent_complete,
+                audio_current_chunk_index=job.audio_current_chunk_index,
+                audio_total_chunks=job.audio_total_chunks,
             ),
             links=JobLinksV2(
                 self=f"/v2/convert/jobs/{job.job_id}",

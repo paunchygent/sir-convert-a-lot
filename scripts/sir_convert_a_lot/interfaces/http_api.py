@@ -27,6 +27,9 @@ from scripts.sir_convert_a_lot.application.contracts import (
     ErrorBody,
 )
 from scripts.sir_convert_a_lot.application.contracts_v2 import ErrorEnvelopeV2
+from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
+    AudioTranscriptionSidecarClient,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceConfig,
     ServiceError,
@@ -92,6 +95,7 @@ def _error_envelope(
 def create_app(
     config: ServiceConfig | None = None,
     *,
+    audio_transcription_sidecar: AudioTranscriptionSidecarClient | None = None,
     service_profile: str = "prod",
     expected_service_profile: str | None = None,
 ) -> FastAPI:
@@ -130,6 +134,7 @@ def create_app(
     initialize_service_state(
         app,
         runtime_config=runtime_config,
+        audio_transcription_sidecar=audio_transcription_sidecar,
         service_profile=service_profile,
         expected_service_profile=resolved_expected_profile,
         expected_service_revision=expected_service_revision,

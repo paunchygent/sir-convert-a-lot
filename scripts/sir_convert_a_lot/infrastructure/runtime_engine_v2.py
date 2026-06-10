@@ -22,6 +22,10 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
 )
+from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
+    AudioTranscriptionSidecarClient,
+    build_audio_transcription_sidecar_client,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
     graded_result_pdf_path_for_upload,
     ingestion_overlay_path_for_upload,
@@ -79,6 +83,7 @@ class ServiceRuntimeV2:
         config: ServiceConfig,
         *,
         telemetry_sink: RuntimeTelemetrySinkV2 | None = None,
+        audio_transcription_sidecar: AudioTranscriptionSidecarClient | None = None,
     ) -> None:
         self.config = config
         self.telemetry_sink: RuntimeTelemetrySinkV2 | NoopRuntimeTelemetrySinkV2 = (
@@ -117,6 +122,14 @@ class ServiceRuntimeV2:
             easyocr_download_enabled=False,
         )
         self.pymupdf_backend = PyMuPdfConversionBackend()
+        self.audio_transcription_sidecar = (
+            audio_transcription_sidecar
+            if audio_transcription_sidecar is not None
+            else build_audio_transcription_sidecar_client(
+                base_url=self.config.audio_transcription_sidecar_base_url,
+                timeout_seconds=self.config.audio_transcription_sidecar_timeout_seconds,
+            )
+        )
         self._lock = threading.Lock()
         self._shutdown_event = threading.Event()
         self._supervisor_thread: threading.Thread | None = None
@@ -236,6 +249,11 @@ class ServiceRuntimeV2:
             percent_complete=record.percent_complete,
             pages_per_minute=record.pages_per_minute,
             eta_seconds=record.eta_seconds,
+            audio_total_media_seconds=record.audio_total_media_seconds,
+            audio_processed_media_seconds=record.audio_processed_media_seconds,
+            audio_percent_complete=record.audio_percent_complete,
+            audio_current_chunk_index=record.audio_current_chunk_index,
+            audio_total_chunks=record.audio_total_chunks,
             warnings=list(record.warnings),
             artifact_sha256=record.artifact_sha256,
             artifact_size_bytes=record.artifact_size_bytes,
@@ -436,6 +454,7 @@ class ServiceRuntimeV2:
                 webhook_service=self.webhook_service,
                 docling_backend=self.docling_backend,
                 pymupdf_backend=self.pymupdf_backend,
+                audio_transcription_sidecar=self.audio_transcription_sidecar,
                 telemetry_sink=self.telemetry_sink,
                 get_job=self.get_job,
                 safe_get_job=self._safe_get_job,

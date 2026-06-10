@@ -47,6 +47,7 @@ from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
     TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
 )
 from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    parse_optional_nonneg_float,
     parse_optional_nonneg_int,
 )
 
@@ -59,6 +60,8 @@ def _artifact_content_type(output_format: OutputFormatV2) -> str:
     if output_format == OutputFormatV2.DOCX:
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
+        return "application/json"
+    if output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
         return "application/json"
     raise AssertionError(f"Unsupported output_format: {output_format}")
 
@@ -240,6 +243,11 @@ class JobStoreV2(JobStoreV2Core):
                     if attempt_ms is not None and attempt_ms > 0:
                         minutes = attempt_ms / 60_000.0
                         progress["pages_per_minute"] = float(total_pages) / minutes
+            if isinstance(source_format_obj, str) and source_format_obj == "audio":
+                audio_total = parse_optional_nonneg_float(progress.get("audio_total_media_seconds"))
+                if audio_total is not None:
+                    progress["audio_processed_media_seconds"] = audio_total
+                progress["audio_percent_complete"] = 100.0
 
             payload["error"] = None
             payload["result_metadata"] = {

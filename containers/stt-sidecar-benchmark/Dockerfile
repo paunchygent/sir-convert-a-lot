@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1
 #
 # Purpose:
-#   Build the isolated speech-to-text benchmark runtime used to collect live
-#   Hemma profile-proof observations.
+#   Build the isolated speech-to-text sidecar runtime used by Service API v2
+#   audio transcript jobs and Hemma profile-proof observations.
 #
 # Relationships:
-#   - Built by `benchmark:stt-sidecar-live-observation` with Docker BuildKit.
+#   - Built with Docker BuildKit for the production sidecar and live
+#     observation lanes.
 #   - Provides FFmpeg, faster-whisper, pyannote.audio, Hugging Face Hub, and
 #     ROCm-backed Torch for live profile evidence collection without changing the
 #     main Sir Convert service image.
@@ -28,6 +29,9 @@ ARG TORCH_ROCM_LIBRARY_DIR=/app/.venv/lib/python3.11/site-packages/torch/lib
 ENV HF_HOME=/cache/huggingface
 ENV HF_HUB_CACHE=/cache/huggingface/hub
 ENV TRANSFORMERS_CACHE=/cache/huggingface
+ENV PYTHONPATH=/app
+
+WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -42,10 +46,12 @@ RUN apt-get update \
 
 RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-pip,target=/root/.cache/pip \
     python -m pip install --upgrade \
+        "fastapi>=0.128.8" \
         faster-whisper \
         "huggingface-hub==0.34.4" \
         "pyannote.audio==4.0.4" \
-        "torchcodec==0.10.0"
+        "torchcodec==0.10.0" \
+        "uvicorn[standard]>=0.40.0"
 
 RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-ctranslate2-rocm,target=/tmp/ctranslate2-rocm-download \
     set -eux; \
@@ -76,3 +82,13 @@ RUN --mount=type=cache,id=sir-convert-a-lot-stt-sidecar-ctranslate2-rocm,target=
         patchelf --set-rpath "\$ORIGIN:${CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR}" "${binary_path}"; \
     done; \
     rm -rf "${extract_dir}" "${archive_path}.sha256"
+
+COPY scripts/__init__.py /app/scripts/__init__.py
+COPY scripts/sir_convert_a_lot/__init__.py /app/scripts/sir_convert_a_lot/__init__.py
+COPY scripts/sir_convert_a_lot/domain /app/scripts/sir_convert_a_lot/domain
+COPY scripts/sir_convert_a_lot/devops /app/scripts/sir_convert_a_lot/devops
+COPY scripts/sir_convert_a_lot/stt_sidecar /app/scripts/sir_convert_a_lot/stt_sidecar
+
+EXPOSE 8095
+
+CMD ["uvicorn", "scripts.sir_convert_a_lot.stt_sidecar.app:app", "--host", "0.0.0.0", "--port", "8095"]

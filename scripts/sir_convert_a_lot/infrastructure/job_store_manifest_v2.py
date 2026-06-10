@@ -35,6 +35,9 @@ from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
     merge_phase_timings as merge_phase_timings_canonical_v2,
 )
 from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    parse_optional_nonneg_float,
+    parse_optional_nonneg_int,
+    parse_optional_percent,
     parse_progress_page_fields,
 )
 from scripts.sir_convert_a_lot.infrastructure.stored_job_spec_normalization_v2 import (
@@ -110,6 +113,11 @@ def build_initial_manifest(
             "percent_complete": None,
             "pages_per_minute": None,
             "eta_seconds": None,
+            "audio_total_media_seconds": None,
+            "audio_processed_media_seconds": None,
+            "audio_percent_complete": None,
+            "audio_current_chunk_index": None,
+            "audio_total_chunks": None,
         },
         "timestamps": {
             "created_at": dt_to_rfc3339(now),
@@ -193,6 +201,15 @@ def parse_stored_job_record(
     stage_obj = progress.get("stage")
     stage = stage_obj if isinstance(stage_obj, str) else "unknown"
     page_fields = parse_progress_page_fields(progress)
+    audio_total_media_seconds = parse_optional_nonneg_float(
+        progress.get("audio_total_media_seconds")
+    )
+    audio_processed_media_seconds = parse_optional_nonneg_float(
+        progress.get("audio_processed_media_seconds")
+    )
+    audio_percent_complete = parse_optional_percent(progress.get("audio_percent_complete"))
+    audio_current_chunk_index = parse_optional_nonneg_int(progress.get("audio_current_chunk_index"))
+    audio_total_chunks = parse_optional_nonneg_int(progress.get("audio_total_chunks"))
 
     diagnostics = payload.get("diagnostics")
     diagnostics_obj = diagnostics if isinstance(diagnostics, dict) else {}
@@ -368,6 +385,11 @@ def parse_stored_job_record(
         percent_complete=page_fields.percent_complete,
         pages_per_minute=page_fields.pages_per_minute,
         eta_seconds=page_fields.eta_seconds,
+        audio_total_media_seconds=audio_total_media_seconds,
+        audio_processed_media_seconds=audio_processed_media_seconds,
+        audio_percent_complete=audio_percent_complete,
+        audio_current_chunk_index=audio_current_chunk_index,
+        audio_total_chunks=audio_total_chunks,
         warnings=warnings,
         upload_path=upload_path,
         resources_zip_path=resources_zip_path,

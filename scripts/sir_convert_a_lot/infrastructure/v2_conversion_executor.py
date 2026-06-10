@@ -20,6 +20,14 @@ from pathlib import Path
 from typing import Callable
 
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_runtime import (
+    AudioProgressUpdateV2,
+    execute_audio_transcript_bundle_job,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
+    AudioTranscriptionSidecarClient,
+    UnconfiguredAudioTranscriptionSidecarClient,
+)
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_builder import (
     execute_digiexam_migration_bundle_job,
@@ -142,7 +150,9 @@ def execute_v2_job_conversion(
     config: ServiceConfig,
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
-    progress_callback: Callable[[PdfCheckpointProgressUpdateV2], None] | None = None,
+    audio_transcription_sidecar: AudioTranscriptionSidecarClient | None = None,
+    progress_callback: Callable[[PdfCheckpointProgressUpdateV2 | AudioProgressUpdateV2], None]
+    | None = None,
     is_cancel_requested: Callable[[], bool] | None = None,
     on_chunk_worker_start: Callable[[], None] | None = None,
     on_chunk_worker_finish: Callable[[], None] | None = None,
@@ -174,6 +184,26 @@ def execute_v2_job_conversion(
         pipeline_used = "digiexam_dxe_to_examnet_migration_bundle_v2"
         warnings = list(bundle_result.warnings)
         phase_timings_ms = dict(bundle_result.phase_timings_ms)
+    elif (
+        job.source_format == SourceFormatV2.AUDIO
+        and job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    ):
+        audio_result = execute_audio_transcript_bundle_job(
+            job=job,
+            config=config,
+            sidecar=(
+                audio_transcription_sidecar
+                if audio_transcription_sidecar is not None
+                else UnconfiguredAudioTranscriptionSidecarClient()
+            ),
+            progress_callback=progress_callback,
+            is_cancel_requested=is_cancel_requested,
+        )
+        pipeline_used = "audio_to_transcript_bundle_v2"
+        backend_used = audio_result.backend_used
+        acceleration_used = audio_result.acceleration_used
+        warnings = list(audio_result.warnings)
+        phase_timings_ms = dict(audio_result.phase_timings_ms)
     elif job.source_format == SourceFormatV2.PDF and job.output_format in {
         OutputFormatV2.MD,
         OutputFormatV2.DOCX,

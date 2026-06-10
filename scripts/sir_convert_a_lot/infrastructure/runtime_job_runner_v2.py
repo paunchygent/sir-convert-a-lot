@@ -20,6 +20,12 @@ from typing import Protocol
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_runtime import (
+    AudioProgressUpdateV2,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
+    AudioTranscriptionSidecarClient,
+)
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.gpu_utilization_snapshot import (
     GpuUtilizationSnapshotTimeoutError,
@@ -99,7 +105,9 @@ class RuntimeConversionExecutorV2(Protocol):
         config: ServiceConfig,
         docling_backend: ConversionBackend,
         pymupdf_backend: ConversionBackend,
-        progress_callback: Callable[[PdfCheckpointProgressUpdateV2], None] | None = None,
+        audio_transcription_sidecar: AudioTranscriptionSidecarClient,
+        progress_callback: Callable[[PdfCheckpointProgressUpdateV2 | AudioProgressUpdateV2], None]
+        | None = None,
         is_cancel_requested: Callable[[], bool] | None = None,
         on_chunk_worker_start: Callable[[], None] | None = None,
         on_chunk_worker_finish: Callable[[], None] | None = None,
@@ -115,6 +123,7 @@ def run_runtime_job_v2(
     webhook_service: RuntimeWebhookServiceV2,
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
+    audio_transcription_sidecar: AudioTranscriptionSidecarClient,
     telemetry_sink: RuntimeTelemetrySinkLikeV2,
     get_job: Callable[[str], StoredJobV2 | None],
     safe_get_job: Callable[[str], StoredJobV2 | None],
@@ -161,6 +170,7 @@ def run_runtime_job_v2(
             config=config,
             docling_backend=docling_backend,
             pymupdf_backend=pymupdf_backend,
+            audio_transcription_sidecar=audio_transcription_sidecar,
             job_store=job_store,
             webhook_service=webhook_service,
             get_job=get_job,
@@ -283,6 +293,7 @@ def _initialize_running_progress(
     job_store: JobStoreV2,
 ) -> None:
     total_pages: int | None = None
+    stage = "converting"
     if job.source_format == SourceFormatV2.PDF:
         checkpoint = None
         try:
@@ -299,6 +310,11 @@ def _initialize_running_progress(
             if total_pages is not None and total_pages > 0
             else None
         )
+    elif job.source_format == SourceFormatV2.AUDIO:
+        processed_pages = None
+        failed_pages = None
+        percent_complete = None
+        stage = "starting"
     else:
         processed_pages = None
         failed_pages = None
@@ -306,7 +322,7 @@ def _initialize_running_progress(
     job_store.update_progress(
         job_id,
         status=JobStatus.RUNNING,
-        stage="converting",
+        stage=stage,
         total_pages=total_pages,
         processed_pages=processed_pages,
         failed_pages=failed_pages,
@@ -321,6 +337,7 @@ def _execute_conversion(
     config: ServiceConfig,
     docling_backend: ConversionBackend,
     pymupdf_backend: ConversionBackend,
+    audio_transcription_sidecar: AudioTranscriptionSidecarClient,
     job_store: JobStoreV2,
     webhook_service: RuntimeWebhookServiceV2,
     get_job: Callable[[str], StoredJobV2 | None],
@@ -328,8 +345,21 @@ def _execute_conversion(
     release_chunk_worker_slot: Callable[[], None],
     execute_conversion: RuntimeConversionExecutorV2,
 ) -> V2ExecutionResult:
-    def _progress_callback(update: PdfCheckpointProgressUpdateV2) -> None:
+    def _progress_callback(update: PdfCheckpointProgressUpdateV2 | AudioProgressUpdateV2) -> None:
         try:
+            if isinstance(update, AudioProgressUpdateV2):
+                job_store.update_progress(
+                    job_id,
+                    status=JobStatus.RUNNING,
+                    stage=update.stage,
+                    audio_total_media_seconds=update.audio_total_media_seconds,
+                    audio_processed_media_seconds=update.audio_processed_media_seconds,
+                    audio_percent_complete=update.audio_percent_complete,
+                    audio_current_chunk_index=update.audio_current_chunk_index,
+                    audio_total_chunks=update.audio_total_chunks,
+                )
+                webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
+                return
             job_store.update_progress(
                 job_id,
                 status=JobStatus.RUNNING,
@@ -355,6 +385,7 @@ def _execute_conversion(
         config=config,
         docling_backend=docling_backend,
         pymupdf_backend=pymupdf_backend,
+        audio_transcription_sidecar=audio_transcription_sidecar,
         progress_callback=_progress_callback,
         is_cancel_requested=_is_cancel_requested,
         on_chunk_worker_start=acquire_chunk_worker_slot,

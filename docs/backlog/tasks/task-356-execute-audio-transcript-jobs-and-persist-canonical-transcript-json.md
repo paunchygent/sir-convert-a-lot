@@ -1,9 +1,9 @@
 ---
-id: 'task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json'
-title: 'Execute audio transcript jobs and persist canonical transcript JSON'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json
+title: Execute audio transcript jobs and persist canonical transcript JSON
+type: task
+status: proposed
+priority: high
 created: '2026-06-10'
 last_updated: '2026-06-10'
 related:
@@ -28,6 +28,7 @@ labels:
   - transcript-json
   - diarization
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective

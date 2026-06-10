@@ -165,8 +165,7 @@ Structured review artifact for implementation or readiness checks.
   - `pdm run format-all`, `pdm run lint-fix`, `pdm run typecheck-all`,
     `pdm run coverage-gate`, `pdm run docs-sync`, `pdm run docs-validate`,
     `pdm run skills-validate`, `pdm run handoff-validate`, and
-    `git diff --check` all passed. Coverage gate reported `1637 passed,
-    6 skipped`, total coverage `95.40%`.
+    `git diff --check` all passed. Coverage gate reported `1637 passed, 6 skipped`, total coverage `95.40%`.
 - Focused validation run during this re-review passed:
   `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_openapi_contract_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`
   passed with `72 passed`.

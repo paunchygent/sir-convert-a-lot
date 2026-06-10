@@ -67,6 +67,8 @@ class ServiceConfig:
     easyocr_model_storage_directory: str | None = "/opt/easyocr-models"
     processing_delay_seconds: float = 0.2
     heartbeat_interval_seconds: float = 5.0
+    audio_transcription_sidecar_base_url: str | None = None
+    audio_transcription_sidecar_timeout_seconds: float = 7200.0
     enable_runtime_telemetry_calls: bool = True
     api_capabilities: frozenset[str] = field(
         default_factory=lambda: frozenset({"jobs:read", "push:read", "push:write"})

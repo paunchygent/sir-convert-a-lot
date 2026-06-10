@@ -40,5 +40,8 @@ scripts/sir_convert_a_lot/*
 !scripts/sir_convert_a_lot/devops
 scripts/sir_convert_a_lot/devops/*
 !scripts/sir_convert_a_lot/devops/__init__.py
+!scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_runtime_probe.py
 !scripts/sir_convert_a_lot/devops/export_service_requirements.py
 !scripts/sir_convert_a_lot/devops/service_image_build_contract.py
+!scripts/sir_convert_a_lot/stt_sidecar
+!scripts/sir_convert_a_lot/stt_sidecar/**

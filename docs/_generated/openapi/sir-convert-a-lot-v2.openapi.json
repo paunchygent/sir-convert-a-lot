@@ -4679,6 +4679,67 @@
         "additionalProperties": false,
         "description": "Progress metadata for running v2 jobs.",
         "properties": {
+          "audio_current_chunk_index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Current Chunk Index"
+          },
+          "audio_percent_complete": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Percent Complete"
+          },
+          "audio_processed_media_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Processed Media Seconds"
+          },
+          "audio_total_chunks": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Total Chunks"
+          },
+          "audio_total_media_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Total Media Seconds"
+          },
           "current_phase_started_at": {
             "anyOf": [
               {

@@ -31,6 +31,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
 )
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_artifacts import (
+    build_audio_transcript_artifact_manifest,
+    resolve_audio_transcript_artifact,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifacts import (
     resolve_digiexam_migration_artifact,
 )
@@ -71,6 +75,8 @@ def _content_type_for_output(output_format: OutputFormatV2) -> str:
     if output_format == OutputFormatV2.DOCX:
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
+        return "application/json"
+    if output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
         return "application/json"
     raise AssertionError(f"Unsupported output_format: {output_format}")
 
@@ -239,10 +245,15 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 required_grant="sir-convert:artifacts:read-own",
                 access_denied_code="artifact_access_denied",
             )
-        _require_digiexam_bundle_job(job)
+        _require_named_artifact_bundle_job(job)
         pending = _pending_or_unsuccessful_response(job)
         if pending is not None:
             return pending
+        if job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
+            return JSONResponse(
+                status_code=200,
+                content=build_audio_transcript_artifact_manifest(job=job),
+            )
         if public_grant is not None:
             manifest = load_public_bundle_manifest_v2(
                 request=request,
@@ -300,10 +311,20 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 required_grant="sir-convert:artifacts:read-own",
                 access_denied_code="artifact_access_denied",
             )
-        _require_digiexam_bundle_job(job)
+        _require_named_artifact_bundle_job(job)
         pending = _pending_or_unsuccessful_response(job)
         if pending is not None:
             return pending
+        if job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
+            resolved_audio = resolve_audio_transcript_artifact(
+                job=job,
+                artifact_key=artifact_key,
+            )
+            return FileResponse(
+                path=resolved_audio.path.as_posix(),
+                media_type=resolved_audio.content_type,
+                filename=resolved_audio.filename,
+            )
         resolved = resolve_digiexam_migration_artifact(job=job, artifact_key=artifact_key)
         return FileResponse(
             path=resolved.path.as_posix(),
@@ -421,8 +442,11 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
         return JSONResponse(status_code=200, content=checkpoint.model_dump(mode="json"))
 
 
-def _require_digiexam_bundle_job(job: StoredJobV2) -> None:
-    if job.output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
+def _require_named_artifact_bundle_job(job: StoredJobV2) -> None:
+    if job.output_format in {
+        OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
+        OutputFormatV2.TRANSCRIPT_BUNDLE,
+    }:
         return
     raise ServiceError(
         status_code=409,

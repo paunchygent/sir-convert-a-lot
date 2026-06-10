@@ -79,6 +79,7 @@ def test_compose_declares_prod_runtime_and_private_qwen_provider_services() -> N
     assert isinstance(services_obj, dict)
     assert "sir_convert_a_lot_prod" in services_obj
     assert "sir_convert_a_lot_gpu_worker" in services_obj
+    assert "sir_convert_a_lot_stt_sidecar" in services_obj
     assert "sir_convert_qwen_answer_key" in services_obj
     assert "sir_convert_a_lot_public_reserved" in services_obj
     assert "sir_convert_a_lot_eval" not in services_obj
@@ -139,6 +140,10 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     )
     assert env_map["SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY"] == (
         "${SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY:-0}"
+    )
+    assert (
+        env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL"]
+        == "http://sir_convert_a_lot_stt_sidecar:8095"
     )
     assert env_map["SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL"] == (
         "${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL:-docling_layout_egret_large}"
@@ -244,6 +249,10 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
     assert env_map["SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR"] == "1"
     assert env_map["SIR_CONVERT_A_LOT_RUN_JOBS_ON_SUBMIT"] == "0"
     assert env_map["SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM"] == "0"
+    assert (
+        env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL"]
+        == "http://sir_convert_a_lot_stt_sidecar:8095"
+    )
     assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"] == "easyocr"
     assert env_map["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] == ("${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}")
 
@@ -252,7 +261,9 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
         "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
         "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
     ]
-    assert service.get("depends_on") is None
+    assert service.get("depends_on") == {
+        "sir_convert_a_lot_stt_sidecar": {"condition": "service_healthy"}
+    }
     assert service.get("volumes") == [
         "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
         (
@@ -275,6 +286,64 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
             "/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro"
         ),
     ]
+
+
+def test_compose_declares_private_stt_sidecar_runtime() -> None:
+    compose = _load_compose()
+    service = _require_service(compose, "sir_convert_a_lot_stt_sidecar")
+
+    assert service.get("image") == (
+        "sir-convert-a-lot-stt-sidecar:${SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG:-local}"
+    )
+    assert service.get("container_name") == "sir_convert_a_lot_stt_sidecar"
+    assert service.get("restart") == "unless-stopped"
+    assert service.get("ports") is None
+    assert service.get("expose") == ["8095"]
+    assert service.get("command") == [
+        "uvicorn",
+        "scripts.sir_convert_a_lot.stt_sidecar.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8095",
+    ]
+
+    build_obj = service.get("build")
+    assert isinstance(build_obj, dict)
+    assert build_obj.get("context") == "."
+    assert build_obj.get("dockerfile") == "containers/stt-sidecar-benchmark/Dockerfile"
+    assert build_obj.get("args") == {
+        "BASE_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
+    }
+
+    env_map = _service_env_map(service)
+    assert env_map["HF_HOME"] == "/cache/huggingface"
+    assert env_map["HF_TOKEN"] == "${HF_TOKEN:-}"
+    assert env_map["SIR_STT_SIDECAR_STT_PROFILE_LABEL"] == "stt_sv_en_primary"
+    assert env_map["SIR_STT_SIDECAR_DIARIZATION_PROFILE_LABEL"] == "diarization_sv_en_primary"
+    assert env_map["SIR_STT_SIDECAR_ACCELERATION_FAMILY"] == "rocm"
+
+    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    assert service.get("group_add") == [
+        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
+        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
+    ]
+    assert service.get("volumes") == [
+        "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
+        (
+            "${SIR_CONVERT_A_LOT_HF_CACHE_HOST_DIR:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}:"
+            "/cache/huggingface"
+        ),
+    ]
+    assert service.get("networks") == ["hule-network"]
+    health_obj = service.get("healthcheck")
+    assert isinstance(health_obj, dict)
+    assert "http://localhost:8095/health" in " ".join(
+        str(item) for item in health_obj.get("test", [])
+    )
+    assert health_obj.get("retries") == 20
+    assert health_obj.get("start_period") == "120s"
 
 
 def test_compose_declares_private_qwen_provider_runtime() -> None:
@@ -430,6 +499,7 @@ def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None
         "scripts/sir_convert_a_lot/infrastructure",
         "scripts/sir_convert_a_lot/integrations",
         "scripts/sir_convert_a_lot/interfaces",
+        "scripts/sir_convert_a_lot/stt_sidecar",
         "scripts/sir_convert_a_lot/templates",
     }
     for path in required_directory_paths:
@@ -441,6 +511,9 @@ def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None
     assert "!build" not in dockerignore_rules
     assert "!pyproject.toml" not in dockerignore_rules
     assert "!pdm.lock" not in dockerignore_rules
+    assert "!scripts/sir_convert_a_lot/devops/audio_transcription_sidecar_runtime_probe.py" in (
+        dockerignore_rules
+    )
 
 
 def test_compose_declares_only_prod_named_volume() -> None:

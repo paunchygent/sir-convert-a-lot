@@ -49,6 +49,11 @@ class StoredJobRecordV2:
     percent_complete: float | None
     pages_per_minute: float | None
     eta_seconds: int | None
+    audio_total_media_seconds: float | None
+    audio_processed_media_seconds: float | None
+    audio_percent_complete: float | None
+    audio_current_chunk_index: int | None
+    audio_total_chunks: int | None
     warnings: list[str]
     upload_path: Path
     resources_zip_path: Path | None

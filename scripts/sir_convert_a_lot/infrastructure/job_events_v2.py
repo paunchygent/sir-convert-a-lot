@@ -26,6 +26,9 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
 )
 from scripts.sir_convert_a_lot.infrastructure.progress_fields_v2 import (
+    parse_optional_nonneg_float,
+    parse_optional_nonneg_int,
+    parse_optional_percent,
     parse_progress_page_fields,
 )
 
@@ -67,6 +70,11 @@ class JobLifecycleEventRecordV2:
     percent_complete: float | None
     pages_per_minute: float | None
     eta_seconds: int | None
+    audio_total_media_seconds: float | None
+    audio_processed_media_seconds: float | None
+    audio_percent_complete: float | None
+    audio_current_chunk_index: int | None
+    audio_total_chunks: int | None
 
 
 @dataclass
@@ -191,6 +199,17 @@ def _event_records(payload: dict[str, object]) -> list[JobLifecycleEventRecordV2
         if heartbeat_obj is not None and not isinstance(heartbeat_obj, str):
             continue
         page_fields = parse_progress_page_fields(progress_obj)
+        audio_total_media_seconds = parse_optional_nonneg_float(
+            progress_obj.get("audio_total_media_seconds")
+        )
+        audio_processed_media_seconds = parse_optional_nonneg_float(
+            progress_obj.get("audio_processed_media_seconds")
+        )
+        audio_percent_complete = parse_optional_percent(progress_obj.get("audio_percent_complete"))
+        audio_current_chunk_index = parse_optional_nonneg_int(
+            progress_obj.get("audio_current_chunk_index")
+        )
+        audio_total_chunks = parse_optional_nonneg_int(progress_obj.get("audio_total_chunks"))
 
         try:
             event_type = _parse_event_type(event_type_obj)
@@ -218,6 +237,11 @@ def _event_records(payload: dict[str, object]) -> list[JobLifecycleEventRecordV2
                     percent_complete=page_fields.percent_complete,
                     pages_per_minute=page_fields.pages_per_minute,
                     eta_seconds=page_fields.eta_seconds,
+                    audio_total_media_seconds=audio_total_media_seconds,
+                    audio_processed_media_seconds=audio_processed_media_seconds,
+                    audio_percent_complete=audio_percent_complete,
+                    audio_current_chunk_index=audio_current_chunk_index,
+                    audio_total_chunks=audio_total_chunks,
                 )
             )
         except (KeyError, ValueError):
@@ -248,6 +272,11 @@ def _record_to_payload(record: JobLifecycleEventRecordV2) -> dict[str, object]:
             "percent_complete": record.percent_complete,
             "pages_per_minute": record.pages_per_minute,
             "eta_seconds": record.eta_seconds,
+            "audio_total_media_seconds": record.audio_total_media_seconds,
+            "audio_processed_media_seconds": record.audio_processed_media_seconds,
+            "audio_percent_complete": record.audio_percent_complete,
+            "audio_current_chunk_index": record.audio_current_chunk_index,
+            "audio_total_chunks": record.audio_total_chunks,
         },
     }
 
@@ -282,6 +311,15 @@ def append_lifecycle_event(
     progress_obj = payload.get("progress")
     progress = progress_obj if isinstance(progress_obj, dict) else {}
     page_fields = parse_progress_page_fields(progress)
+    audio_total_media_seconds = parse_optional_nonneg_float(
+        progress.get("audio_total_media_seconds")
+    )
+    audio_processed_media_seconds = parse_optional_nonneg_float(
+        progress.get("audio_processed_media_seconds")
+    )
+    audio_percent_complete = parse_optional_percent(progress.get("audio_percent_complete"))
+    audio_current_chunk_index = parse_optional_nonneg_int(progress.get("audio_current_chunk_index"))
+    audio_total_chunks = parse_optional_nonneg_int(progress.get("audio_total_chunks"))
 
     record = JobLifecycleEventRecordV2(
         event_id=generate_event_ulid(now=occurred_at),
@@ -300,6 +338,11 @@ def append_lifecycle_event(
         percent_complete=page_fields.percent_complete,
         pages_per_minute=page_fields.pages_per_minute,
         eta_seconds=page_fields.eta_seconds,
+        audio_total_media_seconds=audio_total_media_seconds,
+        audio_processed_media_seconds=audio_processed_media_seconds,
+        audio_percent_complete=audio_percent_complete,
+        audio_current_chunk_index=audio_current_chunk_index,
+        audio_total_chunks=audio_total_chunks,
     )
 
     events_obj = payload.get("events")

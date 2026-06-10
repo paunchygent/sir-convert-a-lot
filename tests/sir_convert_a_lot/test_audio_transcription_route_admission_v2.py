@@ -26,7 +26,6 @@ from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
-from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
@@ -212,17 +211,11 @@ def test_filename_inference_maps_audio_and_video_containers_to_audio(filename: s
     assert inferred.value == "audio"
 
 
-def test_create_job_admits_identity_scoped_audio_without_dispatching_execution(
+def test_create_job_admits_identity_scoped_audio_when_submit_dispatch_is_disabled(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def _unexpected_run_job_async(self: ServiceRuntimeV2, job_id: str) -> None:
-        del self, job_id
-        raise AssertionError("audio admission must not dispatch STT execution")
-
-    monkeypatch.setattr(ServiceRuntimeV2, "run_job_async", _unexpected_run_job_async)
     identity = _IdentitySigner()
-    client = _client(tmp_path, identity, run_jobs_on_submit=True)
+    client = _client(tmp_path, identity, run_jobs_on_submit=False)
 
     response = _post_audio_job(
         client=client,

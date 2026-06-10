@@ -224,7 +224,7 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
         uses_route_specific_primary_upload_limit=True,
         required_execution_message="execution is required for audio transcription routes",
         create_optional_identity_grant="sir-convert:jobs:create",
-        dispatches_runtime_jobs=False,
+        dispatches_runtime_jobs=True,
         unsupported_option_context="audio transcription routes",
     ),
 )

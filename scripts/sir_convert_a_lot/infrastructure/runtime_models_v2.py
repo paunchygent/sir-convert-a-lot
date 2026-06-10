@@ -50,6 +50,11 @@ class StoredJobV2:
     percent_complete: float | None = None
     pages_per_minute: float | None = None
     eta_seconds: int | None = None
+    audio_total_media_seconds: float | None = None
+    audio_processed_media_seconds: float | None = None
+    audio_percent_complete: float | None = None
+    audio_current_chunk_index: int | None = None
+    audio_total_chunks: int | None = None
     warnings: list[str] = field(default_factory=list)
     artifact_sha256: str | None = None
     artifact_size_bytes: int | None = None

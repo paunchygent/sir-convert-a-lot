@@ -53,6 +53,11 @@ def _build_event(*, event_id: str, sequence: int, job_id: str) -> JobLifecycleEv
         percent_complete=100.0,
         pages_per_minute=120.0,
         eta_seconds=0,
+        audio_total_media_seconds=None,
+        audio_processed_media_seconds=None,
+        audio_percent_complete=None,
+        audio_current_chunk_index=None,
+        audio_total_chunks=None,
     )
 
 

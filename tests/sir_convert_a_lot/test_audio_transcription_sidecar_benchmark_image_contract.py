@@ -113,6 +113,20 @@ def test_benchmark_image_keeps_ctranslate2_rocm_libraries_out_of_global_linker_s
     assert "LD_LIBRARY_PATH" not in dockerfile
 
 
+def test_sidecar_image_exposes_long_running_http_service_and_probe_modules() -> None:
+    dockerfile = _dockerfile_text()
+
+    assert '"fastapi>=0.128.8"' in dockerfile
+    assert '"uvicorn[standard]>=0.40.0"' in dockerfile
+    assert "COPY scripts/sir_convert_a_lot/stt_sidecar" in dockerfile
+    assert "COPY scripts/sir_convert_a_lot/devops" in dockerfile
+    assert "EXPOSE 8095" in dockerfile
+    assert (
+        'CMD ["uvicorn", "scripts.sir_convert_a_lot.stt_sidecar.app:app", '
+        '"--host", "0.0.0.0", "--port", "8095"]'
+    ) in dockerfile
+
+
 def _dockerfile_text() -> str:
     return DOCKERFILE_PATH.read_text(encoding="utf-8")
 

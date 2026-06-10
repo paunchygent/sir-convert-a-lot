@@ -113,6 +113,11 @@ def _record(
         percent_complete=None,
         pages_per_minute=None,
         eta_seconds=None,
+        audio_total_media_seconds=None,
+        audio_processed_media_seconds=None,
+        audio_percent_complete=None,
+        audio_current_chunk_index=None,
+        audio_total_chunks=None,
         warnings=[],
         upload_path=upload_path,
         resources_zip_path=None,
@@ -178,7 +183,7 @@ def test_runtime_supervisor_starts_queued_jobs_until_capacity(tmp_path: Path) ->
     assert active_job_ids == {"job_active", "job_queued_a"}
 
 
-def test_runtime_supervisor_skips_admission_only_audio_jobs(tmp_path: Path) -> None:
+def test_runtime_supervisor_starts_audio_transcript_jobs_after_admission(tmp_path: Path) -> None:
     active_job_ids: set[str] = set()
     started: list[str] = []
 
@@ -214,5 +219,5 @@ def test_runtime_supervisor_skips_admission_only_audio_jobs(tmp_path: Path) -> N
 
     supervisor._start_queued_jobs_until_capacity(max_workers=2)
 
-    assert started == ["job_document_queued"]
-    assert active_job_ids == {"job_document_queued"}
+    assert started == ["job_audio_queued", "job_document_queued"]
+    assert active_job_ids == {"job_audio_queued", "job_document_queued"}

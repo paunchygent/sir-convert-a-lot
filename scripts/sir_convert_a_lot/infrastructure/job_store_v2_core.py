@@ -91,6 +91,8 @@ class JobStoreV2Core:
     def _artifact_path(self, job_id: str, output_format: OutputFormatV2) -> Path:
         if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
             return self._job_dir(job_id) / "artifacts" / "artifact-bundle.json"
+        if output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
+            return self._job_dir(job_id) / "artifacts" / "transcript_json.json"
         suffix = output_format.value
         return self._job_dir(job_id) / "artifacts" / f"output.{suffix}"
 
@@ -254,6 +256,11 @@ class JobStoreV2Core:
         percent_complete: float | None = None,
         pages_per_minute: float | None = None,
         eta_seconds: int | None = None,
+        audio_total_media_seconds: float | None = None,
+        audio_processed_media_seconds: float | None = None,
+        audio_percent_complete: float | None = None,
+        audio_current_chunk_index: int | None = None,
+        audio_total_chunks: int | None = None,
         phase_timings_ms: dict[str, int] | None = None,
     ) -> StoredJobRecordV2:
         manifest_path = self._manifest_path(job_id)
@@ -280,6 +287,11 @@ class JobStoreV2Core:
             progress.setdefault("percent_complete", None)
             progress.setdefault("pages_per_minute", None)
             progress.setdefault("eta_seconds", None)
+            progress.setdefault("audio_total_media_seconds", None)
+            progress.setdefault("audio_processed_media_seconds", None)
+            progress.setdefault("audio_percent_complete", None)
+            progress.setdefault("audio_current_chunk_index", None)
+            progress.setdefault("audio_total_chunks", None)
 
             progress_changed = False
             updated_total_pages = parse_optional_nonneg_int(total_pages)
@@ -335,6 +347,65 @@ class JobStoreV2Core:
                 and updated_eta_seconds != existing_page_fields.eta_seconds
             ):
                 progress["eta_seconds"] = updated_eta_seconds
+                progress_changed = True
+
+            existing_audio_total = parse_optional_nonneg_float(
+                progress.get("audio_total_media_seconds")
+            )
+            updated_audio_total = parse_optional_nonneg_float(audio_total_media_seconds)
+            if (
+                updated_audio_total is not None
+                and existing_audio_total is None
+                and updated_audio_total > 0
+            ):
+                progress["audio_total_media_seconds"] = updated_audio_total
+                existing_audio_total = updated_audio_total
+                progress_changed = True
+
+            existing_audio_processed = parse_optional_nonneg_float(
+                progress.get("audio_processed_media_seconds")
+            )
+            updated_audio_processed = parse_optional_nonneg_float(audio_processed_media_seconds)
+            if existing_audio_total is not None and updated_audio_processed is not None:
+                updated_audio_processed = min(updated_audio_processed, existing_audio_total)
+            resolved_audio_processed = clamp_monotonic_float(
+                existing_audio_processed,
+                updated_audio_processed,
+            )
+            if resolved_audio_processed != existing_audio_processed:
+                progress["audio_processed_media_seconds"] = resolved_audio_processed
+                progress_changed = True
+
+            existing_audio_percent = parse_optional_percent(progress.get("audio_percent_complete"))
+            resolved_audio_percent = clamp_monotonic_float(
+                existing_audio_percent,
+                parse_optional_percent(audio_percent_complete),
+            )
+            if resolved_audio_percent != existing_audio_percent:
+                progress["audio_percent_complete"] = resolved_audio_percent
+                progress_changed = True
+
+            existing_audio_chunk_index = parse_optional_nonneg_int(
+                progress.get("audio_current_chunk_index")
+            )
+            resolved_audio_chunk_index = clamp_monotonic_int(
+                existing_audio_chunk_index,
+                parse_optional_nonneg_int(audio_current_chunk_index),
+            )
+            if resolved_audio_chunk_index != existing_audio_chunk_index:
+                progress["audio_current_chunk_index"] = resolved_audio_chunk_index
+                progress_changed = True
+
+            existing_audio_total_chunks = parse_optional_nonneg_int(
+                progress.get("audio_total_chunks")
+            )
+            updated_audio_total_chunks = parse_optional_nonneg_int(audio_total_chunks)
+            if (
+                updated_audio_total_chunks is not None
+                and existing_audio_total_chunks is None
+                and updated_audio_total_chunks >= 0
+            ):
+                progress["audio_total_chunks"] = updated_audio_total_chunks
                 progress_changed = True
 
             timestamps = payload.get("timestamps")

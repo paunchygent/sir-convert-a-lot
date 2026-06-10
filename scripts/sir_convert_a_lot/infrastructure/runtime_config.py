@@ -418,6 +418,12 @@ def service_config_from_env() -> ServiceConfig:
         default_pdf_ocr_engine=default_pdf_ocr_engine,
         default_pdf_ocr_languages=tuple(default_pdf_ocr_languages),
         easyocr_model_storage_directory=easyocr_model_storage_directory,
+        audio_transcription_sidecar_base_url=_optional_secret_from_env(
+            "SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL"
+        ),
+        audio_transcription_sidecar_timeout_seconds=float(
+            os.getenv("SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS", "7200")
+        ),
         internal_identity_public_keys=_internal_identity_public_keys_from_env(),
         internal_identity_expected_audience=os.getenv(
             "HULEEDU_INTERNAL_IDENTITY_AUDIENCE", "sir-convert-a-lot"

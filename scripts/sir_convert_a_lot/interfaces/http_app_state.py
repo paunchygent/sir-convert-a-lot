@@ -19,6 +19,9 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from prometheus_client import CollectorRegistry, Counter, Histogram
 
+from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
+    AudioTranscriptionSidecarClient,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine import (
     ServiceConfig,
     ServiceRuntime,
@@ -114,6 +117,7 @@ def initialize_service_state(
     app: FastAPI,
     *,
     runtime_config: ServiceConfig,
+    audio_transcription_sidecar: AudioTranscriptionSidecarClient | None = None,
     service_profile: str,
     expected_service_profile: str,
     expected_service_revision: str,
@@ -125,6 +129,7 @@ def initialize_service_state(
 ) -> None:
     """Attach deterministic service state required for runtime initialization."""
     app.state.service_config = runtime_config
+    app.state.audio_transcription_sidecar = audio_transcription_sidecar
     app.state.service_profile = service_profile
     app.state.expected_service_profile = expected_service_profile
     app.state.expected_service_revision = expected_service_revision
@@ -208,7 +213,12 @@ def ensure_runtime_state_v2(app: FastAPI, *, utc_now_iso: str) -> ServiceRuntime
         if not isinstance(runtime_telemetry_obj, RuntimeTelemetrySinkV2):
             raise RuntimeError("missing v2 runtime telemetry sink for runtime initialization")
 
-        runtime_v2 = ServiceRuntimeV2(runtime_config, telemetry_sink=runtime_telemetry_obj)
+        sidecar_obj = getattr(app.state, "audio_transcription_sidecar", None)
+        runtime_v2 = ServiceRuntimeV2(
+            runtime_config,
+            telemetry_sink=runtime_telemetry_obj,
+            audio_transcription_sidecar=sidecar_obj,
+        )
         app.state.runtime_v2 = runtime_v2
         return runtime_v2
 
