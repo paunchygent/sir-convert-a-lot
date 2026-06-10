@@ -26,6 +26,16 @@ from pathlib import Path
 from typing import Protocol
 
 SCHEMA_VERSION = "audio_transcription_sidecar_runtime_probe_v1"
+_KNOWN_FAILURE_STAGES = frozenset(
+    (
+        "pipeline_load",
+        "gpu_transfer",
+        "exact_speaker_count",
+        "speaker_range",
+        "swedish_speaker_count",
+        "segment_projection",
+    )
+)
 
 
 class TranscriptionModel(Protocol):
@@ -236,19 +246,25 @@ def _transcribe_fixture(
 
 
 def _diarization_payload(*, args: argparse.Namespace, token: str) -> dict[str, object]:
+    failure_stage = "pipeline_load"
     try:
         pyannote_module = importlib.import_module("pyannote.audio")
         torch_module = importlib.import_module("torch")
         pipeline_class = getattr(pyannote_module, "Pipeline")
         pipeline = pipeline_class.from_pretrained(args.diarization_model, token=token)
+        failure_stage = "gpu_transfer"
         pipeline.to(torch_module.device("cuda"))
+        failure_stage = "exact_speaker_count"
         english_exact = pipeline(str(args.english_fixture), num_speakers=args.english_speakers)
+        failure_stage = "speaker_range"
         english_range = pipeline(
             str(args.english_fixture),
             min_speakers=args.min_speakers,
             max_speakers=args.max_speakers,
         )
+        failure_stage = "swedish_speaker_count"
         swedish_exact = pipeline(str(args.swedish_fixture), num_speakers=args.swedish_speakers)
+        failure_stage = "segment_projection"
         fixtures = (
             _diarization_fixture(
                 output=english_exact,
@@ -265,7 +281,7 @@ def _diarization_payload(*, args: argparse.Namespace, token: str) -> dict[str, o
             "profile_label": "diarization_sv_en_primary",
             "backend_family": "pyannote_audio",
             "status": "blocked",
-            "failure": _failure_payload(exc),
+            "failure": _failure_payload(exc, failure_stage=failure_stage),
             "exclusive_diarization_available": False,
             "alignment_suitable": False,
             "exact_speaker_count_supported": True,
@@ -300,12 +316,19 @@ def _diarization_fixture(*, output: object, fixture_label: str) -> dict[str, obj
     }
 
 
-def _failure_payload(exc: Exception) -> dict[str, object]:
+def _failure_payload(
+    exc: Exception,
+    *,
+    failure_stage: str = "",
+) -> dict[str, object]:
     exception_class = exc.__class__.__name__
-    return {
+    payload: dict[str, object] = {
         "exception_class": _bounded_exception_class(exception_class),
         "failure_code": _failure_code(exc, exception_class=exception_class),
     }
+    if failure_stage in _KNOWN_FAILURE_STAGES:
+        payload["failure_stage"] = failure_stage
+    return payload
 
 
 def _failure_code(exc: Exception, *, exception_class: str) -> str:

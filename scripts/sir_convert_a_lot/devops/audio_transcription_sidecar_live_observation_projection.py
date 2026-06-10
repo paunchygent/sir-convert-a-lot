@@ -29,6 +29,16 @@ _KNOWN_BACKEND_FAILURE_CODES = frozenset(
     )
 )
 _KNOWN_BACKEND_FAILURE_STATUSES = frozenset(("blocked",))
+_KNOWN_BACKEND_FAILURE_STAGES = frozenset(
+    (
+        "pipeline_load",
+        "gpu_transfer",
+        "exact_speaker_count",
+        "speaker_range",
+        "swedish_speaker_count",
+        "segment_projection",
+    )
+)
 
 
 def failure_reasons(
@@ -293,7 +303,7 @@ def _backend_failure(
     backend_family_default: str,
 ) -> dict[str, object]:
     failure = mapping_at(payload, "failure")
-    return {
+    projected: dict[str, object] = {
         "backend_family": _bounded_backend_family(
             string_at(payload, "backend_family", backend_family_default),
             default=backend_family_default,
@@ -308,6 +318,10 @@ def _backend_failure(
             string_at(failure, "exception_class", "Unavailable")
         ),
     }
+    failure_stage = _bounded_backend_failure_stage(string_at(failure, "failure_stage", ""))
+    if failure_stage:
+        projected["failure_stage"] = failure_stage
+    return projected
 
 
 def string_at(payload: Mapping[str, object], key: str, default: str) -> str:
@@ -335,6 +349,12 @@ def _bounded_backend_failure_code(value: str) -> str:
     if value in _KNOWN_BACKEND_FAILURE_CODES:
         return value
     return "backend_runtime_blocked"
+
+
+def _bounded_backend_failure_stage(value: str) -> str:
+    if value in _KNOWN_BACKEND_FAILURE_STAGES:
+        return value
+    return ""
 
 
 def _bounded_exception_class(value: str) -> str:

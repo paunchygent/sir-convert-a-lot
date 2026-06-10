@@ -105,12 +105,49 @@ def test_runtime_probe_classifies_backend_exceptions_without_raw_values(
     assert _mapping_at(diarization, "failure") == {
         "exception_class": "GatedRepoError",
         "failure_code": "gated_model_access_denied",
+        "failure_stage": "pipeline_load",
     }
     assert "CUDA failed with error" not in captured.out
     assert raw_model_id not in captured.out
     assert raw_token_value not in captured.out
     assert private_fixture_root not in captured.out
     assert raw_transcript_text not in captured.out
+
+
+def test_runtime_probe_reports_bounded_diarization_failure_stage(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    probe = _runtime_probe_module()
+    raw_token_value = "hf_private_token_value"
+    raw_model_id = "pyannote/speaker-diarization-community-1"
+    _install_exact_speaker_count_name_error_modules(monkeypatch)
+    monkeypatch.setenv("HF_TOKEN", raw_token_value)
+
+    exit_code = probe.main(
+        [
+            "--english-fixture",
+            "english-dialogue-two-speakers.mp3",
+            "--swedish-fixture",
+            "swedish-monologue-one-speaker.m4a",
+            "--diarization-model",
+            raw_model_id,
+        ],
+    )
+
+    captured = capsys.readouterr()
+    payload = _read_json_object(captured.out)
+    diarization = _mapping_at(payload, "diarization")
+    failure = _mapping_at(diarization, "failure")
+    assert exit_code == 0
+    assert failure == {
+        "exception_class": "NameError",
+        "failure_code": "backend_runtime_blocked",
+        "failure_stage": "exact_speaker_count",
+    }
+    assert raw_model_id not in captured.out
+    assert raw_token_value not in captured.out
+    assert "name 'missing_symbol' is not defined" not in captured.out
 
 
 def _runtime_probe_module() -> ModuleType:
@@ -161,6 +198,91 @@ def _install_blocking_backend_modules(
             raise GatedRepoError(
                 f"Access denied for {model_id} with token {token} under {private_fixture_root}"
             )
+
+    setattr(pyannote_audio, "Pipeline", BlockingPipeline)
+    setattr(pyannote, "audio", pyannote_audio)
+    setattr(pyannote, "__path__", [])
+    _install_module(monkeypatch, "pyannote", pyannote)
+    _install_module(monkeypatch, "pyannote.audio", pyannote_audio)
+    _install_module(monkeypatch, "huggingface_hub", ModuleType("huggingface_hub"))
+    torch_module = ModuleType("torch")
+
+    class FakeCuda:
+        @staticmethod
+        def is_available() -> bool:
+            return True
+
+    class FakeVersion:
+        hip = "6.2"
+
+    def device(value: str) -> str:
+        return value
+
+    setattr(torch_module, "cuda", FakeCuda())
+    setattr(torch_module, "version", FakeVersion())
+    setattr(torch_module, "device", device)
+    _install_module(monkeypatch, "torch", torch_module)
+
+
+def _install_exact_speaker_count_name_error_modules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    faster_whisper = ModuleType("faster_whisper")
+
+    class ReadyWhisperModel:
+        def __init__(
+            self,
+            model_id: str,
+            *,
+            device: str,
+            compute_type: str,
+        ) -> None:
+            del model_id, device, compute_type
+
+        def transcribe(
+            self,
+            path: str,
+            *,
+            beam_size: int,
+            word_timestamps: bool,
+        ) -> tuple[list[object], object]:
+            del path, beam_size, word_timestamps
+
+            class Segment:
+                words = ("word",)
+
+            class Info:
+                language = "en"
+                duration = 1.0
+
+            return [Segment()], Info()
+
+    setattr(faster_whisper, "WhisperModel", ReadyWhisperModel)
+    _install_module(monkeypatch, "faster_whisper", faster_whisper)
+    pyannote = ModuleType("pyannote")
+    pyannote_audio = ModuleType("pyannote.audio")
+
+    class BlockingPipeline:
+        @classmethod
+        def from_pretrained(cls, model_id: str, *, token: str) -> "BlockingPipeline":
+            del model_id, token
+            return cls()
+
+        def to(self, device: str) -> None:
+            del device
+
+        def __call__(
+            self,
+            path: str,
+            *,
+            num_speakers: int | None = None,
+            min_speakers: int | None = None,
+            max_speakers: int | None = None,
+        ) -> object:
+            del path, min_speakers, max_speakers
+            if num_speakers == 2:
+                raise NameError("name 'missing_symbol' is not defined")
+            return object()
 
     setattr(pyannote_audio, "Pipeline", BlockingPipeline)
     setattr(pyannote, "audio", pyannote_audio)

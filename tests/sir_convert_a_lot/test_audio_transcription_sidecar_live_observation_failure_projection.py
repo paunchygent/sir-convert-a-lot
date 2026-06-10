@@ -86,6 +86,7 @@ def test_live_observation_projects_bounded_backend_failures_without_raw_values(
             "backend_family": "pyannote_audio",
             "exception_class": "GatedRepoError",
             "failure_code": "gated_model_access_denied",
+            "failure_stage": "pipeline_load",
             "status": "blocked",
         },
     }
@@ -186,6 +187,7 @@ def _noisy_blocked_runtime_probe_payload(
                 "cache_root": hf_home.as_posix(),
                 "exception_class": "GatedRepoError",
                 "failure_code": "gated_model_access_denied",
+                "failure_stage": "pipeline_load",
                 "message": "Gated model access denied for selected pyannote model",
                 "model_id": raw_model_id,
                 "token_value": raw_token_value,
