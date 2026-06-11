@@ -159,9 +159,10 @@ formula evidence with VLM output.
 
 ## Next Actions
 
-1. Continue the downstream HuleEdu Gateway and Skriptoteket JSON transcript
-   consumption lane from the accepted Sir Convert `audio -> transcript_bundle`
-   runtime, without enabling formatter artifacts yet.
+1. Downstream HuleEdu Gateway and Skriptoteket JSON transcript consumption has
+   been proven live through the product path. Next STT product work is
+   Skriptoteket durable transcript saves from canonical `transcript_json`;
+   Sir Convert Story 54 formatter artifacts remain a separate follow-up.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
