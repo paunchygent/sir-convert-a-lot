@@ -13,13 +13,12 @@ Relationships:
 
 from __future__ import annotations
 
-import hashlib
 import os
 import threading
 from collections.abc import Iterable, Mapping
 from importlib import import_module
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, gettempdir
 from typing import Protocol
 
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
@@ -35,11 +34,14 @@ from scripts.sir_convert_a_lot.stt_sidecar.media import (
     NORMALIZED_SAMPLE_RATE_HZ,
     duration_seconds,
     normalize_audio,
+    trim_normalized_audio,
 )
+from scripts.sir_convert_a_lot.stt_sidecar.normalized_audio import NormalizedAudioStore
 from scripts.sir_convert_a_lot.stt_sidecar.request_parsing import (
     language_option,
     mapping_at,
     optional_int,
+    required_float,
     required_string,
     source_path,
 )
@@ -49,7 +51,6 @@ from scripts.sir_convert_a_lot.stt_sidecar.segments import (
     confidence,
     detected_language,
     float_attr,
-    speaker_for_segment,
     speaker_segments,
     string_attr,
 )
@@ -118,6 +119,9 @@ class SttSidecarRuntime:
         self._gpu_ready = False
         self._lock = threading.Lock()
         self._canceled_handles: set[str] = set()
+        self._normalized_audio = NormalizedAudioStore(
+            Path(gettempdir()) / "sir-convert-a-lot-stt-sidecar"
+        )
 
     def startup(self) -> None:
         """Load GPU-only STT and diarization backends."""
@@ -209,91 +213,34 @@ class SttSidecarRuntime:
             },
         }
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        """Transcribe one local-upload audio request."""
-        if self._stt_model is None or self._diarization_pipeline is None or not self._ready:
-            raise SttSidecarRequestError(
-                code="audio_sidecar_unavailable",
-                message="STT sidecar runtime is not ready.",
-                status_code=503,
-            )
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Probe and normalize one local-upload audio request."""
+        self._require_ready()
         request_handle = required_string(request, "request_handle")
         self._raise_if_canceled(request_handle)
         input_path = source_path(request)
         options = mapping_at(request, "options")
-        language = language_option(options)
-        with TemporaryDirectory(prefix="sir-stt-") as temp_dir:
-            normalized_path = Path(temp_dir) / "normalized.wav"
-            duration = duration_seconds(input_path)
-            _enforce_duration_limit(duration_seconds=duration, options=options)
-            normalize_audio(
-                source_path=input_path,
-                target_path=normalized_path,
-                media_duration_seconds=duration,
-            )
-            segments = self._transcribe_segments(
-                normalized_path=normalized_path,
-                language=language,
-            )
-            self._raise_if_canceled(request_handle)
-            speakers = self._diarize_segments(
-                normalized_path=normalized_path,
-                options=options,
-            )
-            self._raise_if_canceled(request_handle)
-            aligned = [
-                TranscriptSegment(
-                    segment_id=segment.segment_id,
-                    start_seconds=segment.start_seconds,
-                    end_seconds=segment.end_seconds,
-                    speaker_label=speaker_for_segment(segment, speakers),
-                    text=segment.text,
-                    language=segment.language,
-                    confidence=segment.confidence,
-                )
-                for segment in segments
-            ]
-            if not aligned:
-                raise SttSidecarRequestError(
-                    code="audio_transcription_failed",
-                    message="No transcript segments were produced.",
-                    status_code=502,
-                )
-            normalized_sha = hashlib.sha256(normalized_path.read_bytes()).hexdigest()
+        duration = duration_seconds(input_path)
+        _enforce_duration_limit(duration_seconds=duration, options=options)
+        normalized_path = self._normalized_audio.path_for(
+            request_handle=request_handle,
+            source_path=input_path,
+        )
+        normalize_audio(
+            source_path=input_path,
+            target_path=normalized_path,
+            media_duration_seconds=duration,
+        )
+        normalized_audio = self._normalized_audio.remember(
+            request_handle=request_handle,
+            normalized_path=normalized_path,
+        )
         return {
             "status": "succeeded",
-            "transcript_text": " ".join(segment.text for segment in aligned).strip(),
-            "segments": [
-                {
-                    "segment_id": segment.segment_id,
-                    "start_seconds": segment.start_seconds,
-                    "end_seconds": segment.end_seconds,
-                    "speaker_label": segment.speaker_label,
-                    "text": segment.text,
-                    "language": segment.language,
-                    "confidence": segment.confidence,
-                }
-                for segment in aligned
-            ],
-            "language": {
-                "detected": detected_language(aligned, requested=language),
-                "confidence": None,
-            },
-            "diarization": {
-                "status": "succeeded",
-                "mode_used": required_string(mapping_at(options, "diarization"), "mode"),
-            },
             "media": {
                 "duration_seconds": duration,
-                "normalized_audio_sha256": f"sha256:{normalized_sha}",
-                "chunks": [
-                    {
-                        "chunk_index": 0,
-                        "start_seconds": 0.0,
-                        "end_seconds": duration,
-                        "overlap_seconds": 0.0,
-                    }
-                ],
+                "normalized_audio_sha256": normalized_audio.sha256,
+                "normalized_audio_handle": normalized_audio.handle,
             },
             "runtime_metadata": {
                 "acceleration_used": self._settings.acceleration_family,
@@ -302,17 +249,126 @@ class SttSidecarRuntime:
             "warnings": [],
         }
 
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Run global diarization for one normalized audio request."""
+        self._require_ready()
+        request_handle = required_string(request, "request_handle")
+        self._raise_if_canceled(request_handle)
+        normalized_audio = self._normalized_audio.resolve(request)
+        options = mapping_at(request, "options")
+        speakers = self._diarize_segments(
+            normalized_path=normalized_audio.path,
+            options=options,
+        )
+        self._raise_if_canceled(request_handle)
+        return {
+            "status": "succeeded",
+            "diarization": {
+                "status": "succeeded",
+                "mode_used": required_string(mapping_at(options, "diarization"), "mode"),
+                "windows": [
+                    {
+                        "window_id": f"speaker-window-{index:04d}",
+                        "start_seconds": speaker.start_seconds,
+                        "end_seconds": speaker.end_seconds,
+                        "speaker_label": speaker.speaker_label,
+                    }
+                    for index, speaker in enumerate(speakers, start=1)
+                ],
+            },
+            "warnings": [],
+        }
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Transcribe one deterministic normalized audio chunk."""
+        self._require_ready()
+        request_handle = required_string(request, "request_handle")
+        self._raise_if_canceled(request_handle)
+        normalized_audio = self._normalized_audio.resolve(request)
+        options = mapping_at(request, "options")
+        language = language_option(options)
+        chunk = mapping_at(request, "chunk")
+        chunk_index = optional_int(chunk, "chunk_index")
+        if chunk_index is None:
+            raise SttSidecarRequestError(
+                code="invalid_request",
+                message="chunk_index is required.",
+                status_code=422,
+            )
+        start_seconds = required_float(chunk, "start_seconds")
+        end_seconds = required_float(chunk, "end_seconds")
+        if end_seconds <= start_seconds:
+            raise SttSidecarRequestError(
+                code="invalid_request",
+                message="chunk end_seconds must be greater than start_seconds.",
+                status_code=422,
+            )
+        with TemporaryDirectory(prefix="sir-stt-chunk-") as temp_dir:
+            chunk_path = Path(temp_dir) / "chunk.wav"
+            trim_normalized_audio(
+                source_path=normalized_audio.path,
+                target_path=chunk_path,
+                start_seconds=start_seconds,
+                end_seconds=end_seconds,
+            )
+            segments = self._transcribe_segments(
+                normalized_path=chunk_path,
+                language=language,
+                start_offset_seconds=start_seconds,
+                segment_id_prefix=f"chunk-{chunk_index}-seg",
+            )
+        self._raise_if_canceled(request_handle)
+        if not segments:
+            raise SttSidecarRequestError(
+                code="audio_transcription_failed",
+                message="No transcript segments were produced.",
+                status_code=502,
+            )
+        return {
+            "status": "succeeded",
+            "chunk_index": chunk_index,
+            "segments": [
+                {
+                    "segment_id": segment.segment_id,
+                    "start_seconds": segment.start_seconds,
+                    "end_seconds": segment.end_seconds,
+                    "text": segment.text,
+                    "language": segment.language,
+                    "confidence": segment.confidence,
+                }
+                for segment in segments
+            ],
+            "language": {
+                "detected": detected_language(segments, requested=language),
+                "confidence": None,
+            },
+            "warnings": [],
+        }
+
     def cancel(self, request_handle: str) -> Mapping[str, object]:
         """Record cancellation for a request handle."""
         with self._lock:
             self._canceled_handles.add(request_handle)
+        self.finalize(request_handle)
         return {"status": "cancel_requested", "request_handle": request_handle}
+
+    def finalize(self, request_handle: str) -> Mapping[str, object]:
+        """Remove sidecar-owned normalized media for one terminal request."""
+
+        removed = self._normalized_audio.finalize(request_handle)
+        return {
+            "status": "finalized",
+            "request_handle": request_handle,
+            "removed_normalized_media": removed,
+        }
 
     def _transcribe_segments(
         self,
         *,
         normalized_path: Path,
         language: str | None,
+        start_offset_seconds: float = 0.0,
+        segment_id_prefix: str = "seg",
     ) -> list[TranscriptSegment]:
         if self._stt_model is None:
             raise RuntimeError("STT model is not loaded.")
@@ -330,9 +386,9 @@ class SttSidecarRuntime:
                 continue
             parsed.append(
                 TranscriptSegment(
-                    segment_id=f"seg-{index:04d}",
-                    start_seconds=float_attr(segment_obj, "start"),
-                    end_seconds=float_attr(segment_obj, "end"),
+                    segment_id=f"{segment_id_prefix}-{index:04d}",
+                    start_seconds=start_offset_seconds + float_attr(segment_obj, "start"),
+                    end_seconds=start_offset_seconds + float_attr(segment_obj, "end"),
                     speaker_label="SPEAKER_PENDING",
                     text=text,
                     language=language_label,
@@ -340,6 +396,14 @@ class SttSidecarRuntime:
                 )
             )
         return parsed
+
+    def _require_ready(self) -> None:
+        if self._stt_model is None or self._diarization_pipeline is None or not self._ready:
+            raise SttSidecarRequestError(
+                code="audio_sidecar_unavailable",
+                message="STT sidecar runtime is not ready.",
+                status_code=503,
+            )
 
     def _diarize_segments(
         self,

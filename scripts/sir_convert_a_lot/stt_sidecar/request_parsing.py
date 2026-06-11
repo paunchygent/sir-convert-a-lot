@@ -56,6 +56,19 @@ def optional_int(payload: Mapping[str, object], key: str) -> int | None:
     )
 
 
+def required_float(payload: Mapping[str, object], key: str) -> float:
+    """Return a required numeric field or raise a validation error."""
+
+    value = payload.get(key)
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return float(value)
+    raise SttSidecarRequestError(
+        code="invalid_request",
+        message=f"{key} must be a number.",
+        status_code=422,
+    )
+
+
 def source_path(request: Mapping[str, object]) -> Path:
     """Resolve the shared local-upload path from a transcribe request."""
     source = mapping_at(request, "source")

@@ -2,8 +2,9 @@
 
 Purpose:
     Define the provider-neutral sidecar port used by the main Service API v2
-    runtime to check readiness, request transcription, and propagate
-    cancellation without importing speech model or diarization runtimes.
+    runtime to check readiness, probe media, run global diarization, request
+    chunk transcription, and propagate cancellation without importing speech
+    model or diarization runtimes.
 
 Relationships:
     - Consumed by `infrastructure.audio_transcript_bundle_runtime`.
@@ -33,11 +34,20 @@ class AudioTranscriptionSidecarClient(Protocol):
     def capabilities(self) -> Mapping[str, object]:
         """Return sidecar capability truth."""
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        """Run one transcription request and return deterministic JSON."""
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Probe and normalize one local-upload-derived media source."""
+
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Run global diarization for one normalized media handle."""
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Transcribe one deterministic media chunk."""
 
     def cancel(self, request_handle: str) -> None:
         """Request cancellation for an in-flight sidecar handle."""
+
+    def finalize(self, request_handle: str) -> None:
+        """Finalize and clean sidecar-owned media for a terminal request."""
 
 
 class UnconfiguredAudioTranscriptionSidecarClient:
@@ -49,11 +59,22 @@ class UnconfiguredAudioTranscriptionSidecarClient:
     def capabilities(self) -> Mapping[str, object]:
         raise _sidecar_unavailable("sidecar_base_url_not_configured")
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        del request
+        raise _sidecar_unavailable("sidecar_base_url_not_configured")
+
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        del request
+        raise _sidecar_unavailable("sidecar_base_url_not_configured")
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
         del request
         raise _sidecar_unavailable("sidecar_base_url_not_configured")
 
     def cancel(self, request_handle: str) -> None:
+        del request_handle
+
+    def finalize(self, request_handle: str) -> None:
         del request_handle
 
 
@@ -78,14 +99,23 @@ class HttpAudioTranscriptionSidecarClient:
     def capabilities(self) -> Mapping[str, object]:
         return self._get_json("/capabilities")
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        return self._post_json("/transcribe", payload=request)
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        return self._post_json("/probe-media", payload=request)
+
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        return self._post_json("/diarize", payload=request)
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        return self._post_json("/transcribe-chunk", payload=request)
 
     def cancel(self, request_handle: str) -> None:
         try:
             self._post_json("/cancel", payload={"request_handle": request_handle})
         except ServiceError:
             return
+
+    def finalize(self, request_handle: str) -> None:
+        self._post_json("/finalize", payload={"request_handle": request_handle})
 
     def _get_json(self, path: str) -> Mapping[str, object]:
         with httpx.Client(base_url=self._base_url, timeout=self._timeout) as client:

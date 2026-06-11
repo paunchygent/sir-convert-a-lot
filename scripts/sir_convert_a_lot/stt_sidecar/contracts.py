@@ -8,7 +8,8 @@ Purpose:
 Relationships:
     - Implemented by `stt_sidecar.runtime.SttSidecarRuntime`.
     - Consumed by `stt_sidecar.app_factory` to expose health, capability,
-      transcription, and cancellation endpoints.
+      media probe, diarization, chunk transcription, and cancellation
+      endpoints.
 """
 
 from __future__ import annotations
@@ -39,8 +40,17 @@ class SttSidecarBackend(Protocol):
     def capabilities(self) -> Mapping[str, object]:
         """Return the bounded capability payload consumed by the main service."""
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        """Transcribe one local-upload request into canonical runtime JSON."""
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Probe and normalize one local-upload media request."""
+
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Run global diarization for normalized media."""
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        """Transcribe one deterministic normalized-media chunk."""
 
     def cancel(self, request_handle: str) -> Mapping[str, object]:
         """Request cancellation for an in-flight transcription handle."""
+
+    def finalize(self, request_handle: str) -> Mapping[str, object]:
+        """Remove sidecar-owned normalized media for a terminal request."""

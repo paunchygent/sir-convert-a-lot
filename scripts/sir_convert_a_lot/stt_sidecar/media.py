@@ -57,6 +57,43 @@ def normalize_audio(
     )
 
 
+def trim_normalized_audio(
+    *,
+    source_path: Path,
+    target_path: Path,
+    start_seconds: float,
+    end_seconds: float,
+) -> None:
+    """Trim normalized audio into one deterministic chunk window."""
+
+    duration = max(0.0, end_seconds - start_seconds)
+    command = [
+        "ffmpeg",
+        "-nostdin",
+        "-y",
+        "-ss",
+        f"{max(0.0, start_seconds):.6f}",
+        "-to",
+        f"{max(0.0, end_seconds):.6f}",
+        "-i",
+        source_path.as_posix(),
+        "-vn",
+        "-ac",
+        str(NORMALIZED_CHANNELS),
+        "-ar",
+        str(NORMALIZED_SAMPLE_RATE_HZ),
+        "-sample_fmt",
+        "s16",
+        target_path.as_posix(),
+    ]
+    _run_media_command(
+        command=command,
+        operation_timeout_seconds=normalization_timeout_seconds(duration),
+        error_code="audio_normalization_failed",
+        timeout_code="audio_normalization_timeout",
+    )
+
+
 def duration_seconds(path: Path) -> float:
     """Return bounded media duration from ffprobe JSON output."""
     command = [

@@ -15,17 +15,53 @@ Relationships:
 
 from __future__ import annotations
 
-import hashlib
 import json
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Callable, Mapping
 
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
-    STT_SIDECAR_CONTRACT_VERSION,
     AudioTranscriptionErrorCode,
 )
 from scripts.sir_convert_a_lot.domain.audio_transcription_policy import (
     evaluate_stt_sidecar_readiness,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_alignment import (
+    align_chunk_segments,
+    parse_diarization_windows,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_checkpoints import (
+    AcceptedAudioChunkCheckpoint,
+    AudioTranscriptCheckpointStore,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_chunking import (
+    AudioChunkWindow,
+    plan_audio_chunks,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_merge import (
+    build_checkpointed_sidecar_response,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_payloads import (
+    build_transcript_payload,
+    invalid_sidecar_response,
+    required_float,
+    required_mapping,
+    required_sequence,
+    required_string,
+    string_list,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_progress import (
+    emit_chunk_progress,
+    emit_planned_progress,
+    emit_progress,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_runtime_types import (
+    AudioProgressUpdateV2,
+    AudioTranscriptBundleExecutionResult,
+)
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_sidecar_requests import (
+    build_chunk_request,
+    build_diarization_request,
+    build_sidecar_request,
+    source_media_sha256,
 )
 from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
     AudioTranscriptionSidecarClient,
@@ -35,60 +71,6 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJob
 from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpoint_models import (
     PdfConversionCanceledV2,
 )
-
-TRANSCRIPT_JSON_SCHEMA_VERSION = "transcript_json_v1"
-TRANSCRIPT_JSON_ARTIFACT_KEY = "transcript_json"
-TRANSCRIPT_JSON_FILENAME = "transcript_json.json"
-
-_PLACEHOLDER_SPEAKER_LABELS = frozenset(
-    {
-        "",
-        "diarization_unavailable",
-        "speaker",
-        "speaker_unknown",
-        "unknown",
-    }
-)
-_ALLOWED_RUNTIME_METADATA_KEYS = frozenset(
-    {
-        "acceleration_used",
-        "normalization_profile",
-    }
-)
-
-
-@dataclass(frozen=True, slots=True)
-class AudioProgressUpdateV2:
-    """Route-specific progress update for audio transcript jobs."""
-
-    stage: str
-    audio_total_media_seconds: float | None = None
-    audio_processed_media_seconds: float | None = None
-    audio_percent_complete: float | None = None
-    audio_current_chunk_index: int | None = None
-    audio_total_chunks: int | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class AudioTranscriptBundleExecutionResult:
-    """Successful audio transcript execution result for v2 conversion wrapping."""
-
-    artifact_bytes: bytes
-    backend_used: str
-    acceleration_used: str
-    warnings: list[str]
-    phase_timings_ms: dict[str, int] = field(default_factory=dict)
-
-
-@dataclass(frozen=True, slots=True)
-class _TranscriptSegment:
-    segment_id: str
-    start_seconds: float
-    end_seconds: float
-    speaker_label: str
-    text: str
-    language: str | None
-    confidence: float | None
 
 
 def execute_audio_transcript_bundle_job(
@@ -102,7 +84,8 @@ def execute_audio_transcript_bundle_job(
     """Execute one admitted audio job and persist canonical transcript JSON."""
 
     del config
-    _emit_progress(progress_callback, AudioProgressUpdateV2(stage="probing_media"))
+    checkpoint_store = AudioTranscriptCheckpointStore(artifact_path=job.artifact_path)
+    emit_progress(progress_callback, AudioProgressUpdateV2(stage="probing_media"))
     health = sidecar.health()
     capabilities = sidecar.capabilities()
     readiness = evaluate_stt_sidecar_readiness(
@@ -120,12 +103,96 @@ def execute_audio_transcript_bundle_job(
         )
 
     _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
-    _emit_progress(progress_callback, AudioProgressUpdateV2(stage="transcribing"))
-    sidecar_request = _build_sidecar_request(job=job)
-    response = sidecar.transcribe(sidecar_request)
-    _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
-    _emit_progress(progress_callback, AudioProgressUpdateV2(stage="aligning_segments"))
-    artifact_payload = _build_transcript_payload(
+    sidecar_request = build_sidecar_request(job=job)
+    source_hash = source_media_sha256(job)
+    try:
+        probe_response = sidecar.probe_media(sidecar_request)
+        media = required_mapping(probe_response, "media")
+        duration_seconds = required_float(media, "duration_seconds")
+        normalized_audio_sha256 = required_string(media, "normalized_audio_sha256")
+        normalized_audio_handle_obj = media.get("normalized_audio_handle")
+        normalized_audio_handle = (
+            normalized_audio_handle_obj
+            if isinstance(normalized_audio_handle_obj, str)
+            and normalized_audio_handle_obj.strip() != ""
+            else None
+        )
+        plan = plan_audio_chunks(total_media_seconds=duration_seconds)
+        emit_planned_progress(progress_callback=progress_callback, plan=plan)
+        _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
+
+        diarization_response = sidecar.diarize(
+            build_diarization_request(
+                base_request=sidecar_request,
+                normalized_audio_handle=normalized_audio_handle,
+                normalized_audio_sha256=normalized_audio_sha256,
+            )
+        )
+        diarization_windows = parse_diarization_windows(diarization_response)
+        _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
+
+        checkpoints = checkpoint_store.load()
+        for chunk in plan.chunks:
+            if _checkpoint_matches(
+                checkpoint=checkpoints.get(chunk.chunk_index),
+                chunk=chunk,
+                source_media_sha256=source_hash,
+                normalized_audio_sha256=normalized_audio_sha256,
+                processing_profile=plan.processing_profile,
+            ):
+                emit_chunk_progress(
+                    progress_callback=progress_callback,
+                    plan=plan,
+                    chunk=chunk,
+                )
+                continue
+            _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
+            chunk_response = sidecar.transcribe_chunk(
+                build_chunk_request(
+                    base_request=sidecar_request,
+                    chunk=chunk,
+                    normalized_audio_handle=normalized_audio_handle,
+                    normalized_audio_sha256=normalized_audio_sha256,
+                )
+            )
+            aligned_segments, segment_ids, window_ids = align_chunk_segments(
+                segments=required_sequence(chunk_response, "segments"),
+                diarization_windows=diarization_windows,
+            )
+            checkpoints[chunk.chunk_index] = AcceptedAudioChunkCheckpoint(
+                source_media_sha256=source_hash,
+                normalized_audio_sha256=normalized_audio_sha256,
+                chunk=chunk,
+                processing_profile=plan.processing_profile,
+                transcript_segments=aligned_segments,
+                accepted_transcription_segment_ids=segment_ids,
+                accepted_diarization_window_ids=window_ids,
+                alignment_validated=True,
+            )
+            checkpoint_store.save_all(checkpoints)
+            emit_chunk_progress(
+                progress_callback=progress_callback,
+                plan=plan,
+                chunk=chunk,
+            )
+            _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
+        response = build_checkpointed_sidecar_response(
+            plan=plan,
+            probe_response=probe_response,
+            diarization_response=diarization_response,
+            checkpoints=checkpoints,
+        )
+        emit_progress(progress_callback, AudioProgressUpdateV2(stage="aligning_segments"))
+    except PdfConversionCanceledV2:
+        checkpoint_store.purge()
+        raise
+    except ServiceError as exc:
+        if not exc.retryable:
+            checkpoint_store.purge()
+        _finalize_sidecar(sidecar=sidecar, request_handle=job.job_id, suppress_errors=True)
+        raise
+
+    artifact_payload = build_transcript_payload(
         job=job,
         response=response,
         readiness_profiles=readiness.profile_labels,
@@ -135,11 +202,12 @@ def execute_audio_transcript_bundle_job(
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+    _finalize_sidecar(sidecar=sidecar, request_handle=job.job_id, suppress_errors=False)
     job.artifact_path.write_bytes(artifact_bytes)
-    media = _required_mapping(response, "media")
-    duration_seconds = _required_float(media, "duration_seconds")
-    chunks = _required_sequence(media, "chunks")
-    _emit_progress(
+    media = required_mapping(response, "media")
+    duration_seconds = required_float(media, "duration_seconds")
+    chunks = required_sequence(media, "chunks")
+    emit_progress(
         progress_callback,
         AudioProgressUpdateV2(
             stage="packaging",
@@ -150,16 +218,17 @@ def execute_audio_transcript_bundle_job(
             audio_total_chunks=len(chunks),
         ),
     )
+    checkpoint_store.purge()
     runtime_metadata = artifact_payload["metadata"]
     if not isinstance(runtime_metadata, Mapping):
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
+        raise invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
     runtime_obj = runtime_metadata.get("runtime")
     acceleration_used = "rocm"
     if isinstance(runtime_obj, Mapping):
         acceleration_obj = runtime_obj.get("acceleration_used")
         if isinstance(acceleration_obj, str) and acceleration_obj.strip() != "":
             acceleration_used = acceleration_obj
-    warnings = _string_list(response.get("warnings"))
+    warnings = string_list(response.get("warnings"))
     return AudioTranscriptBundleExecutionResult(
         artifact_bytes=artifact_bytes,
         backend_used="stt_sidecar",
@@ -168,196 +237,23 @@ def execute_audio_transcript_bundle_job(
     )
 
 
-def _build_sidecar_request(*, job: StoredJobV2) -> dict[str, object]:
-    options = job.spec.audio_transcription_options
-    if options is None:
-        raise ServiceError(
-            status_code=422,
-            code=AudioTranscriptionErrorCode.PUBLIC_OPTIONS_UNSUPPORTED.value,
-            message="Audio transcription options are required for transcript execution.",
-            retryable=False,
-        )
-    diarization = options.diarization
-    return {
-        "request_handle": job.job_id,
-        "source": {
-            "kind": "local_upload",
-            "path": job.upload_path.as_posix(),
-            "filename": job.source_filename,
-        },
-        "options": {
-            "language": options.language,
-            "max_duration_seconds": options.max_duration_seconds,
-            "output_schema_version": TRANSCRIPT_JSON_SCHEMA_VERSION,
-            "diarization": {
-                "mode": diarization.mode.value,
-                "num_speakers": diarization.num_speakers,
-                "min_speakers": diarization.min_speakers,
-                "max_speakers": diarization.max_speakers,
-            },
-        },
-    }
-
-
-def _build_transcript_payload(
+def _checkpoint_matches(
     *,
-    job: StoredJobV2,
-    response: Mapping[str, object],
-    readiness_profiles: Mapping[str, str],
-) -> dict[str, object]:
-    status = _required_string(response, "status")
-    if status != "succeeded":
-        error_code = _sidecar_error_code(response)
-        raise ServiceError(
-            status_code=502,
-            code=error_code.value,
-            message="Audio transcription sidecar failed the job.",
-            retryable=error_code == AudioTranscriptionErrorCode.SIDECAR_UNAVAILABLE,
-            details={"sidecar_status": status},
-        )
-    segments = _parse_segments(_required_sequence(response, "segments"))
-    if not segments:
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-    language = _required_mapping(response, "language")
-    diarization = _required_mapping(response, "diarization")
-    media = _required_mapping(response, "media")
-    diarization_status = _required_string(diarization, "status")
-    if diarization_status != "succeeded":
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.DIARIZATION_FAILED)
-    requested_options = job.spec.audio_transcription_options
-    if requested_options is None:
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.PUBLIC_OPTIONS_UNSUPPORTED)
-    duration_seconds = _required_float(media, "duration_seconds")
-    chunks = _parse_chunks(_required_sequence(media, "chunks"))
-    source_sha256 = hashlib.sha256(job.upload_path.read_bytes()).hexdigest()
-    normalized_audio_sha256 = _optional_string(media, "normalized_audio_sha256")
-    if normalized_audio_sha256 is None:
-        normalized_audio_sha256 = "sha256:unreported"
-    return {
-        "schema_version": TRANSCRIPT_JSON_SCHEMA_VERSION,
-        "artifact_key": TRANSCRIPT_JSON_ARTIFACT_KEY,
-        "source": {
-            "filename": job.source_filename,
-            "format": job.source_format.value,
-        },
-        "transcript": {
-            "text": _required_string(response, "transcript_text"),
-        },
-        "segments": [
-            {
-                "segment_id": segment.segment_id,
-                "start_seconds": segment.start_seconds,
-                "end_seconds": segment.end_seconds,
-                "speaker_label": segment.speaker_label,
-                "text": segment.text,
-                "language": segment.language,
-                "confidence": segment.confidence,
-            }
-            for segment in segments
-        ],
-        "language": {
-            "requested": requested_options.language,
-            "detected": _required_string(language, "detected"),
-            "confidence": _optional_float(language, "confidence"),
-        },
-        "diarization": {
-            "requested_mode": requested_options.diarization.mode.value,
-            "used_mode": _optional_string(diarization, "mode_used")
-            or requested_options.diarization.mode.value,
-            "status": diarization_status,
-        },
-        "media": {
-            "duration_seconds": duration_seconds,
-            "chunk_count": len(chunks),
-            "chunks": chunks,
-        },
-        "metadata": {
-            "source": {
-                "sha256": f"sha256:{source_sha256}",
-            },
-            "normalized_audio_sha256": normalized_audio_sha256,
-            "runtime": _sanitized_runtime_metadata(
-                response=response,
-                readiness_profiles=readiness_profiles,
-            ),
-        },
-        "warnings": _string_list(response.get("warnings")),
-    }
-
-
-def _sanitized_runtime_metadata(
-    *,
-    response: Mapping[str, object],
-    readiness_profiles: Mapping[str, str],
-) -> dict[str, object]:
-    runtime_metadata = response.get("runtime_metadata")
-    sanitized: dict[str, object] = {
-        "sidecar_contract_version": STT_SIDECAR_CONTRACT_VERSION,
-    }
-    stt_profile = readiness_profiles.get("stt_profile")
-    diarization_profile = readiness_profiles.get("diarization_profile")
-    if stt_profile is not None:
-        sanitized["stt_profile"] = stt_profile
-    if diarization_profile is not None:
-        sanitized["diarization_profile"] = diarization_profile
-    if isinstance(runtime_metadata, Mapping):
-        for key, value in runtime_metadata.items():
-            if key in _ALLOWED_RUNTIME_METADATA_KEYS and isinstance(value, str):
-                sanitized[key] = value
-    return sanitized
-
-
-def _parse_segments(entries: Sequence[object]) -> list[_TranscriptSegment]:
-    segments: list[_TranscriptSegment] = []
-    previous_end = 0.0
-    for entry in entries:
-        if not isinstance(entry, Mapping):
-            raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-        segment = _TranscriptSegment(
-            segment_id=_required_string(entry, "segment_id"),
-            start_seconds=_required_float(entry, "start_seconds"),
-            end_seconds=_required_float(entry, "end_seconds"),
-            speaker_label=_required_string(entry, "speaker_label"),
-            text=_required_string(entry, "text"),
-            language=_optional_string(entry, "language"),
-            confidence=_optional_float(entry, "confidence"),
-        )
-        if segment.start_seconds < previous_end or segment.end_seconds <= segment.start_seconds:
-            raise _invalid_sidecar_response(AudioTranscriptionErrorCode.SEGMENT_ALIGNMENT_FAILED)
-        normalized_speaker = segment.speaker_label.strip().lower()
-        if normalized_speaker in _PLACEHOLDER_SPEAKER_LABELS:
-            raise _invalid_sidecar_response(AudioTranscriptionErrorCode.DIARIZATION_FAILED)
-        previous_end = segment.end_seconds
-        segments.append(segment)
-    return segments
-
-
-def _parse_chunks(entries: Sequence[object]) -> list[dict[str, object]]:
-    chunks: list[dict[str, object]] = []
-    for entry in entries:
-        if not isinstance(entry, Mapping):
-            raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-        chunks.append(
-            {
-                "chunk_index": _required_int(entry, "chunk_index"),
-                "start_seconds": _required_float(entry, "start_seconds"),
-                "end_seconds": _required_float(entry, "end_seconds"),
-                "overlap_seconds": _optional_float(entry, "overlap_seconds") or 0.0,
-            }
-        )
-    if not chunks:
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-    return chunks
-
-
-def _sidecar_error_code(response: Mapping[str, object]) -> AudioTranscriptionErrorCode:
-    value = response.get("error_code")
-    if isinstance(value, str):
-        try:
-            return AudioTranscriptionErrorCode(value)
-        except ValueError:
-            return AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED
-    return AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED
+    checkpoint: AcceptedAudioChunkCheckpoint | None,
+    chunk: AudioChunkWindow,
+    source_media_sha256: str,
+    normalized_audio_sha256: str,
+    processing_profile: str,
+) -> bool:
+    if checkpoint is None:
+        return False
+    return (
+        checkpoint.source_media_sha256 == source_media_sha256
+        and checkpoint.normalized_audio_sha256 == normalized_audio_sha256
+        and checkpoint.processing_profile == processing_profile
+        and checkpoint.chunk == chunk
+        and checkpoint.alignment_validated
+    )
 
 
 def _raise_if_canceled(
@@ -369,76 +265,18 @@ def _raise_if_canceled(
     if is_cancel_requested is None or not is_cancel_requested():
         return
     sidecar.cancel(request_handle)
+    _finalize_sidecar(sidecar=sidecar, request_handle=request_handle, suppress_errors=True)
     raise PdfConversionCanceledV2(job_id=request_handle)
 
 
-def _emit_progress(
-    callback: Callable[[AudioProgressUpdateV2], None] | None,
-    update: AudioProgressUpdateV2,
+def _finalize_sidecar(
+    *,
+    sidecar: AudioTranscriptionSidecarClient,
+    request_handle: str,
+    suppress_errors: bool,
 ) -> None:
-    if callback is not None:
-        callback(update)
-
-
-def _required_mapping(payload: Mapping[str, object], key: str) -> Mapping[str, object]:
-    value = payload.get(key)
-    if not isinstance(value, Mapping):
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-    return {str(nested_key): nested_value for nested_key, nested_value in value.items()}
-
-
-def _required_sequence(payload: Mapping[str, object], key: str) -> Sequence[object]:
-    value = payload.get(key)
-    if not isinstance(value, Sequence) or isinstance(value, str | bytes | bytearray):
-        raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-    return value
-
-
-def _required_string(payload: Mapping[str, object], key: str) -> str:
-    value = payload.get(key)
-    if isinstance(value, str) and value.strip() != "":
-        return value
-    raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-
-
-def _optional_string(payload: Mapping[str, object], key: str) -> str | None:
-    value = payload.get(key)
-    if isinstance(value, str) and value.strip() != "":
-        return value
-    return None
-
-
-def _required_float(payload: Mapping[str, object], key: str) -> float:
-    value = payload.get(key)
-    if isinstance(value, int | float) and not isinstance(value, bool):
-        return float(value)
-    raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-
-
-def _optional_float(payload: Mapping[str, object], key: str) -> float | None:
-    value = payload.get(key)
-    if isinstance(value, int | float) and not isinstance(value, bool):
-        return float(value)
-    return None
-
-
-def _required_int(payload: Mapping[str, object], key: str) -> int:
-    value = payload.get(key)
-    if isinstance(value, int) and not isinstance(value, bool):
-        return value
-    raise _invalid_sidecar_response(AudioTranscriptionErrorCode.TRANSCRIPTION_FAILED)
-
-
-def _string_list(value: object) -> list[str]:
-    if not isinstance(value, Sequence) or isinstance(value, str | bytes | bytearray):
-        return []
-    return [item for item in value if isinstance(item, str)]
-
-
-def _invalid_sidecar_response(error_code: AudioTranscriptionErrorCode) -> ServiceError:
-    return ServiceError(
-        status_code=502,
-        code=error_code.value,
-        message="Audio transcription sidecar returned an invalid transcript payload.",
-        retryable=False,
-    )
+    try:
+        sidecar.finalize(request_handle)
+    except ServiceError:
+        if not suppress_errors:
+            raise

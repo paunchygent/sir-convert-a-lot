@@ -32,8 +32,11 @@ from scripts.sir_convert_a_lot.stt_sidecar.contracts import (
 class _FakeSttBackend:
     def __init__(self) -> None:
         self.started = False
-        self.transcribe_requests: list[Mapping[str, object]] = []
+        self.probe_requests: list[Mapping[str, object]] = []
+        self.diarize_requests: list[Mapping[str, object]] = []
+        self.chunk_requests: list[Mapping[str, object]] = []
         self.canceled_handles: list[str] = []
+        self.finalized_handles: list[str] = []
 
     def startup(self) -> None:
         self.started = True
@@ -51,13 +54,25 @@ class _FakeSttBackend:
     def capabilities(self) -> Mapping[str, object]:
         return _capabilities()
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        self.transcribe_requests.append(dict(request))
-        return _transcription_payload()
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        self.probe_requests.append(dict(request))
+        return _probe_payload()
+
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        self.diarize_requests.append(dict(request))
+        return _diarization_payload()
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        self.chunk_requests.append(dict(request))
+        return _chunk_payload()
 
     def cancel(self, request_handle: str) -> Mapping[str, object]:
         self.canceled_handles.append(request_handle)
         return {"status": "cancel_requested", "request_handle": request_handle}
+
+    def finalize(self, request_handle: str) -> Mapping[str, object]:
+        self.finalized_handles.append(request_handle)
+        return {"status": "finalized", "request_handle": request_handle}
 
 
 def test_stt_sidecar_http_contract_matches_main_service_readiness() -> None:
@@ -88,7 +103,7 @@ def test_stt_sidecar_http_contract_matches_main_service_readiness() -> None:
         assert forbidden_value not in serialized_capabilities
 
 
-def test_stt_sidecar_transcribe_and_cancel_endpoints_use_bounded_payloads(
+def test_stt_sidecar_chunked_endpoints_use_bounded_payloads(
     tmp_path: Path,
 ) -> None:
     backend = _FakeSttBackend()
@@ -97,8 +112,8 @@ def test_stt_sidecar_transcribe_and_cancel_endpoints_use_bounded_payloads(
     source_path.write_bytes(b"audio")
 
     with TestClient(app) as client:
-        transcribe_response = client.post(
-            "/transcribe",
+        probe_response = client.post(
+            "/probe-media",
             json={
                 "request_handle": "job-audio-1",
                 "source": {
@@ -119,23 +134,83 @@ def test_stt_sidecar_transcribe_and_cancel_endpoints_use_bounded_payloads(
                 },
             },
         )
+        diarize_response = client.post(
+            "/diarize",
+            json={
+                "request_handle": "job-audio-1",
+                "normalized_audio": {
+                    "handle": "normalized://job-audio-1",
+                    "sha256": "sha256:abc123",
+                },
+                "options": {
+                    "language": "auto",
+                    "max_duration_seconds": 7200,
+                    "output_schema_version": "transcript_json_v1",
+                    "diarization": {
+                        "mode": "auto",
+                        "num_speakers": None,
+                        "min_speakers": None,
+                        "max_speakers": None,
+                    },
+                },
+            },
+        )
+        chunk_response = client.post(
+            "/transcribe-chunk",
+            json={
+                "request_handle": "job-audio-1",
+                "normalized_audio": {
+                    "handle": "normalized://job-audio-1",
+                    "sha256": "sha256:abc123",
+                },
+                "options": {
+                    "language": "auto",
+                    "max_duration_seconds": 7200,
+                    "output_schema_version": "transcript_json_v1",
+                    "diarization": {
+                        "mode": "auto",
+                        "num_speakers": None,
+                        "min_speakers": None,
+                        "max_speakers": None,
+                    },
+                },
+                "chunk": {
+                    "chunk_index": 0,
+                    "start_seconds": 0.0,
+                    "end_seconds": 2.0,
+                    "overlap_seconds": 0.0,
+                },
+            },
+        )
         cancel_response = client.post(
             "/cancel",
             json={"request_handle": "job-audio-1"},
         )
+        finalize_response = client.post(
+            "/finalize",
+            json={"request_handle": "job-audio-1"},
+        )
 
-    assert transcribe_response.status_code == 200
-    payload = transcribe_response.json()
-    assert payload["status"] == "succeeded"
-    assert payload["runtime_metadata"] == {
-        "acceleration_used": "rocm",
-        "normalization_profile": "wav_16khz_mono_s16",
-    }
-    assert payload["segments"][0]["speaker_label"] == "SPEAKER_00"
+    assert probe_response.status_code == 200
+    assert probe_response.json()["media"]["normalized_audio_sha256"] == "sha256:abc123"
+    assert diarize_response.status_code == 200
+    assert diarize_response.json()["diarization"]["windows"][0]["speaker_label"] == "SPEAKER_00"
+    assert chunk_response.status_code == 200
+    assert chunk_response.json()["segments"][0]["segment_id"] == "chunk-0-seg-0001"
     assert cancel_response.status_code == 200
     assert cancel_response.json()["status"] == "cancel_requested"
+    assert finalize_response.status_code == 200
+    assert finalize_response.json()["status"] == "finalized"
     assert backend.canceled_handles == ["job-audio-1"]
-    serialized_payload = json.dumps(payload, sort_keys=True)
+    assert backend.finalized_handles == ["job-audio-1"]
+    serialized_payload = json.dumps(
+        {
+            "probe": probe_response.json(),
+            "diarization": diarize_response.json(),
+            "chunk": chunk_response.json(),
+        },
+        sort_keys=True,
+    )
     for forbidden_value in (
         "/srv/",
         "/cache/",
@@ -148,7 +223,7 @@ def test_stt_sidecar_transcribe_and_cancel_endpoints_use_bounded_payloads(
 
 def test_stt_sidecar_request_errors_return_client_safe_error_payload() -> None:
     class _RejectingBackend(_FakeSttBackend):
-        def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
             del request
             raise SttSidecarRequestError(
                 code="unsupported_audio_codec",
@@ -160,8 +235,13 @@ def test_stt_sidecar_request_errors_return_client_safe_error_payload() -> None:
 
     with TestClient(app) as client:
         response = client.post(
-            "/transcribe",
-            json={"request_handle": "job-audio-1", "source": {}, "options": {}},
+            "/transcribe-chunk",
+            json={
+                "request_handle": "job-audio-1",
+                "normalized_audio": {},
+                "options": {},
+                "chunk": {},
+            },
         )
 
     assert response.status_code == 415
@@ -238,38 +318,55 @@ def _capabilities() -> dict[str, object]:
     }
 
 
-def _transcription_payload() -> dict[str, object]:
+def _probe_payload() -> dict[str, object]:
     return {
         "status": "succeeded",
-        "transcript_text": "Hello there.",
+        "media": {
+            "duration_seconds": 2.0,
+            "normalized_audio_sha256": "sha256:abc123",
+            "normalized_audio_handle": "normalized://job-audio-1",
+        },
+        "runtime_metadata": {
+            "acceleration_used": "rocm",
+            "normalization_profile": "wav_16khz_mono_s16",
+        },
+        "warnings": [],
+    }
+
+
+def _diarization_payload() -> dict[str, object]:
+    return {
+        "status": "succeeded",
+        "diarization": {
+            "status": "succeeded",
+            "mode_used": "auto",
+            "windows": [
+                {
+                    "window_id": "speaker-window-0001",
+                    "start_seconds": 0.0,
+                    "end_seconds": 2.0,
+                    "speaker_label": "SPEAKER_00",
+                }
+            ],
+        },
+        "warnings": [],
+    }
+
+
+def _chunk_payload() -> dict[str, object]:
+    return {
+        "status": "succeeded",
+        "chunk_index": 0,
         "segments": [
             {
-                "segment_id": "seg-0001",
+                "segment_id": "chunk-0-seg-0001",
                 "start_seconds": 0.0,
                 "end_seconds": 2.0,
-                "speaker_label": "SPEAKER_00",
                 "text": "Hello there.",
                 "language": "en",
                 "confidence": 0.91,
             }
         ],
         "language": {"detected": "en", "confidence": 0.91},
-        "diarization": {"status": "succeeded", "mode_used": "auto"},
-        "media": {
-            "duration_seconds": 2.0,
-            "normalized_audio_sha256": "sha256:abc123",
-            "chunks": [
-                {
-                    "chunk_index": 0,
-                    "start_seconds": 0.0,
-                    "end_seconds": 2.0,
-                    "overlap_seconds": 0.0,
-                }
-            ],
-        },
-        "runtime_metadata": {
-            "acceleration_used": "rocm",
-            "normalization_profile": "wav_16khz_mono_s16",
-        },
         "warnings": [],
     }

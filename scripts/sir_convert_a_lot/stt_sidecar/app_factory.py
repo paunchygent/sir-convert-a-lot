@@ -7,7 +7,8 @@ Purpose:
 Relationships:
     - Uses `stt_sidecar.contracts.SttSidecarBackend` for backend delegation.
     - Mirrors the reusable sidecar factory pattern used by TTS adapters while
-      exposing STT-specific `/transcribe` and `/cancel` routes.
+      exposing STT-specific media probe, diarization, chunk transcription, and
+      cancellation routes.
 """
 
 from __future__ import annotations
@@ -42,15 +43,30 @@ def create_stt_sidecar_app(backend: SttSidecarBackend, *, title: str) -> FastAPI
     def capabilities() -> Mapping[str, object]:
         return backend.capabilities()
 
-    @app.post("/transcribe", response_model=None)
-    def transcribe(request: dict[str, object] = Body(...)) -> Mapping[str, object] | JSONResponse:
+    @app.post("/probe-media", response_model=None)
+    def probe_media(
+        request: dict[str, object] = Body(...),
+    ) -> Mapping[str, object] | JSONResponse:
         try:
-            return backend.transcribe(request)
+            return backend.probe_media(request)
         except SttSidecarRequestError as exc:
-            return JSONResponse(
-                status_code=exc.status_code,
-                content={"error": exc.message, "code": exc.code},
-            )
+            return _error_response(exc)
+
+    @app.post("/diarize", response_model=None)
+    def diarize(request: dict[str, object] = Body(...)) -> Mapping[str, object] | JSONResponse:
+        try:
+            return backend.diarize(request)
+        except SttSidecarRequestError as exc:
+            return _error_response(exc)
+
+    @app.post("/transcribe-chunk", response_model=None)
+    def transcribe_chunk(
+        request: dict[str, object] = Body(...),
+    ) -> Mapping[str, object] | JSONResponse:
+        try:
+            return backend.transcribe_chunk(request)
+        except SttSidecarRequestError as exc:
+            return _error_response(exc)
 
     @app.post("/cancel", response_model=None)
     def cancel(request: dict[str, object] = Body(...)) -> Mapping[str, object] | JSONResponse:
@@ -58,12 +74,24 @@ def create_stt_sidecar_app(backend: SttSidecarBackend, *, title: str) -> FastAPI
             request_handle = _request_handle(request)
             return backend.cancel(request_handle)
         except SttSidecarRequestError as exc:
-            return JSONResponse(
-                status_code=exc.status_code,
-                content={"error": exc.message, "code": exc.code},
-            )
+            return _error_response(exc)
+
+    @app.post("/finalize", response_model=None)
+    def finalize(request: dict[str, object] = Body(...)) -> Mapping[str, object] | JSONResponse:
+        try:
+            request_handle = _request_handle(request)
+            return backend.finalize(request_handle)
+        except SttSidecarRequestError as exc:
+            return _error_response(exc)
 
     return app
+
+
+def _error_response(exc: SttSidecarRequestError) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.message, "code": exc.code},
+    )
 
 
 def _request_handle(payload: Mapping[str, object]) -> str:

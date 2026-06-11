@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_runtime import (
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_runtime_types import (
     TRANSCRIPT_JSON_ARTIFACT_KEY,
     TRANSCRIPT_JSON_FILENAME,
 )

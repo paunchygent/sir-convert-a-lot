@@ -178,6 +178,15 @@ def run_runtime_job_v2(
             release_chunk_worker_slot=release_chunk_worker_slot,
             execute_conversion=execute_conversion,
         )
+        current = safe_get_job(job_id)
+        if current is not None and current.status == JobStatus.CANCELED:
+            _stop_heartbeat(
+                heartbeat_stop=heartbeat_stop,
+                heartbeat_thread=heartbeat_thread,
+                heartbeat_interval_seconds=config.heartbeat_interval_seconds,
+            )
+            webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
+            return
         phase_timings_ms = dict(result.phase_timings_ms)
         phase_timings_ms[TIMING_KEY_CONVERSION_TOTAL_MS] = max(
             0, int((time.perf_counter() - conversion_started) * 1000)
@@ -347,6 +356,9 @@ def _execute_conversion(
 ) -> V2ExecutionResult:
     def _progress_callback(update: PdfCheckpointProgressUpdateV2 | AudioProgressUpdateV2) -> None:
         try:
+            current = get_job(job_id)
+            if current is not None and current.status == JobStatus.CANCELED:
+                return
             if isinstance(update, AudioProgressUpdateV2):
                 job_store.update_progress(
                     job_id,

@@ -1,9 +1,9 @@
 ---
-id: 'task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution'
-title: 'Harden audio transcript chunk progress and checkpointed STT execution'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution
+title: Harden audio transcript chunk progress and checkpointed STT execution
+type: task
+status: in_progress
+priority: high
 created: '2026-06-11'
 last_updated: '2026-06-11'
 related:
@@ -22,6 +22,7 @@ labels:
   - diarization
   - sidecar
 ---
+
 PR-sized execution unit linked to the accepted STT runtime lane.
 
 ## Objective
@@ -42,6 +43,9 @@ public progress projection, retry semantics, and cancellation cleanup.
 The sidecar remains the GPU-backed capability provider. Sir Convert must not
 move FasterWhisper, pyannote, FFmpeg, model-cache, or codec dependencies into
 the main service image, and must not introduce CPU fallback.
+
+Local implementation has landed in the worktree for Review 43 repair. It is not
+closed until validation and live Hemma/tunnel proof are recorded.
 
 ## Design Decision
 
@@ -66,6 +70,14 @@ The preferred runtime shape is:
 
 Do not implement independent per-chunk diarization as the default path unless a
 reviewed reconciliation design prevents speaker-label drift across chunks.
+
+Review 43 repair locks the sidecar transition as a clean internal contract:
+the main Service API v2 runtime uses `/probe-media`, `/diarize`,
+`/transcribe-chunk`, `/finalize`, and `/cancel`. It must not use the retired
+blocking `/transcribe` path. Normalized media is an opaque sidecar-owned
+capability issued by `/probe-media`, verified by `request_handle` and
+`normalized_audio.sha256` before diarization or chunk transcription, and
+finalized idempotently at terminal job cleanup.
 
 Third-party API research from the planning pass:
 
@@ -127,21 +139,41 @@ Out of scope:
 - Per-chunk diarization without a reviewed speaker-reconciliation design.
 - Exposing partial transcript artifacts for failed, canceled, or running jobs.
 
+## Implementation State
+
+As of the 2026-06-11 Review 43 repair pass:
+
+- Purpose-named runtime modules exist for chunk planning, checkpoint
+  persistence, progress projection, transcript payload assembly, sidecar
+  request construction, alignment, and checkpoint merge.
+- The sidecar FastAPI/runtime contract exposes `/probe-media`, `/diarize`,
+  `/transcribe-chunk`, `/finalize`, and `/cancel`.
+- `/probe-media` returns a sidecar-owned opaque normalized-audio handle and
+  SHA-256. `/diarize` and `/transcribe-chunk` reject unknown, wrong-request,
+  stale, or hash-mismatched handles with deterministic client-safe errors.
+- The Service API v2 runtime finalizes sidecar-owned normalized media on
+  success, terminal failure, and cancellation, while preserving the original
+  governed sidecar error code on terminal failure.
+- Local behavior tests cover public chunk progress, checkpoint replay,
+  cancellation cleanup, canonical `transcript_json`, fail-closed alignment,
+  sidecar HTTP contract, sidecar handle validation, and sidecar media cleanup.
+- Live Hemma/tunnel proof is still pending and must remain blank until run.
+
 ## Deliverables
 
-- [ ] Updated `docs/converters/audio-transcription-service-api-artifact-contract.md`
+- [x] Updated `docs/converters/audio-transcription-service-api-artifact-contract.md`
   language that distinguishes stage heartbeat from numeric audio progress and
   records the Task 357 chunk/checkpoint hardening contract.
-- [ ] Purpose-named implementation modules for chunk planning, checkpoint
+- [x] Purpose-named implementation modules for chunk planning, checkpoint
   persistence, progress projection, and transcript merge/alignment.
-- [ ] Internal sidecar contract/client changes for global diarization and
+- [x] Internal sidecar contract/client changes for global diarization and
   chunk transcription, or an explicitly reviewed equivalent that preserves
   service-owned public progress.
-- [ ] Red-first behavior tests for public polling progress during active
+- [x] Red-first behavior tests for public polling progress during active
   transcription.
-- [ ] Red-first behavior tests for checkpoint idempotency, retry, cancellation,
+- [x] Red-first behavior tests for checkpoint idempotency, retry, cancellation,
   and no partial terminal artifacts.
-- [ ] Red-first behavior tests for cross-chunk transcript/diarization
+- [x] Red-first behavior tests for cross-chunk transcript/diarization
   alignment and speaker-label stability.
 - [ ] Focused live Hemma proof showing non-null numeric progress while a job is
   still running, followed by successful `transcript_json` retrieval.
@@ -243,6 +275,7 @@ active transcription through the tunnel.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Local implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated
+- [ ] Live Hemma proof recorded

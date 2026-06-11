@@ -15,6 +15,7 @@ Relationships:
 from __future__ import annotations
 
 import json
+import shutil
 import threading
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -39,7 +40,7 @@ from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client
     HttpAudioTranscriptionSidecarClient,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.v2_pdf_checkpoint_models import (
     PdfConversionCanceledV2,
@@ -69,8 +70,9 @@ class _FakeAudioTranscriptionSidecar:
         self.health_payload = dict(health_payload or _healthy_sidecar())
         self.capability_payload = dict(capability_payload or _ready_capabilities())
         self.transcribe_payload = dict(transcribe_payload or _successful_transcription())
-        self.transcribe_requests: list[Mapping[str, object]] = []
+        self.chunk_requests: list[Mapping[str, object]] = []
         self.canceled_handles: list[str] = []
+        self.finalized_handles: list[str] = []
 
     def health(self) -> Mapping[str, object]:
         return self.health_payload
@@ -78,30 +80,126 @@ class _FakeAudioTranscriptionSidecar:
     def capabilities(self) -> Mapping[str, object]:
         return self.capability_payload
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        self.transcribe_requests.append(dict(request))
-        return self.transcribe_payload
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        del request
+        media = self.transcribe_payload.get("media")
+        runtime_metadata = self.transcribe_payload.get("runtime_metadata")
+        return {
+            "status": "succeeded",
+            "media": media if isinstance(media, Mapping) else {},
+            "runtime_metadata": runtime_metadata if isinstance(runtime_metadata, Mapping) else {},
+            "warnings": self.transcribe_payload.get("warnings", []),
+        }
+
+    def diarize(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        del request
+        diarization = self.transcribe_payload.get("diarization")
+        return {
+            "status": "succeeded",
+            "diarization": {
+                "status": "succeeded",
+                "mode_used": (
+                    diarization.get("mode_used") if isinstance(diarization, Mapping) else "auto"
+                ),
+                "windows": _diarization_windows_from_transcription(self.transcribe_payload),
+            },
+            "warnings": self.transcribe_payload.get("warnings", []),
+        }
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        self.chunk_requests.append(dict(request))
+        chunk_obj = request.get("chunk")
+        chunk = chunk_obj if isinstance(chunk_obj, Mapping) else {}
+        return _chunk_response_from_transcription(
+            transcription=self.transcribe_payload,
+            chunk_index=_int_field(chunk, "chunk_index", fallback=0),
+            start_seconds=_float_field(chunk, "start_seconds", fallback=0.0),
+            end_seconds=_float_field(chunk, "end_seconds", fallback=0.0),
+        )
 
     def cancel(self, request_handle: str) -> None:
         self.canceled_handles.append(request_handle)
+
+    def finalize(self, request_handle: str) -> None:
+        self.finalized_handles.append(request_handle)
 
 
 class _BlockingAudioTranscriptionSidecar(_FakeAudioTranscriptionSidecar):
-    def __init__(self) -> None:
+    def __init__(self, *, scratch_root: Path) -> None:
         super().__init__()
-        self.transcribe_started = threading.Event()
+        self._scratch_root = scratch_root
+        self.chunk_started = threading.Event()
         self.cancel_received = threading.Event()
-        self.release_transcribe = threading.Event()
+        self.release_chunk = threading.Event()
 
-    def transcribe(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        self.transcribe_requests.append(dict(request))
-        self.transcribe_started.set()
-        self.release_transcribe.wait(timeout=5.0)
-        return self.transcribe_payload
+    @property
+    def scratch_path(self) -> Path:
+        return self._scratch_root / "normalized-job-media"
+
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        payload = super().probe_media(request)
+        self.scratch_path.mkdir(parents=True, exist_ok=True)
+        (self.scratch_path / "normalized.wav").write_bytes(b"normalized audio")
+        return payload
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        self.chunk_requests.append(dict(request))
+        self.chunk_started.set()
+        self.release_chunk.wait(timeout=5.0)
+        chunk_obj = request.get("chunk")
+        chunk = chunk_obj if isinstance(chunk_obj, Mapping) else {}
+        return _chunk_response_from_transcription(
+            transcription=self.transcribe_payload,
+            chunk_index=_int_field(chunk, "chunk_index", fallback=0),
+            start_seconds=_float_field(chunk, "start_seconds", fallback=0.0),
+            end_seconds=_float_field(chunk, "end_seconds", fallback=0.0),
+        )
 
     def cancel(self, request_handle: str) -> None:
         self.canceled_handles.append(request_handle)
+        _remove_tree(self.scratch_path)
         self.cancel_received.set()
+
+
+class _CleanupTrackingAudioTranscriptionSidecar(_FakeAudioTranscriptionSidecar):
+    def __init__(
+        self,
+        *,
+        scratch_root: Path,
+        failure: tuple[str, bool] | None = None,
+    ) -> None:
+        super().__init__()
+        self._scratch_root = scratch_root
+        self._failure = failure
+
+    @property
+    def scratch_path(self) -> Path:
+        return self._scratch_root / "normalized-job-media"
+
+    def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        payload = super().probe_media(request)
+        self.scratch_path.mkdir(parents=True, exist_ok=True)
+        (self.scratch_path / "normalized.wav").write_bytes(b"normalized audio")
+        return payload
+
+    def transcribe_chunk(self, request: Mapping[str, object]) -> Mapping[str, object]:
+        if self._failure is not None:
+            code, retryable = self._failure
+            raise ServiceError(
+                status_code=503 if retryable else 502,
+                code=code,
+                message="Injected sidecar failure.",
+                retryable=retryable,
+            )
+        return super().transcribe_chunk(request)
+
+    def cancel(self, request_handle: str) -> None:
+        super().cancel(request_handle)
+        _remove_tree(self.scratch_path)
+
+    def finalize(self, request_handle: str) -> None:
+        super().finalize(request_handle)
+        _remove_tree(self.scratch_path)
 
 
 def test_audio_job_persists_transcript_json_and_named_artifact(tmp_path: Path) -> None:
@@ -126,7 +224,7 @@ def test_audio_job_persists_transcript_json_and_named_artifact(tmp_path: Path) -
     assert job["progress"]["audio_percent_complete"] == 100.0
     assert job["progress"]["audio_current_chunk_index"] == 0
     assert job["progress"]["audio_total_chunks"] == 1
-    assert len(sidecar.transcribe_requests) == 1
+    assert len(sidecar.chunk_requests) == 1
 
     job_id = job["job_id"]
     result_response = client.get(
@@ -187,6 +285,23 @@ def test_audio_job_persists_transcript_json_and_named_artifact(tmp_path: Path) -
     assert artifact_entries["transcript_md"]["availability"] == "not_implemented"
 
 
+def test_audio_success_finalizes_sidecar_normalized_media(tmp_path: Path) -> None:
+    sidecar = _CleanupTrackingAudioTranscriptionSidecar(scratch_root=tmp_path / "sidecar")
+    job = _stored_audio_job(tmp_path)
+
+    execute_audio_transcript_bundle_job(
+        job=job,
+        config=ServiceConfig(api_key=_API_KEY, data_root=tmp_path / "service_data"),
+        sidecar=sidecar,
+        progress_callback=None,
+        is_cancel_requested=lambda: False,
+    )
+
+    assert sidecar.finalized_handles == [job.job_id]
+    assert not sidecar.scratch_path.exists()
+    assert job.artifact_path.exists()
+
+
 def test_audio_sidecar_readiness_failure_is_terminal_without_artifact(tmp_path: Path) -> None:
     sidecar = _FakeAudioTranscriptionSidecar(
         health_payload={
@@ -213,7 +328,7 @@ def test_audio_sidecar_readiness_failure_is_terminal_without_artifact(tmp_path: 
     assert job["progress"]["total_pages"] is None
     assert job["progress"]["processed_pages"] is None
     assert job["progress"]["percent_complete"] is None
-    assert len(sidecar.transcribe_requests) == 0
+    assert len(sidecar.chunk_requests) == 0
 
     job_id = job["job_id"]
     stored_job = app.state.runtime_v2.get_job(job_id)
@@ -294,10 +409,43 @@ def test_real_http_sidecar_error_codes_are_preserved_in_stored_job_failure(
     assert "private transcript text" not in serialized_failure
 
 
+@pytest.mark.parametrize(
+    ("code", "retryable"),
+    [
+        ("audio_diarization_failed", False),
+        ("audio_sidecar_unavailable", True),
+    ],
+)
+def test_audio_terminal_failure_finalizes_sidecar_normalized_media(
+    tmp_path: Path,
+    code: str,
+    retryable: bool,
+) -> None:
+    sidecar = _CleanupTrackingAudioTranscriptionSidecar(
+        scratch_root=tmp_path / "sidecar",
+        failure=(code, retryable),
+    )
+    job = _stored_audio_job(tmp_path)
+
+    with pytest.raises(ServiceError) as exc_info:
+        execute_audio_transcript_bundle_job(
+            job=job,
+            config=ServiceConfig(api_key=_API_KEY, data_root=tmp_path / "service_data"),
+            sidecar=sidecar,
+            progress_callback=None,
+            is_cancel_requested=lambda: False,
+        )
+
+    assert exc_info.value.code == code
+    assert sidecar.finalized_handles == [job.job_id]
+    assert not sidecar.scratch_path.exists()
+    assert not job.artifact_path.exists()
+
+
 def test_canceling_running_audio_job_propagates_to_sidecar_and_keeps_no_artifact(
     tmp_path: Path,
 ) -> None:
-    sidecar = _BlockingAudioTranscriptionSidecar()
+    sidecar = _BlockingAudioTranscriptionSidecar(scratch_root=tmp_path / "sidecar")
     app = _app(tmp_path, sidecar=sidecar)
     client = TestClient(app)
     create_response = _post_audio_job(
@@ -307,7 +455,7 @@ def test_canceling_running_audio_job_propagates_to_sidecar_and_keeps_no_artifact
     )
     assert create_response.status_code == 202
     job_id = create_response.json()["job"]["job_id"]
-    assert sidecar.transcribe_started.wait(timeout=5.0)
+    assert sidecar.chunk_started.wait(timeout=5.0)
 
     cancel_response = client.post(
         f"/v2/convert/jobs/{job_id}/cancel",
@@ -317,7 +465,7 @@ def test_canceling_running_audio_job_propagates_to_sidecar_and_keeps_no_artifact
     assert cancel_response.status_code == 202
     assert sidecar.cancel_received.is_set()
     assert sidecar.canceled_handles == [job_id]
-    sidecar.release_transcribe.set()
+    sidecar.release_chunk.set()
     runtime = app.state.runtime_v2
     stored_job = runtime.get_job(job_id)
     assert stored_job is not None
@@ -327,6 +475,7 @@ def test_canceling_running_audio_job_propagates_to_sidecar_and_keeps_no_artifact
     assert stored_job is not None
     assert stored_job.status == JobStatus.CANCELED
     assert not stored_job.artifact_path.exists()
+    assert not sidecar.scratch_path.exists()
 
     result_response = client.get(
         f"/v2/convert/jobs/{job_id}/result",
@@ -346,7 +495,7 @@ def test_canceling_running_audio_job_propagates_to_sidecar_and_keeps_no_artifact
 def test_audio_cancellation_cancels_sidecar_without_publishing_artifact(
     tmp_path: Path,
 ) -> None:
-    sidecar = _FakeAudioTranscriptionSidecar()
+    sidecar = _CleanupTrackingAudioTranscriptionSidecar(scratch_root=tmp_path / "sidecar")
     job = _stored_audio_job(tmp_path)
     progress_updates: list[AudioProgressUpdateV2] = []
 
@@ -364,7 +513,8 @@ def test_audio_cancellation_cancels_sidecar_without_publishing_artifact(
         )
 
     assert sidecar.canceled_handles == [job.job_id]
-    assert sidecar.transcribe_requests == []
+    assert sidecar.chunk_requests == []
+    assert not sidecar.scratch_path.exists()
     assert not job.artifact_path.exists()
     assert [update.stage for update in progress_updates] == ["probing_media"]
 
@@ -377,6 +527,11 @@ def _eventually_canceled(*, runtime: ServiceRuntimeV2, job_id: str) -> bool:
             return True
         deadline.wait(timeout=0.02)
     return False
+
+
+def _remove_tree(path: Path) -> None:
+    if path.exists():
+        shutil.rmtree(path)
 
 
 @contextmanager
@@ -419,7 +574,7 @@ def _failing_sidecar_handler(
             content_length = int(length_header) if length_header.isdigit() else 0
             if content_length > 0:
                 self.rfile.read(content_length)
-            if self.path == "/transcribe":
+            if self.path in {"/probe-media", "/diarize", "/transcribe-chunk"}:
                 self._write_json(
                     status_code=sidecar_status,
                     payload={
@@ -435,6 +590,12 @@ def _failing_sidecar_handler(
                 self._write_json(
                     status_code=200,
                     payload={"status": "cancel_requested"},
+                )
+                return
+            if self.path == "/finalize":
+                self._write_json(
+                    status_code=200,
+                    payload={"status": "finalized"},
                 )
                 return
             self._write_json(
@@ -620,6 +781,84 @@ def _ready_capabilities() -> dict[str, object]:
             "values_exposed": False,
         },
     }
+
+
+def _diarization_windows_from_transcription(
+    transcription: Mapping[str, object],
+) -> list[dict[str, object]]:
+    segments_obj = transcription.get("segments")
+    if not isinstance(segments_obj, list):
+        return []
+    windows: list[dict[str, object]] = []
+    for index, segment_obj in enumerate(segments_obj, start=1):
+        if not isinstance(segment_obj, Mapping):
+            continue
+        windows.append(
+            {
+                "window_id": f"speaker-window-{index:04d}",
+                "start_seconds": _float_field(segment_obj, "start_seconds", fallback=0.0),
+                "end_seconds": _float_field(segment_obj, "end_seconds", fallback=0.0),
+                "speaker_label": _string_field(
+                    segment_obj,
+                    "speaker_label",
+                    fallback="SPEAKER_00",
+                ),
+            }
+        )
+    return windows
+
+
+def _chunk_response_from_transcription(
+    *,
+    transcription: Mapping[str, object],
+    chunk_index: int,
+    start_seconds: float,
+    end_seconds: float,
+) -> dict[str, object]:
+    segments_obj = transcription.get("segments")
+    segments = segments_obj if isinstance(segments_obj, list) else []
+    chunk_segments: list[dict[str, object]] = []
+    for segment_obj in segments:
+        if not isinstance(segment_obj, Mapping):
+            continue
+        segment_start = _float_field(segment_obj, "start_seconds", fallback=0.0)
+        segment_end = _float_field(segment_obj, "end_seconds", fallback=0.0)
+        midpoint = segment_start + ((segment_end - segment_start) / 2.0)
+        if start_seconds <= midpoint <= end_seconds:
+            chunk_segments.append(
+                {
+                    "segment_id": _string_field(segment_obj, "segment_id", fallback="seg"),
+                    "start_seconds": segment_start,
+                    "end_seconds": segment_end,
+                    "text": _string_field(segment_obj, "text", fallback=""),
+                    "language": _string_field(segment_obj, "language", fallback="en"),
+                    "confidence": _float_field(segment_obj, "confidence", fallback=0.0),
+                }
+            )
+    return {
+        "status": "succeeded",
+        "chunk_index": chunk_index,
+        "segments": chunk_segments,
+        "language": transcription.get("language", {"detected": "en", "confidence": None}),
+        "warnings": transcription.get("warnings", []),
+    }
+
+
+def _int_field(payload: Mapping[str, object], key: str, *, fallback: int) -> int:
+    value = payload.get(key)
+    return value if isinstance(value, int) and not isinstance(value, bool) else fallback
+
+
+def _float_field(payload: Mapping[str, object], key: str, *, fallback: float) -> float:
+    value = payload.get(key)
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return float(value)
+    return fallback
+
+
+def _string_field(payload: Mapping[str, object], key: str, *, fallback: str) -> str:
+    value = payload.get(key)
+    return value if isinstance(value, str) and value.strip() != "" else fallback
 
 
 def _successful_transcription() -> dict[str, object]:

@@ -4,7 +4,7 @@ id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
 status: active
 created: 2026-06-09
-updated: 2026-06-10
+updated: 2026-06-11
 owners:
   - platform
 tags:
@@ -47,11 +47,12 @@ Task 356's accepted runtime authority covers canonical JSON transcript
 delivery only. Formatter artifacts remain blocked until later formatter
 strategies over the JSON core are accepted.
 
-Task 357 is the planned hardening task for the current in-flight progress gap:
-after Task 356, a job can heartbeat truthfully at stage `transcribing` while
-numeric audio progress remains `null` until the sidecar returns. Task 357 owns
-service-owned chunk planning, checkpointed chunk execution, and monotonic
-numeric audio progress during active transcription.
+Task 357 hardens the current progress gap by making Sir Convert own chunk
+planning, checkpointed chunk execution, and monotonic numeric audio progress
+during active transcription. The local implementation introduces a clean
+internal sidecar contract transition to `probe-media`, `diarize`,
+`transcribe-chunk`, and `finalize`; deployed Hemma/live tunnel proof for this
+Task 357 contract remains pending until a separate deploy/proof pass records it.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
@@ -304,19 +305,74 @@ Rules:
   `required_secrets_present` are readiness truth fields. Missing or false
   values fail closed before a job can be admitted.
 
-### `POST /transcribe`
+### Chunked Execution Endpoints
 
-The normalized sidecar request receives:
+Task 357 Service API v2 runtime uses the current chunked internal sidecar
+contract. The main service must not use the retired blocking `/transcribe` path
+for `audio -> transcript_bundle` execution.
 
-- one local-upload-derived media or normalized audio file;
-- a structured metadata payload with language intent, diarization mode, speaker
-  hints, duration limits, output schema version, and request-scoped handle;
-- `X-Correlation-ID` for trace correlation.
+#### `POST /probe-media`
 
-The sidecar must return deterministic JSON on success or failure. It must not
-own v2 job ids, artifact keys, artifact retention, user identity, or
-authorization. Cancellation from the main service must stop further sidecar
-work and allow scratch cleanup.
+The request carries one request-scoped local upload handle, language and
+diarization options, duration limits, output schema version, and correlation
+metadata. On success, the sidecar probes duration, normalizes the selected audio
+stream, and returns provider-neutral media metadata:
+
+```json
+{
+  "status": "succeeded",
+  "media": {
+    "duration_seconds": 600.0,
+    "normalized_audio_sha256": "sha256:...",
+    "normalized_audio_handle": "sir-stt-normalized:..."
+  },
+  "runtime_metadata": {
+    "acceleration_used": "rocm",
+    "normalization_profile": "mono_16khz_s16_wav"
+  },
+  "warnings": []
+}
+```
+
+`normalized_audio_handle` is an opaque sidecar-owned capability, not a
+caller-controlled filesystem path. The sidecar must remember the issued handle
+with the `request_handle`, normalized media path, job-scoped scratch directory,
+and `normalized_audio_sha256`.
+
+#### `POST /diarize`
+
+The request carries the original `request_handle`, the opaque
+`normalized_audio.handle`, and the `normalized_audio.sha256` returned by
+`/probe-media`. The sidecar must reject unknown, mismatched, stale, or
+hash-mismatched handles before running diarization. A successful response
+contains global diarization windows for the normalized media, and diarization
+failure remains job failure.
+
+#### `POST /transcribe-chunk`
+
+The request carries the original `request_handle`, the same normalized audio
+handle and SHA-256, and one deterministic chunk window. The sidecar must verify
+the handle and SHA-256 before trimming/transcribing the chunk. A successful
+response contains only that chunk's transcript segments and bounded language
+metadata.
+
+#### `POST /finalize`
+
+The request carries `request_handle`. The sidecar removes the whole
+job-scoped normalized-media directory and untracks all handles for that request
+idempotently. The main service calls finalize on success, terminal failure, and
+cancellation. Sidecar cancel may also finalize internally, but cleanup must
+remain idempotent.
+
+#### `POST /cancel`
+
+Cancellation records the request handle as canceled, stops future sidecar work,
+and triggers the same job-scoped normalized-media cleanup. Repeated cancel or
+finalize calls must be safe.
+
+All sidecar endpoints must return deterministic JSON on success or failure.
+The sidecar must not own v2 job ids, artifact keys, artifact retention, user
+identity, or authorization.
 
 ## Audio Transcription Options
 
@@ -455,14 +511,14 @@ Required audio progress fields:
 | `audio_total_chunks` | `int | null` | Set when chunk plan is known. |
 
 Heartbeat freshness must update at least every `30` seconds while codec,
-transcription, diarization, alignment, or packaging work is active.
+transcription, diarization, alignment, or packaging work is active. Heartbeats
+do not advance numeric audio progress.
 
 ### Checkpoints, Retry, And Cancellation
 
-The first sidecar execution implementation must define deterministic
-duration-based audio chunks before sidecar-backed processing is enabled. Chunk
-checkpoints must record enough metadata to prevent duplicate transcript segment
-persistence on retry:
+The Task 357 sidecar execution implementation defines deterministic
+duration-based audio chunks after probe succeeds. Chunk checkpoints record
+enough metadata to prevent duplicate transcript segment persistence on retry:
 
 - source media hash and normalized audio hash;
 - chunk index, start/end seconds, overlap seconds, and processing profile;
@@ -471,13 +527,20 @@ persistence on retry:
 - alignment validation state.
 
 Final `transcript_json` persistence is allowed only after all chunks complete
-and cross-chunk transcription/diarization alignment validates.
+and cross-chunk transcription/diarization alignment validates. Public numeric
+audio progress advances only after a chunk has been accepted and checkpointed:
+`audio_processed_media_seconds` advances to the accepted chunk's end, and
+`audio_current_chunk_index` reflects the most recently accepted chunk. During a
+blocked active chunk, the stage may remain `transcribing` with fresh heartbeat
+timestamps while numeric progress remains unchanged.
 
-Resume from checkpoint is out of scope for the first STT runtime slice. Cancel
-must be clean and idempotent: the main service stops further chunk scheduling,
-propagates cancellation to the sidecar, then purges incomplete normalized
-audio, sidecar temp chunks, and partial transcript state. Failed or canceled
-jobs must not expose partial transcripts as terminal artifacts.
+Cancel must be clean and idempotent: the main service stops further chunk
+scheduling, propagates cancellation to the sidecar, finalizes the sidecar
+request, then purges incomplete checkpoints and partial transcript state.
+Successful jobs, non-retryable terminal failures, retryable failures that
+become terminal for the current execution attempt, and canceled jobs must not
+leave sidecar-owned normalized media tracked or present on disk. Failed or
+canceled jobs must not expose partial transcripts as terminal artifacts.
 
 Transient retry is allowed only for main-service-classified retryable sidecar
 failures. Replayed work must be idempotent under the v2 request fingerprint and
@@ -582,3 +645,21 @@ It defines and deploys:
 Review 42 accepts this implementation as the runtime authority for the
 canonical JSON core. Story 54 formatter artifacts and downstream
 save/product-delivery work remain separate governed work.
+
+Task 357 local implementation state on 2026-06-11:
+
+- Service API v2 audio transcript runtime uses service-owned chunk planning,
+  global sidecar diarization, chunk transcription, checkpoint replay, and
+  canonical `transcript_json` packaging.
+- The current internal sidecar contract is `/probe-media`, `/diarize`,
+  `/transcribe-chunk`, `/finalize`, and `/cancel`; the main v2 runtime does not
+  use blocking `/transcribe`.
+- Normalized media is represented by an opaque sidecar-issued capability and
+  verified against `request_handle` and SHA-256 before diarization or chunk
+  transcription.
+- The main runtime finalizes sidecar-owned normalized media on success,
+  terminal failure, and cancellation, and suppresses cleanup errors when needed
+  to preserve the original governed terminal error.
+- Local focused proof exists in Task 357 test lanes. Hemma deploy and live
+  tunnel evidence for the chunked progress contract is still pending and must
+  not be inferred from the local test pass.
