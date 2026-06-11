@@ -317,13 +317,18 @@ def test_run_job_returns_when_mark_succeeded_conflicts(monkeypatch, tmp_path: Pa
     runtime = ServiceRuntimeV2(_runtime_config(tmp_path / "service_data"))
     monkeypatch.setattr(runtime.job_store, "claim_queued_job", lambda _job_id: True)
 
-    get_job_responses = iter(
-        [
-            SimpleNamespace(status=JobStatus.QUEUED, source_format=SourceFormatV2.MD),
-            SimpleNamespace(status=JobStatus.RUNNING, source_format=SourceFormatV2.MD),
-        ]
-    )
-    monkeypatch.setattr(runtime, "get_job", lambda _job_id: next(get_job_responses))
+    running_job = SimpleNamespace(status=JobStatus.RUNNING, source_format=SourceFormatV2.MD)
+    get_job_responses = [
+        SimpleNamespace(status=JobStatus.QUEUED, source_format=SourceFormatV2.MD),
+        running_job,
+    ]
+
+    def _get_job(_job_id: str) -> SimpleNamespace:
+        if get_job_responses:
+            return get_job_responses.pop(0)
+        return running_job
+
+    monkeypatch.setattr(runtime, "get_job", _get_job)
     monkeypatch.setattr(runtime.job_store, "update_progress", lambda *args, **kwargs: None)
     monkeypatch.setattr(runtime.job_store, "touch_heartbeat", lambda _job_id: True)
     monkeypatch.setattr(

@@ -157,7 +157,18 @@ As of the 2026-06-11 Review 43 repair pass:
 - Local behavior tests cover public chunk progress, checkpoint replay,
   cancellation cleanup, canonical `transcript_json`, fail-closed alignment,
   sidecar HTTP contract, sidecar handle validation, and sidecar media cleanup.
-- Live Hemma/tunnel proof is still pending and must remain blank until run.
+- Hemma deploy verification passed for revision
+  `fdee238bedc6bb5193910993ce465576d67903f3` with service revision parity:
+  `build/verification/hemma-deploy-verify/report.md`.
+- Live tunnel proof passed for revision
+  `fdee238bedc6bb5193910993ce465576d67903f3`:
+  `build/verification/task-357-live-progress-proof-fdee238/proof.md`.
+  The proof submitted the English two-speaker fixture, observed running
+  `transcribing` progress with `audio_total_media_seconds=675.250667`,
+  `audio_processed_media_seconds=675.250667`,
+  `audio_percent_complete=100.0`, `audio_current_chunk_index=2`, and
+  `audio_total_chunks=3`, then retrieved terminal `transcript_json_v1` with
+  `293` segments.
 
 ## Deliverables
 
@@ -175,36 +186,36 @@ As of the 2026-06-11 Review 43 repair pass:
   and no partial terminal artifacts.
 - [x] Red-first behavior tests for cross-chunk transcript/diarization
   alignment and speaker-label stability.
-- [ ] Focused live Hemma proof showing non-null numeric progress while a job is
+- [x] Focused live Hemma proof showing non-null numeric progress while a job is
   still running, followed by successful `transcript_json` retrieval.
 - [ ] Retained ruthless review artifact accepted after deployed live proof.
 
 ## Acceptance Criteria
 
-- [ ] After media probe/chunk planning succeeds, public job polling exposes
+- [x] After media probe/chunk planning succeeds, public job polling exposes
   non-null `audio_total_media_seconds`, `audio_total_chunks`, and initial
   numeric audio progress without overloading PDF page counters.
-- [ ] During active transcription, `audio_processed_media_seconds` and
+- [x] During active transcription, `audio_processed_media_seconds` and
   `audio_percent_complete` advance monotonically after accepted chunk
   checkpoints. Progress must never advance based only on a heartbeat.
-- [ ] `audio_current_chunk_index` reflects the current or most recently
+- [x] `audio_current_chunk_index` reflects the current or most recently
   accepted chunk according to the documented contract and never exceeds
   `audio_total_chunks - 1`.
-- [ ] `last_heartbeat_at` remains fresh while probe, diarization,
+- [x] `last_heartbeat_at` remains fresh while probe, diarization,
   transcription, alignment, or packaging work is active, even when a chunk is
   long-running and numeric progress does not change.
-- [ ] Global diarization or an approved reconciliation equivalent prevents
+- [x] Global diarization or an approved reconciliation equivalent prevents
   speaker-label drift across chunk boundaries.
-- [ ] Final `transcript_json` remains canonical and is persisted only after all
+- [x] Final `transcript_json` remains canonical and is persisted only after all
   chunk transcript segments validate against diarization/alignment.
-- [ ] Failed or canceled jobs expose no partial transcript artifact and purge
+- [x] Failed or canceled jobs expose no partial transcript artifact and purge
   incomplete normalized media, sidecar temp chunks, checkpoints, and partial
   transcript state according to the retention policy.
-- [ ] Retry and idempotent replay cannot duplicate transcript segments,
+- [x] Retry and idempotent replay cannot duplicate transcript segments,
   diarization windows, checkpoints, or named artifacts.
-- [ ] The sidecar remains internal-only and GPU-required; no main-image STT
+- [x] The sidecar remains internal-only and GPU-required; no main-image STT
   dependencies, direct sidecar ingress, or CPU fallback are introduced.
-- [ ] Live tunnel proof demonstrates running-state polling with non-null audio
+- [x] Live tunnel proof demonstrates running-state polling with non-null audio
   progress before terminal success.
 
 ## Red-First Test Plan
@@ -276,6 +287,6 @@ active transcription through the tunnel.
 ## Checklist
 
 - [x] Local implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated
-- [ ] Live Hemma proof recorded
+- [x] Live Hemma proof recorded

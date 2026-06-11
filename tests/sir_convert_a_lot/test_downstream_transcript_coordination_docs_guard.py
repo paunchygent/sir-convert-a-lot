@@ -63,8 +63,20 @@ def test_downstream_transcript_records_gateway_planning_constraints() -> None:
     assert "Skriptoteket ST-21-07" in story_text
     assert "Gateway-only `/sir-convert/v2/convert` product access" in story_text
     assert "`InternalIdentityContextV1`" in story_text
-    assert "admission-registered planning authority" in story_text
-    assert "not a transcript execution or artifact-delivery surface" in story_text
+    _assert_terms_present(
+        story_text,
+        (
+            "Task 356",
+            "transcript_json",
+            "JSON transcript",
+            "execution authority",
+            "Product UX",
+            "durable transcript saves",
+            "formatter artifacts",
+        ),
+    )
+    assert "admission-registered planning authority" not in story_text
+    assert "not a transcript execution or artifact-delivery surface" not in story_text
     assert "short Sir Convert operational retention" in story_text
     assert "durable Skriptoteket transcript retention" in story_text
     assert "JSON-first durable save" in story_text
@@ -89,7 +101,16 @@ def test_downstream_transcript_links_current_route_delivery_authority() -> None:
 
     assert "governed production-profile rejection has been superseded" in story_text
     assert "`audio -> transcript_bundle` route-admission slice" in story_text
-    assert "before downstream stories may treat transcript delivery as live" in story_text
+    _assert_terms_present(
+        story_text,
+        (
+            "Downstream stories",
+            "JSON transcript delivery",
+            "live Sir Convert runtime authority",
+            "Review 42",
+            "deployed proof",
+        ),
+    )
 
 
 def test_audio_contract_initial_request_shape_is_admissible() -> None:
@@ -117,6 +138,11 @@ def _frontmatter(value: str) -> str:
     if frontmatter_end == -1:
         raise AssertionError("Expected story document frontmatter to be closed.")
     return value[:frontmatter_end]
+
+
+def _assert_terms_present(text: str, terms: tuple[str, ...]) -> None:
+    missing_terms = [term for term in terms if term not in text]
+    assert missing_terms == []
 
 
 def _json_block_after_heading(markdown: str, heading: str) -> dict[str, object]:
