@@ -104,6 +104,42 @@ def test_successful_chunks_use_global_diarization_for_stable_speaker_labels(
     assert transcript["diarization"]["status"] == "succeeded"
 
 
+def test_segment_in_diarization_gap_uses_nearest_global_speaker_label(
+    tmp_path: Path,
+) -> None:
+    job = stored_audio_job(tmp_path)
+    sidecar = _AlignmentSidecar(
+        diarization_windows=[
+            {
+                "window_id": "speaker-window-0001",
+                "start_seconds": 0.0,
+                "end_seconds": 250.0,
+                "speaker_label": "SPEAKER_00",
+            },
+            {
+                "window_id": "speaker-window-0002",
+                "start_seconds": 350.0,
+                "end_seconds": 600.0,
+                "speaker_label": "SPEAKER_00",
+            },
+        ]
+    )
+
+    execute_audio_transcript_bundle_job(
+        job=job,
+        config=ServiceConfig(api_key=API_KEY, data_root=tmp_path / "service_data"),
+        sidecar=sidecar,
+        progress_callback=None,
+        is_cancel_requested=lambda: False,
+    )
+
+    transcript = json.loads(job.artifact_path.read_text(encoding="utf-8"))
+    assert [segment["speaker_label"] for segment in transcript["segments"]] == [
+        "SPEAKER_00",
+        "SPEAKER_00",
+    ]
+
+
 def test_final_json_is_not_persisted_when_cross_chunk_alignment_fails(
     tmp_path: Path,
 ) -> None:

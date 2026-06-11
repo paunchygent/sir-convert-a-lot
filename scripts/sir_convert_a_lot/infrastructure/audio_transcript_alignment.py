@@ -31,6 +31,7 @@ PLACEHOLDER_SPEAKER_LABELS = frozenset(
         "unknown",
     }
 )
+MAX_NEAREST_SPEAKER_GAP_SECONDS = 120.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,7 +144,34 @@ def _window_for_segment(
     for window in windows:
         if window.start_seconds <= midpoint <= window.end_seconds:
             return window
+    overlapping_windows = sorted(
+        ((_overlap_seconds(start_seconds, end_seconds, window), window) for window in windows),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    best_overlap_seconds, best_overlap_window = overlapping_windows[0]
+    if best_overlap_seconds > 0.0:
+        return best_overlap_window
+    nearest_window = min(windows, key=lambda window: _midpoint_gap_seconds(midpoint, window))
+    if _midpoint_gap_seconds(midpoint, nearest_window) <= MAX_NEAREST_SPEAKER_GAP_SECONDS:
+        return nearest_window
     raise _service_error(AudioTranscriptionErrorCode.SEGMENT_ALIGNMENT_FAILED)
+
+
+def _overlap_seconds(
+    start_seconds: float,
+    end_seconds: float,
+    window: DiarizationWindow,
+) -> float:
+    return max(0.0, min(end_seconds, window.end_seconds) - max(start_seconds, window.start_seconds))
+
+
+def _midpoint_gap_seconds(midpoint_seconds: float, window: DiarizationWindow) -> float:
+    if midpoint_seconds < window.start_seconds:
+        return window.start_seconds - midpoint_seconds
+    if midpoint_seconds > window.end_seconds:
+        return midpoint_seconds - window.end_seconds
+    return 0.0
 
 
 def _required_mapping(payload: Mapping[str, object], key: str) -> Mapping[str, object]:
