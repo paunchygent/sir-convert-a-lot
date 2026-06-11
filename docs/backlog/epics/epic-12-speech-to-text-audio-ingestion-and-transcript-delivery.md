@@ -21,6 +21,7 @@ related:
   - docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md
   - docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md
   - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
+  - docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md
@@ -147,6 +148,10 @@ Planned story slices:
   is the active Story 53 runtime-execution slice for sidecar-backed execution
   and canonical `transcript_json` persistence. Formatter artifacts and
   downstream product UI/storage remain later lanes.
+- `docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md`
+  is the planned hardening slice for service-owned chunk planning,
+  checkpoints, and truthful non-null audio progress while long-running
+  transcription jobs are still active.
 
 ## Acceptance Criteria
 

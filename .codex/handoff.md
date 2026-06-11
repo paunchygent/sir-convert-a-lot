@@ -47,6 +47,7 @@ durable implementation authority lives in governed docs.
   `d036271155d0dde005e12a9a228ca0f6a13dd848` passed Hemma deploy verification
   and live English/Swedish `transcript_json` proof. Bounded evidence is in Task
   356 and Review 42.
+- Task 357 is proposed for STT chunk progress/checkpoint hardening.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -163,6 +164,7 @@ formula evidence with VLM output.
    been proven live through the product path. Next STT product work is
    Skriptoteket durable transcript saves from canonical `transcript_json`;
    Sir Convert Story 54 formatter artifacts remain a separate follow-up.
+1. Implement Task 357 before claiming 120-minute STT progress UX is complete.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task

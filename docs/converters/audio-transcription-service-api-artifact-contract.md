@@ -39,13 +39,19 @@ This is the active route-specific JSON-core contract. Task 355 registers
 Service API v2 create-job admission for `audio -> transcript_bundle`, including
 request-shape, owner-scope, local-upload, public-option, capacity,
 GPU-required, and `retention.pin=false` checks. Task 356 deploys and Review 42
-accepts the first sidecar-backed runtime execution slice for audio progress,
+accepts the first sidecar-backed runtime execution slice for stage heartbeat,
 cancellation cleanup, and canonical `transcript_json` persistence. Formatter
 outputs remain blocked until later governed Story 54 tasks land.
 
 Task 356's accepted runtime authority covers canonical JSON transcript
 delivery only. Formatter artifacts remain blocked until later formatter
 strategies over the JSON core are accepted.
+
+Task 357 is the planned hardening task for the current in-flight progress gap:
+after Task 356, a job can heartbeat truthfully at stage `transcribing` while
+numeric audio progress remains `null` until the sidecar returns. Task 357 owns
+service-owned chunk planning, checkpointed chunk execution, and monotonic
+numeric audio progress during active transcription.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`

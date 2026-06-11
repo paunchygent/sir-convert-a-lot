@@ -14,6 +14,7 @@ related:
   - docs/backlog/tasks/task-354-provision-pyannote-diarization-access-and-replacement-decision-for-stt-sidecar.md
   - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
   - docs/backlog/tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md
+  - docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md
   - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/backlog/reviews/review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
@@ -51,8 +52,11 @@ artifacts for the English two-speaker and Swedish one-speaker fixtures on
 The story proceeded through small runtime tasks. Task 355 delivered Service API
 v2 route admission. Task 356 delivered sidecar execution, progress,
 cancellation cleanup, retry-safe failure handling, retention-safe artifact
-behavior, and canonical `transcript_json` artifact persistence. Formatter
-artifacts and downstream UI/storage lanes remain separate governed work.
+behavior, and canonical `transcript_json` artifact persistence. Task 357 is
+the planned hardening follow-up for in-flight numeric audio progress and
+checkpointed chunk execution; it does not change Task 356's accepted JSON
+runtime authority. Formatter artifacts and downstream UI/storage lanes remain
+separate governed work.
 
 Current runtime truth:
 
@@ -62,6 +66,10 @@ Current runtime truth:
 - Task 356 turns queued jobs into succeeded jobs with canonical
   `transcript_json` through the accepted FasterWhisper ROCm plus pyannote
   sidecar profile. Review 42 accepted the deployed proof and remediation.
+- Current live polling truth after Task 356: a running job can show a fresh
+  `last_heartbeat_at` and stage `transcribing` while numeric audio progress
+  fields remain `null` until the blocking sidecar call returns. Task 357 owns
+  service-owned chunk planning, checkpoints, and monotonic in-flight progress.
 - `JobSpecV2` accepts the governed day-one audio transcription request shape,
   including Swedish/English auto language selection, exact speaker count, and
   min/max speaker range hints.
@@ -141,3 +149,4 @@ product save semantics remain later stories.
 - [x] Runtime tests and validations complete
 - [x] Runtime docs synchronized
 - [x] Task 356 retained review accepted
+- [ ] Task 357 chunk progress/checkpoint hardening planned
