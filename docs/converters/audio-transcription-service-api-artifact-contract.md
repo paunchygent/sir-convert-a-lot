@@ -51,8 +51,9 @@ Task 357 hardens the current progress gap by making Sir Convert own chunk
 planning, checkpointed chunk execution, and monotonic numeric audio progress
 during active transcription. The local implementation introduces a clean
 internal sidecar contract transition to `probe-media`, `diarize`,
-`transcribe-chunk`, and `finalize`; deployed Hemma/live tunnel proof for this
-Task 357 contract remains pending until a separate deploy/proof pass records it.
+`transcribe-chunk`, and `finalize`; Review 43 accepts deployed Hemma/live
+tunnel proof for this Task 357 contract at revision
+`00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa`.
 
 The retained readiness review at
 `docs/backlog/reviews/review-25-ruthless-review-of-adr-0013-speech-to-text-sidecar-and-audio-ingestion-governance.md`
@@ -661,5 +662,7 @@ Task 357 local implementation state on 2026-06-11:
   terminal failure, and cancellation, and suppresses cleanup errors when needed
   to preserve the original governed terminal error.
 - Local focused proof exists in Task 357 test lanes. Hemma deploy and live
-  tunnel evidence for the chunked progress contract is still pending and must
-  not be inferred from the local test pass.
+  tunnel evidence for the chunked progress contract is retained at
+  `build/verification/hemma-deploy-verify/report.md` and
+  `build/verification/task-357-live-progress-proof-00f9d7a/proof.md`; Review 43
+  accepted this deployed proof on 2026-06-11.

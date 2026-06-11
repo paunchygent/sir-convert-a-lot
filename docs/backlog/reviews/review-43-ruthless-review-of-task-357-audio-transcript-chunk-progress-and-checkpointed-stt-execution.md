@@ -16,7 +16,7 @@ related:
   - docs/converters/audio-transcription-service-api-artifact-contract.md
 labels:
   - review
-  - changes-requested
+  - approved
   - task-357
   - stt
   - audio
@@ -82,7 +82,7 @@ Structured review artifact for implementation or readiness checks.
 
 ## Findings
 
-1. [ ] `high` - The new chunk endpoints accept arbitrary normalized-audio
+1. [x] `high` - The new chunk endpoints accept arbitrary normalized-audio
    paths instead of proving the handle was issued by `/probe-media` for the
    same request.
 
@@ -135,7 +135,20 @@ Structured review artifact for implementation or readiness checks.
      Run:
      `pdm run pytest-root tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py`.
 
-1. [ ] `high` - Sidecar normalized media is not purged on successful or failed
+   Re-review disposition on 2026-06-11:
+   Resolved. `SttSidecarRuntime` now delegates normalized media capability
+   state to `NormalizedAudioStore`; `/probe-media` returns an opaque
+   `sir-stt-normalized:...` handle and SHA-256, while `/diarize` and
+   `/transcribe-chunk` resolve the handle through the store, require the same
+   `request_handle`, verify the recorded SHA against the on-disk normalized
+   audio, and reject unknown, wrong-request, wrong-SHA, or finalized handles.
+   The proof is in
+   `tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py`:
+   `test_sidecar_runtime_accepts_only_probe_issued_normalized_handles`,
+   `test_sidecar_runtime_rejects_unknown_mismatched_or_wrong_sha_handles`, and
+   `test_sidecar_runtime_rejects_stale_finalized_handles`.
+
+1. [x] `high` - Sidecar normalized media is not purged on successful or failed
    terminal jobs, so Task 357 leaves retained user media outside the Service API
    artifact lifecycle.
 
@@ -181,7 +194,20 @@ Structured review artifact for implementation or readiness checks.
    no `transcript_json` artifact. Run:
    `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcript_cancellation_v2.py tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py`.
 
-1. [ ] `blocker` - Required Task 357 docs and live proof are missing, so the
+   Re-review disposition on 2026-06-11:
+   Resolved. The sidecar exposes `/finalize`; `cancel` also finalizes
+   internally. The main Service API v2 audio runtime calls sidecar finalize
+   before writing a successful terminal artifact, on terminal `ServiceError`
+   failure while preserving the original governed error, and during
+   cancellation cleanup. `NormalizedAudioStore.finalize` untracks all handles
+   for the request and removes the whole job-scoped normalized-media directory.
+   The proof is in
+   `test_audio_success_finalizes_sidecar_normalized_media`,
+   `test_audio_terminal_failure_finalizes_sidecar_normalized_media`,
+   `test_cancellation_after_checkpoint_stops_chunks_and_purges_partial_state`,
+   and `test_sidecar_runtime_cancel_removes_job_scoped_normalized_media`.
+
+1. [x] `blocker` - Required Task 357 docs and live proof are missing, so the
    task cannot be approved for closure even though focused local tests pass.
 
    Evidence:
@@ -229,33 +255,48 @@ Structured review artifact for implementation or readiness checks.
    `git diff --check`,
    plus the focused live Hemma proof command or retained proof artifact.
 
+   Re-review disposition on 2026-06-11:
+   Resolved for Review 43 acceptance. Current `main` is
+   `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa`, matching `origin/main`.
+   Hemma deploy verification passed with expected, remote, and service
+   revisions all equal to that revision in
+   `build/verification/hemma-deploy-verify/report.md`. Fresh live tunnel proof
+   in `build/verification/task-357-live-progress-proof-00f9d7a/proof.md`
+   records service revision `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa`,
+   terminal status `succeeded`, running-state audio progress before terminal
+   success (`audio_total_media_seconds=675.250667`,
+   `audio_processed_media_seconds=600.0`,
+   `audio_percent_complete=88.85589149666104`,
+   `audio_current_chunk_index=1`, `audio_total_chunks=3`), and successful
+   `transcript_json_v1` retrieval with `293` segments. Task 357 records the
+   chunk/checkpoint contract and live-proof lane. The stale converter-contract
+   wording that still said deploy/live evidence was pending was removed during
+   close-out after this re-review.
+
 ## Decision
 
-changes_requested
+approved
 
 ## Response
 
-CHANGES REQUESTED for Task 357.
+APPROVED for Task 357 after post-deploy re-review.
 
-The implementation is directionally on the right side of the user's correction:
-the main audio runtime now calls `/probe-media`, `/diarize`, and
-`/transcribe-chunk`, and code search did not find an active main-service
-fallback to the retired blocking `/transcribe` endpoint. The focused local
-suite is also green.
+Re-review confirms the three original Review 43 findings are resolved in the
+current deployed `main` state. The implementation is a clean internal sidecar
+contract transition: the main audio runtime calls `/probe-media`, `/diarize`,
+`/transcribe-chunk`, `/finalize`, and `/cancel`; no active Service API v2 audio
+runtime fallback to the retired blocking `/transcribe` path was found.
 
-Approval is still blocked. The new sidecar split does not yet make normalized
-media handles an enforced contract, the sidecar does not purge normalized user
-media on success/failure terminal paths, and the required docs-as-code/live
-proof state is incomplete.
+Sidecar normalized media is now an opaque, request-bound, SHA-verified
+capability; terminal success/failure/cancel paths finalize sidecar media; local
+focused tests and full reported quality gates are green; and current deployed
+Hemma proof at `00f9d7a` shows running-state non-null numeric audio progress
+before successful `transcript_json_v1` retrieval.
 
 ## Follow-up Actions
 
-1. Fix the sidecar normalized-handle validation and cleanup findings in the
-   Task 357 implementation.
-1. Update the route contract and Task 357 docs, then run docs synchronization
-   and validators.
-1. Produce retained live Hemma proof for running-state non-null audio progress
-   followed by successful `transcript_json` retrieval.
+1. No blocking Task 357 follow-up remains for Review 43 acceptance.
+1. No non-blocking Task 357 docs cleanup remains after close-out.
 
 ## Validation
 
@@ -281,10 +322,28 @@ proof state is incomplete.
   and `git diff --check`.
 - Not run before this review decision: `coverage-gate`, live Hemma proof, and
   full implementation close-out gates.
+- Re-review pass on 2026-06-11 confirmed current branch state:
+  `main...origin/main` clean at
+  `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa`.
+- Re-review focused tests passed:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcript_alignment_v2.py tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py tests/sir_convert_a_lot/test_audio_transcript_progress_v2.py tests/sir_convert_a_lot/test_audio_transcript_checkpointing_v2.py tests/sir_convert_a_lot/test_audio_transcript_cancellation_v2.py tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_downstream_transcript_coordination_docs_guard.py tests/sir_convert_a_lot/test_runtime_engine_v2.py::test_run_job_returns_when_mark_succeeded_conflicts`
+  with `33 passed`.
+- Re-review inspected deployed proof:
+  `build/verification/hemma-deploy-verify/report.md` and
+  `build/verification/task-357-live-progress-proof-00f9d7a/proof.md`.
+- Implementer-reported full close-out evidence reviewed:
+  `pdm run coverage-gate` passed with `1668 passed`, `6 skipped`, coverage
+  `95.61%`; `pdm run format-all` clean; `pdm run lint-fix` all checks passed;
+  `pdm run typecheck-all` succeeded for `866` source files;
+  `pdm run docs-sync`, `pdm run docs-validate`, `pdm run skills-validate`,
+  `pdm run handoff-validate`, and `git diff --check` passed.
 
 ## Completion
 
 Initial review completed on 2026-06-11 with `changes_requested`.
+Post-deploy re-review completed on 2026-06-11 with `approved` after deployed
+revision `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa` passed live running-progress
+proof and all original findings were resolved.
 
 ## Checklist
 

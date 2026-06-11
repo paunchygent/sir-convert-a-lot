@@ -2,7 +2,7 @@
 id: task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution
 title: Harden audio transcript chunk progress and checkpointed STT execution
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-11'
 last_updated: '2026-06-11'
@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md
   - docs/backlog/reviews/review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence.md
+  - docs/backlog/reviews/review-43-ruthless-review-of-task-357-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
   - docs/converters/audio-transcription-service-api-artifact-contract.md
 labels:
@@ -158,17 +159,19 @@ As of the 2026-06-11 Review 43 repair pass:
   cancellation cleanup, canonical `transcript_json`, fail-closed alignment,
   sidecar HTTP contract, sidecar handle validation, and sidecar media cleanup.
 - Hemma deploy verification passed for revision
-  `fdee238bedc6bb5193910993ce465576d67903f3` with service revision parity:
+  `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa` with service revision parity:
   `build/verification/hemma-deploy-verify/report.md`.
 - Live tunnel proof passed for revision
-  `fdee238bedc6bb5193910993ce465576d67903f3`:
-  `build/verification/task-357-live-progress-proof-fdee238/proof.md`.
+  `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa`:
+  `build/verification/task-357-live-progress-proof-00f9d7a/proof.md`.
   The proof submitted the English two-speaker fixture, observed running
   `transcribing` progress with `audio_total_media_seconds=675.250667`,
-  `audio_processed_media_seconds=675.250667`,
-  `audio_percent_complete=100.0`, `audio_current_chunk_index=2`, and
+  `audio_processed_media_seconds=600.0`,
+  `audio_percent_complete=88.85589149666104`,
+  `audio_current_chunk_index=1`, and
   `audio_total_chunks=3`, then retrieved terminal `transcript_json_v1` with
   `293` segments.
+- Retained Review 43 approved Task 357 after deployed live proof.
 
 ## Deliverables
 
@@ -188,7 +191,7 @@ As of the 2026-06-11 Review 43 repair pass:
   alignment and speaker-label stability.
 - [x] Focused live Hemma proof showing non-null numeric progress while a job is
   still running, followed by successful `transcript_json` retrieval.
-- [ ] Retained ruthless review artifact accepted after deployed live proof.
+- [x] Retained ruthless review artifact accepted after deployed live proof.
 
 ## Acceptance Criteria
 
