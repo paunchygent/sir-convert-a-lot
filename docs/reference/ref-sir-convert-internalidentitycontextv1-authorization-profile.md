@@ -4,7 +4,7 @@ id: REF-sir-convert-internalidentitycontextv1-authorization-profile
 title: Sir Convert InternalIdentityContextV1 Authorization Profile
 status: active
 created: 2026-04-19
-updated: 2026-05-13
+updated: 2026-06-13
 owners:
   - platform
 tags:
@@ -59,6 +59,52 @@ Verification must fail closed unless all canonical checks pass:
 - non-empty required fields from the HuleEdu contract;
 - valid `iat` and `exp` within the accepted skew;
 - replay protection for persisted or reused contexts where required.
+
+## HuleEdu Trust Profile Consumption
+
+Sir Convert runtime configuration consumes HuleEdu's sanitized
+`InternalIdentityContextV1` trust profile before verifier use. The profile is
+not signing material and must not contain private keys, signed headers,
+credentials, or conversion payloads.
+
+Governed environment surfaces:
+
+- `HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON`: sanitized profile JSON emitted
+  by HuleEdu.
+- `HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_PATH`: optional file path containing
+  the same sanitized JSON. Configure either JSON or path, not both.
+- `HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY` or
+  `HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH`: active PEM public key material
+  loaded through the existing verifier key surface.
+
+The profile fields are typed and verifier-bound:
+
+- `environment_id`: `local-auth-integration` or `hemma-production`;
+- `issuer`: `api_gateway_service`;
+- `audience`: `sir-convert-a-lot`;
+- `key_id`: `gateway-identity-rs256-v1`;
+- `trusted_public_key_source`: sanitized HuleEdu source description;
+- `spki_sha256_fingerprint`: canonical DER SubjectPublicKeyInfo SHA-256
+  fingerprint;
+- `ttl_seconds`: maximum accepted context TTL;
+- `skew_seconds`: accepted clock skew.
+
+When a trust profile is configured, Sir Convert loads the active public key,
+computes its canonical DER SPKI SHA-256 fingerprint, and compares that value to
+the profile fingerprint. PEM file-byte hashes are not accepted as substitutes.
+Missing key material, fingerprint mismatch, mismatched legacy issuer/audience/
+key/TTL/skew env overrides, unknown key id, invalid signature, wrong issuer,
+wrong audience, and expired contexts fail closed.
+
+The Task 361 acceptance smoke is intentionally content-safe. Because HuleEdu's
+retained upstream artifact is a sanitized profile rather than retained live
+signed headers, Sir Convert proves the closest truthful downstream boundary by
+loading a HuleEdu-shaped sanitized profile plus configured test public key,
+signing a content-safe HuleEdu-contract probe with test key material, and
+verifying that probe through `require_verified_internal_identity_v2`. Retained
+evidence may include only sanitized profile metadata and command outcomes, not
+the signed context header, signature header, private key material, credentials,
+or conversion content.
 
 `X-API-Key` may remain as a transport credential during migration, but it is
 not job ownership, artifact ownership, user identity, tenant identity, or proof

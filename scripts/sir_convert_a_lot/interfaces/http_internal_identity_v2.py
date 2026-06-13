@@ -23,11 +23,12 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from starlette.datastructures import Headers
 
+from scripts.sir_convert_a_lot.infrastructure.pem_public_key_config import rsa_public_key_from_pem
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 
 INTERNAL_IDENTITY_CONTEXT_VERSION_HEADER = "X-HuleEdu-Identity-Context-Version"
@@ -143,6 +144,9 @@ def require_verified_internal_identity_v2(
         raise _identity_error("missing_internal_identity_key_id")
     if not signature_value.startswith(_INTERNAL_IDENTITY_SIGNATURE_PREFIX):
         raise _identity_error("invalid_internal_identity_signature_format")
+    expected_key_id = _configured_trust_profile_key_id(config)
+    if expected_key_id is not None and normalized_key_id != expected_key_id:
+        raise _identity_error("unknown_internal_identity_key_id")
 
     public_key = config.internal_identity_public_keys.get(normalized_key_id)
     if public_key is None:
@@ -187,10 +191,10 @@ def _b64url_decode(value: str) -> bytes:
 
 @lru_cache(maxsize=32)
 def _load_public_key(public_key_text: str) -> rsa.RSAPublicKey:
-    loaded_key = serialization.load_pem_public_key(public_key_text.encode("utf-8"))
-    if not isinstance(loaded_key, rsa.RSAPublicKey):
-        raise ValueError("Internal identity verification key must be an RSA public key")
-    return loaded_key
+    return rsa_public_key_from_pem(
+        public_key_text,
+        field_name="internal_identity_public_key",
+    )
 
 
 def _verify_rs256_signature(
@@ -232,21 +236,56 @@ def _validate_context_claims(
 ) -> None:
     if context.context_version != _INTERNAL_IDENTITY_CONTEXT_VERSION:
         raise _identity_error("unsupported_internal_identity_payload_version")
-    if context.iss != config.internal_identity_expected_issuer:
+    if context.iss != _configured_expected_issuer(config):
         raise _identity_error("invalid_internal_identity_issuer")
-    if context.aud != config.internal_identity_expected_audience:
+    if context.aud != _configured_expected_audience(config):
         raise _identity_error("invalid_internal_identity_audience")
     if context.exp < context.iat:
         raise _identity_error("invalid_internal_identity_timestamps")
-    if (context.exp - context.iat) > config.internal_identity_ttl_seconds:
+    if (context.exp - context.iat) > _configured_ttl_seconds(config):
         raise _identity_error("internal_identity_ttl_exceeded")
 
     now_ts = int(time.time())
-    skew_seconds = config.internal_identity_allowed_clock_skew_seconds
+    skew_seconds = _configured_allowed_clock_skew_seconds(config)
     if context.iat > now_ts + skew_seconds:
         raise _identity_error("internal_identity_issued_in_future")
     if context.exp <= now_ts - skew_seconds:
         raise _identity_error("internal_identity_expired")
+
+
+def _configured_trust_profile_key_id(config: ServiceConfig) -> str | None:
+    trust_profile = config.internal_identity_trust_profile
+    if trust_profile is None:
+        return None
+    return trust_profile.key_id
+
+
+def _configured_expected_issuer(config: ServiceConfig) -> str:
+    trust_profile = config.internal_identity_trust_profile
+    if trust_profile is not None:
+        return trust_profile.issuer
+    return config.internal_identity_expected_issuer
+
+
+def _configured_expected_audience(config: ServiceConfig) -> str:
+    trust_profile = config.internal_identity_trust_profile
+    if trust_profile is not None:
+        return trust_profile.audience
+    return config.internal_identity_expected_audience
+
+
+def _configured_ttl_seconds(config: ServiceConfig) -> int:
+    trust_profile = config.internal_identity_trust_profile
+    if trust_profile is not None:
+        return trust_profile.ttl_seconds
+    return config.internal_identity_ttl_seconds
+
+
+def _configured_allowed_clock_skew_seconds(config: ServiceConfig) -> int:
+    trust_profile = config.internal_identity_trust_profile
+    if trust_profile is not None:
+        return trust_profile.allowed_clock_skew_seconds
+    return config.internal_identity_allowed_clock_skew_seconds
 
 
 def _owner_scope_for_context(context: InternalIdentityContextV1) -> str:

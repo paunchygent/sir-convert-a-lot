@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
     PublicExamConverterAccessProfileV2,
@@ -25,10 +26,29 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     disabled_structured_llm_runtime_config,
 )
 
+HuleEduInternalIdentityEnvironmentId = Literal["local-auth-integration", "hemma-production"]
+HuleEduInternalIdentityIssuer = Literal["api_gateway_service"]
+HuleEduInternalIdentityAudience = Literal["sir-convert-a-lot"]
+HuleEduInternalIdentityKeyId = Literal["gateway-identity-rs256-v1"]
+
 
 def utc_now() -> datetime:
     """Return the current UTC timestamp."""
     return datetime.now(UTC)
+
+
+@dataclass(frozen=True)
+class HuleEduInternalIdentityTrustRuntimeConfig:
+    """Typed HuleEdu signing authority trusted by the runtime verifier."""
+
+    environment_id: HuleEduInternalIdentityEnvironmentId
+    issuer: HuleEduInternalIdentityIssuer
+    audience: HuleEduInternalIdentityAudience
+    key_id: HuleEduInternalIdentityKeyId
+    trusted_public_key_source: str
+    spki_sha256_fingerprint: str
+    ttl_seconds: int
+    allowed_clock_skew_seconds: int
 
 
 @dataclass(frozen=True)
@@ -86,6 +106,7 @@ class ServiceConfig:
     internal_identity_expected_issuer: str = "api_gateway_service"
     internal_identity_ttl_seconds: int = 60
     internal_identity_allowed_clock_skew_seconds: int = 5
+    internal_identity_trust_profile: HuleEduInternalIdentityTrustRuntimeConfig | None = None
     public_exam_converter_access: PublicExamConverterRuntimeAccessConfig | None = None
     exam_authoring_source_state_signature_secret: str | None = None
     structured_llm: StructuredLLMRuntimeConfig = field(

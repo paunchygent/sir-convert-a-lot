@@ -88,6 +88,10 @@ def test_local_compose_uses_cpu_only_local_service_contract() -> None:
     assert env_map["HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH"] == (
         "/run/huleedu/internal-identity/gateway-internal-identity-public-key.pem"
     )
+    assert env_map["HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON"] == (
+        "${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?"
+        "Set sanitized HuleEdu local-auth-integration internal identity trust profile JSON}"
+    )
     assert "VIRTUAL_HOST" not in env_map
     assert "LETSENCRYPT_HOST" not in env_map
 

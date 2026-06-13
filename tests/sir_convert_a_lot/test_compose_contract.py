@@ -158,6 +158,10 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert env_map["HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH"] == (
         "/run/secrets/huleedu-gateway-internal-identity-public-key.pem"
     )
+    assert env_map["HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON"] == (
+        "${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?"
+        "Set sanitized HuleEdu hemma-production internal identity trust profile JSON}"
+    )
     assert env_map["SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED"] == (
         "${SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED:-0}"
     )
@@ -255,6 +259,10 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
     )
     assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"] == "easyocr"
     assert env_map["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] == ("${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}")
+    assert env_map["HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON"] == (
+        "${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?"
+        "Set sanitized HuleEdu hemma-production internal identity trust profile JSON}"
+    )
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
     assert service.get("group_add") == [
