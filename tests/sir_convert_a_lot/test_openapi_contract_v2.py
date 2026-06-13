@@ -131,6 +131,9 @@ def test_service_api_v2_consumer_components_are_published() -> None:
     for component_name in (
         "AudioDiarizationOptionsV2",
         "AudioTranscriptionOptionsV2",
+        "SpeakerLabelOverrideV2",
+        "TranscriptFormatterReplayOptionsV2",
+        "TranscriptFormatterRequestedArtifactV2",
         "JobSpecV2",
         "DigiExamMigrationOptionsV2",
         "DigiExamIngestionOverlay",
@@ -169,7 +172,16 @@ def test_service_api_v2_consumer_components_are_published() -> None:
     assert isinstance(source_format_enum, list)
     assert isinstance(output_format_enum, list)
     assert "audio" in source_format_enum
+    assert "transcript_json" in source_format_enum
     assert "transcript_bundle" in output_format_enum
+
+    replay_options = _mapping(schemas["TranscriptFormatterReplayOptionsV2"])
+    replay_properties = _mapping(replay_options["properties"])
+    replay_schema_version = _mapping(replay_properties["schema_version"])
+    assert replay_options["additionalProperties"] is False
+    assert replay_schema_version["const"] == "transcript_formatter_replay_v1"
+    requested_artifacts = _mapping(schemas["TranscriptFormatterRequestedArtifactV2"])
+    assert requested_artifacts["enum"] == ["txt", "md", "vtt", "srt"]
 
     readiness_report = _mapping(schemas["DigiExamTargetReadinessReportV1"])
     readiness_properties = _mapping(readiness_report["properties"])

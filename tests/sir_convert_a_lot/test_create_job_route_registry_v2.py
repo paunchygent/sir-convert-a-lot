@@ -7,7 +7,8 @@ Purpose:
 Relationships:
     - Exercises `domain.service_routes_v2` route-policy metadata.
     - Exercises `interfaces.http_create_job_routes_v2` registry and handlers.
-    - Complements public create-job API tests without adding new runtime routes.
+    - Complements public create-job API tests with exact route registration
+      expectations.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ import scripts.sir_convert_a_lot.domain.service_routes_v2 as service_routes_v2
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
     AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
     DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
+    TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2,
     RouteKeyV2,
     RoutePolicyV2,
 )
@@ -39,6 +41,7 @@ from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     CreateJobCompanionPartsV2,
     DefaultCreateJobRouteHandlerV2,
     DigiExamMigrationCreateJobRouteHandlerV2,
+    TranscriptFormatterReplayCreateJobRouteHandlerV2,
     build_create_job_route_registry_v2,
 )
 
@@ -50,6 +53,7 @@ def test_create_job_registry_registers_current_route_policy_keys_only() -> None:
         *DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2,
         DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
         AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
+        TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2,
     )
     assert all(
         key.source_format.value != "examnet_artifact"
@@ -66,10 +70,12 @@ def test_create_job_registry_resolves_default_and_digiexam_handlers() -> None:
     )
     digiexam_handler = registry.require_handler(DIGIEXAM_MIGRATION_ROUTE_KEY_V2)
     audio_handler = registry.require_handler(AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2)
+    replay_handler = registry.require_handler(TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2)
 
     assert isinstance(default_handler, DefaultCreateJobRouteHandlerV2)
     assert isinstance(digiexam_handler, DigiExamMigrationCreateJobRouteHandlerV2)
     assert isinstance(audio_handler, AudioTranscriptionAdmissionCreateJobRouteHandlerV2)
+    assert isinstance(replay_handler, TranscriptFormatterReplayCreateJobRouteHandlerV2)
 
 
 def test_create_job_registry_does_not_auto_register_supported_policy_without_handler(

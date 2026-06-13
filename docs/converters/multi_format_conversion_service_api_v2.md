@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-06-09
+updated: 2026-06-13
 owners:
   - platform
 tags:
@@ -158,6 +158,14 @@ contracts:
   optional product-neutral `txt`, `md`, `vtt`, and `srt` formatter artifacts
   over canonical JSON. See ADR-0013 and
   `docs/converters/audio-transcription-service-api-artifact-contract.md`.
+- `transcript_json -> transcript_bundle` is implemented for stateless
+  formatter replay over one uploaded canonical `transcript_json_v1` payload.
+  It accepts strict `transcript_formatter_options`, exact lowercase requested
+  artifact values, and case-sensitive exact speaker inventory keys; rejects
+  replay `pdf_options` and `execution`; applies speaker display names only to
+  formatter projection; emits requested `transcript_txt`, `transcript_md`,
+  `transcript_vtt`, and `transcript_srt`; and does not emit a new
+  `transcript_json` artifact.
 
 Important:
 
@@ -173,6 +181,8 @@ Important:
 - For audio transcription, the first stable output authority is structured
   JSON; `txt`, `md`, `vtt`, and `srt` are later formatter artifacts over that
   JSON core.
+- Formatter replay over saved transcript JSON is independent from STT,
+  diarization, alignment, sidecar, codec, and source-audio execution.
 - The audio route contract defines STT sidecar health/capability endpoints,
   fail-closed diarization, untrusted media limits, short retention classes, and
   route-specific audio progress fields.

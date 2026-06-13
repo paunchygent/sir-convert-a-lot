@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-06-09
+updated: 2026-06-13
 owners:
   - platform
 tags:
@@ -116,6 +116,7 @@ states:
 | --- | --- | --- | --- | --- |
 | `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | Runtime route | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
 | `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Runtime JSON execution plus optional formatter artifacts | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+| `transcript_json` | `transcript_bundle` | `transcript_json -> transcript_bundle` | Runtime formatter replay over saved canonical JSON plus speaker overlays | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
 `/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion
@@ -127,6 +128,17 @@ ADR-0013 boundary. Task 356 provides the first runtime surface for canonical
 canonical JSON. Product-owned durable transcript saves, search, sharing,
 teacher-facing labels, and workflow-specific derivatives remain downstream
 work.
+
+For overlay-aware replay, HuleEdu forwards the same v2 job lifecycle through
+`/sir-convert/v2/convert/jobs*` and must not rewrite Sir Convert result,
+manifest, or artifact responses. Skriptoteket submits saved canonical
+`transcript_json_v1` plus `transcript_formatter_options`, owns durable speaker
+overlay intent and product filenames, and consumes only the returned
+`transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`
+artifacts. Replay artifact requests use exact lowercase values, speaker overlay
+labels are exact case-sensitive canonical inventory keys, and replay specs must
+not include `pdf_options` or `execution`. Replay does not return a
+`transcript_json` named artifact.
 
 ## PDF Page CSS Modes
 

@@ -20,13 +20,18 @@ related:
   - docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md
   - docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md
   - docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md
+  - docs/backlog/stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md
   - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
   - docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md
   - docs/backlog/tasks/task-358-implement-product-neutral-transcript-formatter-artifacts-over-canonical-json.md
+  - docs/backlog/tasks/task-359-define-transcript-speaker-overlay-formatter-replay-contract.md
+  - docs/backlog/tasks/task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
+  - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-09-expose-transcript-formatter-replay-through-sir-convert-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md
+  - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-08-transcript-speaker-overlays-and-replay-formatter-exports.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
@@ -118,13 +123,22 @@ Planned story slices:
    behavior is stable.
 1. `docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md`
    coordinates HuleEdu Gateway and Skriptoteket downstream story planning.
+1. `docs/backlog/stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md`
+   adds stateless formatter replay from saved canonical transcript JSON plus
+   typed speaker display-name overlays, using the existing v2 job lifecycle
+   and returning producer-owned TXT, Markdown, VTT, and SRT artifacts.
 1. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md`
    is the HuleEdu Gateway companion story.
+1. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-09-expose-transcript-formatter-replay-through-sir-convert-auth-edge.md`
+   is the HuleEdu Gateway companion story for overlay-aware formatter replay.
 1. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md`,
    `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md`,
    and
    `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md`
    are the Skriptoteket Conversion Hub companion stories.
+1. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-08-transcript-speaker-overlays-and-replay-formatter-exports.md`
+   is the Skriptoteket companion story for progress parity, speaker overlays,
+   overlay-aware replay, and download/Mina filer export actions.
 
 ## Runtime-Enabling Tasks
 
@@ -158,6 +172,14 @@ Planned story slices:
   VTT, and SRT formatter artifacts over canonical `transcript_json`.
   Downstream apps still own product meaning, durable saves, filenames, and
   workflow derivatives.
+- `docs/backlog/tasks/task-359-define-transcript-speaker-overlay-formatter-replay-contract.md`
+  defines the settled Story 56 replay contract:
+  `transcript_json -> transcript_bundle`, closed requested formatter enum, and
+  typed speaker display-name overrides over canonical transcript JSON.
+- `docs/backlog/tasks/task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts.md`
+  implements the Story 56 replay runtime and returns overlay-aware
+  `transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`
+  artifacts through the existing v2 lifecycle.
 
 ## Acceptance Criteria
 

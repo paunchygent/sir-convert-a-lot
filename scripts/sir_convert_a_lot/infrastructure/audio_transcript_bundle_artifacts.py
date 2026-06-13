@@ -1,13 +1,14 @@
-"""Named artifact resolution for audio transcript bundles.
+"""Named artifact resolution for transcript-bundle jobs.
 
 Purpose:
-    Resolve the canonical transcript JSON artifact and product-neutral
-    formatter artifacts for successful audio transcript-bundle jobs.
+    Resolve the canonical transcript JSON artifact for audio transcript jobs
+    and product-neutral formatter artifacts for audio and replay
+    transcript-bundle jobs.
 
 Relationships:
     - Used by `interfaces.http_routes_job_artifacts_v2`.
-    - Reads transcript artifacts produced by
-      `infrastructure.audio_transcript_bundle_runtime`.
+    - Reads transcript artifacts produced by audio transcript execution and
+      formatter replay execution.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from scripts.sir_convert_a_lot.domain.specs_v2 import SourceFormatV2
 from scripts.sir_convert_a_lot.domain.transcript_formatter_artifacts import (
     CANONICAL_TRANSCRIPT_OUTPUT_ARTIFACT,
     TRANSCRIPT_FORMATTER_ARTIFACT_DEFINITIONS,
@@ -47,17 +49,22 @@ class ResolvedAudioTranscriptArtifact:
 def build_audio_transcript_artifact_manifest(*, job: StoredJobV2) -> dict[str, object]:
     """Build a public named-artifact manifest for a transcript-bundle job."""
 
-    artifacts: list[dict[str, object]] = [
-        {
-            "artifact_key": TRANSCRIPT_JSON_ARTIFACT_KEY,
-            "availability": "available",
-            "filename": TRANSCRIPT_JSON_FILENAME,
-            "content_type": "application/json",
-            "size_bytes": job.artifact_size_bytes,
-            "sha256": job.artifact_sha256,
-            "retrieval_path": _retrieval_path(job=job, artifact_key=TRANSCRIPT_JSON_ARTIFACT_KEY),
-        }
-    ]
+    artifacts: list[dict[str, object]] = []
+    if job.source_format != SourceFormatV2.TRANSCRIPT_JSON:
+        artifacts.append(
+            {
+                "artifact_key": TRANSCRIPT_JSON_ARTIFACT_KEY,
+                "availability": "available",
+                "filename": TRANSCRIPT_JSON_FILENAME,
+                "content_type": "application/json",
+                "size_bytes": job.artifact_size_bytes,
+                "sha256": job.artifact_sha256,
+                "retrieval_path": _retrieval_path(
+                    job=job,
+                    artifact_key=TRANSCRIPT_JSON_ARTIFACT_KEY,
+                ),
+            }
+        )
     artifacts.extend(
         _formatter_manifest_entry(job=job, definition=definition)
         for definition in TRANSCRIPT_FORMATTER_ARTIFACT_DEFINITIONS
@@ -106,6 +113,14 @@ def resolve_audio_transcript_artifact(
     """Resolve an available transcript artifact or fail with a governed error."""
 
     if artifact_key == TRANSCRIPT_JSON_ARTIFACT_KEY:
+        if job.source_format == SourceFormatV2.TRANSCRIPT_JSON:
+            raise ServiceError(
+                status_code=404,
+                code="transcript_replay_artifact_unavailable",
+                message="Transcript formatter replay does not emit canonical JSON artifacts.",
+                retryable=False,
+                details={"artifact_key": artifact_key},
+            )
         if not job.artifact_path.exists():
             raise ServiceError(
                 status_code=500,
@@ -125,7 +140,7 @@ def resolve_audio_transcript_artifact(
         if definition.output_artifact not in requested:
             raise ServiceError(
                 status_code=409,
-                code="audio_transcript_artifact_unavailable",
+                code=_unavailable_code(job),
                 message="Requested transcript formatter artifact was not requested for this job.",
                 retryable=False,
                 details={"artifact_key": artifact_key, "availability": "unrequested"},
@@ -134,7 +149,7 @@ def resolve_audio_transcript_artifact(
         if not path.exists():
             raise ServiceError(
                 status_code=409,
-                code="audio_transcript_artifact_unavailable",
+                code=_unavailable_code(job),
                 message="Requested transcript formatter artifact is unavailable.",
                 retryable=False,
                 details={"artifact_key": artifact_key, "availability": "unavailable"},
@@ -146,7 +161,7 @@ def resolve_audio_transcript_artifact(
         )
     raise ServiceError(
         status_code=404,
-        code="audio_transcript_artifact_unavailable",
+        code=_unavailable_code(job),
         message="Named transcript artifact key is not recognized.",
         retryable=False,
         details={"artifact_key": artifact_key},
@@ -172,14 +187,14 @@ def _formatter_manifest_entry(
         return {
             **base,
             "availability": "unrequested",
-            "unavailable_code": "audio_transcript_artifact_unavailable",
+            "unavailable_code": _unavailable_code(job),
         }
     path = _artifact_path(job=job, filename=filename)
     if not path.exists():
         return {
             **base,
             "availability": "unavailable",
-            "unavailable_code": "audio_transcript_artifact_unavailable",
+            "unavailable_code": _unavailable_code(job),
         }
     artifact_bytes = path.read_bytes()
     return {
@@ -192,10 +207,15 @@ def _formatter_manifest_entry(
 
 
 def _requested_output_artifacts(job: StoredJobV2) -> frozenset[str]:
-    options = job.spec.audio_transcription_options
-    if options is None:
+    if job.source_format == SourceFormatV2.TRANSCRIPT_JSON:
+        replay_options = job.spec.transcript_formatter_options
+        if replay_options is None:
+            return frozenset()
+        return frozenset(artifact.value for artifact in replay_options.requested_artifacts)
+    audio_options = job.spec.audio_transcription_options
+    if audio_options is None:
         return frozenset({CANONICAL_TRANSCRIPT_OUTPUT_ARTIFACT})
-    return frozenset(options.output_artifacts)
+    return frozenset(audio_options.output_artifacts)
 
 
 def _artifact_path(*, job: StoredJobV2, filename: str) -> Path:
@@ -213,3 +233,9 @@ def _formatter_precondition_error() -> ServiceError:
         message="Canonical transcript JSON is invalid for formatter artifact generation.",
         retryable=False,
     )
+
+
+def _unavailable_code(job: StoredJobV2) -> str:
+    if job.source_format == SourceFormatV2.TRANSCRIPT_JSON:
+        return "transcript_replay_artifact_unavailable"
+    return "audio_transcript_artifact_unavailable"

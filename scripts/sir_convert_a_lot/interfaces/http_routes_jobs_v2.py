@@ -172,7 +172,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 code="validation_error",
                 message="Job specification failed validation.",
                 retryable=False,
-                details={"errors": exc.errors(include_context=False)},
+                details={"errors": exc.errors(include_context=False, include_input=False)},
             ) from exc
 
         if spec.source.filename != file_name:

@@ -31,11 +31,15 @@ from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
     AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
     DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
+    TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2,
     RouteKeyV2,
     RoutePolicyV2,
     route_key_for_spec_v2,
     route_policy_for_key_v2,
     supported_route_keys_v2,
+)
+from scripts.sir_convert_a_lot.domain.source_format_inference_v2 import (
+    infer_source_format_from_filename_v2 as infer_domain_source_format_from_filename_v2,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
@@ -45,6 +49,9 @@ from scripts.sir_convert_a_lot.interfaces.http_digiexam_migration_request_v2 imp
 )
 from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
     validate_create_job_route_constraints,
+)
+from scripts.sir_convert_a_lot.interfaces.http_transcript_formatter_replay_request_v2 import (
+    TranscriptFormatterReplayCreateJobRouteHandlerV2,
 )
 
 
@@ -86,23 +93,6 @@ DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2: tuple[RouteKeyV2, ...] = (
     RouteKeyV2(source_format=SourceFormatV2.HTML, output_format=OutputFormatV2.PDF),
     RouteKeyV2(source_format=SourceFormatV2.HTML, output_format=OutputFormatV2.DOCX),
     RouteKeyV2(source_format=SourceFormatV2.PDF, output_format=OutputFormatV2.DOCX),
-)
-
-_AUDIO_SOURCE_SUFFIXES_V2 = frozenset(
-    {
-        ".aac",
-        ".aiff",
-        ".flac",
-        ".m4a",
-        ".mkv",
-        ".mov",
-        ".mp3",
-        ".mp4",
-        ".ogg",
-        ".opus",
-        ".wav",
-        ".webm",
-    }
 )
 
 
@@ -309,26 +299,18 @@ def build_create_job_route_registry_v2() -> ServiceRouteRegistryV2:
             policy=_required_route_policy_v2(AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2)
         )
     )
+    handlers.append(
+        TranscriptFormatterReplayCreateJobRouteHandlerV2(
+            policy=_required_route_policy_v2(TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2)
+        )
+    )
     return ServiceRouteRegistryV2(tuple(handlers))
 
 
 def infer_source_format_from_filename_v2(filename: str) -> SourceFormatV2 | None:
     """Infer the broad v2 source format from an uploaded filename."""
 
-    suffix = Path(filename).suffix.lower()
-    if suffix in _AUDIO_SOURCE_SUFFIXES_V2:
-        return SourceFormatV2.AUDIO
-    if suffix == ".pdf":
-        return SourceFormatV2.PDF
-    if suffix in {".md", ".markdown"}:
-        return SourceFormatV2.MD
-    if suffix in {".html", ".htm"}:
-        return SourceFormatV2.HTML
-    if suffix == ".docx":
-        return SourceFormatV2.DOCX
-    if suffix == ".dxe":
-        return SourceFormatV2.DIGIEXAM_DXE
-    return None
+    return infer_domain_source_format_from_filename_v2(filename)
 
 
 def enforce_audio_transcription_route_capacity_v2(

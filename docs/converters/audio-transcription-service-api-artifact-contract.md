@@ -4,7 +4,7 @@ id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
 status: active
 created: 2026-06-09
-updated: 2026-06-12
+updated: 2026-06-13
 owners:
   - platform
 tags:
@@ -50,6 +50,13 @@ canonical JSON authority; downstream products still own durable saves,
 presentation labels, product filenames, search, sharing, and workflow-specific
 derivatives.
 
+Story 56 extends this authority with stateless formatter replay from saved
+canonical transcript JSON plus typed speaker display-name overlays. The replay
+route is settled as a Service API v2 conversion job with
+`source.format = transcript_json` and
+`conversion.output_format = transcript_bundle`; no bespoke formatter endpoint
+or downstream browser-local formatter is part of the contract.
+
 Task 357 hardens the current progress gap by making Sir Convert own chunk
 planning, checkpointed chunk execution, and monotonic numeric audio progress
 during active transcription. The local implementation introduces a clean
@@ -88,6 +95,74 @@ Video files are accepted through this route only when the uploaded container has
 an audio stream. They still use `source.format = "audio"` because the domain
 source authority is the extracted audio stream, not video analysis.
 
+## Formatter Replay Request Shape
+
+Story 56 / Task 359 define the overlay-aware formatter replay route as the
+existing Service API v2 lifecycle with this route key:
+
+```json
+{
+  "source.format": "transcript_json",
+  "conversion.output_format": "transcript_bundle"
+}
+```
+
+Replay accepts one uploaded canonical `transcript_json_v1` payload and the
+following typed options object:
+
+```json
+{
+  "api_version": "v2",
+  "source": {
+    "kind": "upload",
+    "filename": "saved-transcript.json",
+    "format": "transcript_json"
+  },
+  "conversion": {
+    "output_format": "transcript_bundle"
+  },
+  "transcript_formatter_options": {
+    "schema_version": "transcript_formatter_replay_v1",
+    "requested_artifacts": ["txt", "md", "vtt", "srt"],
+    "speaker_label_overrides": [
+      {
+        "canonical_speaker_label": "SPEAKER_00",
+        "display_name": "Anna Andersson"
+      }
+    ]
+  },
+  "retention": {
+    "pin": false
+  }
+}
+```
+
+Replay `requested_artifacts` is a closed enum of exact lowercase values:
+`txt`, `md`, `vtt`, and `srt`. Replay does not request `json`; the uploaded
+JSON remains the canonical source truth. Returned artifact keys are
+`transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`.
+
+`canonical_speaker_label` values are case-sensitive exact inventory keys from
+the uploaded canonical transcript JSON. Display names are trimmed of ordinary
+surrounding whitespace only after raw control-character validation.
+
+Replay job specs reject `pdf_options` and `execution`; those fields are not
+ignored, normalized, or folded out of idempotency fingerprints.
+
+Replay `/result` and singular `/artifact` surfaces use a content-safe
+`transcript_formatter_replay_result_v1` bundle manifest named
+`transcript_replay_bundle_manifest.json`. That primary manifest contains
+operational artifact metadata only; it must not include transcript text,
+utterances, display names, source content, or a reissued canonical JSON
+payload. The named replay artifact list also omits `transcript_json`.
+
+Speaker overrides apply only to formatter display labels. The replay route must
+reject unknown canonical speaker labels, duplicate override labels, empty
+display names, duplicate display names, control characters, malformed JSON,
+partial transcript state, unsupported requested artifacts, and
+`retention.pin=true`. The replay route must not call STT, diarization,
+alignment, sidecar, codec, source-audio, or model-provider code.
+
 The product/browser route is HuleEdu Gateway-owned:
 
 - browser/product entry: `/sir-convert/v2/convert/...`
@@ -97,6 +172,11 @@ Sir Convert must not implement a separate `/sir-convert/v2/...` route family.
 The direct public `convert.hule.education` host remains reserved/fail-closed for
 browser product traffic unless a separate accepted decision changes that
 posture.
+
+HuleEdu only forwards `/sir-convert/v2/convert/jobs*` through the Gateway edge
+and must not rewrite Sir Convert replay responses. Skriptoteket owns durable
+saved transcript records, speaker overlay intent, filenames, download/save UX,
+search, sharing, and product workflow semantics.
 
 ## Initial Request Shape
 
@@ -509,6 +589,16 @@ Available formatter artifacts use stable filenames:
 and `retrieval_path`. Unrequested formatter artifacts are represented
 explicitly as `availability="unrequested"` with
 `audio_transcript_artifact_unavailable` rather than silently omitted.
+
+For `transcript_json -> transcript_bundle` replay jobs:
+
+- `transcript_json` is not emitted as a named artifact and requests for it fail
+  with `transcript_replay_artifact_unavailable`;
+- only requested `transcript_txt`, `transcript_md`, `transcript_vtt`, and
+  `transcript_srt` artifacts appear as available named artifacts;
+- the primary result artifact is the content-safe
+  `transcript_formatter_replay_result_v1` manifest, not the uploaded canonical
+  JSON and not overlay truth.
 
 ## Progress Semantics
 

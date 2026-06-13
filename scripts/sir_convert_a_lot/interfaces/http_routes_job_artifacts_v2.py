@@ -81,6 +81,15 @@ def _content_type_for_output(output_format: OutputFormatV2) -> str:
     raise AssertionError(f"Unsupported output_format: {output_format}")
 
 
+def _primary_artifact_filename(job: StoredJobV2) -> str:
+    if (
+        job.source_format == SourceFormatV2.TRANSCRIPT_JSON
+        and job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    ):
+        return "transcript_replay_bundle_manifest.json"
+    return job.artifact_path.name
+
+
 def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
     @router.get(
         "/v2/convert/jobs/{job_id}/result",
@@ -149,7 +158,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
             job_id=job.job_id,
             result=ResultPayloadV2(
                 artifact=ArtifactMetadataV2(
-                    filename=job.artifact_path.name,
+                    filename=_primary_artifact_filename(job),
                     format=job.output_format,
                     size_bytes=job.artifact_size_bytes,
                     sha256=job.artifact_sha256,
@@ -198,7 +207,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
         return FileResponse(
             path=job.artifact_path.as_posix(),
             media_type=content_type,
-            filename=job.artifact_path.name,
+            filename=_primary_artifact_filename(job),
         )
 
     @router.get(

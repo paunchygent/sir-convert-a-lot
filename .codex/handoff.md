@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-12'
+last_updated: '2026-06-13'
 ---
 
 ## Purpose
@@ -16,20 +16,27 @@ durable implementation authority lives in governed docs.
 
 - Generated docs doorway is `docs/index.md`; durable session history starts at
   `.codex/long-term-memory/entries/session-2026-06-05-handoff-compaction.md`.
-  Current STT JSON runtime and formatter-lane history is compacted at
-  `.codex/long-term-memory/entries/session-2026-06-12-stt-json-runtime-and-formatter-lane-history.md`.
+  STT, formatter, and formula-lane history is compacted under
+  `.codex/long-term-memory/entries/`.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active Gateway cutover lane: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
-- Story 54 / Task 358 is complete and accepted in Review 44 after pass-two
-  extraction kept `specs_v2.py` below the repo line-limit/SRP gate.
-  Product-neutral TXT, Markdown, WebVTT, and SRT formatter artifacts are
-  implemented over validated canonical `transcript_json`, with JSON-normalized
-  request validation, named retrieval, explicit `unrequested` manifest states,
-  and invalid-JSON fail-closed behavior that preserves the canonical artifact.
-  Downstream apps own product meaning, durable saves, filenames, and
-  workflow-specific derivatives.
+- Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
+  TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
+  canonical `transcript_json`; downstream apps own product meaning, durable
+  saves, filenames, and workflow-specific derivatives.
+- Story 56 plus Tasks 359/360 are implemented for overlay-aware transcript
+  formatter replay. Service API v2 now supports
+  `transcript_json -> transcript_bundle` over uploaded canonical
+  `transcript_json_v1`, strict `transcript_formatter_replay_v1` options,
+  closed requested artifacts `txt|md|vtt|srt`, typed
+  `speaker_label_overrides`, and returned `transcript_txt`/`md`/`vtt`/`srt`
+  named artifacts. Replay does not emit `transcript_json`; `/result` and
+  singular `/artifact` return a content-safe
+  `transcript_formatter_replay_result_v1` manifest. No bespoke endpoint,
+  downstream formatter, source-audio replay, or Gateway rewriting is part of
+  the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -63,82 +70,11 @@ durable implementation authority lives in governed docs.
 - Task 350 owns the governed DeepSeek-OCR-2 HF eager Task 346 replay:
   `docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md`.
 
-Task 344 localized the slow chunk to Docling formula VLM generation and fixed
-the deterministic Granite-Docling repetition loop with governed stop strings
-and deterministic Transformers generation controls.
-
-Task 344 does not close formula-output quality. Post-fix pages `13-16` replay
-completed without token-ceiling exhaustion but persisted Markdown still failed
-correctness review with leaked `</formula` fragments and hallucinated formula
-text. Task 345 is the active follow-up: source-layer formula evidence must be
-authoritative when usable, VLM output must be advisory/rejected unless accepted
-by a governed source-backed gate, and the CLI/manifest must expose safe formula
-authority reasons. Task 345 must land the shared evidence/authority data model
-first; Task 342 presents that metadata, and Task 343 consumes it for later
-decision-policy work without reimplementing source-layer extraction or formula
-authority decisions. The task must preserve the larger best-effort conversion
-contract: every formula region needs an explicit artifact representation
-decision, and `partial_or_unusable` / `absent` cannot become silent omission.
-The 2026-06-06 Task 345 pre-implementation scrutiny gate is complete and passed
-in qualified form: PyMuPDF provides usable coordinate-backed source evidence on
-incident pages `13-16`, Poppler bbox extraction crashes on page `14`, and the
-implementation must preserve explicit `usable`, `partial_or_unusable`, and
-`absent` evidence states.
-
-Task 345 formula hardening checkpoint 2026-06-10: source-backed formula
-authority now skips formula VLM before generation when PyMuPDF
-coordinate/raw/text evidence is `usable`, while preserving accurate table mode.
-The current production reconciliation unit is page-window: accepted Markdown
-gets a deterministic `sir-convert-a-lot:formula-authority` marker, and backend
-results / `ConversionMetadata` / page-window replay reports carry safe
-structured `formula_authority` metadata with no raw prompts, crops, or
-generated formula internals. No-source/absent-source behavior is preserved:
-CodeFormulaV2 -> Granite fallback remains available and can commit a
-structurally clean generated candidate; runtime-unavailable formula enrichment
-falls back to source-layer Markdown with explicit `fallback` metadata. The
-candidate harness module
-`scripts/sir_convert_a_lot/devops/formula_candidate_eval_candidates.py` was
-split into focused spec/command/output/execution modules before any further
-DeepSeek integration work. Hemma accepted-output replay for pages `13-16`:
-`build/verification/task-345-source-backed-formula-authority-replay/docling-page-window-replay-20260610T055608Z/report.json`.
-The replay succeeded with `table_mode=accurate`, `formula_enrichment=false`,
-`formula_vlm_batch_count=0`, `transformers_call_count=0`,
-`formula_authority.action=skipped`, and
-`formula_authority.source_evidence_state=usable`. Accepted Markdown review
-found no recurrence of leaked `</formula`, `\mathbmath`, repeated `\mathbf`,
-spaced `l o o l y`, `<loc_`, `<formula>`, or observed DeepSeek/vLLM repetition
-markers. Initial Task 342 terminal status/result/manifest presentation now
-surfaces the same `formula_authority` metadata without adding a second
-authority policy. Task 342 now also writes the v2 CLI manifest incrementally
-when a job id is observed, emits submitted/replayed job lines, atomically
-refreshes terminal entries, and records `client_interrupted` running entries on
-KeyboardInterrupt after submission. Remaining governed work: first-class Task
-342 status/recovery UX, richer safe idempotency/request diagnostics, Task 343
-decision/performance use, and
-optional future per-region merge once stable final-Markdown formula identifiers
-exist.
-
-Task 346/350 final candidate-evaluation state: Granite baseline still shows
-known malformed formula markers; PyMuPDF source-layer extraction is fast,
-coordinate-backed evidence only, not semantic LaTeX restoration; PaddleOCR pip
-CUDA wheel is blocked on Hemma ROCm, `paddleocr-vl:latest-amd-gpu` exposes
-formula APIs but aborts in native Paddle GPU kernels, and
-`paddlex-paddle-vllm-amd-gpu:3.4.0-0.14.0rc2` lacks PaddleOCR formula APIs.
-DeepSeek-OCR-2 vLLM is rejected for the current Hemma ROCm lane: it loads only
-after adapter fixes but finishes pages `13-16` by length with repeated
-impossible tokens. Task 350 replaced the default Task 346 DeepSeek candidate
-with HF eager and reran pages `13-16` on Hemma:
-`build/verification/task-350-deepseek-hf-eager-task346-replay/formula-candidate-eval-20260606T201448Z/report.json`.
-HF eager succeeded on four pages in `676555 ms`, wrote `result.mmd` and
-`result_with_boxes.jpg`, recorded eager attention in host/inner metadata, and
-had no observed vLLM markers or Task 344 malformed markers. Manual review found
-coherent but imperfect output: page `14` has malformed inline math/prose,
-page `13` has an incomplete equation-boundary continuation, page `15` has
-OCR-like model-name errors, and page `16` has HTML table/entity artifacts.
-Recommendation: promote DeepSeek-OCR-2 HF eager to a later governed integration
-design only behind Task 345 source-backed authority, page-window reconciliation,
-and best-effort representation policy; do not blindly overwrite born-digital
-formula evidence with VLM output.
+Durable formula-lane findings are retained in
+`.codex/long-term-memory/entries/session-2026-06-13-handoff-trimmed-formula-history.md`.
+Active carry-forward: Task 345 owns source-backed formula authority, Task 342
+presents safe authority metadata, and Task 343 consumes it for later
+decision/performance work.
 
 ## Next Actions
 
@@ -147,6 +83,10 @@ formula evidence with VLM output.
    Skriptoteket durable transcript saves from canonical `transcript_json`;
    Sir Convert Story 54 formatter artifacts are complete in accepted Task 358
    as a separate product-neutral formatter authority.
+1. Next transcript replay work is downstream consumption: HuleEdu TASK-0675 can
+   forward the implemented `transcript_json -> transcript_bundle` route through
+   Gateway, and Skriptoteket PR-0347 can consume overlay-aware formatter replay
+   artifacts without local formatter logic.
 1. Treat the Sir Convert 120-minute STT progress UX backend contract as
    accepted; keep downstream durable transcript saves separate from Task 358
    formatter artifact implementation.
@@ -170,22 +110,15 @@ formula evidence with VLM output.
 
 ## Validation
 
-- Durable validation history is in the governed task/review docs. Current STT
-  profile proof validation is recorded in Review 40: focused suite `37 passed`,
-  deploy verification passed for `fe566bd4a489f46df55d8168ac8a3a13d3dcea30`,
-  live profile proof returned `proof_ready=true`, and docs/skills/handoff
-  validators passed. Task 355 admission proof is recorded in Review 41. Task
-  356 implementation, quality, docs, Hemma deploy, live tunnel proof, and
-  re-review acceptance are recorded in Task 356 and Review 42.
-- Task 358 accepted formatter implementation evidence on 2026-06-12:
-  red-first focused suite failed as expected on missing formatter module/writer,
-  `not_implemented` manifest state, and formatter `output_artifacts` admission
-  rejection (`10 failed, 47 passed`); after implementation and tooling, focused
-  suite passed (`57 passed`), `pdm run format-all` passed, `pdm run lint-fix`
-  passed, and `pdm run typecheck-all` passed. Review 44 first requested the
-  `specs_v2.py` module split, then approved after `specs_v2.py` dropped to 488
-  lines and `audio_transcription_options_v2.py` carried the extracted
-  audio-option helpers.
+- Durable validation history is in the governed task/review docs. STT runtime
+  acceptance is recorded in Reviews 40-43. Task 358 formatter acceptance is
+  recorded in Review 44 after the `specs_v2.py` module split.
+- Task 359/360 implementation evidence on 2026-06-13: red-first replay/OpenAPI
+  suite first failed with missing `transcript_json` enum, missing
+  `transcript_formatter_options`, HTTP `415` for `.json`, and missing OpenAPI
+  components. After implementation and OpenAPI export, focused suite
+  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
+  passed with `31 passed` after retained Review 45 strictness fixes.
 
 ## Stop Conditions
 

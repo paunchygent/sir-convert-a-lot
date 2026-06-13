@@ -5037,6 +5037,17 @@
           },
           "source": {
             "$ref": "#/components/schemas/SourceSpecV2"
+          },
+          "transcript_formatter_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranscriptFormatterReplayOptionsV2"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -5508,6 +5519,7 @@
         "description": "Supported uploaded source formats for v2.",
         "enum": [
           "audio",
+          "transcript_json",
           "pdf",
           "md",
           "html",
@@ -5547,6 +5559,30 @@
           "format"
         ],
         "title": "SourceSpecV2",
+        "type": "object"
+      },
+      "SpeakerLabelOverrideV2": {
+        "additionalProperties": false,
+        "description": "Display-name override for one canonical transcript speaker label.",
+        "properties": {
+          "canonical_speaker_label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Canonical Speaker Label",
+            "type": "string"
+          },
+          "display_name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canonical_speaker_label",
+          "display_name"
+        ],
+        "title": "SpeakerLabelOverrideV2",
         "type": "object"
       },
       "StructuredLLMInternalRouteClass": {
@@ -5881,6 +5917,51 @@
         ],
         "title": "TemplateSelectorV2",
         "type": "object"
+      },
+      "TranscriptFormatterReplayOptionsV2": {
+        "additionalProperties": false,
+        "description": "Typed formatter replay options for canonical transcript JSON uploads.",
+        "properties": {
+          "requested_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptFormatterRequestedArtifactV2"
+            },
+            "minItems": 1,
+            "title": "Requested Artifacts",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "transcript_formatter_replay_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "speaker_label_overrides": {
+            "items": {
+              "$ref": "#/components/schemas/SpeakerLabelOverrideV2"
+            },
+            "minItems": 1,
+            "title": "Speaker Label Overrides",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "requested_artifacts",
+          "speaker_label_overrides"
+        ],
+        "title": "TranscriptFormatterReplayOptionsV2",
+        "type": "object"
+      },
+      "TranscriptFormatterRequestedArtifactV2": {
+        "description": "Closed replay formatter artifact aliases accepted by Service API v2.",
+        "enum": [
+          "txt",
+          "md",
+          "vtt",
+          "srt"
+        ],
+        "title": "TranscriptFormatterRequestedArtifactV2",
+        "type": "string"
       },
       "ValidationError": {
         "properties": {

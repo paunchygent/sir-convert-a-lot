@@ -211,6 +211,15 @@ def render_transcript_formatter_outputs(
     """Render all product-neutral formatter outputs from canonical JSON."""
 
     transcript = CanonicalTranscriptPayload.model_validate(canonical_payload)
+    return render_validated_transcript_formatter_outputs(transcript=transcript)
+
+
+def render_validated_transcript_formatter_outputs(
+    *,
+    transcript: CanonicalTranscriptPayload,
+) -> dict[str, bytes]:
+    """Render all formatter outputs from an already validated transcript."""
+
     return {
         "transcript_txt": _render_txt(transcript).encode("utf-8"),
         "transcript_md": _render_md(transcript).encode("utf-8"),

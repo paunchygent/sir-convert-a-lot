@@ -39,6 +39,10 @@ from scripts.sir_convert_a_lot.infrastructure.resources_zip import (
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
+from scripts.sir_convert_a_lot.infrastructure.transcript_formatter_replay_runtime import (
+    TRANSCRIPT_FORMATTER_REPLAY_PIPELINE,
+    execute_transcript_formatter_replay_job,
+)
 from scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor_non_pdf import (
     execute_v2_non_pdf_job_conversion,
 )
@@ -175,6 +179,7 @@ def execute_v2_job_conversion(
     phase_timings_ms: dict[str, int] = {}
     formula_authority: dict[str, object] = {}
     profile: PdfExecutionProfileV2 | None = None
+    precomputed_artifact_bytes: bytes | None = None
 
     if (
         job.source_format == SourceFormatV2.DIGIEXAM_DXE
@@ -204,6 +209,15 @@ def execute_v2_job_conversion(
         acceleration_used = audio_result.acceleration_used
         warnings = list(audio_result.warnings)
         phase_timings_ms = dict(audio_result.phase_timings_ms)
+    elif (
+        job.source_format == SourceFormatV2.TRANSCRIPT_JSON
+        and job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    ):
+        replay_result = execute_transcript_formatter_replay_job(job=job)
+        pipeline_used = TRANSCRIPT_FORMATTER_REPLAY_PIPELINE
+        warnings = list(replay_result.warnings)
+        phase_timings_ms = dict(replay_result.phase_timings_ms)
+        precomputed_artifact_bytes = replay_result.artifact_bytes
     elif job.source_format == SourceFormatV2.PDF and job.output_format in {
         OutputFormatV2.MD,
         OutputFormatV2.DOCX,
@@ -269,7 +283,11 @@ def execute_v2_job_conversion(
         template_version = outcome.template_version
         template_artifact_sha256 = outcome.template_artifact_sha256
 
-    artifact_bytes = job.artifact_path.read_bytes()
+    artifact_bytes = (
+        precomputed_artifact_bytes
+        if precomputed_artifact_bytes is not None
+        else job.artifact_path.read_bytes()
+    )
     if len(artifact_bytes) == 0:
         raise ServiceError(
             status_code=500,
