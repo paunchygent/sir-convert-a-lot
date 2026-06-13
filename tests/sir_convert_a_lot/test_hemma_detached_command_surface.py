@@ -53,10 +53,7 @@ def test_prod_recreate_preserves_skill_repository_across_sudo() -> None:
 
     assert "REMOTE_SKILL_REPOSITORY=" in script_text
     assert '"SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"' in script_text
-    assert (
-        '"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"'
-        in script_text
-    )
+    assert '"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"' in script_text
 
 
 def test_remote_detached_launcher_writes_log_and_pid_breadcrumbs() -> None:
