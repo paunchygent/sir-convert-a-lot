@@ -119,6 +119,21 @@ job lifecycle.
   `transcript_vtt`, and `transcript_srt`, all four named artifacts contained
   the projected overlay label and transcript content, and
   `transcript_json` named artifact retrieval returned `404`.
+- Remediation deploy proof closed the docs-only-ahead gap for
+  `8a66882b13370d09e4a0753770516c92fd3a8d8f`: `pdm run run-local-pdm
+  hemma-deploy-and-verify --expected-revision
+  8a66882b13370d09e4a0753770516c92fd3a8d8f --lane host` passed with remote and
+  service revisions matching the expected revision.
+- Live negative replay proof passed through Gateway against Sir Convert
+  revision `8a66882b13370d09e4a0753770516c92fd3a8d8f`:
+  `pdm run run-local-pdm python /tmp/sir-convert-task-360-live-negative-proof.py --report-path /Users/olofs_mba/Documents/Repos/sir-convert-a-lot/.artifacts/task-360/live-negative-replay-proof-20260613T1128Z.json --sir-revision 8a66882b13370d09e4a0753770516c92fd3a8d8f`.
+  The sanitized report recorded invalid overlay job
+  `jobv2_9d9ef39f9a0145d5a4486ba80f` reaching terminal `failed`, `/result` and
+  `/artifacts` returning `409 job_not_succeeded`, named
+  `transcript_txt` returning `409`, response headers and error bodies preserving
+  the UUID correlation id, Sir prod HTTP logs containing that correlation id,
+  and bounded Gateway/Sir log scans excluding the opaque transcript and display
+  tokens.
 
 ## Checklist
 
