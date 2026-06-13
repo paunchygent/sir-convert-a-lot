@@ -100,10 +100,31 @@ def test_job_spec_accepts_audio_transcript_bundle_public_options(
 
 
 @pytest.mark.parametrize(
+    ("requested", "expected"),
+    [
+        (("txt",), ("json", "txt")),
+        (("json", "srt"), ("json", "srt")),
+        (("vtt", "json", "vtt", "md"), ("json", "md", "vtt")),
+        (("json", "txt", "md", "vtt", "srt"), ("json", "txt", "md", "vtt", "srt")),
+    ],
+)
+def test_job_spec_accepts_and_normalizes_audio_formatter_output_artifacts(
+    requested: tuple[str, ...],
+    expected: tuple[str, ...],
+) -> None:
+    spec = JobSpecV2.model_validate(
+        _audio_job_spec(audio_options_patch={"output_artifacts": requested})
+    )
+
+    assert spec.audio_transcription_options is not None
+    assert spec.audio_transcription_options.output_artifacts == expected
+
+
+@pytest.mark.parametrize(
     ("patch", "expected_code"),
     [
         ({"language": "fr"}, "audio_public_options_unsupported"),
-        ({"output_artifacts": ("json", "srt")}, "audio_public_options_unsupported"),
+        ({"output_artifacts": ("json", "pdf")}, "audio_public_options_unsupported"),
         ({"max_duration_seconds": 0}, "audio_duration_exceeded"),
         ({"max_duration_seconds": 7201}, "audio_duration_exceeded"),
         ({"model_id": "provider/raw-stt-model"}, "audio_public_options_unsupported"),

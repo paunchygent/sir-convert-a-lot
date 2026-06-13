@@ -4,7 +4,7 @@ id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
 status: active
 created: 2026-06-09
-updated: 2026-06-11
+updated: 2026-06-12
 owners:
   - platform
 tags:
@@ -40,12 +40,15 @@ Service API v2 create-job admission for `audio -> transcript_bundle`, including
 request-shape, owner-scope, local-upload, public-option, capacity,
 GPU-required, and `retention.pin=false` checks. Task 356 deploys and Review 42
 accepts the first sidecar-backed runtime execution slice for stage heartbeat,
-cancellation cleanup, and canonical `transcript_json` persistence. Formatter
-outputs remain blocked until later governed Story 54 tasks land.
+cancellation cleanup, and canonical `transcript_json` persistence. Story 54 is
+now active for formatter work, with Task 358 defining the first product-neutral
+formatter implementation slice.
 
-Task 356's accepted runtime authority covers canonical JSON transcript
-delivery only. Formatter artifacts remain blocked until later formatter
-strategies over the JSON core are accepted.
+Task 356's accepted runtime authority covered canonical JSON transcript
+delivery only. Task 358 adds product-neutral formatter artifacts over that
+canonical JSON authority; downstream products still own durable saves,
+presentation labels, product filenames, search, sharing, and workflow-specific
+derivatives.
 
 Task 357 hardens the current progress gap by making Sir Convert own chunk
 planning, checkpointed chunk execution, and monotonic numeric audio progress
@@ -417,11 +420,12 @@ separate accepted contract.
 
 ### Output Artifacts
 
-Day-one implementation must require:
+The implementation requires canonical JSON authority for every audio
+transcription request:
 
 - `json`
 
-Planned formatter artifacts:
+Callers may optionally request formatter artifacts:
 
 - `txt`
 - `md`
@@ -429,8 +433,28 @@ Planned formatter artifacts:
 - `srt`
 
 Formatter artifacts must be produced by modular downstream strategies wired by
-DI after the JSON core is stable. They must not duplicate transcription,
-diarization, or segment-alignment logic.
+the audio bundle packaging layer after the JSON core is stable and persisted.
+They must not duplicate transcription, diarization, or segment-alignment logic.
+`json` is normalized into `audio_transcription_options.output_artifacts` even
+when the caller requests only formatter aliases; unsupported artifact aliases
+fail admission with `audio_public_options_unsupported`.
+
+### Formatter Ownership Boundary
+
+Sir Convert owns product-neutral standard-format transformations over
+canonical transcript JSON:
+
+- plain text transcript export;
+- neutral Markdown transcript export;
+- WebVTT subtitle/caption export;
+- SubRip/SRT subtitle export.
+
+Downstream products own product meaning and presentation decisions, including
+button placement, teacher-facing labels, filenames, durable saves, search,
+sharing, lesson-material workflows, subtitle-workbench behavior, and any
+product-specific Markdown derivatives. Sir Convert formatter implementations
+must not add Skriptoteket-specific headings, classroom workflow labels, durable
+user-file semantics, or source-audio reprocessing.
 
 ### Public Backend Control Exclusion
 
@@ -462,25 +486,29 @@ The canonical JSON artifact must include:
 - runtime metadata, including bounded backend profile labels and acceleration
   used.
 
-The JSON contract is the artifact authority for later formatters.
+The JSON contract is the artifact authority for formatter artifacts.
 The transcript JSON must not include raw model ids, access tokens, local cache
 paths, sidecar trust tokens, backend-native tuning knobs, or unbounded stderr.
 
 ## Named Artifacts
 
-Initial successful jobs must expose named artifacts:
+Successful jobs expose named artifacts:
 
-| Artifact key | Required in first runtime slice | Content type | Notes |
+| Artifact key | Required | Content type | Notes |
 | --- | --- | --- | --- |
 | `transcript_json` | yes | `application/json` | Canonical structured transcript bundle. |
-| `transcript_txt` | no | `text/plain` | Formatter strategy after JSON core stabilizes. |
-| `transcript_md` | no | `text/markdown` | Formatter strategy after JSON core stabilizes. |
-| `transcript_vtt` | no | `text/vtt` | Formatter strategy after JSON core stabilizes. |
-| `transcript_srt` | no | `application/x-subrip` | Formatter strategy after JSON core stabilizes. |
+| `transcript_txt` | optional requested artifact | `text/plain` | Product-neutral formatter strategy over canonical JSON. |
+| `transcript_md` | optional requested artifact | `text/markdown` | Neutral transcript Markdown over canonical JSON; product-specific Markdown remains downstream. |
+| `transcript_vtt` | optional requested artifact | `text/vtt` | WebVTT formatter over canonical JSON timestamps and speaker labels. |
+| `transcript_srt` | optional requested artifact | `application/x-subrip` | SubRip/SRT formatter over canonical JSON timestamps and speaker labels. |
 
-Unrequested or not-yet-implemented formatter artifacts must be represented
-explicitly in bundle metadata rather than silently omitted when the route
-advertises them.
+Available formatter artifacts use stable filenames:
+`transcript_txt.txt`, `transcript_md.md`, `transcript_vtt.vtt`, and
+`transcript_srt.srt`. Requested available formatter manifest entries include
+`availability="available"`, `content_type`, `filename`, `size_bytes`, `sha256`,
+and `retrieval_path`. Unrequested formatter artifacts are represented
+explicitly as `availability="unrequested"` with
+`audio_transcript_artifact_unavailable` rather than silently omitted.
 
 ## Progress Semantics
 
@@ -616,7 +644,7 @@ Initial retention classes:
 | Normalized audio | WAV/PCM intermediates | purge at terminal job cleanup and no later than 24h |
 | Sidecar temp chunks | probe files, split audio, alignment scratch | purge on success/failure/cancel and sweep no later than 24h |
 | Canonical transcript JSON | `transcript_json` | expire with v2 job result TTL, capped at 24h |
-| Formatter artifacts | future `txt`, `md`, `vtt`, `srt` | same as transcript JSON |
+| Formatter artifacts | requested `txt`, `md`, `vtt`, `srt` | same as transcript JSON |
 | Failed/canceled partials | incomplete transcript/checkpoint state | purge at terminal cleanup |
 | Logs/metrics/traces | operational metadata only | no transcript text, source content, utterances, tokens, or media bytes |
 | Benchmark fixtures | sanitized/operator-owned fixtures | governed by the benchmark task/runbook |

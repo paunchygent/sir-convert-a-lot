@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-06-11
-last_updated: 2026-06-11
+created: 2026-06-13
+last_updated: 2026-06-13
 related: []
 labels:
   - generated
@@ -77,6 +77,7 @@ Generated index for backlog planning documents.
 | review-41-ruthless-review-of-task-355-audio-transcript-route-admission | [Ruthless review of Task 355 audio transcript route admission](reviews/review-41-ruthless-review-of-task-355-audio-transcript-route-admission.md) | review | completed |
 | review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence | [Ruthless review of Task 356 audio transcript runtime JSON persistence](reviews/review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence.md) | review | completed |
 | review-43-ruthless-review-of-task-357-audio-transcript-chunk-progress-and-checkpointed-stt-execution | [Ruthless review of Task 357 audio transcript chunk progress and checkpointed STT execution](reviews/review-43-ruthless-review-of-task-357-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md) | review | completed |
+| review-44-ruthless-review-of-task-358-product-neutral-transcript-formatter-artifacts | [Ruthless review of Task 358 product-neutral transcript formatter artifacts](reviews/review-44-ruthless-review-of-task-358-product-neutral-transcript-formatter-artifacts.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -133,7 +134,7 @@ Generated index for backlog planning documents.
 | story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy | [STT sidecar adapter contract, media admission caps, and route policy](stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md) | story | completed |
 | story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection | [Hemma STT and diarization backend benchmark profile selection](stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md) | story | completed |
 | story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence | [Audio transcript bundle route execution and JSON artifact persistence](stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md) | story | completed |
-| story-54-transcript-formatter-strategies-over-canonical-json | [Transcript formatter strategies over canonical JSON](stories/story-54-transcript-formatter-strategies-over-canonical-json.md) | story | proposed |
+| story-54-transcript-formatter-strategies-over-canonical-json | [Transcript formatter strategies over canonical JSON](stories/story-54-transcript-formatter-strategies-over-canonical-json.md) | story | completed |
 | story-55-gateway-and-downstream-transcript-delivery-coordination | [Gateway and downstream transcript delivery coordination](stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md) | story | completed |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
@@ -426,6 +427,7 @@ Generated index for backlog planning documents.
 | task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2 | [Register audio transcript bundle route admission in Service API v2](tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md) | task | completed |
 | task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json | [Execute audio transcript jobs and persist canonical transcript JSON](tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md) | task | completed |
 | task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution | [Harden audio transcript chunk progress and checkpointed STT execution](tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md) | task | completed |
+| task-358-implement-product-neutral-transcript-formatter-artifacts-over-canonical-json | [Implement product-neutral transcript formatter artifacts over canonical JSON](tasks/task-358-implement-product-neutral-transcript-formatter-artifacts-over-canonical-json.md) | task | completed |
 | task-36-service-v2-route-md-pdf-via-html-intermediary | [Service v2 route: md -> pdf via html intermediary](tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md) | task | completed |
 | task-37-service-v2-route-html-css-pdf-weasyprint | [Service v2 route: html + css -> pdf (WeasyPrint)](tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |

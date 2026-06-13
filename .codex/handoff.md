@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-11'
+last_updated: '2026-06-12'
 ---
 
 ## Purpose
@@ -16,35 +16,20 @@ durable implementation authority lives in governed docs.
 
 - Generated docs doorway is `docs/index.md`; durable session history starts at
   `.codex/long-term-memory/entries/session-2026-06-05-handoff-compaction.md`.
+  Current STT JSON runtime and formatter-lane history is compacted at
+  `.codex/long-term-memory/entries/session-2026-06-12-stt-json-runtime-and-formatter-lane-history.md`.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active Gateway cutover lane: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
-- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 51 accepted in
-  Review 26; Story 52 accepted in Review 27 as governed profile rejection; Task
-  351 adds the preflight runner; Task 352 and Task 354 are complete and
-  accepted in Review 40, so Story 53 may continue under its governed route and
-  artifact-persistence scope.
-- STT live-proof state 2026-06-10: Review 40 approved the deployed
-  `fe566bd4a489f46df55d8168ac8a3a13d3dcea30` proof with no findings. Full live
-  observation/profile proof reports `proof_ready=true`,
-  `observation_failure_reasons=[]`, FasterWhisper ROCm execution with no CPU
-  fallback, pyannote diarization, exact and min/max speaker hints exercised, 151
-  English diarized speaker segments, and 3 Swedish diarized speaker segments.
-  Human-reviewable transcript artifacts are ignored under
-  `build/verification/stt-sidecar-transcript-review-hiprtc-fe566bd/`; human
-  review accepted those artifacts on 2026-06-10.
-- Task 355 is complete and accepted in Review 41 for Story 53: Service API v2
-  `audio -> transcript_bundle` admission accepts API-key tunnel and Gateway
-  signed-identity create-job requests, validates the governed day-one public
-  audio options, enforces active audio route capacity, honors the audio-specific
-  upload cap/error contract, and keeps admitted jobs queued without sidecar
-  execution or `transcript_json` persistence. Revision
-  `9859b4a51dc94e9a6083a9fd7985b746cd75c380` was deployed to Hemma and proved
-  live through the tunnel with `202 queued` admission and `202 canceled`
-  cancellation for an `audio -> transcript_bundle` job.
-- Task 356 is complete and accepted in Review 42 with Hemma deploy and live
-  English/Swedish `transcript_json` proof.
-- Task 357 is complete and accepted in Review 43; deployed revision
-  `00f9d7ab700ff4dbeea9f8e6da65caa5c49e1cfa` passed live running-progress proof.
+- Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
+  runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
+- Story 54 / Task 358 is complete and accepted in Review 44 after pass-two
+  extraction kept `specs_v2.py` below the repo line-limit/SRP gate.
+  Product-neutral TXT, Markdown, WebVTT, and SRT formatter artifacts are
+  implemented over validated canonical `transcript_json`, with JSON-normalized
+  request validation, named retrieval, explicit `unrequested` manifest states,
+  and invalid-JSON fail-closed behavior that preserves the canonical artifact.
+  Downstream apps own product meaning, durable saves, filenames, and
+  workflow-specific derivatives.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
@@ -160,10 +145,11 @@ formula evidence with VLM output.
 1. Downstream HuleEdu Gateway and Skriptoteket JSON transcript consumption has
    been proven live through the product path. Next STT product work is
    Skriptoteket durable transcript saves from canonical `transcript_json`;
-   Sir Convert Story 54 formatter artifacts remain a separate follow-up.
+   Sir Convert Story 54 formatter artifacts are complete in accepted Task 358
+   as a separate product-neutral formatter authority.
 1. Treat the Sir Convert 120-minute STT progress UX backend contract as
-   accepted; keep downstream durable transcript saves and Story 54 formatter
-   artifacts as separate governed follow-up work.
+   accepted; keep downstream durable transcript saves separate from Task 358
+   formatter artifact implementation.
 1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
    without a new runtime image or governed compatibility hypothesis. Task 348's
    image exposes formula APIs but aborts in native Paddle GPU kernels; Task
@@ -191,6 +177,15 @@ formula evidence with VLM output.
   validators passed. Task 355 admission proof is recorded in Review 41. Task
   356 implementation, quality, docs, Hemma deploy, live tunnel proof, and
   re-review acceptance are recorded in Task 356 and Review 42.
+- Task 358 accepted formatter implementation evidence on 2026-06-12:
+  red-first focused suite failed as expected on missing formatter module/writer,
+  `not_implemented` manifest state, and formatter `output_artifacts` admission
+  rejection (`10 failed, 47 passed`); after implementation and tooling, focused
+  suite passed (`57 passed`), `pdm run format-all` passed, `pdm run lint-fix`
+  passed, and `pdm run typecheck-all` passed. Review 44 first requested the
+  `specs_v2.py` module split, then approved after `specs_v2.py` dropped to 488
+  lines and `audio_transcription_options_v2.py` carried the extracted
+  audio-option helpers.
 
 ## Stop Conditions
 

@@ -154,8 +154,9 @@ contracts:
   JSON transcript execution. It validates request shape, owner scope,
   local-upload media, day-one public audio options, route capacity,
   GPU-required policy, and `retention.pin=false`, then executes through the
-  internal STT sidecar and persists canonical `transcript_json`. Formatter
-  artifacts remain future Story 54 work. See ADR-0013 and
+  internal STT sidecar and persists canonical `transcript_json`. Task 358 adds
+  optional product-neutral `txt`, `md`, `vtt`, and `srt` formatter artifacts
+  over canonical JSON. See ADR-0013 and
   `docs/converters/audio-transcription-service-api-artifact-contract.md`.
 
 Important:

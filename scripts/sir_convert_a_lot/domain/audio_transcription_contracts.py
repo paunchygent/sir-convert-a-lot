@@ -19,11 +19,14 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy
+from scripts.sir_convert_a_lot.domain.transcript_formatter_artifacts import (
+    TRANSCRIPT_OUTPUT_ARTIFACT_ORDER,
+)
 
 STT_SIDECAR_CONTRACT_VERSION = "stt-sidecar-v1"
 MAX_AUDIO_UPLOAD_BYTES = 524_288_000
 MAX_AUDIO_DURATION_SECONDS = 7_200
-DAY_ONE_OUTPUT_ARTIFACTS: frozenset[str] = frozenset({"json"})
+DAY_ONE_OUTPUT_ARTIFACTS: frozenset[str] = frozenset(TRANSCRIPT_OUTPUT_ARTIFACT_ORDER)
 DAY_ONE_LANGUAGE_VALUES: frozenset[str] = frozenset({"auto", "sv", "en"})
 DAY_ONE_MEDIA_CONTAINERS: frozenset[str] = frozenset(
     {

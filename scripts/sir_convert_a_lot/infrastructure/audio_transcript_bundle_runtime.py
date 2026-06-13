@@ -28,6 +28,9 @@ from scripts.sir_convert_a_lot.infrastructure.audio_transcript_alignment import 
     align_chunk_segments,
     parse_diarization_windows,
 )
+from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_artifacts import (
+    write_requested_transcript_formatter_artifacts,
+)
 from scripts.sir_convert_a_lot.infrastructure.audio_transcript_checkpoints import (
     AcceptedAudioChunkCheckpoint,
     AudioTranscriptCheckpointStore,
@@ -204,6 +207,10 @@ def execute_audio_transcript_bundle_job(
     ).encode("utf-8")
     _finalize_sidecar(sidecar=sidecar, request_handle=job.job_id, suppress_errors=False)
     job.artifact_path.write_bytes(artifact_bytes)
+    write_requested_transcript_formatter_artifacts(
+        job=job,
+        canonical_json_bytes=artifact_bytes,
+    )
     media = required_mapping(response, "media")
     duration_seconds = required_float(media, "duration_seconds")
     chunks = required_sequence(media, "chunks")

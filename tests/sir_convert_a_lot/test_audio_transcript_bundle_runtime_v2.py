@@ -282,7 +282,7 @@ def test_audio_job_persists_transcript_json_and_named_artifact(tmp_path: Path) -
     manifest = manifest_response.json()
     artifact_entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
     assert artifact_entries["transcript_json"]["availability"] == "available"
-    assert artifact_entries["transcript_md"]["availability"] == "not_implemented"
+    assert artifact_entries["transcript_md"]["availability"] == "unrequested"
 
 
 def test_audio_success_finalizes_sidecar_normalized_media(tmp_path: Path) -> None:

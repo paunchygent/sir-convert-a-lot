@@ -18,13 +18,16 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
-    FORBIDDEN_PUBLIC_BACKEND_OPTION_KEYS,
     AudioDiarizationMode,
-    AudioTranscriptionErrorCode,
     AudioTranscriptionPublicOptions,
 )
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
     AudioDiarizationOptions as DomainAudioDiarizationOptions,
+)
+from scripts.sir_convert_a_lot.domain.audio_transcription_options_v2 import (
+    AUDIO_TRANSCRIPTION_OPTION_KEYS_V2,
+    normalize_audio_output_artifacts,
+    reject_unsupported_audio_option_keys,
 )
 from scripts.sir_convert_a_lot.domain.specs import (
     AccelerationPolicy,
@@ -240,15 +243,6 @@ class DigiExamMigrationOptionsV2(BaseModel):
         return self
 
 
-_AUDIO_TRANSCRIPTION_OPTION_KEYS_V2 = frozenset(
-    {"diarization", "language", "max_duration_seconds", "output_artifacts"}
-)
-
-
-def _audio_public_options_error(detail: str) -> ValueError:
-    return ValueError(f"{AudioTranscriptionErrorCode.PUBLIC_OPTIONS_UNSUPPORTED.value}: {detail}")
-
-
 class AudioDiarizationOptionsV2(BaseModel):
     """Public speaker-hint options for audio transcription route admission."""
 
@@ -270,25 +264,20 @@ class AudioTranscriptionOptionsV2(BaseModel):
     max_duration_seconds: int = 7200
     output_artifacts: tuple[str, ...] = ("json",)
 
+    @field_validator("output_artifacts", mode="before")
+    @classmethod
+    def _normalize_output_artifacts(cls, value: object) -> tuple[str, ...]:
+        del cls
+        return normalize_audio_output_artifacts(value)
+
     @model_validator(mode="before")
     @classmethod
     def _reject_unsupported_option_keys(cls, value: object) -> object:
         del cls
-        if not isinstance(value, Mapping):
-            return value
-        keys = frozenset(key for key in value.keys() if isinstance(key, str))
-        forbidden = sorted(keys.intersection(FORBIDDEN_PUBLIC_BACKEND_OPTION_KEYS))
-        if forbidden:
-            raise _audio_public_options_error(f"unsupported option '{forbidden[0]}'")
-        unsupported = sorted(keys.difference(_AUDIO_TRANSCRIPTION_OPTION_KEYS_V2))
-        if unsupported:
-            raise _audio_public_options_error(f"unsupported option '{unsupported[0]}'")
-        return value
+        return reject_unsupported_audio_option_keys(value)
 
     @model_validator(mode="after")
     def _validate_public_options(self) -> "AudioTranscriptionOptionsV2":
-        if self.output_artifacts != ("json",):
-            raise _audio_public_options_error("unsupported option 'output_artifacts'")
         diarization = DomainAudioDiarizationOptions(
             mode=self.diarization.mode,
             num_speakers=self.diarization.num_speakers,
@@ -300,7 +289,7 @@ class AudioTranscriptionOptionsV2(BaseModel):
             diarization=diarization,
             max_duration_seconds=self.max_duration_seconds,
             output_artifacts=self.output_artifacts,
-            raw_option_keys=_AUDIO_TRANSCRIPTION_OPTION_KEYS_V2,
+            raw_option_keys=AUDIO_TRANSCRIPTION_OPTION_KEYS_V2,
         )
         failure = options.validation_failure()
         if failure is not None:

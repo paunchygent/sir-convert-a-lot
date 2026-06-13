@@ -1,0 +1,75 @@
+{
+  "artifact_key": "transcript_json",
+  "diarization": {
+    "requested_mode": "auto",
+    "status": "succeeded",
+    "used_mode": "auto"
+  },
+  "language": {
+    "confidence": 0.98,
+    "detected": "en",
+    "requested": "auto"
+  },
+  "media": {
+    "chunk_count": 1,
+    "chunks": [
+      {
+        "chunk_index": 0,
+        "end_seconds": 8.0,
+        "overlap_seconds": 0.0,
+        "start_seconds": 0.0
+      }
+    ],
+    "duration_seconds": 8.0
+  },
+  "metadata": {
+    "normalized_audio_sha256": "sha256:normalized-audio",
+    "runtime": {
+      "acceleration_used": "rocm",
+      "sidecar_contract_version": "stt-sidecar-v1"
+    },
+    "source": {
+      "sha256": "sha256:source-audio"
+    }
+  },
+  "schema_version": "transcript_json_v1",
+  "segments": [
+    {
+      "confidence": 0.94,
+      "end_seconds": 4.2,
+      "language": "en",
+      "segment_id": "seg-0001",
+      "speaker_label": "SPEAKER_00",
+      "start_seconds": 0.0,
+      "text": "Hello <there> & welcome."
+    },
+    {
+      "confidence": 0.82,
+      "end_seconds": 5.0,
+      "language": "en",
+      "segment_id": "seg-->bad\nid",
+      "speaker_label": "SPEAKER_01",
+      "start_seconds": 4.2,
+      "text": "Adjacent cue uses --> safely."
+    },
+    {
+      "confidence": null,
+      "end_seconds": 8.0,
+      "language": "sv",
+      "segment_id": "seg-0003",
+      "speaker_label": "SPEAKER_00",
+      "start_seconds": 4.9,
+      "text": "Overlapping segment stays in JSON order."
+    }
+  ],
+  "source": {
+    "filename": "teacher-meeting.m4a",
+    "format": "audio"
+  },
+  "transcript": {
+    "text": "Hello <there> & welcome. Adjacent cue uses --> safely. Overlapping segment stays in JSON order."
+  },
+  "warnings": [
+    "low_confidence_segment"
+  ]
+}

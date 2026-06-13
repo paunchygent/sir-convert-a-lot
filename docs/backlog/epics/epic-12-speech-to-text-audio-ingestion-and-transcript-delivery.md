@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-06-09'
-last_updated: '2026-06-09'
+last_updated: '2026-06-12'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
@@ -22,6 +22,7 @@ related:
   - docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md
   - docs/backlog/tasks/task-351-add-stt-sidecar-benchmark-runner-and-backend-profile-proof-preflight.md
   - docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md
+  - docs/backlog/tasks/task-358-implement-product-neutral-transcript-formatter-artifacts-over-canonical-json.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md
@@ -149,9 +150,14 @@ Planned story slices:
   and canonical `transcript_json` persistence. Formatter artifacts and
   downstream product UI/storage remain later lanes.
 - `docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md`
-  is the planned hardening slice for service-owned chunk planning,
+  is the completed hardening slice for service-owned chunk planning,
   checkpoints, and truthful non-null audio progress while long-running
   transcription jobs are still active.
+- `docs/backlog/tasks/task-358-implement-product-neutral-transcript-formatter-artifacts-over-canonical-json.md`
+  is the completed Story 54 execution slice for product-neutral TXT, Markdown,
+  VTT, and SRT formatter artifacts over canonical `transcript_json`.
+  Downstream apps still own product meaning, durable saves, filenames, and
+  workflow derivatives.
 
 ## Acceptance Criteria
 
