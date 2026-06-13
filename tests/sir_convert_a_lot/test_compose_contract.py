@@ -350,6 +350,7 @@ def test_compose_declares_private_qwen_provider_runtime() -> None:
     compose = _load_compose()
     service = _require_service(compose, "sir_convert_qwen_answer_key")
 
+    assert service.get("profiles") == ["qwen-answer-key"]
     assert service.get("image") == (
         "sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}"
     )

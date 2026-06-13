@@ -80,8 +80,9 @@ mini is default.
   and `SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=1`
   are required when mini is the primary provider.
 - Qwen rollback profile: `qwen36-llama-cpp-mtp`
-- Qwen production container: `sir_convert_qwen_answer_key`; do not recreate it
-  unless explicitly returning to the local provider.
+- Qwen production container: `sir_convert_qwen_answer_key`; it is gated behind
+  the `qwen-answer-key` Compose profile and must not be recreated unless
+  explicitly returning to the local provider.
 - Cache contract: `docs/runbooks/runbook-hemma-gpu-runtime.md`
 - Operator details:
   `docs/runbooks/runbook-answer-key-local-model-operator-guide.md`

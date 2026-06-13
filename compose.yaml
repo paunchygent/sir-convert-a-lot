@@ -219,6 +219,8 @@ services:
       start_period: 120s
 
   sir_convert_qwen_answer_key:
+    profiles:
+      - qwen-answer-key
     image: sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}
     build:
       context: .
