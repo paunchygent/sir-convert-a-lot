@@ -371,6 +371,84 @@ No further Task 359/360 code changes are requested by this review.
 Review retained with `changes_requested` on pass 1 and updated to `approved`
 after pass 2 on 2026-06-13.
 
+## Remediation Package Review
+
+- Review range:
+  `f86babc915982864c518b8e788848112be3b3309..e04668e`.
+- Review trigger: remediation package for the post-Review-45 proof gaps around
+  replay `/result` versus `/artifact` contract wording, deployed-revision
+  parity, invalid replay live negative proof, and correlation/log
+  observability.
+- Reviewer independence: fixed ruthless reviewer only; this pass did not author
+  the remediation code or implementation tests. The only intentional edit from
+  this pass is this retained review section.
+
+Files in the remediation range:
+
+- `.codex/handoff.md`
+- `docs/backlog/stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md`
+- `docs/backlog/tasks/task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts.md`
+- `docs/converters/audio-transcription-service-api-artifact-contract.md`
+- `scripts/sir_convert_a_lot/interfaces/http_api.py`
+- `tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py`
+- `tests/sir_convert_a_lot/test_transcript_replay_observability_v2.py`
+
+Remediation findings:
+
+- None. The remediation package is approved.
+
+Decision:
+
+- `approved`
+
+Reviewer inspection:
+
+- Confirmed the converter/story/handoff docs now distinguish the Service API v2
+  `/result` metadata envelope from singular `/artifact`, which streams the
+  content-safe `transcript_formatter_replay_result_v1` replay manifest body.
+  The docs no longer tell clients to expect replay `artifacts[]` directly from
+  `/result`.
+- Confirmed `scripts/sir_convert_a_lot/interfaces/http_api.py` adds
+  request-completion logging through the existing correlation middleware using
+  the caller or generated correlation id, HTTP method, matched route template,
+  status code, and duration. The log line does not include multipart bodies,
+  uploaded transcript JSON, display names, query strings, artifact bytes,
+  provider/model details, or media hashes.
+- Confirmed the new observability unit test drives an invalid replay job through
+  the public `transcript_json -> transcript_bundle` create path, asserts the
+  job fails, proves the caller correlation id appears in the service log, and
+  proves opaque transcript/display-label tokens are absent from captured logs.
+- Confirmed the existing replay lifecycle tests still prove `/result` exposes
+  only primary artifact metadata, singular `/artifact` returns the safe replay
+  manifest, named replay artifacts are limited to `transcript_txt`,
+  `transcript_md`, `transcript_vtt`, and `transcript_srt`, and
+  `transcript_json` named retrieval remains unavailable.
+- Inspected the sanitized local live negative report
+  `.artifacts/task-360/live-negative-replay-proof-20260613T1128Z.json`. It is
+  untracked and records the invalid overlay job reaching terminal `failed`,
+  `/result` and `/artifacts` returning `409 job_not_succeeded`, named
+  `transcript_txt` returning `409`, correlation id preservation in response
+  headers and error bodies, Sir prod HTTP logs containing the correlation id,
+  and bounded Gateway/Sir log scans excluding the opaque transcript/display
+  tokens.
+- Confirmed runtime deploy parity was proven for code revision
+  `8a66882b13370d09e4a0753770516c92fd3a8d8f`; the later `e04668e` commit is a
+  docs-evidence commit. The final docs-only redeploy for exact HEAD revision
+  parity remains an overseer post-review operation and is not a code-review
+  blocker.
+
+Reviewer-rerun verification:
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_transcript_replay_observability_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py -q`
+  passed with `32 passed`.
+
+Required follow-ups:
+
+- Overseer should perform the planned docs-only redeploy for `e04668e` after
+  review acceptance if exact deployed revision parity with current Git HEAD is
+  required by the deployment lane. No implementation change is requested by
+  this review.
+
 ## Checklist
 
 - [x] Findings captured
