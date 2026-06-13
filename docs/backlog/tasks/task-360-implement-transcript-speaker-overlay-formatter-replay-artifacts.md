@@ -96,6 +96,19 @@ job lifecycle.
   passed with `31 passed`, including requested, unrequested, invalid, canceled,
   artifact-retrieval, no-sidecar, exact artifact enum, exact speaker label, and
   no ignored replay `pdf_options`/`execution` coverage.
+- Deployed producer proof: `pdm run run-local-pdm hemma-deploy-and-verify
+  --expected-revision f721296cc8a0e9065aae9a12485365717435b19f --lane host`
+  passed with service, remote, and expected revisions all matching
+  `f721296cc8a0e9065aae9a12485365717435b19f`.
+- Live Gateway-to-producer proof from HuleEdu TASK-0675 passed against Sir
+  Convert revision `f721296cc8a0e9065aae9a12485365717435b19f` and Gateway
+  revision `cef615161aac0070f70233461fd85f1cf4a636c0`: public browser-auth
+  replay job `jobv2_33914fad35674215a70820ae7e` reached `succeeded`, `/result`
+  stayed metadata-only, `/artifact` and `/artifacts` returned content-safe
+  replay manifests with only `transcript_txt`, `transcript_md`,
+  `transcript_vtt`, and `transcript_srt`, all four named artifacts contained
+  the projected overlay label and transcript content, and
+  `transcript_json` named artifact retrieval returned `404`.
 
 ## Checklist
 
