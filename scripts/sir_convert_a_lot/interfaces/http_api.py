@@ -70,6 +70,7 @@ from scripts.sir_convert_a_lot.interfaces.http_validation_errors_v2 import (
 )
 
 logger = logging.getLogger("sir_convert_a_lot.http")
+logger.setLevel(logging.INFO)
 
 
 def _utc_now_iso() -> str:
