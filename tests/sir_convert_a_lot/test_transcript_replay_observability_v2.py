@@ -36,7 +36,7 @@ def test_replay_request_log_includes_correlation_without_payload_tokens(
     correlation_id = "corr-task-360-replay-observability"
     transcript_token = "opaque-transcript-content-token-not-for-logs"
     display_token = "opaque-display-label-token-not-for-logs"
-    caplog.set_level(logging.INFO, logger="sir_convert_a_lot.http")
+    caplog.set_level(logging.INFO, logger="uvicorn.error")
     client = TestClient(_app(tmp_path))
 
     response = _post_replay_job(

@@ -69,7 +69,7 @@ from scripts.sir_convert_a_lot.interfaces.http_validation_errors_v2 import (
     sanitized_request_validation_errors,
 )
 
-logger = logging.getLogger("sir_convert_a_lot.http")
+logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.INFO)
 
 
