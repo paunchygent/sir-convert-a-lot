@@ -20,6 +20,15 @@ durable implementation authority lives in governed docs.
   `.codex/long-term-memory/entries/`.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
 - Active Gateway cutover lane: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
+- Task 361 is implemented and marked completed:
+  `docs/backlog/tasks/task-361-consume-huleedu-internalidentitycontextv1-trust-profile-and-acceptance-smoke.md`.
+  Sir Convert now consumes HuleEdu sanitized internal-identity trust profiles
+  through typed runtime config, compares active key canonical DER SPKI
+  fingerprint to the profile fingerprint, and uses the profile key id,
+  issuer, audience, TTL, and skew in the existing verifier path. Local/prod
+  compose require sanitized `HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON`.
+  Acceptance smoke is content-safe test-material proof only; no live HuleEdu
+  signed headers were retained.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
@@ -120,6 +129,14 @@ decision/performance work.
   components. After implementation and OpenAPI export, focused suite
   `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
   passed with `31 passed` after retained Review 45 strictness fixes.
+- Task 361 red-first evidence on 2026-06-13:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_huleedu_internal_identity_trust_profile_v1.py -q`
+  first failed with `4 failed, 5 passed` because trust-profile config was
+  missing and missing-key / SPKI-mismatch / PEM-byte-fingerprint drift were not
+  fail-closed. Green focused proof later passed with `39 passed`:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_huleedu_internal_identity_trust_profile_v1.py tests/sir_convert_a_lot/test_structured_llm_settings_route_v2.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py -q`.
+  `pdm run typecheck-all`, `pdm run format-all`, and `pdm run lint-fix` also
+  passed before final docs/skills/handoff/diff gates.
 
 ## Stop Conditions
 

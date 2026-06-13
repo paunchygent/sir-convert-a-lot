@@ -51,6 +51,7 @@ services:
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - SIR_CONVERT_A_LOT_OPENAI_API_KEY=${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
+      - HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON=${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?Set sanitized HuleEdu hemma-production internal identity trust profile JSON}
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.service:app
@@ -128,6 +129,7 @@ services:
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - SIR_CONVERT_A_LOT_OPENAI_API_KEY=${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
+      - HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON=${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?Set sanitized HuleEdu hemma-production internal identity trust profile JSON}
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.service:app

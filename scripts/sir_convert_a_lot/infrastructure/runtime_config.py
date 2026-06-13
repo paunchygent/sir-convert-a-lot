@@ -20,6 +20,15 @@ from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v
     PublicExamConverterAccessProfileV2,
 )
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
+from scripts.sir_convert_a_lot.infrastructure.internal_identity_trust_config import (
+    internal_identity_runtime_config_from_env,
+)
+from scripts.sir_convert_a_lot.infrastructure.pem_public_key_config import (
+    normalize_pem_text as _normalize_pem_text,
+)
+from scripts.sir_convert_a_lot.infrastructure.pem_public_key_config import (
+    read_pem_text_path as _read_public_key_path,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import (
     PublicExamConverterRuntimeAccessConfig,
     ServiceConfig,
@@ -72,22 +81,6 @@ def _parse_bounded_int_env(
     return value
 
 
-def _normalize_pem_text(value: str, *, field_name: str) -> str:
-    """Normalize PEM text supplied inline or through JSON environment values."""
-
-    normalized = value.strip().replace("\\n", "\n")
-    if normalized == "":
-        raise ValueError(f"{field_name} must not be empty when configured")
-    return normalized
-
-
-def _read_public_key_path(value: str, *, field_name: str) -> str:
-    path = Path(value.strip())
-    if not path.exists():
-        raise ValueError(f"{field_name} points to a missing file: {path}")
-    return _normalize_pem_text(path.read_text(encoding="utf-8"), field_name=field_name)
-
-
 def _optional_secret_from_env(name: str) -> str | None:
     raw = os.getenv(name)
     if raw is None:
@@ -96,62 +89,6 @@ def _optional_secret_from_env(name: str) -> str | None:
     if normalized == "":
         return None
     return normalized
-
-
-def _internal_identity_public_keys_from_env() -> dict[str, str]:
-    """Return configured HuleEdu internal-identity public keys by key id."""
-
-    public_keys: dict[str, str] = {}
-    trusted_json = os.getenv("HULEEDU_INTERNAL_IDENTITY_TRUSTED_PUBLIC_KEYS_JSON")
-    if trusted_json is not None and trusted_json.strip() != "":
-        try:
-            decoded = json.loads(trusted_json)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                "HULEEDU_INTERNAL_IDENTITY_TRUSTED_PUBLIC_KEYS_JSON must be valid JSON"
-            ) from exc
-        if not isinstance(decoded, dict):
-            raise ValueError(
-                "HULEEDU_INTERNAL_IDENTITY_TRUSTED_PUBLIC_KEYS_JSON must decode to an object"
-            )
-        for raw_key_id, raw_public_key in decoded.items():
-            if not isinstance(raw_key_id, str) or not isinstance(raw_public_key, str):
-                raise ValueError(
-                    "HULEEDU_INTERNAL_IDENTITY_TRUSTED_PUBLIC_KEYS_JSON entries must map "
-                    "string key ids to PEM strings"
-                )
-            key_id = raw_key_id.strip()
-            if key_id == "":
-                raise ValueError(
-                    "HULEEDU_INTERNAL_IDENTITY_TRUSTED_PUBLIC_KEYS_JSON contains a blank key id"
-                )
-            public_keys[key_id] = _normalize_pem_text(
-                raw_public_key,
-                field_name=f"HULEEDU_INTERNAL_IDENTITY_TRUSTED_PUBLIC_KEYS_JSON[{key_id}]",
-            )
-
-    signing_key_id = os.getenv(
-        "HULEEDU_INTERNAL_IDENTITY_SIGNING_KEY_ID", "gateway-identity-rs256-v1"
-    ).strip()
-    inline_public_key = os.getenv("HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY")
-    public_key_path = os.getenv("HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH")
-    if inline_public_key is not None and inline_public_key.strip() != "":
-        public_keys.setdefault(
-            signing_key_id,
-            _normalize_pem_text(
-                inline_public_key,
-                field_name="HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY",
-            ),
-        )
-    elif public_key_path is not None and public_key_path.strip() != "":
-        public_keys.setdefault(
-            signing_key_id,
-            _read_public_key_path(
-                public_key_path,
-                field_name="HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH",
-            ),
-        )
-    return public_keys
 
 
 def _public_exam_converter_grant_public_keys_from_env() -> dict[str, str]:
@@ -341,18 +278,7 @@ def service_config_from_env() -> ServiceConfig:
         os.getenv("SIR_CONVERT_A_LOT_WEBHOOK_SECRET_OVERLAP_SECONDS", str(24 * 3600))
     )
     enable_webhook_delivery = os.getenv("SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY", "0") == "1"
-    internal_identity_ttl_seconds = _parse_bounded_int_env(
-        name="HULEEDU_INTERNAL_IDENTITY_TTL_SECONDS",
-        default=60,
-        minimum=1,
-        maximum=3600,
-    )
-    internal_identity_allowed_clock_skew_seconds = _parse_bounded_int_env(
-        name="HULEEDU_INTERNAL_IDENTITY_ALLOWED_CLOCK_SKEW_SECONDS",
-        default=5,
-        minimum=0,
-        maximum=300,
-    )
+    internal_identity_config = internal_identity_runtime_config_from_env()
 
     default_ocr_engine_raw = os.getenv("SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE", "auto").strip()
     default_pdf_ocr_engine = OcrEngineV2.AUTO
@@ -424,19 +350,16 @@ def service_config_from_env() -> ServiceConfig:
         audio_transcription_sidecar_timeout_seconds=float(
             os.getenv("SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS", "7200")
         ),
-        internal_identity_public_keys=_internal_identity_public_keys_from_env(),
-        internal_identity_expected_audience=os.getenv(
-            "HULEEDU_INTERNAL_IDENTITY_AUDIENCE", "sir-convert-a-lot"
-        ).strip()
-        or "sir-convert-a-lot",
-        internal_identity_expected_issuer=os.getenv(
-            "HULEEDU_INTERNAL_IDENTITY_ISSUER", "api_gateway_service"
-        ).strip()
-        or "api_gateway_service",
-        internal_identity_ttl_seconds=internal_identity_ttl_seconds,
-        internal_identity_allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
+        internal_identity_public_keys=internal_identity_config.public_keys,
+        internal_identity_expected_audience=internal_identity_config.expected_audience,
+        internal_identity_expected_issuer=internal_identity_config.expected_issuer,
+        internal_identity_ttl_seconds=internal_identity_config.ttl_seconds,
+        internal_identity_allowed_clock_skew_seconds=(
+            internal_identity_config.allowed_clock_skew_seconds
+        ),
+        internal_identity_trust_profile=internal_identity_config.trust_profile,
         public_exam_converter_access=_public_exam_converter_access_from_env(
-            allowed_clock_skew_seconds=internal_identity_allowed_clock_skew_seconds,
+            allowed_clock_skew_seconds=internal_identity_config.allowed_clock_skew_seconds,
         ),
         exam_authoring_source_state_signature_secret=_optional_secret_from_env(
             "SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET"
