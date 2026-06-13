@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 LOCAL_START = REPO_ROOT / "scripts" / "devops" / "hemma-command-start.sh"
 LOCAL_MONITOR = REPO_ROOT / "scripts" / "devops" / "hemma-command-monitor.sh"
+LOCAL_PROD_RECREATE = REPO_ROOT / "scripts" / "devops" / "hemma-prod-recreate.sh"
 REMOTE_START = REPO_ROOT / "scripts" / "devops" / "hemma-command-start-remote.sh"
 REMOTE_MONITOR = REPO_ROOT / "scripts" / "devops" / "hemma-command-monitor-remote.sh"
 DEFAULT_HOST_REMEDIATE = (
@@ -45,6 +46,17 @@ def test_local_detached_launcher_delegates_through_run_hemma() -> None:
     assert "pdm run run-local-pdm run-hemma" in start_text
     assert "scripts/devops/hemma-command-monitor-remote.sh" in monitor_text
     assert "pdm run run-local-pdm run-hemma" in monitor_text
+
+
+def test_prod_recreate_preserves_skill_repository_across_sudo() -> None:
+    script_text = LOCAL_PROD_RECREATE.read_text(encoding="utf-8")
+
+    assert "REMOTE_SKILL_REPOSITORY=" in script_text
+    assert '"SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"' in script_text
+    assert (
+        '"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"'
+        in script_text
+    )
 
 
 def test_remote_detached_launcher_writes_log_and_pid_breadcrumbs() -> None:

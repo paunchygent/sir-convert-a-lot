@@ -18,6 +18,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 REMOTE_PDM="${SIR_CONVERT_A_LOT_HEMMA_PDM:-/home/paunchygent/.local/bin/pdm}"
 REMOTE_DEPLOY_PATH="${SIR_CONVERT_A_LOT_HEMMA_DEPLOY_PATH:-/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
+REMOTE_SKILL_REPOSITORY="${SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY:-/home/paunchygent/apps/skill-repository}"
 
 usage() {
   cat >&2 <<'EOF'
@@ -52,4 +53,6 @@ cd "${REPO_ROOT}"
 exec pdm run run-local-pdm run-hemma -- \
   sudo -n env \
   "PATH=${REMOTE_DEPLOY_PATH}" \
+  "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}" \
+  "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}" \
   "${REMOTE_PDM}" run prod-recreate "${services[@]}"
