@@ -13,6 +13,7 @@ Relationships:
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from time import perf_counter
@@ -67,6 +68,8 @@ from scripts.sir_convert_a_lot.interfaces.http_routes_webhooks_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_validation_errors_v2 import (
     sanitized_request_validation_errors,
 )
+
+logger = logging.getLogger("sir_convert_a_lot.http")
 
 
 def _utc_now_iso() -> str:
@@ -162,6 +165,15 @@ def create_app(
         duration_seconds = max(0.0, perf_counter() - started_at)
         request_duration.labels(request.method, path_template).observe(duration_seconds)
         request_counter.labels(request.method, path_template, str(response.status_code)).inc()
+        logger.info(
+            "HTTP request completed correlation_id=%s method=%s path=%s status_code=%s "
+            "duration_ms=%d",
+            correlation_id,
+            request.method,
+            path_template,
+            response.status_code,
+            round(duration_seconds * 1000),
+        )
         return response
 
     @app.exception_handler(ServiceError)

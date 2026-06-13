@@ -412,15 +412,19 @@ def _post_replay_job(
     wait_seconds: int,
     file_bytes: bytes | None = None,
     spec: dict[str, object] | None = None,
+    correlation_id: str | None = None,
 ) -> Response:
     payload = spec if spec is not None else _replay_job_spec()
     files: _MultipartFiles = [
         ("file", ("saved-transcript.json", file_bytes or _canonical_bytes(), "application/json")),
         ("job_spec", (None, json.dumps(payload))),
     ]
+    headers = {**_headers(), "Idempotency-Key": idempotency_key}
+    if correlation_id is not None:
+        headers["X-Correlation-ID"] = correlation_id
     return client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
-        headers={**_headers(), "Idempotency-Key": idempotency_key},
+        headers=headers,
         files=files,
     )
 

@@ -154,10 +154,13 @@ Implementation evidence:
 - Replay options are exposed as typed OpenAPI components:
   `TranscriptFormatterReplayOptionsV2`,
   `TranscriptFormatterRequestedArtifactV2`, and `SpeakerLabelOverrideV2`.
-- Replay result and singular artifact surfaces return a content-safe
-  `transcript_formatter_replay_result_v1` manifest with no transcript text,
-  display names, or canonical JSON truth. Named replay artifacts remain only
-  `transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`.
+- Replay `/result` returns metadata for the primary
+  `transcript_replay_bundle_manifest.json` artifact, while singular
+  `/artifact` streams the content-safe
+  `transcript_formatter_replay_result_v1` manifest body. Neither surface
+  exposes transcript text, display names, or canonical JSON truth. Named replay
+  artifacts remain only `transcript_txt`, `transcript_md`, `transcript_vtt`,
+  and `transcript_srt`.
 - Focused replay/OpenAPI proof:
   `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
   passed with `31 passed`, including requested, unrequested, invalid, canceled,

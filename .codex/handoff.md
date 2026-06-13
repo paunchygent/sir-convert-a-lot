@@ -32,9 +32,10 @@ durable implementation authority lives in governed docs.
   `transcript_json_v1`, strict `transcript_formatter_replay_v1` options,
   closed requested artifacts `txt|md|vtt|srt`, typed
   `speaker_label_overrides`, and returned `transcript_txt`/`md`/`vtt`/`srt`
-  named artifacts. Replay does not emit `transcript_json`; `/result` and
-  singular `/artifact` return a content-safe
-  `transcript_formatter_replay_result_v1` manifest. No bespoke endpoint,
+  named artifacts. Replay does not emit `transcript_json`; `/result` returns
+  metadata for the primary `transcript_replay_bundle_manifest.json` artifact,
+  while singular `/artifact` streams the content-safe
+  `transcript_formatter_replay_result_v1` manifest body. No bespoke endpoint,
   downstream formatter, source-audio replay, or Gateway rewriting is part of
   the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.

@@ -96,8 +96,18 @@ job lifecycle.
   passed with `31 passed`, including requested, unrequested, invalid, canceled,
   artifact-retrieval, no-sidecar, exact artifact enum, exact speaker label, and
   no ignored replay `pdf_options`/`execution` coverage.
-- Deployed producer proof: `pdm run run-local-pdm hemma-deploy-and-verify
-  --expected-revision f721296cc8a0e9065aae9a12485365717435b19f --lane host`
+- Remediation proof tightened ambiguous client docs: `/result` is documented as
+  a metadata envelope whose `result.artifact` points at
+  `transcript_replay_bundle_manifest.json`; singular `/artifact` is documented
+  as the route that streams the replay manifest body.
+- Red-first observability proof
+  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_replay_observability_v2.py -q`
+  first failed because replay logs did not include the caller correlation id,
+  then passed after the HTTP middleware emitted content-safe request-completion
+  logs with correlation id, method, route template, status, and duration. The
+  combined replay-focused suite later passed with `32 passed`:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_transcript_replay_observability_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py -q`.
+- Deployed producer proof: `pdm run run-local-pdm hemma-deploy-and-verify --expected-revision f721296cc8a0e9065aae9a12485365717435b19f --lane host`
   passed with service, remote, and expected revisions all matching
   `f721296cc8a0e9065aae9a12485365717435b19f`.
 - Live Gateway-to-producer proof from HuleEdu TASK-0675 passed against Sir

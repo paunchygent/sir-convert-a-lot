@@ -149,12 +149,16 @@ surrounding whitespace only after raw control-character validation.
 Replay job specs reject `pdf_options` and `execution`; those fields are not
 ignored, normalized, or folded out of idempotency fingerprints.
 
-Replay `/result` and singular `/artifact` surfaces use a content-safe
-`transcript_formatter_replay_result_v1` bundle manifest named
-`transcript_replay_bundle_manifest.json`. That primary manifest contains
-operational artifact metadata only; it must not include transcript text,
-utterances, display names, source content, or a reissued canonical JSON
-payload. The named replay artifact list also omits `transcript_json`.
+Replay `/result` returns the normal Service API v2 result envelope; its
+`result.artifact` metadata points at the primary
+`transcript_replay_bundle_manifest.json` artifact by filename, size, digest, and
+content type, but `/result` does not inline the replay `artifacts[]` manifest.
+Singular `/artifact` streams the content-safe
+`transcript_formatter_replay_result_v1` bundle manifest body. That primary
+manifest contains operational artifact metadata only; it must not include
+transcript text, utterances, display names, source content, or a reissued
+canonical JSON payload. The named replay artifact list also omits
+`transcript_json`.
 
 Speaker overrides apply only to formatter display labels. The replay route must
 reject unknown canonical speaker labels, duplicate override labels, empty
