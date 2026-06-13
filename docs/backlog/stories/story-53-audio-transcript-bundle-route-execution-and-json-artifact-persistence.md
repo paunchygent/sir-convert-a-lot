@@ -5,7 +5,7 @@ type: story
 status: completed
 priority: high
 created: '2026-06-09'
-last_updated: '2026-06-10'
+last_updated: '2026-06-13'
 related:
   - docs/backlog/epics/epic-12-speech-to-text-audio-ingestion-and-transcript-delivery.md
   - docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md
@@ -15,6 +15,7 @@ related:
   - docs/backlog/tasks/task-355-register-audio-transcript-bundle-route-admission-in-service-api-v2.md
   - docs/backlog/tasks/task-356-execute-audio-transcript-jobs-and-persist-canonical-transcript-json.md
   - docs/backlog/tasks/task-357-harden-audio-transcript-chunk-progress-and-checkpointed-stt-execution.md
+  - docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md
   - docs/backlog/reviews/review-40-ruthless-review-of-stt-sidecar-hiprtc-live-proof.md
   - docs/backlog/reviews/review-42-ruthless-review-of-task-356-audio-transcript-runtime-json-persistence.md
   - docs/decisions/0013-speech-to-text-sidecar-and-audio-ingestion-governance.md
@@ -76,6 +77,11 @@ Current runtime truth:
 - Downstream and internal adapter docs must continue to distinguish completed
   JSON transcript generation from future formatter artifacts and product-owned
   durable save semantics.
+- Task 362 remediates production runtime drift discovered after the accepted
+  chunk/checkpoint hardening: Gateway timeout widening alone does not prove
+  throughput remediation. The STT sidecar must use FasterWhisper
+  `BatchedInferencePipeline` with explicit `batch_size=8`, and expose that
+  bounded runtime truth in `/capabilities`.
 
 ## Scope
 

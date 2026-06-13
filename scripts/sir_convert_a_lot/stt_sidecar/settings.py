@@ -34,6 +34,7 @@ class SttSidecarSettings:
     hf_cache_container_label: str
     acceleration_family: str
     beam_size: int
+    batch_size: int
 
     @classmethod
     def from_env(cls) -> "SttSidecarSettings":
@@ -66,10 +67,19 @@ class SttSidecarSettings:
                 "huggingface_cache_mount",
             ),
             acceleration_family=_env("SIR_STT_SIDECAR_ACCELERATION_FAMILY", "rocm"),
-            beam_size=int(_env("SIR_STT_SIDECAR_BEAM_SIZE", "5")),
+            beam_size=_positive_int_env("SIR_STT_SIDECAR_BEAM_SIZE", 5),
+            batch_size=_positive_int_env("SIR_STT_SIDECAR_BATCH_SIZE", 8),
         )
 
 
 def _env(name: str, default: str) -> str:
     value = os.environ.get(name, "").strip()
     return value if value != "" else default
+
+
+def _positive_int_env(name: str, default: int) -> int:
+    raw_value = _env(name, str(default))
+    value = int(raw_value)
+    if value < 1:
+        raise ValueError(f"{name} must be a positive integer.")
+    return value

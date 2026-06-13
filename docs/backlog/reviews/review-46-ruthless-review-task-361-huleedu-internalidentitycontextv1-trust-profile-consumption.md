@@ -19,6 +19,7 @@ labels:
   - internal-identity
   - trust-profile
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -203,11 +204,9 @@ Reviewer inspection:
 - Inspected diffs and final file contents for the Task 361 changed files.
 - Used Context7 for current PyCA cryptography API docs and confirmed the
   implementation matches `serialization.load_pem_public_key` plus
-  `public_bytes(encoding=serialization.Encoding.DER,
-  format=serialization.PublicFormat.SubjectPublicKeyInfo)`.
+  `public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo)`.
 - Ran scoped forbidden-pattern and typing-escape searches over reviewed code,
-  tests, docs, and compose files. No slice-local `Any`, `cast`, `type:
-  ignore`, lint ignore, compatibility shim, deceptive catch-all, leaked
+  tests, docs, and compose files. No slice-local `Any`, `cast`, `type: ignore`, lint ignore, compatibility shim, deceptive catch-all, leaked
   signing material, or API-key identity fallback was found.
 - Reviewed route authorization snippets for protected job/operator paths and
   existing HTTP boundary tests for API-key-only rejection.

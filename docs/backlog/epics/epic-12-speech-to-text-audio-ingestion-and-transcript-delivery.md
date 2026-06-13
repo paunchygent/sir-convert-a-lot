@@ -5,7 +5,7 @@ type: epic
 status: in_progress
 priority: high
 created: '2026-06-09'
-last_updated: '2026-06-12'
+last_updated: '2026-06-13'
 related:
   - docs/backlog/programmes/programme-01-sir-convert-a-lot-platform-foundation.md
   - docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
@@ -26,6 +26,7 @@ related:
   - docs/backlog/tasks/task-358-implement-product-neutral-transcript-formatter-artifacts-over-canonical-json.md
   - docs/backlog/tasks/task-359-define-transcript-speaker-overlay-formatter-replay-contract.md
   - docs/backlog/tasks/task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts.md
+  - docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-09-expose-transcript-formatter-replay-through-sir-convert-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
@@ -180,6 +181,12 @@ Planned story slices:
   implements the Story 56 replay runtime and returns overlay-aware
   `transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`
   artifacts through the existing v2 lifecycle.
+- `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`
+  remediates production STT sidecar runtime drift by requiring FasterWhisper
+  `BatchedInferencePipeline`, explicit `batch_size=8`, sanitized capability
+  output, and prod compose drift tests. The 34-second first-response issue is
+  not treated as solved by Gateway timeout alone; production runtime must use
+  batched inference.
 
 ## Acceptance Criteria
 

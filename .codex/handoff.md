@@ -31,6 +31,15 @@ durable implementation authority lives in governed docs.
   signed headers were retained.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
+- STT production remediation Task 362 is completed:
+  `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
+  The production sidecar now requires FasterWhisper
+  `BatchedInferencePipeline`, passes `batch_size=8` during chunk transcription,
+  exposes sanitized `/capabilities` truth with
+  `backend_family=faster_whisper` and `batch_size=8`, and pins prod compose
+  `SIR_STT_SIDECAR_BATCH_SIZE=8`. RCA: the observed 34-second first response
+  was not solved by Gateway timeout alone; production must use batched
+  inference.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -137,6 +146,17 @@ decision/performance work.
   `pdm run pytest-root tests/sir_convert_a_lot/test_huleedu_internal_identity_trust_profile_v1.py tests/sir_convert_a_lot/test_structured_llm_settings_route_v2.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py -q`.
   `pdm run typecheck-all`, `pdm run format-all`, and `pdm run lint-fix` also
   passed before final docs/skills/handoff/diff gates.
+- Task 362 red-first evidence on 2026-06-13:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py tests/sir_convert_a_lot/test_compose_contract.py -q`
+  first failed with `9 failed, 17 passed` because sidecar settings had no
+  `batch_size` and prod compose omitted `SIR_STT_SIDECAR_BATCH_SIZE`.
+  Focused green proof later passed with `27 passed` via
+  `tests/sir_convert_a_lot/test_stt_sidecar_batched_runtime.py`,
+  `tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py`, and
+  `tests/sir_convert_a_lot/test_compose_contract.py` after runtime batching,
+  capability, startup-wrapper, and compose-contract changes.
+  `pdm run format-all`, `pdm run typecheck-all`, and `pdm run lint-fix` passed;
+  docs/skills/handoff/diff gates passed after docs sync.
 
 ## Stop Conditions
 

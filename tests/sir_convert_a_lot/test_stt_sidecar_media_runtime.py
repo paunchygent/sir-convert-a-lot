@@ -36,10 +36,11 @@ class _ForbiddenWhisperModel:
         audio: str,
         *,
         beam_size: int,
+        batch_size: int,
         word_timestamps: bool,
         language: str | None,
     ) -> tuple[list[object], object]:
-        del audio, beam_size, word_timestamps, language
+        del audio, beam_size, batch_size, word_timestamps, language
         self.transcribe_called = True
         raise AssertionError("Transcription must not run for over-limit media.")
 
@@ -99,10 +100,11 @@ class _SuccessfulWhisperModel:
         audio: str,
         *,
         beam_size: int,
+        batch_size: int,
         word_timestamps: bool,
         language: str | None,
     ) -> tuple[list[_FakeWhisperSegment], _FakeWhisperInfo]:
-        del audio, beam_size, word_timestamps, language
+        del audio, beam_size, batch_size, word_timestamps, language
         return [_FakeWhisperSegment(start=0.0, end=1.5, text="Hello.")], _FakeWhisperInfo(
             language="en"
         )
@@ -381,6 +383,7 @@ def _settings() -> SttSidecarSettings:
         hf_cache_container_label="huggingface_cache_mount",
         acceleration_family="rocm",
         beam_size=5,
+        batch_size=8,
     )
 
 

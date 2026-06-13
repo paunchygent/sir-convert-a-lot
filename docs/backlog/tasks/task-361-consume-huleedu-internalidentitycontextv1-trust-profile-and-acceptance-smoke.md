@@ -122,8 +122,7 @@ proofs rely on the verifier.
   passed with `9 passed`.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_huleedu_internal_identity_trust_profile_v1.py tests/sir_convert_a_lot/test_structured_llm_settings_route_v2.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py -q`
   passed with `39 passed`.
-- `pdm run typecheck-all` passed with `Success: no issues found in 878 source
-  files`.
+- `pdm run typecheck-all` passed with `Success: no issues found in 878 source files`.
 - `pdm run format-all` passed.
 - `pdm run lint-fix` passed and ran the embedded docs validators.
 - `pdm run docs-sync` passed and refreshed generated indexes.

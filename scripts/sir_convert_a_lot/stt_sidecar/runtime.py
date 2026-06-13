@@ -58,13 +58,18 @@ from scripts.sir_convert_a_lot.stt_sidecar.settings import SttSidecarSettings
 
 
 class WhisperModelLike(Protocol):
-    """FasterWhisper model behavior used by the sidecar runtime."""
+    """Loaded FasterWhisper model accepted by the batched pipeline."""
+
+
+class BatchedWhisperModelLike(Protocol):
+    """Batched FasterWhisper pipeline behavior used by the sidecar runtime."""
 
     def transcribe(
         self,
         audio: str,
         *,
         beam_size: int,
+        batch_size: int,
         word_timestamps: bool,
         language: str | None,
     ) -> tuple[Iterable[object], object]:
@@ -82,6 +87,13 @@ class WhisperModelFactory(Protocol):
         compute_type: str,
     ) -> WhisperModelLike:
         """Build a FasterWhisper model."""
+
+
+class BatchedInferencePipelineFactory(Protocol):
+    """Callable FasterWhisper batched inference pipeline factory."""
+
+    def __call__(self, *, model: WhisperModelLike) -> BatchedWhisperModelLike:
+        """Wrap a FasterWhisper model with batched inference."""
 
 
 class DiarizationPipelineLike(Protocol):
@@ -113,7 +125,7 @@ class SttSidecarRuntime:
 
     def __init__(self, settings: SttSidecarSettings) -> None:
         self._settings = settings
-        self._stt_model: WhisperModelLike | None = None
+        self._stt_model: BatchedWhisperModelLike | None = None
         self._diarization_pipeline: DiarizationPipelineLike | None = None
         self._ready = False
         self._gpu_ready = False
@@ -132,11 +144,21 @@ class SttSidecarRuntime:
             raise RuntimeError("GPU runtime is required for the STT sidecar.")
         faster_whisper_module = import_module("faster_whisper")
         whisper_factory: WhisperModelFactory = getattr(faster_whisper_module, "WhisperModel")
-        self._stt_model = whisper_factory(
+        try:
+            batched_pipeline_factory: BatchedInferencePipelineFactory = getattr(
+                faster_whisper_module,
+                "BatchedInferencePipeline",
+            )
+        except AttributeError as exc:
+            raise RuntimeError(
+                "faster-whisper BatchedInferencePipeline is required for the STT sidecar."
+            ) from exc
+        whisper_model = whisper_factory(
             self._settings.stt_model_id,
             device="cuda",
             compute_type=self._settings.compute_type,
         )
+        self._stt_model = batched_pipeline_factory(model=whisper_model)
         pyannote_module = import_module("pyannote.audio")
         pipeline_factory: DiarizationPipelineFactory = getattr(pyannote_module, "Pipeline")
         token = os.environ.get(self._settings.hf_token_env_name, "").strip()
@@ -187,6 +209,7 @@ class SttSidecarRuntime:
             "transcription": {
                 "profile_label": self._settings.stt_profile_label,
                 "backend_family": "faster_whisper",
+                "batch_size": self._settings.batch_size,
                 "languages": ["auto", "sv", "en"],
                 "word_timestamps_supported": True,
             },
@@ -375,6 +398,7 @@ class SttSidecarRuntime:
         segment_iterable, info = self._stt_model.transcribe(
             normalized_path.as_posix(),
             beam_size=self._settings.beam_size,
+            batch_size=self._settings.batch_size,
             word_timestamps=True,
             language=language,
         )
