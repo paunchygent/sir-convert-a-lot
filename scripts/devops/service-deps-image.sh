@@ -163,11 +163,18 @@ prune_superseded_dependency_images() {
   fi
 
   echo "service-deps-image: pruning superseded dependency image tags for ${IMAGE_REPOSITORY}" >&2
-  if ! python -m scripts.sir_convert_a_lot.devops.prune_superseded_deps_images \
-    --execute \
-    --repository "${IMAGE_REPOSITORY}" \
-    --keep-tag local \
-    --keep-tag "${DEPENDENCY_IMAGE_HASH}"; then
+  prune_args=(
+    python -m scripts.sir_convert_a_lot.devops.prune_superseded_deps_images
+    --execute
+    --repository "${IMAGE_REPOSITORY}"
+    --keep-tag local
+    --keep-tag "${DEPENDENCY_IMAGE_HASH}"
+  )
+  for docker_cmd_part in "${SIR_CONVERT_DOCKER_CMD[@]}"; do
+    prune_args+=("--docker-command=${docker_cmd_part}")
+  done
+
+  if ! "${prune_args[@]}"; then
     echo "service-deps-image: superseded dependency image cleanup failed; continuing" >&2
   fi
 }

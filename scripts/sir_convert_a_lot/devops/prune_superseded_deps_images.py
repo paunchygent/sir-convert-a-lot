@@ -20,6 +20,8 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+DockerCommand = tuple[str, ...]
+
 
 @dataclass(frozen=True, slots=True)
 class DockerImage:
@@ -87,10 +89,14 @@ def plan_prune(
     )
 
 
-def docker_output(args: Sequence[str]) -> str:
+def docker_output(
+    args: Sequence[str],
+    *,
+    docker_command: DockerCommand = ("docker",),
+) -> str:
     """Run Docker and return stdout text."""
     completed = subprocess.run(
-        list(args),
+        [*docker_command, *args],
         check=True,
         capture_output=True,
         text=True,
@@ -98,25 +104,32 @@ def docker_output(args: Sequence[str]) -> str:
     return completed.stdout
 
 
-def list_local_images() -> tuple[DockerImage, ...]:
+def list_local_images(
+    *,
+    docker_command: DockerCommand = ("docker",),
+) -> tuple[DockerImage, ...]:
     """Return local Docker images with full image IDs."""
     output = docker_output(
         (
-            "docker",
             "image",
             "ls",
             "--no-trunc",
             "--format",
             "{{.Repository}}\t{{.Tag}}\t{{.ID}}",
-        )
+        ),
+        docker_command=docker_command,
     )
     return parse_image_rows(output)
 
 
-def inspect_image_id(image_ref: str) -> str | None:
+def inspect_image_id(
+    image_ref: str,
+    *,
+    docker_command: DockerCommand = ("docker",),
+) -> str | None:
     """Resolve an image reference to a Docker image ID if it exists locally."""
     completed = subprocess.run(
-        ["docker", "image", "inspect", "--format", "{{.Id}}", image_ref],
+        [*docker_command, "image", "inspect", "--format", "{{.Id}}", image_ref],
         check=False,
         capture_output=True,
         text=True,
@@ -129,35 +142,50 @@ def inspect_image_id(image_ref: str) -> str | None:
     return image_id
 
 
-def collect_running_image_ids() -> set[str]:
+def collect_running_image_ids(
+    *,
+    docker_command: DockerCommand = ("docker",),
+) -> set[str]:
     """Resolve running container image refs to protected Docker image IDs."""
-    output = docker_output(("docker", "ps", "--format", "{{.Image}}"))
+    output = docker_output(("ps", "--format", "{{.Image}}"), docker_command=docker_command)
     protected_ids: set[str] = set()
     for image_ref in output.splitlines():
         stripped = image_ref.strip()
         if not stripped:
             continue
-        image_id = inspect_image_id(stripped)
+        image_id = inspect_image_id(stripped, docker_command=docker_command)
         if image_id is not None:
             protected_ids.add(image_id)
     return protected_ids
 
 
-def collect_keep_image_ids(repositories: set[str], keep_tags: set[str]) -> set[str]:
+def collect_keep_image_ids(
+    repositories: set[str],
+    keep_tags: set[str],
+    *,
+    docker_command: DockerCommand = ("docker",),
+) -> set[str]:
     """Resolve explicit repository:tag keep pairs to protected image IDs."""
     protected_ids: set[str] = set()
     for repository in sorted(repositories):
         for tag in sorted(keep_tags):
-            image_id = inspect_image_id(f"{repository}:{tag}")
+            image_id = inspect_image_id(
+                f"{repository}:{tag}",
+                docker_command=docker_command,
+            )
             if image_id is not None:
                 protected_ids.add(image_id)
     return protected_ids
 
 
-def remove_refs(refs: Sequence[str]) -> None:
+def remove_refs(
+    refs: Sequence[str],
+    *,
+    docker_command: DockerCommand = ("docker",),
+) -> None:
     """Remove Docker image refs without forcing protected image IDs away."""
     for ref in refs:
-        subprocess.run(["docker", "image", "rm", ref], check=True)
+        subprocess.run([*docker_command, "image", "rm", ref], check=True)
 
 
 def parse_tag_list(raw_tags: Sequence[str]) -> set[str]:
@@ -196,6 +224,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Actually remove selected refs. Without this flag, only print a dry run.",
     )
+    parser.add_argument(
+        "--docker-command",
+        action="append",
+        help=(
+            "Docker command element to prepend to Docker arguments; repeat for "
+            "multi-part commands such as sudo, -n, docker. Defaults to docker."
+        ),
+    )
     return parser
 
 
@@ -204,9 +240,18 @@ def run(argv: Sequence[str]) -> int:
     args = build_parser().parse_args(argv)
     repositories = set(args.repository)
     keep_tags = parse_tag_list(args.keep_tag)
-    images = list_local_images()
-    protected_image_ids = collect_running_image_ids()
-    protected_image_ids.update(collect_keep_image_ids(repositories, keep_tags))
+    docker_command = tuple(args.docker_command or ("docker",))
+    if not docker_command or any(not part.strip() for part in docker_command):
+        raise SystemExit("--docker-command values must be non-empty")
+    images = list_local_images(docker_command=docker_command)
+    protected_image_ids = collect_running_image_ids(docker_command=docker_command)
+    protected_image_ids.update(
+        collect_keep_image_ids(
+            repositories,
+            keep_tags,
+            docker_command=docker_command,
+        )
+    )
     plan = plan_prune(
         images=images,
         repositories=repositories,
@@ -222,7 +267,7 @@ def run(argv: Sequence[str]) -> int:
     for ref in plan.refs_to_remove:
         print(f"{mode} superseded dependency image tag: {ref}")
     if args.execute:
-        remove_refs(plan.refs_to_remove)
+        remove_refs(plan.refs_to_remove, docker_command=docker_command)
     return 0
 
 

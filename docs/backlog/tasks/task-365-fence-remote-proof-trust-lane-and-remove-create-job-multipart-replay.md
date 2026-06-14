@@ -109,6 +109,13 @@ bleeding local-auth trust into production Sir Convert.
   generic `SIR_CONVERT_A_LOT_DOCKER_USE_SUDO=1`, so compose operations and
   dependency image preparation use the same Hemma Docker privilege path without
   coupling the helpers to each other.
+- Updated the remote-proof wrapper to derive and preflight the canonical
+  local-auth-integration public-key bind path before compose/dependency-image
+  work starts. The default is under the remote-proof trust directory, not a
+  caller's ad hoc shell session.
+- Routed superseded dependency-image cleanup through the same resolved Docker
+  command as dependency-image inspect/build/tag operations, so remote-proof does
+  not fall back to plain Docker in child cleanup helpers.
 
 ## Red-First Evidence
 
@@ -129,6 +136,15 @@ bleeding local-auth trust into production Sir Convert.
   dependency image preparation still carried Docker access policy separately.
   The follow-up tests now require a shared Docker command resolver rather than
   helper-specific sudo handling.
+- The next Hemma `pdm run remote-proof-start` attempt built the ROCm dependency
+  image successfully, then failed during compose interpolation because
+  `HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH` was unset. The
+  red wrapper contract failed because `remote-proof-compose.sh` did not own a
+  canonical remote-proof trust directory/public-key default.
+- The same Hemma attempt also showed superseded dependency-image cleanup still
+  used plain Docker internally. Red tests proved the Python cleanup helper had
+  no caller-selected Docker command and the remote-proof integration path did not
+  route cleanup through `sudo -n docker`.
 
 ## Focused Green Evidence
 
@@ -147,11 +163,18 @@ bleeding local-auth trust into production Sir Convert.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py::test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker -q`
   passed, proving the remote-proof wrapper routes compose and dependency-image
   Docker calls through the same shared sudo-Docker policy.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class tests/sir_convert_a_lot/test_dev_compose_wrapper.py::test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker tests/sir_convert_a_lot/test_dev_compose_wrapper.py::test_remote_proof_wrapper_fails_before_docker_when_trust_key_is_missing -q`
+  passed with `3 passed`, proving the wrapper derives the public-key path from
+  a canonical trust directory and fails before Docker when the trust key is
+  absent.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_prune_superseded_deps_images.py::test_docker_output_uses_caller_selected_docker_command tests/sir_convert_a_lot/test_dev_compose_wrapper.py::test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker -q`
+  passed with `2 passed`, proving the prune child helper receives and uses the
+  same Docker command policy as the dependency-image shell helper.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py -q`
-  passed with `10 passed`, proving the Docker policy resolver did not change
+  passed with `11 passed`, proving the Docker policy resolver did not change
   the local/dev compose wrapper behavior.
-- `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
-  passed with `15 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_prune_superseded_deps_images.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
+  passed with `23 passed`.
 - Local compose syntax expansion for `compose.remote-proof.yaml` passed with
   dummy non-secret values via `docker compose -f compose.remote-proof.yaml config`.
 

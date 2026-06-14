@@ -123,6 +123,9 @@ def test_remote_proof_wrapper_and_pdm_scripts_are_first_class() -> None:
     assert "/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env" in (
         script_text
     )
+    assert "SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR" in script_text
+    assert "gateway-internal-identity-public-key.pem" in script_text
+    assert "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH" in script_text
     assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
 
     compose_actions = (REPO_ROOT / "scripts" / "devops" / "compose-actions.sh").read_text(

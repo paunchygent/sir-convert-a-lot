@@ -33,8 +33,7 @@ SERVICE_REQUIREMENTS = REPO_ROOT / "docker" / "service-deps" / "service-requirem
 def _write_fake_docker(script_dir: Path) -> None:
     fake_docker = script_dir / "docker"
     fake_docker.write_text(
-        """
-        #!/usr/bin/env bash
+        """#!/usr/bin/env bash
 set -euo pipefail
 
 case "${1:-}" in
@@ -42,30 +41,50 @@ case "${1:-}" in
     shift
     ;;
   image)
-    if [[ "${2:-}" == "inspect" ]]; then
-      if [[ "${FAKE_DOCKER_IMAGE_EXISTS:-0}" != "1" ]]; then
-        exit 1
-      fi
-      if [[ "${3:-}" == "--format" ]]; then
-        case "${4:-}" in
-          *sir-convert-a-lot.dependency-hash*)
-            echo "${FAKE_DOCKER_LABEL_DEPENDENCY_HASH:-}"
-            ;;
-          *sir-convert-a-lot.recipe-hash*)
-            echo "${FAKE_DOCKER_LABEL_RECIPE_HASH:-}"
-            ;;
-          *sir-convert-a-lot.dependency-image-hash*)
-            echo "${FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH:-}"
-            ;;
-          *)
-            echo ""
-            ;;
-        esac
-      fi
-      exit 0
-    fi
+    case "${2:-}" in
+      inspect)
+        if [[ "${FAKE_DOCKER_IMAGE_EXISTS:-0}" != "1" ]]; then
+          exit 1
+        fi
+        if [[ "${3:-}" == "--format" ]]; then
+          case "${4:-}" in
+            *sir-convert-a-lot.dependency-hash*)
+              echo "${FAKE_DOCKER_LABEL_DEPENDENCY_HASH:-}"
+              ;;
+            *sir-convert-a-lot.recipe-hash*)
+              echo "${FAKE_DOCKER_LABEL_RECIPE_HASH:-}"
+              ;;
+            *sir-convert-a-lot.dependency-image-hash*)
+              echo "${FAKE_DOCKER_LABEL_DEPENDENCY_IMAGE_HASH:-}"
+              ;;
+            *)
+              echo ""
+              ;;
+          esac
+        fi
+        exit 0
+        ;;
+      ls)
+        if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
+          printf "image ls %s\\n" "${*:3}" >>"${FAKE_DOCKER_LOG}"
+        fi
+        exit 0
+        ;;
+      rm)
+        if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
+          printf "image rm %s\\n" "${*:3}" >>"${FAKE_DOCKER_LOG}"
+        fi
+        exit 0
+        ;;
+    esac
     echo "fake-docker: unsupported image command: $*" >&2
     exit 90
+    ;;
+  ps)
+    if [[ -n "${FAKE_DOCKER_LOG:-}" && "${FAKE_DOCKER_LOG_BUILDS:-0}" == "1" ]]; then
+      printf "ps %s\\n" "${*:2}" >>"${FAKE_DOCKER_LOG}"
+    fi
+    exit 0
     ;;
   build)
     shift
@@ -120,8 +139,7 @@ exit 0
 def _write_fake_docker_without_compose_plugin(script_dir: Path) -> None:
     fake_docker = script_dir / "docker"
     fake_docker.write_text(
-        """
-        #!/usr/bin/env bash
+        """#!/usr/bin/env bash
 set -euo pipefail
 
 if [[ "${1:-}" == "compose" && "${2:-}" == "version" ]]; then
@@ -138,8 +156,7 @@ exit 0
 def _write_fake_sudo(script_dir: Path) -> None:
     fake_sudo = script_dir / "sudo"
     fake_sudo.write_text(
-        """
-        #!/usr/bin/env bash
+        """#!/usr/bin/env bash
 set -euo pipefail
 
 if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
@@ -175,6 +192,22 @@ def _with_fake_hemma_env(env: dict[str, str]) -> dict[str, str]:
     updated["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(REPO_ROOT)
     updated["SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY"] = str(REPO_ROOT / ".test-skills")
     updated["SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY"] = str(REPO_ROOT / ".test-skills")
+    return updated
+
+
+def _with_fake_remote_proof_trust_env(env: dict[str, str], tmp_path: Path) -> dict[str, str]:
+    updated = dict(env)
+    trust_dir = tmp_path / "remote-proof-trust"
+    trust_dir.mkdir(parents=True)
+    (trust_dir / "gateway-internal-identity-public-key.pem").write_text(
+        "-----BEGIN PUBLIC KEY-----\nfake-test-key\n-----END PUBLIC KEY-----\n",
+        encoding="utf-8",
+    )
+    updated["SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR"] = str(trust_dir)
+    updated["HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON"] = (
+        '{"key_id":"gateway-identity-rs256-v1"}'
+    )
+    updated.pop("HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH", None)
     return updated
 
 
@@ -389,9 +422,11 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
     env["FAKE_DOCKER_LOG"] = str(log_file)
     env["FAKE_DOCKER_LOG_BUILDS"] = "1"
+    env["SIR_CONVERT_A_LOT_PRUNE_SUPERSEDED_DEPS_IMAGES"] = "1"
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "remote_proof_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "remote_proof_rev"
     env = _with_fake_hemma_env(env)
+    env = _with_fake_remote_proof_trust_env(env, tmp_path)
 
     result = _run_wrapper(REMOTE_PROOF_COMPOSE_SCRIPT, ["start"], env)
     assert result.returncode == 0
@@ -400,4 +435,33 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     assert "sudo -n docker compose version" in log_text
     assert "sudo -n docker image inspect" in log_text
     assert "sudo -n docker buildx build" in log_text
+    assert "sudo -n docker image ls" in log_text
+    assert "sudo -n docker ps --format" in log_text
     assert f"sudo -n docker compose -f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
+    assert "superseded dependency image cleanup failed" not in result.stderr
+
+
+def test_remote_proof_wrapper_fails_before_docker_when_trust_key_is_missing(
+    tmp_path: Path,
+) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
+    log_file = tmp_path / "docker.log"
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR"] = str(tmp_path / "missing-trust")
+    env["HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON"] = (
+        '{"key_id":"gateway-identity-rs256-v1"}'
+    )
+    env.pop("HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH", None)
+    env = _with_fake_hemma_env(env)
+
+    result = _run_wrapper(REMOTE_PROOF_COMPOSE_SCRIPT, ["start"], env)
+
+    assert result.returncode == 70
+    assert "public key PEM not found" in result.stderr
+    assert not log_file.exists()
