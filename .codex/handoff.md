@@ -40,19 +40,16 @@ durable implementation authority lives in governed docs.
   `SIR_STT_SIDECAR_BATCH_SIZE=8`. RCA: the observed 34-second first response
   was not solved by Gateway timeout alone; production must use batched
   inference.
-- Task 363 fast replay architecture remediation is implemented and approved in
-  independent Review 48; commit/push/redeploy/live verification closeout is
-  still pending:
+- Task 363 fast replay architecture remediation is completed, approved in
+  independent Review 48, committed, pushed, redeployed, and live-verified on
+  Hemma:
   `docs/backlog/tasks/task-363-fast-transcript-formatter-replay-lane-outside-heavy-conversion-queue.md`.
-  It exists because Skriptoteket production/manual export evidence showed the
-  browser-owned replay path can spend about 119 seconds waiting across
-  Sir Convert submit/poll/artifact fetch/complete. The current implementation
-  makes `transcript_json -> transcript_bundle` a producer-owned fast lane under
-  the existing `/v2/convert/jobs` contract: admitted `wait_seconds=0` replay
-  jobs terminalize synchronously as `succeeded` or fail-closed `failed`, replay
-  no longer dispatches through the generic heavy conversion worker queue, and
-  bounded sanitized admission/execution telemetry is emitted without transcript
-  text, display names, source content, credentials, or signed headers.
+  Durable closeout details are retained in
+  `.codex/long-term-memory/entries/session-2026-06-14-task-363-fast-replay-closeout.md`.
+  Downstream contract summary: admitted `wait_seconds=0` replay jobs
+  terminalize synchronously as `succeeded` or fail-closed `failed` under the
+  existing `/v2/convert/jobs` lifecycle and no longer dispatch through the
+  generic heavy conversion worker queue.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -115,13 +112,10 @@ decision/performance work.
    Skriptoteket durable transcript saves from canonical `transcript_json`;
    Sir Convert Story 54 formatter artifacts are complete in accepted Task 358
    as a separate product-neutral formatter authority.
-1. Next transcript replay work is Task 363 commit/push and Hemma deploy/live
-   verification closeout after approved Review 48. Run
-   `pdm run hemma-deploy-and-verify --expected-revision <approved-sha> --lane host --api-key <redacted>`;
-   retain deploy evidence without API keys, transcript text, display names, or
-   signed headers. Skriptoteket PR-0350 can consume the producer fast-lane replay
-   contract without a browser-owned submit/poll/artifact-download/
-   base64-complete saga. HuleEdu should continue forwarding the existing
+1. Next transcript replay work is downstream consumption. Skriptoteket PR-0350
+   can consume the completed Task 363 producer fast-lane replay contract
+   without a browser-owned submit/poll/artifact-download/base64-complete saga.
+   HuleEdu should continue forwarding the existing
    `/sir-convert/v2/convert/jobs*` lifecycle without rewriting Sir Convert
    replay responses.
 1. Treat the Sir Convert 120-minute STT progress UX backend contract as
@@ -176,22 +170,12 @@ decision/performance work.
   `pdm run format-all`, `pdm run typecheck-all`, and `pdm run lint-fix` passed;
   docs/skills/handoff/diff gates passed after docs sync.
 - Task 363 red-first evidence on 2026-06-14:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py -q`
-  first failed with `4 failed` because replay returned `202 Accepted`/queued
-  for `wait_seconds=0` and no fast-lane timing telemetry existed. Focused
-  replay/OpenAPI proof later passed with `36 passed`:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py tests/sir_convert_a_lot/test_transcript_replay_observability_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py -q`.
-  Neighboring route/supervisor/metrics proof passed with `10 passed`:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_route_registry_v2.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_api_metrics_v2.py -q`.
-  `pdm run coverage-gate` passed with `1716 passed, 6 skipped`; required
-  coverage `90.0%` was reached at `95.34%`.
-  Downstream smoke proof command:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py::test_downstream_replay_fast_lane_smoke_fetches_overlay_artifact -q`.
-  Independent Review 48 approval proof on 2026-06-14: reviewer reran
-  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py tests/sir_convert_a_lot/test_transcript_replay_observability_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py -q`
-  with `36 passed`, and
-  `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_route_registry_v2.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_api_metrics_v2.py -q`
-  with `10 passed`.
+  red-first fast-lane proof first failed with `4 failed`; focused replay/OpenAPI
+  proof passed with `36 passed`; route/supervisor/metrics proof passed with
+  `10 passed`; `coverage-gate` passed with `1716 passed, 6 skipped` and
+  `95.34%` coverage; Review 48 approved; Hemma deploy verification passed for
+  `e2bf342110571fa07e082b4bb340cac5ca511f90`. Full details are in the task,
+  Review 48, and the 2026-06-14 long-term-memory entry.
 
 ## Stop Conditions
 

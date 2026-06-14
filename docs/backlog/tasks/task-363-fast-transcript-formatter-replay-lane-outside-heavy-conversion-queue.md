@@ -2,7 +2,7 @@
 id: task-363-fast-transcript-formatter-replay-lane-outside-heavy-conversion-queue
 title: Fast transcript formatter replay lane outside heavy conversion queue
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-14'
 last_updated: '2026-06-14'
@@ -142,10 +142,9 @@ queue.
 
 ## Closeout Gate
 
-Implementation, local validation, and independent Review 48 are approved, but
-this task is not final closeout-complete until the approved change is
-committed, pushed, redeployed, and live-verified. The implementation specialist
-must not self-approve Review 48.
+Implementation, local validation, independent Review 48, commit/push, and
+Hemma deploy/live verification are complete. The implementation specialist did
+not self-approve Review 48.
 
 Post-review closeout readiness commands:
 
@@ -167,6 +166,24 @@ Deploy readiness notes:
   evidence. Keep deploy proof to revision parity, readiness, metrics, terminal
   replay job state, manifest/artifact availability, and overlay-label behavior.
 
+Closeout evidence:
+
+- Feature branch commit:
+  `015fb694c9214a7f69675d3878cf7c16cb16862f`.
+- Merge commit on `main`:
+  `e2bf342110571fa07e082b4bb340cac5ca511f90`.
+- Feature branch and `main` were pushed to `origin`.
+- Hemma deploy/live verification command:
+  `pdm run hemma-deploy-and-verify --expected-revision e2bf342110571fa07e082b4bb340cac5ca511f90 --lane host`.
+- Hemma deploy report:
+  `build/verification/hemma-deploy-verify/report.md`.
+- Deploy status: `passed`; `remote_revision` and `service_revision` both
+  matched `e2bf342110571fa07e082b4bb340cac5ca511f90`.
+- Deploy checks passed: expected revision parity, service revision parity,
+  structured LLM reachability/microprobe, v2 live smoke, metrics safety scan,
+  public HTTPS reserved route, TLS certificate, nginx public host registration,
+  and default-host reserved placeholder.
+
 ## Notes
 
 This task intentionally does not solve the Skriptoteket browser-saga cleanup by
@@ -180,6 +197,6 @@ product-owned workflow boundary.
 - [x] Validation complete
 - [x] Docs updated
 - [x] Independent Review 48 approved and retained
-- [ ] Approved changes committed and pushed
-- [ ] Hemma redeploy completed
-- [ ] Live deploy evidence retained without secrets or transcript content
+- [x] Approved changes committed and pushed
+- [x] Hemma redeploy completed
+- [x] Live deploy evidence retained without secrets or transcript content
