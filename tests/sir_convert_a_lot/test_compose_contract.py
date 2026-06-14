@@ -25,6 +25,9 @@ PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
 COMPOSE_ACTIONS_SCRIPT = REPO_ROOT / "scripts" / "devops" / "compose-actions.sh"
 SERVICE_DEPS_IMAGE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "service-deps-image.sh"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
+STT_INPUT_VOLUME = "sir-convert-a-lot-stt-sidecar-inputs"
+STT_INPUT_DIR = "/var/lib/sir-convert-a-lot/stt-sidecar-inputs"
+STT_INPUT_VOLUME_MOUNT = f"{STT_INPUT_VOLUME}:{STT_INPUT_DIR}"
 
 
 def _load_compose() -> dict[str, object]:
@@ -145,6 +148,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
         env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL"]
         == "http://sir_convert_a_lot_stt_sidecar:8095"
     )
+    assert env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR"] == STT_INPUT_DIR
     assert env_map["SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL"] == (
         "${SIR_CONVERT_A_LOT_DOCLING_LAYOUT_MODEL:-docling_layout_egret_large}"
     )
@@ -204,6 +208,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     volumes = service.get("volumes")
     assert volumes == [
         "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
+        STT_INPUT_VOLUME_MOUNT,
         (
             "${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-"
             "/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:"
@@ -257,6 +262,7 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
         env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL"]
         == "http://sir_convert_a_lot_stt_sidecar:8095"
     )
+    assert env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR"] == STT_INPUT_DIR
     assert env_map["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"] == "easyocr"
     assert env_map["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] == ("${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}")
     assert env_map["HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON"] == (
@@ -274,6 +280,7 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
     }
     assert service.get("volumes") == [
         "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
+        STT_INPUT_VOLUME_MOUNT,
         (
             "${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-"
             "/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:"
@@ -339,6 +346,7 @@ def test_compose_declares_private_stt_sidecar_runtime() -> None:
     ]
     assert service.get("volumes") == [
         "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
+        STT_INPUT_VOLUME_MOUNT,
         (
             "${SIR_CONVERT_A_LOT_HF_CACHE_HOST_DIR:-"
             "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}:"
@@ -531,6 +539,7 @@ def test_compose_declares_only_prod_named_volume() -> None:
     volumes_obj = compose.get("volumes")
     assert isinstance(volumes_obj, dict)
     assert "sir-convert-a-lot-prod-data" in volumes_obj
+    assert volumes_obj[STT_INPUT_VOLUME] == {"name": STT_INPUT_VOLUME}
     assert "sir-convert-a-lot-eval-data" not in volumes_obj
 
 

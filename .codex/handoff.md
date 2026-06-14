@@ -68,7 +68,9 @@ durable implementation authority lives in governed docs.
   `/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env`
   on Hemma, `compose.remote-proof.yaml`, and `pdm run remote-proof-*`; it must
   stay separate from production `hemma-production` trust settings and public
-  ingress.
+  ingress. The current STT proof fix must use the existing hosted Hemma STT
+  sidecar through the shared `sir-convert-a-lot-stt-sidecar-inputs` volume;
+  do not reintroduce a dedicated remote-proof STT sidecar.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -126,35 +128,15 @@ decision/performance work.
 
 ## Next Actions
 
-1. Downstream HuleEdu Gateway and Skriptoteket transcript consumption is proven
-   live through durable transcript saves, saved speaker overlays, product-owned
-   formatter export, artifact downloads, and Mina filer save. Keep future
-   product work on saved canonical `transcript_json` and accepted producer
-   artifacts.
-1. Skriptoteket PR-0350 consumed Task 363 without a browser-owned
-   submit/poll/artifact-download/base64-complete saga. HuleEdu should continue
-   forwarding the existing `/sir-convert/v2/convert/jobs*` lifecycle without
-   rewriting Sir Convert replay responses.
-1. Treat the Sir Convert 120-minute STT progress UX backend contract as
-   accepted; keep downstream durable transcript saves separate from Task 358
-   formatter artifact implementation.
-1. For PaddleOCR, do not reopen the tested official/native AMD container lanes
-   without a new runtime image or governed compatibility hypothesis. Task 348's
-   image exposes formula APIs but aborts in native Paddle GPU kernels; Task
-   349's image is ROCm-enabled but lacks PaddleOCR formula APIs.
-1. If vLLM remains desired, first prove a different vLLM/ROCm runtime whose
-   DeepSeek-OCR-2 decode path produces coherent output on page-14. Do not reuse
-   the current Hemma vLLM lane as a candidate.
-1. Feed Task 345 formula-authority metadata into Task 343 conversion-decision
-   metrics when broader conversion decisioning resumes.
-1. Any DeepSeek-OCR production integration must be a governed follow-up: keep
-   HF eager as the viable candidate, keep current vLLM/ROCm rejected until a
-   different coherent path is proven, use DeepSeek only advisory or for
-   absent/unusable source evidence, and never blindly overwrite born-digital
-   source-backed formula evidence.
-1. Continue Story 46 with Tasks 288/289 before further Exam.net runtime.
-1. Continue HuleEdu/Skriptoteket cutover only through governed Gateway and
-   artifact-route tasks; do not widen the DigiExam migration lane.
+1. Finish Task 365 in order: redeploy the no-dedicated-sidecar shared-staging
+   lane, pass local STT E2E proof through `hemma-remote-proof`, then pass native
+   Hemma production STT proof. Only then send to ruthless review.
+1. Keep downstream transcript work on saved canonical `transcript_json`,
+   accepted producer artifacts, and governed Gateway routes; do not revive
+   browser-owned Sir Convert replay/download sagas.
+1. Formula/PaddleOCR/DeepSeek carry-forward remains in the linked task docs and
+   long-term memory entries; do not reopen rejected runtime lanes without new
+   governed evidence.
 
 ## Validation
 
@@ -186,9 +168,14 @@ decision/performance work.
   passed trust preflight but failed media probing because the borrowed
   production STT sidecar could not see the remote-proof data volume
   (`jobv2_e6e21993b1d7415681ececc4ed`, `audio_stream_missing`,
-  `sidecar_status_code=422`). The active fix adds a dedicated remote-proof STT
-  sidecar mounted on `sir-convert-a-lot-remote-proof-data`; focused compose and
-  helper proof now passes with `25 passed`. Live local and native Hemma
+  `sidecar_status_code=422`). A rejected dedicated remote-proof STT sidecar
+  then failed with GPU memory pressure and must not be retained. The current
+  shared-staging fix removes that sidecar, stages audio into
+  `sir-convert-a-lot-stt-sidecar-inputs`, and keeps the existing hosted STT
+  sidecar as the only model worker. Red shared-staging proof failed with
+  `9 failed, 15 passed`; focused green proof passed with `24 passed`; broadened
+  Task 365 proof passed with `43 passed`; `coverage-gate` passed with
+  `1733 passed, 6 skipped` and `95.37%` coverage. Live local and native Hemma
   production STT proofs are still required before Task 365 is complete.
 
 ## Stop Conditions

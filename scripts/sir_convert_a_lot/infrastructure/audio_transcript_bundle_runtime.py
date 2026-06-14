@@ -73,7 +73,9 @@ from scripts.sir_convert_a_lot.infrastructure.audio_transcript_sidecar_requests 
     build_chunk_request,
     build_diarization_request,
     build_sidecar_request,
+    cleanup_staged_sidecar_source,
     source_media_sha256,
+    stage_sidecar_source,
 )
 from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
     AudioTranscriptionSidecarClient,
@@ -102,10 +104,10 @@ def execute_audio_transcript_bundle_job(
 ) -> AudioTranscriptBundleExecutionResult:
     """Execute one admitted audio job and persist canonical transcript JSON."""
 
-    del config
     checkpoint_store = AudioTranscriptCheckpointStore(artifact_path=job.artifact_path)
     phase_timings_ms: dict[str, int] = {}
     source_hash = source_media_sha256(job)
+    sidecar_input_dir = config.audio_transcription_sidecar_input_dir
     emit_phase_progress(
         progress_callback=progress_callback,
         stage="probing_media",
@@ -113,6 +115,7 @@ def execute_audio_transcript_bundle_job(
         audio_pipeline_percent_complete=0.0,
     )
     try:
+        staged_source_path = stage_sidecar_source(job=job, input_dir=sidecar_input_dir)
         probe_started = time.perf_counter()
         try:
             health = sidecar.health()
@@ -132,7 +135,7 @@ def execute_audio_transcript_bundle_job(
                 )
 
             _raise_if_canceled(is_cancel_requested, sidecar=sidecar, request_handle=job.job_id)
-            sidecar_request = build_sidecar_request(job=job)
+            sidecar_request = build_sidecar_request(job=job, source_path=staged_source_path)
 
             probe_response = sidecar.probe_media(sidecar_request)
             media = required_mapping(probe_response, "media")
@@ -405,6 +408,8 @@ def execute_audio_transcript_bundle_job(
             checkpoint_store.purge()
         _finalize_sidecar(sidecar=sidecar, request_handle=job.job_id, suppress_errors=True)
         raise
+    finally:
+        cleanup_staged_sidecar_source(job=job, input_dir=sidecar_input_dir)
 
 
 def _checkpoint_matches(

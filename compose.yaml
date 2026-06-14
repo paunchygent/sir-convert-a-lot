@@ -30,6 +30,7 @@ services:
       - SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY=${SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY:-0}
       - SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL=http://sir_convert_a_lot_stt_sidecar:8095
       - SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS=${SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS:-7200}
+      - SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR=/var/lib/sir-convert-a-lot/stt-sidecar-inputs
       - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr
       - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en
       - SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models
@@ -63,6 +64,7 @@ services:
       - "${SIR_CONVERT_A_LOT_PROD_PORT:-8085}:8085"
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
+      - sir-convert-a-lot-stt-sidecar-inputs:/var/lib/sir-convert-a-lot/stt-sidecar-inputs
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
       - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
@@ -108,6 +110,7 @@ services:
       - SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY=0
       - SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL=http://sir_convert_a_lot_stt_sidecar:8095
       - SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS=${SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS:-7200}
+      - SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR=/var/lib/sir-convert-a-lot/stt-sidecar-inputs
       - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr
       - SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en
       - SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models
@@ -147,6 +150,7 @@ services:
       - "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}"
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
+      - sir-convert-a-lot-stt-sidecar-inputs:/var/lib/sir-convert-a-lot/stt-sidecar-inputs
       - ${SIR_CONVERT_A_LOT_MIOPEN_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/miopen}:/srv/scratch/sir-convert-a-lot/cache/miopen
       - ${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_HOST_PATH:-/home/paunchygent/.data/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}:${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - ${HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_HOST_PATH:-/home/paunchygent/apps/huleedu/secrets/hemma-runtime/internal-identity/gateway-internal-identity-public-key.pem}:/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro
@@ -205,6 +209,7 @@ services:
       - "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}"
     volumes:
       - sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod
+      - sir-convert-a-lot-stt-sidecar-inputs:/var/lib/sir-convert-a-lot/stt-sidecar-inputs
       - ${SIR_CONVERT_A_LOT_HF_CACHE_HOST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}:/cache/huggingface
     networks:
       - hule-network
@@ -317,6 +322,8 @@ services:
 
 volumes:
   sir-convert-a-lot-prod-data:
+  sir-convert-a-lot-stt-sidecar-inputs:
+    name: sir-convert-a-lot-stt-sidecar-inputs
 
 networks:
   hule-network:

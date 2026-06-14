@@ -91,6 +91,16 @@ def _optional_secret_from_env(name: str) -> str | None:
     return normalized
 
 
+def _optional_path_from_env(name: str) -> Path | None:
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    normalized = raw.strip()
+    if normalized == "":
+        return None
+    return Path(normalized)
+
+
 def _public_exam_converter_grant_public_keys_from_env() -> dict[str, str]:
     """Return HuleEdu public Exam Converter grant verification keys by key id."""
 
@@ -349,6 +359,9 @@ def service_config_from_env() -> ServiceConfig:
         ),
         audio_transcription_sidecar_timeout_seconds=float(
             os.getenv("SIR_CONVERT_A_LOT_STT_SIDECAR_TIMEOUT_SECONDS", "7200")
+        ),
+        audio_transcription_sidecar_input_dir=_optional_path_from_env(
+            "SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR"
         ),
         internal_identity_public_keys=internal_identity_config.public_keys,
         internal_identity_expected_audience=internal_identity_config.expected_audience,

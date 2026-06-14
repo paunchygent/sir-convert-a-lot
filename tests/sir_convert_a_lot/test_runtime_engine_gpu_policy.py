@@ -123,6 +123,15 @@ def test_service_config_from_env_reads_exam_authoring_source_authority_secret(
     assert config.exam_authoring_source_state_signature_secret == "signed-source-state-secret"
 
 
+def test_service_config_from_env_reads_stt_sidecar_input_dir(monkeypatch, tmp_path: Path) -> None:
+    input_dir = tmp_path / "stt-sidecar-inputs"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR", str(input_dir))
+
+    config = service_config_from_env()
+
+    assert config.audio_transcription_sidecar_input_dir == input_dir
+
+
 def test_service_config_from_env_rejects_invalid_chunk_worker_value(monkeypatch) -> None:
     monkeypatch.setenv("SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS", "0")
     with pytest.raises(ValueError, match="SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS"):

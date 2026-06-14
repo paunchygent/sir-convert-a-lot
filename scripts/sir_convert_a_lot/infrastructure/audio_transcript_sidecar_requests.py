@@ -1,9 +1,9 @@
 """Audio transcript sidecar request builders.
 
 Purpose:
-    Build provider-neutral request payloads for media probe, global
-    diarization, and deterministic chunk transcription without leaking
-    backend-native STT or diarization settings into the main service.
+    Build provider-neutral request payloads and staged source paths for media
+    probe, global diarization, and deterministic chunk transcription without
+    leaking backend-native STT or diarization settings into the main service.
 
 Relationships:
     - Used by `infrastructure.audio_transcript_bundle_runtime`.
@@ -14,7 +14,9 @@ Relationships:
 from __future__ import annotations
 
 import hashlib
+import shutil
 from collections.abc import Mapping
+from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
     AudioTranscriptionErrorCode,
@@ -27,7 +29,11 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 
 
-def build_sidecar_request(*, job: StoredJobV2) -> dict[str, object]:
+def build_sidecar_request(
+    *,
+    job: StoredJobV2,
+    source_path: Path | None = None,
+) -> dict[str, object]:
     """Build the base internal sidecar request for an audio job."""
 
     options = job.spec.audio_transcription_options
@@ -38,12 +44,13 @@ def build_sidecar_request(*, job: StoredJobV2) -> dict[str, object]:
             message="Audio transcription options are required for transcript execution.",
             retryable=False,
         )
+    selected_source_path = source_path or job.upload_path
     diarization = options.diarization
     return {
         "request_handle": job.job_id,
         "source": {
             "kind": "local_upload",
-            "path": job.upload_path.as_posix(),
+            "path": selected_source_path.as_posix(),
             "filename": job.source_filename,
         },
         "options": {
@@ -58,6 +65,30 @@ def build_sidecar_request(*, job: StoredJobV2) -> dict[str, object]:
             },
         },
     }
+
+
+def stage_sidecar_source(*, job: StoredJobV2, input_dir: Path | None) -> Path | None:
+    """Copy the source upload into a path shared with the hosted STT sidecar."""
+
+    if input_dir is None:
+        return None
+    job_dir = _sidecar_input_job_dir(job=job, input_dir=input_dir)
+    job_dir.mkdir(parents=True, exist_ok=True)
+    staged_path = job_dir / "input.audio"
+    try:
+        shutil.copy2(job.upload_path, staged_path)
+    except Exception:
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise
+    return staged_path
+
+
+def cleanup_staged_sidecar_source(*, job: StoredJobV2, input_dir: Path | None) -> None:
+    """Remove the per-job sidecar staging directory created for a request."""
+
+    if input_dir is None:
+        return
+    shutil.rmtree(_sidecar_input_job_dir(job=job, input_dir=input_dir), ignore_errors=True)
 
 
 def build_diarization_request(
@@ -98,3 +129,19 @@ def source_media_sha256(job: StoredJobV2) -> str:
     """Return the source upload hash used to validate checkpoints."""
 
     return f"sha256:{hashlib.sha256(job.upload_path.read_bytes()).hexdigest()}"
+
+
+def _sidecar_input_job_dir(*, job: StoredJobV2, input_dir: Path) -> Path:
+    return input_dir / _safe_job_dir_name(job.job_id)
+
+
+def _safe_job_dir_name(job_id: str) -> str:
+    if job_id.strip() != "" and all(
+        _is_safe_path_component_char(character) for character in job_id
+    ):
+        return job_id
+    return hashlib.sha256(job_id.encode("utf-8")).hexdigest()
+
+
+def _is_safe_path_component_char(character: str) -> bool:
+    return character.isascii() and (character.isalnum() or character in {"-", "_"})

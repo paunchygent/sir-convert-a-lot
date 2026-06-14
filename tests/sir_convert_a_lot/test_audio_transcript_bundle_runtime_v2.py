@@ -70,6 +70,8 @@ class _FakeAudioTranscriptionSidecar:
         self.health_payload = dict(health_payload or _healthy_sidecar())
         self.capability_payload = dict(capability_payload or _ready_capabilities())
         self.transcribe_payload = dict(transcribe_payload or _successful_transcription())
+        self.probe_requests: list[Mapping[str, object]] = []
+        self.probe_source_bytes: list[bytes] = []
         self.chunk_requests: list[Mapping[str, object]] = []
         self.canceled_handles: list[str] = []
         self.finalized_handles: list[str] = []
@@ -81,7 +83,14 @@ class _FakeAudioTranscriptionSidecar:
         return self.capability_payload
 
     def probe_media(self, request: Mapping[str, object]) -> Mapping[str, object]:
-        del request
+        self.probe_requests.append(dict(request))
+        source_obj = request.get("source")
+        if isinstance(source_obj, Mapping):
+            path_obj = source_obj.get("path")
+            if isinstance(path_obj, str) and path_obj.strip() != "":
+                source_path = Path(path_obj)
+                if source_path.is_file():
+                    self.probe_source_bytes.append(source_path.read_bytes())
         media = self.transcribe_payload.get("media")
         runtime_metadata = self.transcribe_payload.get("runtime_metadata")
         return {
@@ -300,6 +309,33 @@ def test_audio_success_finalizes_sidecar_normalized_media(tmp_path: Path) -> Non
     assert sidecar.finalized_handles == [job.job_id]
     assert not sidecar.scratch_path.exists()
     assert job.artifact_path.exists()
+
+
+def test_audio_runtime_stages_source_for_shared_hosted_sidecar(tmp_path: Path) -> None:
+    sidecar = _FakeAudioTranscriptionSidecar()
+    job = _stored_audio_job(tmp_path)
+    input_dir = tmp_path / "stt-sidecar-inputs"
+
+    execute_audio_transcript_bundle_job(
+        job=job,
+        config=ServiceConfig(
+            api_key=_API_KEY,
+            data_root=tmp_path / "service_data",
+            audio_transcription_sidecar_input_dir=input_dir,
+        ),
+        sidecar=sidecar,
+        progress_callback=None,
+        is_cancel_requested=lambda: False,
+    )
+
+    assert len(sidecar.probe_requests) == 1
+    assert sidecar.probe_source_bytes == [b"audio bytes"]
+    source_obj = sidecar.probe_requests[0].get("source")
+    assert isinstance(source_obj, Mapping)
+    assert source_obj["kind"] == "local_upload"
+    assert source_obj["filename"] == "teacher-meeting.m4a"
+    assert source_obj["path"] == (input_dir / job.job_id / "input.audio").as_posix()
+    assert not (input_dir / job.job_id).exists()
 
 
 def test_audio_sidecar_readiness_failure_is_terminal_without_artifact(tmp_path: Path) -> None:
