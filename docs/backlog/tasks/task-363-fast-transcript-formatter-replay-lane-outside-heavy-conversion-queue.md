@@ -184,12 +184,26 @@ Closeout evidence:
   public HTTPS reserved route, TLS certificate, nginx public host registration,
   and default-host reserved placeholder.
 
+Downstream consumption proof:
+
+- Skriptoteket `PR-0350` consumed this task's accepted Service API v2 producer
+  contract through a backend-owned product export boundary.
+- Skriptoteket deployed production URL fix
+  `14f4b3af930b02f7b587b0b87c168418730fd28f` so its server-side producer base
+  is the internal Hemma service `http://sir_convert_a_lot_prod:8085`, not the
+  reserved public `https://convert.hule.education` edge.
+- Final authenticated HuleEdu browser-session proof passed at
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0349-transcript-parity-live/20260614T030725Z/proof-summary.json`.
+- The proof verified product-owned export success with named
+  `transcript_txt`, `transcript_md`, `transcript_vtt`, and `transcript_srt`
+  artifacts, overlay display labels present in all four downloads, canonical
+  fallback labels absent, and representative TXT save to Mina filer.
+
 ## Notes
 
-This task intentionally does not solve the Skriptoteket browser-saga cleanup by
-itself. Skriptoteket `PR-0350` owns removing the browser-owned orchestration
-anti-pattern and consuming this producer fast-lane contract through a
-product-owned workflow boundary.
+This task intentionally did not solve the Skriptoteket browser-saga cleanup by
+itself. Skriptoteket `PR-0350` is now complete and consumes this producer
+fast-lane contract through a product-owned workflow boundary.
 
 ## Checklist
 

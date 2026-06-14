@@ -50,6 +50,9 @@ durable implementation authority lives in governed docs.
   terminalize synchronously as `succeeded` or fail-closed `failed` under the
   existing `/v2/convert/jobs` lifecycle and no longer dispatch through the
   generic heavy conversion worker queue.
+  Skriptoteket `PR-0350` has consumed the contract and passed final
+  authenticated live proof at
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0349-transcript-parity-live/20260614T030725Z/proof-summary.json`.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -107,17 +110,15 @@ decision/performance work.
 
 ## Next Actions
 
-1. Downstream HuleEdu Gateway and Skriptoteket JSON transcript consumption has
-   been proven live through the product path. Next STT product work is
-   Skriptoteket durable transcript saves from canonical `transcript_json`;
-   Sir Convert Story 54 formatter artifacts are complete in accepted Task 358
-   as a separate product-neutral formatter authority.
-1. Next transcript replay work is downstream consumption. Skriptoteket PR-0350
-   can consume the completed Task 363 producer fast-lane replay contract
-   without a browser-owned submit/poll/artifact-download/base64-complete saga.
-   HuleEdu should continue forwarding the existing
-   `/sir-convert/v2/convert/jobs*` lifecycle without rewriting Sir Convert
-   replay responses.
+1. Downstream HuleEdu Gateway and Skriptoteket transcript consumption is proven
+   live through durable transcript saves, saved speaker overlays, product-owned
+   formatter export, artifact downloads, and Mina filer save. Keep future
+   product work on saved canonical `transcript_json` and accepted producer
+   artifacts.
+1. Skriptoteket PR-0350 consumed Task 363 without a browser-owned
+   submit/poll/artifact-download/base64-complete saga. HuleEdu should continue
+   forwarding the existing `/sir-convert/v2/convert/jobs*` lifecycle without
+   rewriting Sir Convert replay responses.
 1. Treat the Sir Convert 120-minute STT progress UX backend contract as
    accepted; keep downstream durable transcript saves separate from Task 358
    formatter artifact implementation.
