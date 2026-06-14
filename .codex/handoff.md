@@ -76,6 +76,10 @@ durable implementation authority lives in governed docs.
   checks called `runtime.get_job()` per job, and that API sweeps expired jobs at
   entry. Task 365 now includes the bounded-admission fix and the reference doc
   `docs/reference/ref-stt-proof-lanes-and-admission-operations.md`.
+  Later formatter export failure is separate: remote-proof API fast-lane replay
+  wrote artifacts while worker recovery reset the non-dispatching
+  `transcript_json -> transcript_bundle` job back to `queued`; v2 recovery now
+  requeues only generic-runtime routes.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -185,9 +189,9 @@ decision/performance work.
   red test failed with repeated `JobStoreV2.sweep_expired` calls during audio
   admission; the fixed route now scans direct job-store subjects and focused
   proof passed with `1 passed`, then `44 passed` for the audio admission/parser
-  replay plus remote-proof evidence-helper slice. Live local and native Hemma
-  production STT proofs are still
-  required before Task 365 is complete.
+  replay plus evidence-helper slice. Formatter recovery proof failed red with
+  `202 Accepted`, then passed with `1 passed`; adjacent proof passed with
+  `35 passed`. Live local and native Hemma production STT proofs are required.
 
 ## Stop Conditions
 

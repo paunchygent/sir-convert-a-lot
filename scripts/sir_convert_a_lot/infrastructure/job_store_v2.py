@@ -16,6 +16,7 @@ import hashlib
 import time
 from datetime import timedelta
 
+from scripts.sir_convert_a_lot.domain.service_routes_v2 import route_dispatches_runtime_jobs_v2
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2
 from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
@@ -389,7 +390,7 @@ class JobStoreV2(JobStoreV2Core):
         return self.get_job(job_id)
 
     def recover_running_jobs_to_queued(self, *, active_job_ids: set[str]) -> list[str]:
-        """Convert orphaned running v2 jobs to queued."""
+        """Convert orphaned generic-runtime v2 jobs to queued."""
         recovered: list[str] = []
         for job_id in self.list_job_ids():
             if job_id in active_job_ids:
@@ -399,6 +400,11 @@ class JobStoreV2(JobStoreV2Core):
             except (JobMissingV2, JobExpiredV2):
                 continue
             if record.status == JobStatus.RUNNING:
+                if not route_dispatches_runtime_jobs_v2(
+                    source_format=record.source_format,
+                    output_format=record.output_format,
+                ):
+                    continue
                 self.update_progress(job_id, status=JobStatus.QUEUED, stage="queued")
                 recovered.append(job_id)
         return recovered

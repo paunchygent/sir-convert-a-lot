@@ -86,6 +86,8 @@ bleeding local-auth trust into production Sir Convert.
 - [ ] Production STT E2E proof succeeds natively on Hemma after the local proof.
 - [ ] No timeout, ingress, body-size, or trust/key setting is changed without a
   separate explicit approval.
+- [ ] Formatter replay export remains terminal under the remote-proof shared
+  API/worker store while local STT E2E proof runs.
 
 ## Test Requirements
 
@@ -152,6 +154,13 @@ bleeding local-auth trust into production Sir Convert.
   capacity scan -> `runtime.get_job()` per retained job ->
   `job_store.sweep_expired()` per retained job -> slow admission before the
   async job could be accepted.
+- Updated v2 running-job recovery so the generic worker supervisor requeues only
+  routes that dispatch through the generic runtime queue. The local downstream
+  proof exposed a distinct formatter export failure after STT succeeded:
+  `transcript_json -> transcript_bundle` artifacts were written, but the shared
+  worker-side recovery loop reset the API-owned fast-lane job to `queued`
+  before terminal persistence. Non-dispatching formatter replay jobs now stay
+  out of generic-worker recovery.
 
 ## Red-First Evidence
 
@@ -220,6 +229,12 @@ bleeding local-auth trust into production Sir Convert.
   observed eight sweeps in the retained-job capacity path; the committed test
   isolates the third admission and requires zero sweeps during that bounded
   capacity check.
+- Cross-process formatter recovery red command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py::test_replay_fast_lane_terminalizes_during_cross_process_recovery_sweep -q`
+  failed with `202 Accepted` instead of terminal `200 OK`. The test reproduces
+  the retained Docker evidence by running a worker-style recovery sweep while
+  the API fast-lane formatter replay is between `transcript_replay_fast_lane`
+  progress and terminal artifact persistence.
 
 ## Focused Green Evidence
 
@@ -267,6 +282,10 @@ bleeding local-auth trust into production Sir Convert.
   passed with `1 passed`.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py::test_create_job_can_defer_execution_to_supervisor_worker tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_audio_transcript_evidence.py -q`
   passed with `44 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py::test_replay_fast_lane_terminalizes_during_cross_process_recovery_sweep -q`
+  passed with `1 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_fast_lane_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_runtime_supervision_v2.py tests/sir_convert_a_lot/test_job_store_v2.py::test_recover_running_jobs_to_queued_recovers_only_orphaned_running_jobs -q`
+  passed with `35 passed`.
 - Local compose syntax expansion for `compose.remote-proof.yaml` passed with
   dummy non-secret values via `docker compose -f compose.remote-proof.yaml config`.
 - `pdm run format-all` passed; `pdm run lint-fix` passed; `pdm run typecheck-all`

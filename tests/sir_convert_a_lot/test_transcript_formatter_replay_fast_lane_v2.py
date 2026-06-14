@@ -23,7 +23,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.infrastructure import transcript_formatter_replay_fast_lane_v2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.infrastructure.transcript_formatter_replay_runtime import (
+    TranscriptFormatterReplayExecutionResult,
+)
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 from tests.sir_convert_a_lot.test_audio_transcript_bundle_runtime_v2 import (
     _API_KEY,
@@ -199,6 +203,59 @@ def test_downstream_replay_fast_lane_smoke_fetches_overlay_artifact(
     assert "Karin Karlsson" in txt_response.text
     assert "SPEAKER_00" not in txt_response.text
     assert "SPEAKER_01" not in txt_response.text
+
+
+def test_replay_fast_lane_terminalizes_during_cross_process_recovery_sweep(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _fast_lane_app(tmp_path)
+    original_execute = (
+        transcript_formatter_replay_fast_lane_v2.execute_transcript_formatter_replay_job
+    )
+
+    def _execute_after_worker_recovery_sweep(
+        *,
+        job,
+    ) -> TranscriptFormatterReplayExecutionResult:
+        runtime = app.state.runtime_v2
+        runtime.job_store.recover_running_jobs_to_queued(active_job_ids=set())
+        return original_execute(job=job)
+
+    monkeypatch.setattr(
+        transcript_formatter_replay_fast_lane_v2,
+        "execute_transcript_formatter_replay_job",
+        _execute_after_worker_recovery_sweep,
+    )
+
+    client = TestClient(app)
+
+    response = _post_replay_job(
+        client=client,
+        idempotency_key="idem-task-365-cross-process-recovery",
+        wait_seconds=0,
+    )
+
+    assert response.status_code == 200
+    job = response.json()["job"]
+    assert job["status"] == JobStatus.SUCCEEDED.value
+    assert job["progress"]["stage"] == "succeeded"
+    job_id = str(job["job_id"])
+
+    result_response = client.get(f"/v2/convert/jobs/{job_id}/result", headers=_headers())
+    assert result_response.status_code == 200
+    manifest_response = client.get(f"/v2/convert/jobs/{job_id}/artifacts", headers=_headers())
+    assert manifest_response.status_code == 200
+
+    event_statuses = [
+        event.status.value
+        for event in app.state.runtime_v2.job_store.list_job_events_after_sequence(
+            job_id=job_id,
+            after_sequence=0,
+        )
+    ]
+    assert event_statuses[-1] == JobStatus.SUCCEEDED.value
+    assert event_statuses.count(JobStatus.QUEUED.value) == 1
 
 
 def _fast_lane_app(

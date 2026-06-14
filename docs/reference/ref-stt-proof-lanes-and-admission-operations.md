@@ -59,6 +59,27 @@ duplicates heavy model hosting and has already failed under GPU memory pressure.
 Remote-proof shares only the sanctioned sidecar input staging volume so the
 hosted sidecar can read uploaded media.
 
+## Formatter Replay Recovery Invariant
+
+Remote-proof and production use separate API and worker containers over a shared
+job store. The API container may execute deterministic
+`transcript_json -> transcript_bundle` formatter replay inline, while the worker
+container runs the generic queue supervisor for runtime-dispatched jobs.
+
+The generic worker supervisor must not recover non-dispatching formatter replay
+jobs to `queued`. Formatter replay is intentionally marked
+`dispatches_runtime_jobs=false`; once such a job is claimed by the API fast
+lane, it must terminalize through that fast-lane path as `succeeded` or
+fail-closed `failed`. Requeuing it for the generic worker leaves produced
+artifacts disconnected from terminal state and downstream products will wait for
+downloads that never become available.
+
+Do not explain formatter replay export failures with the retained-job admission
+timeout unless the container evidence actually shows slow audio admission. The
+formatter recovery symptom has a different concrete signature: persisted
+formatter artifacts exist, `/result` and `/artifacts` return `202`, and the job
+manifest events show `queued -> running -> running/transcript_replay_fast_lane -> queued` without success or failure fields.
+
 ## Admission Timing Invariant
 
 `POST /v2/convert/jobs?wait_seconds=0` for

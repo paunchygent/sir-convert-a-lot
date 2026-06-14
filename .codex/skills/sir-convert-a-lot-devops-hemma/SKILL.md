@@ -22,7 +22,8 @@ description: >-
    - `docs/runbooks/runbook-hemma-gpu-runtime.md`
    - `docs/runbooks/runbook-hemma-conversion-benchmarks.md`
    - `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md`
-1. For STT proof lanes or audio admission timing, read:
+1. For STT proof lanes, audio admission timing, or formatter replay failures
+   observed during downstream proof, read:
    - `docs/reference/ref-stt-proof-lanes-and-admission-operations.md`
 1. For public contracts, read:
    - `docs/converters/sir_convert_a_lot.md`
@@ -44,6 +45,9 @@ description: >-
 - GPU/offload work is GPU-first; no silent CPU fallback.
 - STT proof work runs local/downstream proof before native Hemma production
   proof, and review starts only after both live proofs pass.
+- Formatter replay export failures during STT/downstream proof are not the
+  same as slow audio admission unless container evidence shows slow admission;
+  check the proof-lanes reference for the shared API/worker recovery invariant.
 - Do not change public proxy timeout, body-size, trust/key, or ingress knobs to
   mask STT failures before the upstream root cause is pinned and explicitly
   approved.
