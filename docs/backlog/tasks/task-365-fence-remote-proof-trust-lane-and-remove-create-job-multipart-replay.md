@@ -154,7 +154,9 @@ bleeding local-auth trust into production Sir Convert.
   env-file handoff.
 - Passing the hidden remote-proof env file path directly then failed on Hemma
   with permission denied from Docker Compose. The durable fix is a temporary
-  compose env snapshot that the wrapper removes after Compose exits.
+  compose env snapshot that the wrapper removes after Compose exits. The
+  snapshot lives under the repo `build/compose-env` tree by default because the
+  Hemma Docker lane did not reliably see `/tmp` snapshots.
 
 ## Focused Green Evidence
 

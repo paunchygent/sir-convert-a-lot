@@ -435,7 +435,7 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
     env["FAKE_DOCKER_LOG"] = str(log_file)
     env["FAKE_DOCKER_LOG_BUILDS"] = "1"
-    env["TMPDIR"] = str(tmp_path)
+    env["SIR_CONVERT_A_LOT_COMPOSE_ENV_SNAPSHOT_DIR"] = str(tmp_path)
     env["SIR_CONVERT_A_LOT_PRUNE_SUPERSEDED_DEPS_IMAGES"] = "1"
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "remote_proof_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "remote_proof_rev"

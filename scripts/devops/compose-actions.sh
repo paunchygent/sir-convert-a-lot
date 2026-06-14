@@ -130,7 +130,10 @@ prepare_compose_dynamic_env_file() {
       break
     fi
   done
-  COMPOSE_DYNAMIC_ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/sir-convert-compose-env.XXXXXX")"
+  local compose_env_snapshot_dir="${SIR_CONVERT_A_LOT_COMPOSE_ENV_SNAPSHOT_DIR:-${REPO_ROOT}/build/compose-env}"
+  mkdir -p "${compose_env_snapshot_dir}"
+  chmod 700 "${compose_env_snapshot_dir}"
+  COMPOSE_DYNAMIC_ENV_FILE="$(mktemp "${compose_env_snapshot_dir}/sir-convert-compose-env.XXXXXX")"
   chmod 600 "${COMPOSE_DYNAMIC_ENV_FILE}"
   cp "${COMPOSE_SOURCE_ENV_FILE}" "${COMPOSE_DYNAMIC_ENV_FILE}"
   if [[ "${has_dynamic_values}" == "1" ]]; then
