@@ -21,12 +21,14 @@ source "${SCRIPT_DIR}/require-hemma-server.sh"
 sir_convert_require_hemma_server "remote-proof-compose"
 
 REMOTE_PROOF_ENV_FILE="${SIR_CONVERT_A_LOT_REMOTE_PROOF_ENV_FILE:-/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env}"
-if [[ -f "${REMOTE_PROOF_ENV_FILE}" ]]; then
-  set -a
-  # shellcheck source=/dev/null
-  source "${REMOTE_PROOF_ENV_FILE}"
-  set +a
+if [[ ! -f "${REMOTE_PROOF_ENV_FILE}" ]]; then
+  echo "remote-proof-compose: remote-proof env file not found: ${REMOTE_PROOF_ENV_FILE}" >&2
+  exit 70
 fi
+set -a
+# shellcheck source=/dev/null
+source "${REMOTE_PROOF_ENV_FILE}"
+set +a
 
 REMOTE_PROOF_TRUST_DIR="${SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/remote-proof/local-auth-integration}"
 REMOTE_PROOF_PUBLIC_KEY_HOST_PATH="${HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH:-${REMOTE_PROOF_TRUST_DIR}/gateway-internal-identity-public-key.pem}"
@@ -43,6 +45,7 @@ fi
 export SIR_CONVERT_A_LOT_COMPOSE_LABEL="remote-proof-compose"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.remote-proof.yaml"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE_DESCRIPTION="remote-proof compose file"
+export SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE="${REMOTE_PROOF_ENV_FILE}"
 export SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"
 export SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"
 export HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH="${REMOTE_PROOF_PUBLIC_KEY_HOST_PATH}"

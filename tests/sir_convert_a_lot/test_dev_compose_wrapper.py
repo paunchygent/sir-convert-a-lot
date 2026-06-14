@@ -203,10 +203,23 @@ def _with_fake_remote_proof_trust_env(env: dict[str, str], tmp_path: Path) -> di
         "-----BEGIN PUBLIC KEY-----\nfake-test-key\n-----END PUBLIC KEY-----\n",
         encoding="utf-8",
     )
-    updated["SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR"] = str(trust_dir)
-    updated["HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON"] = (
-        '{"key_id":"gateway-identity-rs256-v1"}'
+    remote_proof_env = tmp_path / "remote-proof.env"
+    remote_proof_env.write_text(
+        "\n".join(
+            (
+                "SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY=test-api-key",
+                (
+                    "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON="
+                    '\'{"key_id":"gateway-identity-rs256-v1"}\''
+                ),
+                "",
+            )
+        ),
+        encoding="utf-8",
     )
+    updated["SIR_CONVERT_A_LOT_REMOTE_PROOF_ENV_FILE"] = str(remote_proof_env)
+    updated["SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR"] = str(trust_dir)
+    updated.pop("HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON", None)
     updated.pop("HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH", None)
     return updated
 
@@ -437,7 +450,9 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     assert "sudo -n docker buildx build" in log_text
     assert "sudo -n docker image ls" in log_text
     assert "sudo -n docker ps --format" in log_text
-    assert f"sudo -n docker compose -f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
+    assert "sudo -n docker compose --env-file" in log_text
+    assert f"--env-file {tmp_path / 'remote-proof.env'}" in log_text
+    assert f"-f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
     assert "superseded dependency image cleanup failed" not in result.stderr
 
 
@@ -454,6 +469,11 @@ def test_remote_proof_wrapper_fails_before_docker_when_trust_key_is_missing(
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
     env["FAKE_DOCKER_LOG"] = str(log_file)
     env["SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR"] = str(tmp_path / "missing-trust")
+    env["SIR_CONVERT_A_LOT_REMOTE_PROOF_ENV_FILE"] = str(tmp_path / "remote-proof.env")
+    Path(env["SIR_CONVERT_A_LOT_REMOTE_PROOF_ENV_FILE"]).write_text(
+        "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON='{}'\n",
+        encoding="utf-8",
+    )
     env["HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_TRUST_PROFILE_JSON"] = (
         '{"key_id":"gateway-identity-rs256-v1"}'
     )

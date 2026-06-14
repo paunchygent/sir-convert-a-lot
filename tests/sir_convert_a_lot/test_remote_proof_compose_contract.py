@@ -124,6 +124,7 @@ def test_remote_proof_wrapper_and_pdm_scripts_are_first_class() -> None:
         script_text
     )
     assert "SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR" in script_text
+    assert "SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE" in script_text
     assert "gateway-internal-identity-public-key.pem" in script_text
     assert "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH" in script_text
     assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
@@ -132,6 +133,9 @@ def test_remote_proof_wrapper_and_pdm_scripts_are_first_class() -> None:
         encoding="utf-8"
     )
     assert "docker-command.sh" in compose_actions
+    assert "SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE" in compose_actions
+    assert "--env-file" in compose_actions
+    assert "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH" in compose_actions
     assert "SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO" not in compose_actions
     service_deps = (REPO_ROOT / "scripts" / "devops" / "service-deps-image.sh").read_text(
         encoding="utf-8"

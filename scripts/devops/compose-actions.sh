@@ -81,7 +81,79 @@ export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-1}"
 export SIR_CONVERT_A_LOT_SERVICE_REVISION="${resolved_revision}"
 export SIR_CONVERT_A_LOT_EXPECTED_REVISION="${resolved_expected_revision}"
 
-COMPOSE_CMD=("${SIR_CONVERT_DOCKER_CMD[@]}" compose -f "${COMPOSE_FILE}")
+COMPOSE_STATIC_ENV_ARGS=()
+if [[ -n "${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE:-}" ]]; then
+  if [[ ! -f "${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}" ]]; then
+    echo "${COMPOSE_LABEL}: compose env file not found: ${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}" >&2
+    exit 66
+  fi
+  COMPOSE_STATIC_ENV_ARGS+=(--env-file "${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}")
+fi
+
+COMPOSE_DYNAMIC_ENV_FILE=""
+cleanup_compose_dynamic_env_file() {
+  if [[ -n "${COMPOSE_DYNAMIC_ENV_FILE}" && -f "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
+    rm -f "${COMPOSE_DYNAMIC_ENV_FILE}"
+  fi
+}
+trap cleanup_compose_dynamic_env_file EXIT
+
+write_compose_env_line() {
+  local key="$1"
+  local value="${!key:-}"
+  if [[ -z "${value}" ]]; then
+    return 0
+  fi
+  if [[ "${value}" == *$'\n'* ]]; then
+    echo "${COMPOSE_LABEL}: compose env value contains a newline: ${key}" >&2
+    exit 70
+  fi
+  printf "%s=%s\n" "${key}" "${value}"
+}
+
+prepare_compose_dynamic_env_file() {
+  if [[ "${#COMPOSE_STATIC_ENV_ARGS[@]}" -eq 0 || -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
+    return 0
+  fi
+
+  local dynamic_keys=(
+    SIR_CONVERT_A_LOT_DEPS_IMAGE
+    SIR_CONVERT_A_LOT_SERVICE_REVISION
+    SIR_CONVERT_A_LOT_EXPECTED_REVISION
+    HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH
+  )
+  local has_dynamic_values=0
+  local key
+  for key in "${dynamic_keys[@]}"; do
+    if [[ -n "${!key:-}" ]]; then
+      has_dynamic_values=1
+      break
+    fi
+  done
+  if [[ "${has_dynamic_values}" == "0" ]]; then
+    return 0
+  fi
+
+  COMPOSE_DYNAMIC_ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/sir-convert-compose-env.XXXXXX")"
+  chmod 600 "${COMPOSE_DYNAMIC_ENV_FILE}"
+  for key in "${dynamic_keys[@]}"; do
+    write_compose_env_line "${key}"
+  done >"${COMPOSE_DYNAMIC_ENV_FILE}"
+}
+
+refresh_compose_command() {
+  prepare_compose_dynamic_env_file
+  local compose_env_args=("${COMPOSE_STATIC_ENV_ARGS[@]}")
+  if [[ -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
+    compose_env_args+=(--env-file "${COMPOSE_DYNAMIC_ENV_FILE}")
+  fi
+  COMPOSE_CMD=("${SIR_CONVERT_DOCKER_CMD[@]}" compose "${compose_env_args[@]}" -f "${COMPOSE_FILE}")
+}
+
+run_compose() {
+  refresh_compose_command
+  "${COMPOSE_CMD[@]}" "$@"
+}
 
 ensure_dependency_image() {
   local deps_runtime="${SIR_CONVERT_A_LOT_DEPS_RUNTIME:-}"
@@ -106,39 +178,39 @@ ensure_dependency_image() {
 case "${ACTION}" in
   start)
     ensure_dependency_image
-    "${COMPOSE_CMD[@]}" up -d --build "$@"
+    run_compose up -d --build "$@"
     ;;
   stop)
     if [[ "$#" -eq 0 ]]; then
-      "${COMPOSE_CMD[@]}" down
+      run_compose down
     else
-      "${COMPOSE_CMD[@]}" stop "$@"
+      run_compose stop "$@"
     fi
     ;;
   build)
     ensure_dependency_image
-    "${COMPOSE_CMD[@]}" build "$@"
+    run_compose build "$@"
     ;;
   build-clean)
     ensure_dependency_image
-    "${COMPOSE_CMD[@]}" build --no-cache "$@"
+    run_compose build --no-cache "$@"
     ;;
   recreate)
     ensure_dependency_image
-    "${COMPOSE_CMD[@]}" up -d --force-recreate --build "$@"
+    run_compose up -d --force-recreate --build "$@"
     ;;
   logs)
-    "${COMPOSE_CMD[@]}" logs --tail=200 "$@"
+    run_compose logs --tail=200 "$@"
     ;;
   ps)
-    "${COMPOSE_CMD[@]}" ps "$@"
+    run_compose ps "$@"
     ;;
   config)
-    "${COMPOSE_CMD[@]}" config "$@"
+    run_compose config "$@"
     ;;
   check)
-    "${COMPOSE_CMD[@]}" config >/dev/null
-    "${COMPOSE_CMD[@]}" ps
+    run_compose config >/dev/null
+    run_compose ps
     ;;
   *)
     usage
