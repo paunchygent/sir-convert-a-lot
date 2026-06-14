@@ -28,6 +28,10 @@ _KNOWN_ACCELERATION_POLICY_LABELS: frozenset[str] = frozenset(
 _KNOWN_ACCELERATION_USED_LABELS: frozenset[str] = frozenset({"cpu", "cuda"})
 _KNOWN_RETRY_KINDS: frozenset[str] = frozenset({"ocr_auto", "ordering", "other"})
 _KNOWN_GPU_RUNTIME_KINDS: frozenset[str] = frozenset({"rocm", "cuda"})
+_KNOWN_TRANSCRIPT_REPLAY_FAST_LANE_PHASES: frozenset[str] = frozenset({"admission", "execution"})
+_KNOWN_TRANSCRIPT_REPLAY_FAST_LANE_STATUSES: frozenset[str] = frozenset(
+    {"accepted", "succeeded", "failed", "skipped", "other"}
+)
 
 
 def _normalize_backend_label(value: str | None) -> str:
@@ -75,6 +79,13 @@ def _normalize_gpu_runtime_kind(value: str | None) -> str:
         return "none"
     normalized = value.strip().lower()
     if normalized in _KNOWN_GPU_RUNTIME_KINDS:
+        return normalized
+    return "other"
+
+
+def _normalize_bounded_label(value: str, known_values: frozenset[str]) -> str:
+    normalized = value.strip().lower()
+    if normalized in known_values:
         return normalized
     return "other"
 
@@ -188,6 +199,13 @@ class RuntimeTelemetrySinkV2:
             ["runtime_kind"],
             registry=registry,
         )
+        self.transcript_replay_fast_lane_duration_seconds = Histogram(
+            "sir_convert_a_lot_v2_transcript_replay_fast_lane_duration_seconds",
+            "Transcript formatter replay fast-lane admission and execution durations.",
+            ["phase", "status"],
+            buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0),
+            registry=registry,
+        )
 
     def observe_runtime_capacity(
         self,
@@ -297,6 +315,27 @@ class RuntimeTelemetrySinkV2:
                 continue
             self.retry_total.labels(retry_kind, source_format.value).inc()
 
+    def observe_transcript_replay_fast_lane_timing(
+        self,
+        *,
+        phase: str,
+        status: str,
+        duration_ms: int,
+    ) -> None:
+        """Observe bounded transcript formatter replay fast-lane timing."""
+        phase_label = _normalize_bounded_label(
+            phase,
+            _KNOWN_TRANSCRIPT_REPLAY_FAST_LANE_PHASES,
+        )
+        status_label = _normalize_bounded_label(
+            status,
+            _KNOWN_TRANSCRIPT_REPLAY_FAST_LANE_STATUSES,
+        )
+        self.transcript_replay_fast_lane_duration_seconds.labels(
+            phase_label,
+            status_label,
+        ).observe(max(0.0, float(duration_ms) / 1000.0))
+
 
 class NoopRuntimeTelemetrySinkV2:
     """No-op telemetry sink used when runtime is created outside HTTP app context."""
@@ -365,3 +404,12 @@ class NoopRuntimeTelemetrySinkV2:
         warnings: Sequence[str],
     ) -> None:
         del source_format, warnings
+
+    def observe_transcript_replay_fast_lane_timing(
+        self,
+        *,
+        phase: str,
+        status: str,
+        duration_ms: int,
+    ) -> None:
+        del phase, status, duration_ms

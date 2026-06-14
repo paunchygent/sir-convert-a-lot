@@ -302,7 +302,7 @@ def test_replay_unrequested_artifacts_fail_with_route_specific_code(tmp_path: Pa
     assert error["details"]["availability"] == "unrequested"
 
 
-def test_replay_queued_job_can_be_canceled_through_v2_lifecycle(tmp_path: Path) -> None:
+def test_replay_fast_lane_terminal_job_rejects_cancel_through_v2_lifecycle(tmp_path: Path) -> None:
     client = TestClient(_app(tmp_path, run_jobs_on_submit=False))
 
     response = _post_replay_job(
@@ -311,18 +311,18 @@ def test_replay_queued_job_can_be_canceled_through_v2_lifecycle(tmp_path: Path) 
         wait_seconds=0,
     )
 
-    assert response.status_code == 202
+    assert response.status_code == 200
     job = response.json()["job"]
-    assert job["status"] == JobStatus.QUEUED.value
+    assert job["status"] == JobStatus.SUCCEEDED.value
     job_id = job["job_id"]
 
     cancel_response = client.post(f"/v2/convert/jobs/{job_id}/cancel", headers=_headers())
-    assert cancel_response.status_code == 202
-    assert cancel_response.json()["job"]["status"] == JobStatus.CANCELED.value
+    assert cancel_response.status_code == 409
+    assert cancel_response.json()["error"]["code"] == "job_not_cancelable"
 
     result_response = client.get(f"/v2/convert/jobs/{job_id}/result", headers=_headers())
-    assert result_response.status_code == 409
-    assert result_response.json()["error"]["code"] == "job_not_succeeded"
+    assert result_response.status_code == 200
+    assert result_response.json()["status"] == JobStatus.SUCCEEDED.value
 
 
 def test_replay_runtime_does_not_touch_audio_sidecar(tmp_path: Path) -> None:

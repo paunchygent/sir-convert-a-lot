@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-06-13
-last_updated: 2026-06-13
+created: 2026-06-14
+last_updated: 2026-06-14
 related: []
 labels:
   - generated
@@ -81,6 +81,7 @@ Generated index for backlog planning documents.
 | review-45-ruthless-review-of-task-359-360-transcript-formatter-replay | [Ruthless review of Task 359 360 transcript formatter replay](reviews/review-45-ruthless-review-of-task-359-360-transcript-formatter-replay.md) | review | completed |
 | review-46-ruthless-review-task-361-huleedu-internalidentitycontextv1-trust-profile-consumption | [Ruthless review Task 361 HuleEdu InternalIdentityContextV1 trust profile consumption](reviews/review-46-ruthless-review-task-361-huleedu-internalidentitycontextv1-trust-profile-consumption.md) | review | completed |
 | review-47-ruthless-review-of-task-362-batched-fasterwhisper-production-stt-sidecar | [Ruthless review of Task 362 batched FasterWhisper production STT sidecar](reviews/review-47-ruthless-review-of-task-362-batched-fasterwhisper-production-stt-sidecar.md) | review | completed |
+| review-48-ruthless-review-of-task-363-fast-transcript-formatter-replay-lane | [Ruthless review of task 363 fast transcript formatter replay lane](reviews/review-48-ruthless-review-of-task-363-fast-transcript-formatter-replay-lane.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -437,6 +438,7 @@ Generated index for backlog planning documents.
 | task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts | [Implement transcript speaker-overlay formatter replay artifacts](tasks/task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts.md) | task | completed |
 | task-361-consume-huleedu-internalidentitycontextv1-trust-profile-and-acceptance-smoke | [Consume HuleEdu InternalIdentityContextV1 trust profile and acceptance smoke](tasks/task-361-consume-huleedu-internalidentitycontextv1-trust-profile-and-acceptance-smoke.md) | task | completed |
 | task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar | [Use batched FasterWhisper inference in production STT sidecar](tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md) | task | completed |
+| task-363-fast-transcript-formatter-replay-lane-outside-heavy-conversion-queue | [Fast transcript formatter replay lane outside heavy conversion queue](tasks/task-363-fast-transcript-formatter-replay-lane-outside-heavy-conversion-queue.md) | task | in_progress |
 | task-37-service-v2-route-html-css-pdf-weasyprint | [Service v2 route: html + css -> pdf (WeasyPrint)](tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |
 | task-39-hemma-v2-conversion-smoke-verification | [Hemma v2 conversion smoke verification](tasks/task-39-hemma-v2-conversion-smoke-verification.md) | task | completed |

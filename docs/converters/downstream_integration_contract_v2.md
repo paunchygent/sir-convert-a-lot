@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-06-13
+updated: 2026-06-14
 owners:
   - platform
 tags:
@@ -116,7 +116,7 @@ states:
 | --- | --- | --- | --- | --- |
 | `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | Runtime route | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
 | `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Runtime JSON execution plus optional formatter artifacts | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
-| `transcript_json` | `transcript_bundle` | `transcript_json -> transcript_bundle` | Runtime formatter replay over saved canonical JSON plus speaker overlays | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+| `transcript_json` | `transcript_bundle` | `transcript_json -> transcript_bundle` | Fast-lane formatter replay over saved canonical JSON plus speaker overlays | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
 `/sir-convert/v2/convert/...` product edge as governed Sir Convert conversion
@@ -138,7 +138,10 @@ overlay intent and product filenames, and consumes only the returned
 artifacts. Replay artifact requests use exact lowercase values, speaker overlay
 labels are exact case-sensitive canonical inventory keys, and replay specs must
 not include `pdf_options` or `execution`. Replay does not return a
-`transcript_json` named artifact.
+`transcript_json` named artifact. Replay uses the existing
+`POST /v2/convert/jobs` contract, but the producer executes it outside the
+generic heavy conversion worker queue; `wait_seconds=0` returns a terminal
+success or terminal fail-closed replay job when the request is admitted.
 
 ## PDF Page CSS Modes
 
