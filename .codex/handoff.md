@@ -60,7 +60,7 @@ durable implementation authority lives in governed docs.
   `diarizing` before blocking diarization, and persists canonical audio phase
   timings. The Skriptoteket PR-0351 field handoff is recorded in
   `docs/converters/downstream_integration_contract_v2.md`.
-- Task 365 is active:
+- Task 365 is complete:
   `docs/backlog/tasks/task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay.md`.
   Current implementation removes create-job multipart parser replay after
   upload binding and adds the fenced Hemma `remote-proof` compose lane for
@@ -85,6 +85,8 @@ durable implementation authority lives in governed docs.
   Sir Convert production is deployed at `159e82d5`; native Hemma production
   STT proof passed at
   `/home/paunchygent/apps/skriptoteket/.artifacts/playwright-pr-0352-transcript-parity-native/20260614T191738Z/proof-summary.json`.
+  Downstream `REV-PR-0352` approved the local-first and native-production-second
+  proof evidence, including formatter recovery and remote-proof lane fixes.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -142,9 +144,8 @@ decision/performance work.
 
 ## Next Actions
 
-1. Send the now-live-proofed Task 365 / Skriptoteket PR-0352 evidence to
-   ruthless review and remediate findings until accepted. Do not reopen proxy,
-   timeout, trust-key, or dedicated-sidecar approaches without new evidence.
+1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated
+   sidecar approaches without new governed evidence and explicit user approval.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
    accepted producer artifacts, and governed Gateway routes; do not revive
    browser-owned Sir Convert replay/download sagas.

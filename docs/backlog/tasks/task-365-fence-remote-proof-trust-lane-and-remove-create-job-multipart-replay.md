@@ -2,7 +2,7 @@
 id: task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay
 title: Fence remote-proof trust lane and remove create-job multipart replay
 type: task
-status: in_progress
+status: done
 priority: high
 created: '2026-06-14'
 last_updated: '2026-06-14'
@@ -49,17 +49,17 @@ bleeding local-auth trust into production Sir Convert.
 
 ## Deliverables
 
-- [ ] Red-first admission regression test for the create-job multipart parser
+- [x] Red-first admission regression test for the create-job multipart parser
   replay.
 - [x] Red-first admission regression test for retained-job capacity scans not
   sweeping the whole job store once per retained job.
-- [ ] Production create-job route admits jobs from bound multipart parameters
+- [x] Production create-job route admits jobs from bound multipart parameters
   without calling `request.form()` again.
 - [x] Production audio capacity admission reads retained job subjects directly
   from the job store instead of invoking runtime status APIs during the scan.
-- [ ] Remote-proof compose and wrapper surfaces are governed, deterministic,
+- [x] Remote-proof compose and wrapper surfaces are governed, deterministic,
   and distinct from production.
-- [ ] Compose contract tests prove production and remote-proof trust/data
+- [x] Compose contract tests prove production and remote-proof trust/data
   surfaces cannot bleed into each other.
 - [x] Local downstream proof uses the fenced remote-proof lane before any
   production proof is claimed.
@@ -67,26 +67,26 @@ bleeding local-auth trust into production Sir Convert.
 
 ## Acceptance Criteria
 
-- [ ] Current create-job admission no longer performs a second multipart form
+- [x] Current create-job admission no longer performs a second multipart form
   parse after `UploadFile` and `Form` parameters are bound.
-- [ ] The admission regression test fails on the pre-fix route and passes after
+- [x] The admission regression test fails on the pre-fix route and passes after
   the route derives form-part names without replaying request parsing.
 - [x] Audio route capacity admission remains bounded for retained jobs and does
   not trigger runtime-wide expiry sweeping per retained job before returning
   `202` or `429`.
-- [ ] Remote-proof uses a non-production service profile and non-production
+- [x] Remote-proof uses a non-production service profile and non-production
   trusted HuleEdu `local-auth-integration` public profile only.
-- [ ] Production compose and production workers keep `hemma-production` trust
+- [x] Production compose and production workers keep `hemma-production` trust
   inputs only and do not reference remote-proof variables, ports, or data
   volumes.
-- [ ] Remote-proof has no public `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, or public
+- [x] Remote-proof has no public `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, or public
   reserved-edge service.
 - [x] Local STT E2E proof succeeds against the remote-proof method with remote
   hosted model execution.
 - [x] Production STT E2E proof succeeds natively on Hemma after the local proof.
-- [ ] No timeout, ingress, body-size, or trust/key setting is changed without a
+- [x] No timeout, ingress, body-size, or trust/key setting is changed without a
   separate explicit approval.
-- [ ] Formatter replay export remains terminal under the remote-proof shared
+- [x] Formatter replay export remains terminal under the remote-proof shared
   API/worker store while local STT E2E proof runs.
 
 ## Test Requirements
@@ -315,6 +315,6 @@ bleeding local-auth trust into production Sir Convert.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Implementation complete
 - [x] Validation complete
 - [x] Docs updated
