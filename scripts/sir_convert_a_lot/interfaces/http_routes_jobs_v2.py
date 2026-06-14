@@ -56,6 +56,9 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
     require_internal_identity_auth_context_v2,
     require_job_access_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_create_job_form_parts_v2 import (
+    bound_create_job_form_part_names_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     CreateJobCompanionPartsV2,
     build_create_job_route_registry_v2,
@@ -251,7 +254,6 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 message="Uploaded file exceeds configured size limit.",
                 retryable=False,
             )
-        form = await request.form()
         prepared_route = await route_handler.prepare(
             spec=spec,
             config=runtime.config,
@@ -262,7 +264,14 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 graded_result_pdf=graded_result_pdf,
                 parity_pdf=parity_pdf,
                 digiexam_ingestion_overlay=digiexam_ingestion_overlay,
-                form_part_names=frozenset(str(key) for key in form.keys()),
+                form_part_names=bound_create_job_form_part_names_v2(
+                    request=request,
+                    resources=resources,
+                    reference_docx=reference_docx,
+                    graded_result_pdf=graded_result_pdf,
+                    parity_pdf=parity_pdf,
+                    digiexam_ingestion_overlay=digiexam_ingestion_overlay,
+                ),
             ),
         )
 

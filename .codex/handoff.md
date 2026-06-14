@@ -60,6 +60,15 @@ durable implementation authority lives in governed docs.
   `diarizing` before blocking diarization, and persists canonical audio phase
   timings. The Skriptoteket PR-0351 field handoff is recorded in
   `docs/converters/downstream_integration_contract_v2.md`.
+- Task 365 is active:
+  `docs/backlog/tasks/task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay.md`.
+  Current implementation removes create-job multipart parser replay after
+  upload binding and adds the fenced Hemma `remote-proof` compose lane for
+  local-auth Skriptoteket proof. Remote-proof uses
+  `/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env`
+  on Hemma, `compose.remote-proof.yaml`, and `pdm run remote-proof-*`; it must
+  stay separate from production `hemma-production` trust settings and public
+  ingress.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -152,31 +161,9 @@ decision/performance work.
 - Durable validation history is in the governed task/review docs. STT runtime
   acceptance is recorded in Reviews 40-43. Task 358 formatter acceptance is
   recorded in Review 44 after the `specs_v2.py` module split.
-- Task 359/360 implementation evidence on 2026-06-13: red-first replay/OpenAPI
-  suite first failed with missing `transcript_json` enum, missing
-  `transcript_formatter_options`, HTTP `415` for `.json`, and missing OpenAPI
-  components. After implementation and OpenAPI export, focused suite
-  `pdm run pytest-root tests/sir_convert_a_lot/test_transcript_formatter_replay_v2.py tests/sir_convert_a_lot/test_transcript_formatter_replay_strict_v2.py tests/sir_convert_a_lot/test_openapi_contract_v2.py`
-  passed with `31 passed` after retained Review 45 strictness fixes.
-- Task 361 red-first evidence on 2026-06-13:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_huleedu_internal_identity_trust_profile_v1.py -q`
-  first failed with `4 failed, 5 passed` because trust-profile config was
-  missing and missing-key / SPKI-mismatch / PEM-byte-fingerprint drift were not
-  fail-closed. Green focused proof later passed with `39 passed`:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_huleedu_internal_identity_trust_profile_v1.py tests/sir_convert_a_lot/test_structured_llm_settings_route_v2.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_local_compose_contract.py -q`.
-  `pdm run typecheck-all`, `pdm run format-all`, and `pdm run lint-fix` also
-  passed before final docs/skills/handoff/diff gates.
-- Task 362 red-first evidence on 2026-06-13:
-  `pdm run pytest-root tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py tests/sir_convert_a_lot/test_compose_contract.py -q`
-  first failed with `9 failed, 17 passed` because sidecar settings had no
-  `batch_size` and prod compose omitted `SIR_STT_SIDECAR_BATCH_SIZE`.
-  Focused green proof later passed with `27 passed` via
-  `tests/sir_convert_a_lot/test_stt_sidecar_batched_runtime.py`,
-  `tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py`, and
-  `tests/sir_convert_a_lot/test_compose_contract.py` after runtime batching,
-  capability, startup-wrapper, and compose-contract changes.
-  `pdm run format-all`, `pdm run typecheck-all`, and `pdm run lint-fix` passed;
-  docs/skills/handoff/diff gates passed after docs sync.
+- Task 359-362 retained red/green evidence lives in their task docs and
+  Reviews 45-47; Task 361 covers HuleEdu trust-profile consumption and Task
+  362 covers batched FasterWhisper production STT sidecar remediation.
 - Task 363 red-first evidence on 2026-06-14:
   red-first fast-lane proof first failed with `4 failed`; focused replay/OpenAPI
   proof passed with `36 passed`; route/supervisor/metrics proof passed with
@@ -189,6 +176,14 @@ decision/performance work.
   `20 passed`; `coverage-gate` passed with `1721 passed, 6 skipped` and
   `95.37%` coverage. Review 49 approved after rerunning focused proof with
   `10 passed`, `docs-sync`, `docs-validate`, and `git diff --check`.
+- Task 365 evidence on 2026-06-14 so far: admission replay red test failed at
+  `interfaces/http_routes_jobs_v2.py:254` on the second `request.form()` call;
+  remote-proof compose contract initially failed because the lane did not
+  exist; focused green proof passed with `6 passed`; `format-all`,
+  `typecheck-all`, `lint-fix`, `docs-sync`, `docs-validate`,
+  `skills-validate`, `handoff-validate`, and `git diff --check` passed before
+  Hemma deployment prep. Live local and native Hemma production STT proofs are
+  still required before Task 365 is complete.
 
 ## Stop Conditions
 
