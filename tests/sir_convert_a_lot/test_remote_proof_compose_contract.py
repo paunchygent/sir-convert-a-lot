@@ -122,6 +122,13 @@ def test_remote_proof_wrapper_and_pdm_scripts_are_first_class() -> None:
     assert "/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env" in (
         script_text
     )
+    assert 'SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO="1"' in script_text
+
+    compose_actions = (REPO_ROOT / "scripts" / "devops" / "compose-actions.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO" in compose_actions
+    assert "sudo -n docker" in compose_actions
 
     pyproject = tomllib.loads(PYPROJECT_FILE.read_text(encoding="utf-8"))
     scripts = pyproject["tool"]["pdm"]["scripts"]

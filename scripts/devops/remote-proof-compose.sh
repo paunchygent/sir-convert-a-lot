@@ -32,6 +32,7 @@ export SIR_CONVERT_A_LOT_COMPOSE_LABEL="remote-proof-compose"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.remote-proof.yaml"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE_DESCRIPTION="remote-proof compose file"
 export SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"
+export SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO="1"
 export SIR_CONVERT_A_LOT_COMPOSE_USAGE=$'Usage:\n  pdm run remote-proof-start [service...]\n  pdm run remote-proof-stop [service...]\n  pdm run remote-proof-build [service...]\n  pdm run remote-proof-build-clean [service...]\n  pdm run remote-proof-recreate [service...]\n  pdm run remote-proof-logs [service...]\n  pdm run remote-proof-ps [service...]\n  pdm run remote-proof-config\n  pdm run remote-proof-check'
 
 exec bash "${SCRIPT_DIR}/compose-actions.sh" "$@"

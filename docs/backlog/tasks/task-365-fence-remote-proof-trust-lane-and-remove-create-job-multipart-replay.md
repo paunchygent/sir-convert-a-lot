@@ -104,6 +104,9 @@ bleeding local-auth trust into production Sir Convert.
   scripts. The wrapper sources only
   `/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env`
   by default, not production `.env`.
+- Updated shared compose actions with an explicit `SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO`
+  mode and enabled it only for remote-proof, matching Hemma's Docker socket
+  privilege boundary without hand-running `sudo docker compose`.
 
 ## Red-First Evidence
 
@@ -118,6 +121,10 @@ bleeding local-auth trust into production Sir Convert.
   `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class -q`
   failed because the wrapper did not source
   `SIR_CONVERT_A_LOT_REMOTE_PROOF_ENV_FILE`.
+- First Hemma `pdm run remote-proof-start` attempt failed before container
+  mutation with Docker socket permission denied. The follow-up red test failed
+  because the remote-proof wrapper did not declare the sanctioned sudo compose
+  path.
 
 ## Focused Green Evidence
 
@@ -130,6 +137,13 @@ bleeding local-auth trust into production Sir Convert.
   passed with `4 passed`.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
   passed with `6 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class -q`
+  passed after adding remote-proof sudo compose mode.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py -q`
+  passed with `9 passed`, proving the sudo mode did not change the local/dev
+  compose wrapper behavior.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
+  passed with `15 passed`.
 - Local compose syntax expansion for `compose.remote-proof.yaml` passed with
   dummy non-secret values via `docker compose -f compose.remote-proof.yaml config`.
 

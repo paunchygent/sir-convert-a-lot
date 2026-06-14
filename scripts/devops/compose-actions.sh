@@ -39,12 +39,17 @@ if [[ ! -f "${COMPOSE_FILE}" ]]; then
   exit 66
 fi
 
+DOCKER_CMD=(docker)
+if [[ "${SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO:-0}" == "1" ]]; then
+  DOCKER_CMD=(sudo -n docker)
+fi
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "${COMPOSE_LABEL}: docker is not installed or not on PATH" >&2
   exit 67
 fi
 
-if ! docker compose version >/dev/null 2>&1; then
+if ! "${DOCKER_CMD[@]}" compose version >/dev/null 2>&1; then
   echo "${COMPOSE_LABEL}: docker compose v2 plugin is not available" >&2
   exit 68
 fi
@@ -82,7 +87,7 @@ export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-1}"
 export SIR_CONVERT_A_LOT_SERVICE_REVISION="${resolved_revision}"
 export SIR_CONVERT_A_LOT_EXPECTED_REVISION="${resolved_expected_revision}"
 
-COMPOSE_CMD=(docker compose -f "${COMPOSE_FILE}")
+COMPOSE_CMD=("${DOCKER_CMD[@]}" compose -f "${COMPOSE_FILE}")
 
 ensure_dependency_image() {
   local deps_runtime="${SIR_CONVERT_A_LOT_DEPS_RUNTIME:-}"
