@@ -24,6 +24,7 @@ PROD_COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 REMOTE_PROOF_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "remote-proof-compose.sh"
 DOCKER_COMMAND_SCRIPT = REPO_ROOT / "scripts" / "devops" / "docker-command.sh"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
+DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 
@@ -108,11 +109,13 @@ def test_remote_proof_compose_uses_distinct_volume_entrypoint_and_key_mount() ->
 
 def test_remote_proof_service_entrypoint_is_packaged_in_runtime_image() -> None:
     dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+    dockerignore = DOCKERIGNORE.read_text(encoding="utf-8")
 
     assert (
         "COPY scripts/sir_convert_a_lot/service_remote_proof.py "
         "./scripts/sir_convert_a_lot/service_remote_proof.py"
     ) in dockerfile
+    assert "!scripts/sir_convert_a_lot/service_remote_proof.py" in dockerignore
 
 
 def test_production_compose_does_not_reference_remote_proof_settings() -> None:

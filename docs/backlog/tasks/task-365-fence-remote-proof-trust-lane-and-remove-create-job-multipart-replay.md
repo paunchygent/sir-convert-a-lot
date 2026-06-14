@@ -120,7 +120,8 @@ bleeding local-auth trust into production Sir Convert.
   env file, and the shared compose runner copies it into a short-lived temp
   snapshot plus computed compose interpolation values before invoking Compose.
 - Packaged the remote-proof ASGI entrypoint into the runtime Docker image so the
-  remote-proof compose services can import `service_remote_proof`.
+  remote-proof compose services can import `service_remote_proof`, including the
+  `.dockerignore` build-context whitelist.
 
 ## Red-First Evidence
 
@@ -161,8 +162,9 @@ bleeding local-auth trust into production Sir Convert.
   Hemma Docker lane did not reliably see `/tmp` snapshots.
 - The first successful container creation still restarted because the runtime
   Dockerfile did not copy `scripts/sir_convert_a_lot/service_remote_proof.py`.
-  A red packaging contract now ties the remote-proof compose entrypoint to the
-  runtime image copy list.
+  The first packaging patch then exposed the `.dockerignore` whitelist omission.
+  A red packaging contract now ties the remote-proof compose entrypoint to both
+  the runtime image copy list and build context.
 
 ## Focused Green Evidence
 
@@ -194,7 +196,7 @@ bleeding local-auth trust into production Sir Convert.
   temporary snapshot rather than the hidden source env path.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_service_entrypoint_is_packaged_in_runtime_image -q`
   passed with `1 passed`, proving the runtime Dockerfile includes the
-  remote-proof ASGI entrypoint.
+  remote-proof ASGI entrypoint and the build context whitelists it.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py -q`
   passed with `11 passed`, proving the Docker policy resolver did not change
   the local/dev compose wrapper behavior.
