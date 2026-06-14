@@ -81,13 +81,13 @@ export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-1}"
 export SIR_CONVERT_A_LOT_SERVICE_REVISION="${resolved_revision}"
 export SIR_CONVERT_A_LOT_EXPECTED_REVISION="${resolved_expected_revision}"
 
-COMPOSE_STATIC_ENV_ARGS=()
+COMPOSE_SOURCE_ENV_FILE=""
 if [[ -n "${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE:-}" ]]; then
   if [[ ! -f "${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}" ]]; then
     echo "${COMPOSE_LABEL}: compose env file not found: ${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}" >&2
     exit 66
   fi
-  COMPOSE_STATIC_ENV_ARGS+=(--env-file "${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}")
+  COMPOSE_SOURCE_ENV_FILE="${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE}"
 fi
 
 COMPOSE_DYNAMIC_ENV_FILE=""
@@ -112,7 +112,7 @@ write_compose_env_line() {
 }
 
 prepare_compose_dynamic_env_file() {
-  if [[ "${#COMPOSE_STATIC_ENV_ARGS[@]}" -eq 0 || -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
+  if [[ -z "${COMPOSE_SOURCE_ENV_FILE}" || -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
     return 0
   fi
 
@@ -130,20 +130,22 @@ prepare_compose_dynamic_env_file() {
       break
     fi
   done
-  if [[ "${has_dynamic_values}" == "0" ]]; then
-    return 0
-  fi
-
   COMPOSE_DYNAMIC_ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/sir-convert-compose-env.XXXXXX")"
   chmod 600 "${COMPOSE_DYNAMIC_ENV_FILE}"
-  for key in "${dynamic_keys[@]}"; do
-    write_compose_env_line "${key}"
-  done >"${COMPOSE_DYNAMIC_ENV_FILE}"
+  cp "${COMPOSE_SOURCE_ENV_FILE}" "${COMPOSE_DYNAMIC_ENV_FILE}"
+  if [[ "${has_dynamic_values}" == "1" ]]; then
+    {
+      printf "\n"
+      for key in "${dynamic_keys[@]}"; do
+        write_compose_env_line "${key}"
+      done
+    } >>"${COMPOSE_DYNAMIC_ENV_FILE}"
+  fi
 }
 
 refresh_compose_command() {
   prepare_compose_dynamic_env_file
-  local compose_env_args=("${COMPOSE_STATIC_ENV_ARGS[@]}")
+  local compose_env_args=()
   if [[ -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
     compose_env_args+=(--env-file "${COMPOSE_DYNAMIC_ENV_FILE}")
   fi

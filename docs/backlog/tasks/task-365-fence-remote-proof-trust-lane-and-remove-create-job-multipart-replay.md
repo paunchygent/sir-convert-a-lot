@@ -117,8 +117,8 @@ bleeding local-auth trust into production Sir Convert.
   command as dependency-image inspect/build/tag operations, so remote-proof does
   not fall back to plain Docker in child cleanup helpers.
 - Added sudo-safe compose env-file handoff: remote-proof requires its sanctioned
-  env file, and the shared compose runner adds that file plus a generated
-  dynamic env file for computed compose interpolation values.
+  env file, and the shared compose runner copies it into a short-lived temp
+  snapshot plus computed compose interpolation values before invoking Compose.
 
 ## Red-First Evidence
 
@@ -152,6 +152,9 @@ bleeding local-auth trust into production Sir Convert.
   the exported path at the `sudo -n docker compose` boundary. Red tests proved
   remote-proof did not pass a compose env file and compose-actions had no
   env-file handoff.
+- Passing the hidden remote-proof env file path directly then failed on Hemma
+  with permission denied from Docker Compose. The durable fix is a temporary
+  compose env snapshot that the wrapper removes after Compose exits.
 
 ## Focused Green Evidence
 
@@ -179,7 +182,8 @@ bleeding local-auth trust into production Sir Convert.
   same Docker command policy as the dependency-image shell helper.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class tests/sir_convert_a_lot/test_dev_compose_wrapper.py::test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker -q`
   passed with `2 passed`, proving remote-proof passes explicit env files to
-  Docker Compose instead of relying on sudo-preserved shell exports.
+  Docker Compose instead of relying on sudo-preserved shell exports, and uses a
+  temporary snapshot rather than the hidden source env path.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py -q`
   passed with `11 passed`, proving the Docker policy resolver did not change
   the local/dev compose wrapper behavior.

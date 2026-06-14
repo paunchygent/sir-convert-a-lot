@@ -435,6 +435,7 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
     env["FAKE_DOCKER_LOG"] = str(log_file)
     env["FAKE_DOCKER_LOG_BUILDS"] = "1"
+    env["TMPDIR"] = str(tmp_path)
     env["SIR_CONVERT_A_LOT_PRUNE_SUPERSEDED_DEPS_IMAGES"] = "1"
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "remote_proof_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "remote_proof_rev"
@@ -451,9 +452,11 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     assert "sudo -n docker image ls" in log_text
     assert "sudo -n docker ps --format" in log_text
     assert "sudo -n docker compose --env-file" in log_text
-    assert f"--env-file {tmp_path / 'remote-proof.env'}" in log_text
+    assert f"--env-file {tmp_path}/sir-convert-compose-env." in log_text
+    assert f"--env-file {tmp_path / 'remote-proof.env'}" not in log_text
     assert f"-f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
     assert "superseded dependency image cleanup failed" not in result.stderr
+    assert not list(tmp_path.glob("sir-convert-compose-env.*"))
 
 
 def test_remote_proof_wrapper_fails_before_docker_when_trust_key_is_missing(
