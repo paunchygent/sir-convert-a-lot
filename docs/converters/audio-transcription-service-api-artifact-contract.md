@@ -27,6 +27,7 @@ links:
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/internal_adapter_contract_v2.md
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
+  - docs/reference/ref-stt-proof-lanes-and-admission-operations.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
 ---
 
@@ -305,6 +306,11 @@ any cap is exhausted:
 
 These caps are route-local and do not authorize runtime registration. They are
 the admission contract for later worker, sidecar-client, and Gateway slices.
+For `POST /v2/convert/jobs?wait_seconds=0`, capacity admission must remain a
+bounded admission operation: it may inspect retained job subjects, but it must
+not call runtime status APIs that sweep all expired jobs once per retained job,
+probe media, call the STT sidecar, or execute transcription work before the
+async job is accepted or rejected.
 
 ## STT Sidecar Internal Contract
 

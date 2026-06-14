@@ -71,6 +71,11 @@ durable implementation authority lives in governed docs.
   ingress. The current STT proof fix must use the existing hosted Hemma STT
   sidecar through the shared `sir-convert-a-lot-stt-sidecar-inputs` volume;
   do not reintroduce a dedicated remote-proof STT sidecar.
+  The 2026-06-14 production upload failure was pinned to slow Sir Convert audio
+  admission, not HuleEdu CORS/trust or a proxy setting: retained-job capacity
+  checks called `runtime.get_job()` per job, and that API sweeps expired jobs at
+  entry. Task 365 now includes the bounded-admission fix and the reference doc
+  `docs/reference/ref-stt-proof-lanes-and-admission-operations.md`.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -129,8 +134,9 @@ decision/performance work.
 ## Next Actions
 
 1. Finish Task 365 in order: redeploy the no-dedicated-sidecar shared-staging
-   lane, pass local STT E2E proof through `hemma-remote-proof`, then pass native
-   Hemma production STT proof. Only then send to ruthless review.
+   lane with the bounded audio-admission fix, pass local STT E2E proof through
+   `hemma-remote-proof`, then pass native Hemma production STT proof. Only then
+   send to ruthless review.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
    accepted producer artifacts, and governed Gateway routes; do not revive
    browser-owned Sir Convert replay/download sagas.
@@ -175,8 +181,13 @@ decision/performance work.
   sidecar as the only model worker. Red shared-staging proof failed with
   `9 failed, 15 passed`; focused green proof passed with `24 passed`; broadened
   Task 365 proof passed with `43 passed`; `coverage-gate` passed with
-  `1733 passed, 6 skipped` and `95.37%` coverage. Live local and native Hemma
-  production STT proofs are still required before Task 365 is complete.
+  `1733 passed, 6 skipped` and `95.37%` coverage. The retained-job capacity
+  red test failed with repeated `JobStoreV2.sweep_expired` calls during audio
+  admission; the fixed route now scans direct job-store subjects and focused
+  proof passed with `1 passed`, then `44 passed` for the audio admission/parser
+  replay plus remote-proof evidence-helper slice. Live local and native Hemma
+  production STT proofs are still
+  required before Task 365 is complete.
 
 ## Stop Conditions
 

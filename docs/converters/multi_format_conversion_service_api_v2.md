@@ -31,6 +31,7 @@ links:
   - docs/converters/downstream_integration_contract_v2.md
   - docs/converters/multi_format_conversion_service_api_v2_async_push.md
   - docs/converters/multi_format_conversion_service_api_v2_errors.md
+  - docs/reference/ref-stt-proof-lanes-and-admission-operations.md
   - docs/backlog/tasks/task-46-design-docx-template-contract-storage-and-selection-model.md
   - docs/backlog/tasks/task-47-implement-docx-template-endpoints-validation-and-fixture-templates.md
 ---
@@ -158,6 +159,9 @@ contracts:
   optional product-neutral `txt`, `md`, `vtt`, and `srt` formatter artifacts
   over canonical JSON. See ADR-0013 and
   `docs/converters/audio-transcription-service-api-artifact-contract.md`.
+  Audio create-job admission with `wait_seconds=0` must remain bounded: retained
+  job capacity checks must not invoke runtime status APIs that sweep the job
+  store once per retained job.
 - `transcript_json -> transcript_bundle` is implemented for stateless
   formatter replay over one uploaded canonical `transcript_json_v1` payload.
   It accepts strict `transcript_formatter_options`, exact lowercase requested

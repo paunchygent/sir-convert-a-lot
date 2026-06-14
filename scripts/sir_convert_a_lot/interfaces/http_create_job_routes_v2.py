@@ -43,6 +43,11 @@ from scripts.sir_convert_a_lot.domain.source_format_inference_v2 import (
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
+    JobExpiredV2,
+    JobMissingV2,
+    StoredJobRecordV2,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_digiexam_migration_request_v2 import (
     read_digiexam_migration_companions_v2,
@@ -115,9 +120,20 @@ class CreateJobRouteHandlerV2(Protocol):
 class AudioCapacityJobSubjectV2(Protocol):
     """Stored job fields needed for audio route-capacity checks."""
 
-    source_format: SourceFormatV2
-    output_format: OutputFormatV2
-    status: JobStatus
+    @property
+    def source_format(self) -> SourceFormatV2:
+        """Return the stored source format."""
+        ...
+
+    @property
+    def output_format(self) -> OutputFormatV2:
+        """Return the stored output format."""
+        ...
+
+    @property
+    def status(self) -> JobStatus:
+        """Return the stored job status."""
+        ...
 
 
 class AudioCapacityJobStoreV2(Protocol):
@@ -125,6 +141,9 @@ class AudioCapacityJobStoreV2(Protocol):
 
     def list_job_ids(self) -> list[str]:
         """Return all visible v2 job ids."""
+
+    def get_job(self, job_id: str) -> StoredJobRecordV2:
+        """Return a visible job record or raise when unavailable."""
 
 
 class AudioCapacityRuntimeV2(Protocol):
@@ -134,9 +153,6 @@ class AudioCapacityRuntimeV2(Protocol):
     def job_store(self) -> AudioCapacityJobStoreV2:
         """Return the v2 job store backing the runtime."""
         ...
-
-    def get_job(self, job_id: str) -> AudioCapacityJobSubjectV2 | None:
-        """Return a visible job or `None` when the id is not available."""
 
 
 class DefaultCreateJobRouteHandlerV2:
@@ -354,12 +370,10 @@ def _active_audio_transcript_job_count_v2(runtime: AudioCapacityRuntimeV2) -> in
     active_count = 0
     for job_id in runtime.job_store.list_job_ids():
         try:
-            job = runtime.get_job(job_id)
-        except ServiceError as exc:
-            if exc.status_code == 404:
-                continue
-            raise
-        if job is not None and _is_active_audio_transcript_job_v2(job):
+            job = runtime.job_store.get_job(job_id)
+        except (JobExpiredV2, JobMissingV2):
+            continue
+        if _is_active_audio_transcript_job_v2(job):
             active_count += 1
     return active_count
 

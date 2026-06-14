@@ -6,7 +6,8 @@ status: in_progress
 priority: high
 created: '2026-06-14'
 last_updated: '2026-06-14'
-related: []
+related:
+  - docs/reference/ref-stt-proof-lanes-and-admission-operations.md
 labels:
   - auth
   - gateway
@@ -32,6 +33,8 @@ bleeding local-auth trust into production Sir Convert.
 - Preserve DigiExam companion validation and audio-route companion rejection.
 - Add red-first tests proving `POST /v2/convert/jobs` does not need a second
   multipart form parse after FastAPI has bound the request.
+- Remove the slow audio admission capacity scan shape where retained-job checks
+  call runtime status APIs that sweep the whole job store once per retained job.
 - Add a separate `remote-proof` Hemma compose/runtime lane with distinct service
   names, data volume, service profile, port, API key surface, and local-auth
   trust profile inputs.
@@ -48,8 +51,12 @@ bleeding local-auth trust into production Sir Convert.
 
 - [ ] Red-first admission regression test for the create-job multipart parser
   replay.
+- [x] Red-first admission regression test for retained-job capacity scans not
+  sweeping the whole job store once per retained job.
 - [ ] Production create-job route admits jobs from bound multipart parameters
   without calling `request.form()` again.
+- [x] Production audio capacity admission reads retained job subjects directly
+  from the job store instead of invoking runtime status APIs during the scan.
 - [ ] Remote-proof compose and wrapper surfaces are governed, deterministic,
   and distinct from production.
 - [ ] Compose contract tests prove production and remote-proof trust/data
@@ -64,6 +71,9 @@ bleeding local-auth trust into production Sir Convert.
   parse after `UploadFile` and `Form` parameters are bound.
 - [ ] The admission regression test fails on the pre-fix route and passes after
   the route derives form-part names without replaying request parsing.
+- [x] Audio route capacity admission remains bounded for retained jobs and does
+  not trigger runtime-wide expiry sweeping per retained job before returning
+  `202` or `429`.
 - [ ] Remote-proof uses a non-production service profile and non-production
   trusted HuleEdu `local-auth-integration` public profile only.
 - [ ] Production compose and production workers keep `hemma-production` trust
@@ -81,6 +91,8 @@ bleeding local-auth trust into production Sir Convert.
 
 - [x] Focused red command for admission parser replay.
 - [x] Focused green command for admission parser replay.
+- [x] Focused red command for retained-job audio capacity sweep regression.
+- [x] Focused green command for retained-job audio capacity sweep regression.
 - [x] Focused compose contract proof for remote-proof/prod separation.
 - [x] Relevant `pdm run format-all`, `pdm run lint-fix`,
   `pdm run typecheck-all`, and docs gates for touched code/docs.
@@ -109,6 +121,12 @@ bleeding local-auth trust into production Sir Convert.
   generic `SIR_CONVERT_A_LOT_DOCKER_USE_SUDO=1`, so compose operations and
   dependency image preparation use the same Hemma Docker privilege path without
   coupling the helpers to each other.
+- Added
+  `scripts/sir_convert_a_lot/devops/remote_proof_audio_transcript_evidence.py`
+  and `proof:remote-proof-audio-transcript` as a bounded Service API evidence
+  runner for the fenced lane. It submits `wait_seconds=0`, polls job status,
+  persists readyz/status/result/artifact/transcript summaries, and tests that
+  the API key is not written into retained JSON evidence.
 - Updated the remote-proof wrapper to derive and preflight the canonical
   local-auth-integration public-key bind path before compose/dependency-image
   work starts. The default is under the remote-proof trust directory, not a
@@ -128,6 +146,12 @@ bleeding local-auth trust into production Sir Convert.
   input directory; audio runtime stages each uploaded source under a per-job
   directory visible to the hosted sidecar and removes that directory on terminal
   paths.
+- Updated audio route capacity admission so retained-job scans use direct
+  job-store subjects and tolerate expired/missing records without calling
+  `runtime.get_job()` for each retained job. The failure mode this removes was:
+  capacity scan -> `runtime.get_job()` per retained job ->
+  `job_store.sweep_expired()` per retained job -> slow admission before the
+  async job could be accepted.
 
 ## Red-First Evidence
 
@@ -189,6 +213,13 @@ bleeding local-auth trust into production Sir Convert.
   sidecar was still present, shared input volumes/env were missing, typed config
   had no `audio_transcription_sidecar_input_dir`, and runtime execution did not
   stage source audio for the hosted sidecar.
+- Retained-job audio capacity red command:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py::test_audio_route_capacity_admission_does_not_resweep_for_each_retained_job -q`
+  failed before the implementation change with repeated
+  `JobStoreV2.sweep_expired` calls during admission. The first red assertion
+  observed eight sweeps in the retained-job capacity path; the committed test
+  isolates the third admission and requires zero sweeps during that bounded
+  capacity check.
 
 ## Focused Green Evidence
 
@@ -232,6 +263,10 @@ bleeding local-auth trust into production Sir Convert.
   passed with `24 passed`, proving the shared hosted-sidecar staging contract.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_prune_superseded_deps_images.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_runtime_engine_gpu_policy.py::test_service_config_from_env_reads_stt_sidecar_input_dir tests/sir_convert_a_lot/test_audio_transcript_bundle_runtime_v2.py::test_audio_runtime_stages_source_for_shared_hosted_sidecar tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
   passed with `43 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py::test_audio_route_capacity_admission_does_not_resweep_for_each_retained_job -q`
+  passed with `1 passed`.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py::test_create_job_can_defer_execution_to_supervisor_worker tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_audio_transcript_evidence.py -q`
+  passed with `44 passed`.
 - Local compose syntax expansion for `compose.remote-proof.yaml` passed with
   dummy non-secret values via `docker compose -f compose.remote-proof.yaml config`.
 - `pdm run format-all` passed; `pdm run lint-fix` passed; `pdm run typecheck-all`

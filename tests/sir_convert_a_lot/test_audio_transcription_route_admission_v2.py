@@ -26,6 +26,7 @@ from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
+from scripts.sir_convert_a_lot.infrastructure.job_store_v2 import JobStoreV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
@@ -444,6 +445,49 @@ def test_create_job_rejects_third_active_audio_job_at_route_capacity(
     assert error["details"] == {
         "exhausted_cap": "max_active_stt_jobs_per_instance",
     }
+
+
+def test_audio_route_capacity_admission_does_not_resweep_for_each_retained_job(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Audio admission must keep retained-job scans bounded before returning 202."""
+    sweep_calls = 0
+    original_sweep_expired = JobStoreV2.sweep_expired
+
+    def _counting_sweep_expired(self: JobStoreV2) -> None:
+        nonlocal sweep_calls
+        sweep_calls += 1
+        original_sweep_expired(self)
+
+    monkeypatch.setattr(JobStoreV2, "sweep_expired", _counting_sweep_expired)
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, run_jobs_on_submit=False)
+
+    first_response = _post_audio_job(
+        client=client,
+        identity=identity,
+        subject="teacher-audio-sweep-capacity",
+        idempotency_key="idem-audio-sweep-first",
+    )
+    second_response = _post_audio_job(
+        client=client,
+        identity=identity,
+        subject="teacher-audio-sweep-capacity",
+        idempotency_key="idem-audio-sweep-second",
+    )
+    sweep_calls = 0
+    third_response = _post_audio_job(
+        client=client,
+        identity=identity,
+        subject="teacher-audio-sweep-capacity",
+        idempotency_key="idem-audio-sweep-third",
+    )
+
+    assert first_response.status_code == 202
+    assert second_response.status_code == 202
+    assert third_response.status_code == 429
+    assert sweep_calls == 0
 
 
 def test_existing_markdown_pdf_route_remains_registered() -> None:

@@ -22,6 +22,8 @@ description: >-
    - `docs/runbooks/runbook-hemma-gpu-runtime.md`
    - `docs/runbooks/runbook-hemma-conversion-benchmarks.md`
    - `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md`
+1. For STT proof lanes or audio admission timing, read:
+   - `docs/reference/ref-stt-proof-lanes-and-admission-operations.md`
 1. For public contracts, read:
    - `docs/converters/sir_convert_a_lot.md`
    - `docs/converters/multi_format_conversion_service_api_v2.md`
@@ -40,6 +42,11 @@ description: >-
 - Canonical remote repo root: `/home/paunchygent/apps/sir-convert-a-lot`.
 - Canonical client tunnel lane: `http://127.0.0.1:28085`.
 - GPU/offload work is GPU-first; no silent CPU fallback.
+- STT proof work runs local/downstream proof before native Hemma production
+  proof, and review starts only after both live proofs pass.
+- Do not change public proxy timeout, body-size, trust/key, or ingress knobs to
+  mask STT failures before the upstream root cause is pinned and explicitly
+  approved.
 - Docker work uses BuildKit and Docker Compose v2.
 - Long-lived Docker state, model caches, and generated working artifacts stay off
   the Hemma OS disk.

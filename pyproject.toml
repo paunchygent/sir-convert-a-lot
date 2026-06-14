@@ -156,6 +156,7 @@ distribution = false
 "benchmark:stt-sidecar-preflight" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_benchmark_preflight"
 "benchmark:stt-sidecar-live-observation" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_live_observation"
 "benchmark:stt-sidecar-profile-proof" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_profile_proof"
+"proof:remote-proof-audio-transcript" = "python -m scripts.sir_convert_a_lot.devops.remote_proof_audio_transcript_evidence"
 "diagnose:stt-sidecar-diarization-access" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_diarization_access"
 "qwen-acquire" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_acquire"
 "qwen-batch-plan" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_batch_plan"

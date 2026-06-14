@@ -22,6 +22,7 @@ links:
   - docs/converters/sir_convert_a_lot.md
   - docs/decisions/0009-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md
   - docs/reference/ref-sir-convert-internalidentitycontextv1-authorization-profile.md
+  - docs/reference/ref-stt-proof-lanes-and-admission-operations.md
   - docs/runbooks/runbook-hemma-devops-and-gpu.md
   - docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
 ---
@@ -128,6 +129,11 @@ ADR-0013 boundary. Task 356 provides the first runtime surface for canonical
 canonical JSON. Product-owned durable transcript saves, search, sharing,
 teacher-facing labels, and workflow-specific derivatives remain downstream
 work.
+If browser upload fails around `/sir-convert/v2/convert/jobs`, downstreams
+should treat CORS/network errors as symptoms until edge, Gateway, and Sir
+Convert timestamps are compared. Sir Convert audio admission is required to
+accept or reject async `wait_seconds=0` jobs without retained-job scans sweeping
+the job store once per retained job.
 
 For overlay-aware replay, HuleEdu forwards the same v2 job lifecycle through
 `/sir-convert/v2/convert/jobs*` and must not rewrite Sir Convert result,
