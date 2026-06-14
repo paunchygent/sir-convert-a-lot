@@ -43,6 +43,18 @@ but it must not require laptop-local Whisper, Pyannote, or other heavy model
 workers. Remote hosted model execution stays on Hemma. Production proof must run
 natively on Hemma rather than through a local Playwright tunnel to production.
 
+Verified closeout evidence from 2026-06-14:
+
+- Local/downstream proof passed at
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0349-transcript-parity-live/20260614T184817Z/proof-summary.json`.
+- Native Hemma production proof passed at
+  `/home/paunchygent/apps/skriptoteket/.artifacts/playwright-pr-0352-transcript-parity-native/20260614T191738Z/proof-summary.json`.
+- Matching Hemma container logs are retained at
+  `/home/paunchygent/apps/skriptoteket/.artifacts/pr-0352-native-proof-logs/20260614T191737Z/`.
+- Production Sir Convert was deployed and verified at revision
+  `159e82d5e674213ba58d5e2d959e8baba383dadb`; the deploy report is
+  `build/verification/hemma-deploy-verify/report.md`.
+
 ## Runtime Boundaries
 
 `remote-proof` is a non-production Sir Convert lane with separate service names,

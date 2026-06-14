@@ -61,9 +61,9 @@ bleeding local-auth trust into production Sir Convert.
   and distinct from production.
 - [ ] Compose contract tests prove production and remote-proof trust/data
   surfaces cannot bleed into each other.
-- [ ] Local downstream proof uses the fenced remote-proof lane before any
+- [x] Local downstream proof uses the fenced remote-proof lane before any
   production proof is claimed.
-- [ ] Native Hemma production STT proof runs after local proof passes.
+- [x] Native Hemma production STT proof runs after local proof passes.
 
 ## Acceptance Criteria
 
@@ -81,9 +81,9 @@ bleeding local-auth trust into production Sir Convert.
   volumes.
 - [ ] Remote-proof has no public `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, or public
   reserved-edge service.
-- [ ] Local STT E2E proof succeeds against the remote-proof method with remote
+- [x] Local STT E2E proof succeeds against the remote-proof method with remote
   hosted model execution.
-- [ ] Production STT E2E proof succeeds natively on Hemma after the local proof.
+- [x] Production STT E2E proof succeeds natively on Hemma after the local proof.
 - [ ] No timeout, ingress, body-size, or trust/key setting is changed without a
   separate explicit approval.
 - [ ] Formatter replay export remains terminal under the remote-proof shared
@@ -98,8 +98,8 @@ bleeding local-auth trust into production Sir Convert.
 - [x] Focused compose contract proof for remote-proof/prod separation.
 - [x] Relevant `pdm run format-all`, `pdm run lint-fix`,
   `pdm run typecheck-all`, and docs gates for touched code/docs.
-- [ ] Live local proof artifact path recorded.
-- [ ] Native Hemma production proof artifact path recorded.
+- [x] Live local proof artifact path recorded.
+- [x] Native Hemma production proof artifact path recorded.
 
 ## Implementation Evidence
 
@@ -161,6 +161,14 @@ bleeding local-auth trust into production Sir Convert.
   worker-side recovery loop reset the API-owned fast-lane job to `queued`
   before terminal persistence. Non-dispatching formatter replay jobs now stay
   out of generic-worker recovery.
+- Deployed production Sir Convert revision
+  `159e82d5e674213ba58d5e2d959e8baba383dadb`; `/readyz` reported
+  `service_profile=prod` and matching `service_revision=159e82d5`.
+- Native Skriptoteket/Hemma production proof after the local proof passed with
+  retained artifact
+  `/home/paunchygent/apps/skriptoteket/.artifacts/playwright-pr-0352-transcript-parity-native/20260614T191738Z/proof-summary.json`
+  and container logs under
+  `/home/paunchygent/apps/skriptoteket/.artifacts/pr-0352-native-proof-logs/20260614T191737Z/`.
 
 ## Red-First Evidence
 
@@ -295,9 +303,18 @@ bleeding local-auth trust into production Sir Convert.
   direction in docs/handoff.
 - `pdm run coverage-gate` passed with `1733 passed, 6 skipped` and total
   coverage `95.37%`.
+- Sir Convert production deploy verification:
+  `pdm run hemma-deploy-and-verify --expected-revision 159e82d5e674213ba58d5e2d959e8baba383dadb --lane host`
+  wrote `build/verification/hemma-deploy-verify/report.md` with
+  `status=passed`, matching remote/service revisions, metrics scan passed, and
+  public HTTPS reserved-host checks passed.
+- Native Hemma proof container evidence showed the audio job accepted as
+  `202`, polled to result/artifacts `200`, formatter fast lane
+  `transcript_json -> transcript_bundle` completed with `status=succeeded`,
+  and TXT/MD/VTT/SRT formatter artifact reads returned `200`.
 
 ## Checklist
 
 - [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Validation complete
+- [x] Docs updated

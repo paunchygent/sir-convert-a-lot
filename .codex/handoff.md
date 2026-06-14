@@ -80,6 +80,11 @@ durable implementation authority lives in governed docs.
   wrote artifacts while worker recovery reset the non-dispatching
   `transcript_json -> transcript_bundle` job back to `queued`; v2 recovery now
   requeues only generic-runtime routes.
+  Local downstream proof passed at
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0349-transcript-parity-live/20260614T184817Z/proof-summary.json`.
+  Sir Convert production is deployed at `159e82d5`; native Hemma production
+  STT proof passed at
+  `/home/paunchygent/apps/skriptoteket/.artifacts/playwright-pr-0352-transcript-parity-native/20260614T191738Z/proof-summary.json`.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -137,10 +142,9 @@ decision/performance work.
 
 ## Next Actions
 
-1. Finish Task 365 in order: redeploy the no-dedicated-sidecar shared-staging
-   lane with the bounded audio-admission fix, pass local STT E2E proof through
-   `hemma-remote-proof`, then pass native Hemma production STT proof. Only then
-   send to ruthless review.
+1. Send the now-live-proofed Task 365 / Skriptoteket PR-0352 evidence to
+   ruthless review and remediate findings until accepted. Do not reopen proxy,
+   timeout, trust-key, or dedicated-sidecar approaches without new evidence.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
    accepted producer artifacts, and governed Gateway routes; do not revive
    browser-owned Sir Convert replay/download sagas.
@@ -156,18 +160,8 @@ decision/performance work.
 - Task 359-362 retained red/green evidence lives in their task docs and
   Reviews 45-47; Task 361 covers HuleEdu trust-profile consumption and Task
   362 covers batched FasterWhisper production STT sidecar remediation.
-- Task 363 red-first evidence on 2026-06-14:
-  red-first fast-lane proof first failed with `4 failed`; focused replay/OpenAPI
-  proof passed with `36 passed`; route/supervisor/metrics proof passed with
-  `10 passed`; `coverage-gate` passed with `1716 passed, 6 skipped` and
-  `95.34%` coverage; Review 48 approved; Hemma deploy verification passed for
-  `e2bf342110571fa07e082b4bb340cac5ca511f90`. Full details are in the task,
-  Review 48, and the 2026-06-14 long-term-memory entry.
-- Task 364 red-first evidence on 2026-06-14: focused trio failed with
-  `5 failed`, then passed with `5 passed`; regression/helper proof passed with
-  `20 passed`; `coverage-gate` passed with `1721 passed, 6 skipped` and
-  `95.37%` coverage. Review 49 approved after rerunning focused proof with
-  `10 passed`, `docs-sync`, `docs-validate`, and `git diff --check`.
+- Task 363 and Task 364 red/green/review evidence is retained in their task and
+  review docs; Task 363 Review 48 and Task 364 Review 49 are approved.
 - Task 365 evidence on 2026-06-14 so far: admission replay red test failed at
   `interfaces/http_routes_jobs_v2.py:254` on the second `request.form()` call;
   remote-proof compose contract initially failed because the lane did not
@@ -191,7 +185,10 @@ decision/performance work.
   proof passed with `1 passed`, then `44 passed` for the audio admission/parser
   replay plus evidence-helper slice. Formatter recovery proof failed red with
   `202 Accepted`, then passed with `1 passed`; adjacent proof passed with
-  `35 passed`. Live local and native Hemma production STT proofs are required.
+  `35 passed`. Local downstream proof passed at
+  `20260614T184817Z`; native Hemma production proof passed at
+  `20260614T191738Z` with container logs retained under
+  `/home/paunchygent/apps/skriptoteket/.artifacts/pr-0352-native-proof-logs/20260614T191737Z/`.
 
 ## Stop Conditions
 
