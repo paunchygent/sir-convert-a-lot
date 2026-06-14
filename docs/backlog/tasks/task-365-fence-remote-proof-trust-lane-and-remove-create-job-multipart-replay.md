@@ -104,9 +104,11 @@ bleeding local-auth trust into production Sir Convert.
   scripts. The wrapper sources only
   `/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env`
   by default, not production `.env`.
-- Updated shared compose actions with an explicit `SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO`
-  mode and enabled it only for remote-proof, matching Hemma's Docker socket
-  privilege boundary without hand-running `sudo docker compose`.
+- Added `scripts/devops/docker-command.sh` as the shared Docker command
+  resolver for compose and dependency-image helpers. Remote-proof sets the
+  generic `SIR_CONVERT_A_LOT_DOCKER_USE_SUDO=1`, so compose operations and
+  dependency image preparation use the same Hemma Docker privilege path without
+  coupling the helpers to each other.
 
 ## Red-First Evidence
 
@@ -121,10 +123,12 @@ bleeding local-auth trust into production Sir Convert.
   `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class -q`
   failed because the wrapper did not source
   `SIR_CONVERT_A_LOT_REMOTE_PROOF_ENV_FILE`.
-- First Hemma `pdm run remote-proof-start` attempt failed before container
-  mutation with Docker socket permission denied. The follow-up red test failed
-  because the remote-proof wrapper did not declare the sanctioned sudo compose
-  path.
+- First Hemma `pdm run remote-proof-start` attempts failed before container
+  mutation with Docker socket permission denied. The first patch only routed
+  compose through sudo; user feedback correctly rejected that as leaky because
+  dependency image preparation still carried Docker access policy separately.
+  The follow-up tests now require a shared Docker command resolver rather than
+  helper-specific sudo handling.
 
 ## Focused Green Evidence
 
@@ -138,10 +142,14 @@ bleeding local-auth trust into production Sir Convert.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
   passed with `6 passed`.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class -q`
-  passed after adding remote-proof sudo compose mode.
+  passed after replacing helper-specific sudo handling with the shared Docker
+  resolver contract.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py::test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker -q`
+  passed, proving the remote-proof wrapper routes compose and dependency-image
+  Docker calls through the same shared sudo-Docker policy.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_dev_compose_wrapper.py -q`
-  passed with `9 passed`, proving the sudo mode did not change the local/dev
-  compose wrapper behavior.
+  passed with `10 passed`, proving the Docker policy resolver did not change
+  the local/dev compose wrapper behavior.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
   passed with `15 passed`.
 - Local compose syntax expansion for `compose.remote-proof.yaml` passed with

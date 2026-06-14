@@ -70,6 +70,10 @@ PYTHON_IMAGE="${SIR_CONVERT_A_LOT_DEPS_PYTHON_IMAGE:-python:3.11-slim}"
 
 export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
 
+# shellcheck source=scripts/devops/docker-command.sh
+source "${SCRIPT_DIR}/docker-command.sh"
+sir_convert_require_docker_command "service-deps-image"
+
 python -m scripts.sir_convert_a_lot.devops.export_service_requirements \
   --project-root "${REPO_ROOT}" \
   --output "${REQUIREMENTS_PATH}"
@@ -110,12 +114,12 @@ HASH_IMAGE="${IMAGE_REPOSITORY}:${DEPENDENCY_IMAGE_HASH}"
 LOCAL_IMAGE="${IMAGE_REPOSITORY}:local"
 
 image_exists() {
-  docker image inspect "${HASH_IMAGE}" >/dev/null 2>&1
+  "${SIR_CONVERT_DOCKER_CMD[@]}" image inspect "${HASH_IMAGE}" >/dev/null 2>&1
 }
 
 image_label() {
   local label_key="$1"
-  docker image inspect --format "{{ index .Config.Labels \"${label_key}\" }}" "${HASH_IMAGE}" 2>/dev/null || true
+  "${SIR_CONVERT_DOCKER_CMD[@]}" image inspect --format "{{ index .Config.Labels \"${label_key}\" }}" "${HASH_IMAGE}" 2>/dev/null || true
 }
 
 image_label_matches() {
@@ -134,7 +138,7 @@ image_is_current() {
 }
 
 build_args=(
-  docker buildx build
+  "${SIR_CONVERT_DOCKER_CMD[@]}" buildx build
   --load
   --file Dockerfile.deps
   --target "${TARGET_STAGE}"
@@ -169,7 +173,7 @@ prune_superseded_dependency_images() {
 }
 
 if [[ "${ACTION}" == "ensure" ]] && image_is_current; then
-  docker tag "${HASH_IMAGE}" "${LOCAL_IMAGE}" >/dev/null
+  "${SIR_CONVERT_DOCKER_CMD[@]}" tag "${HASH_IMAGE}" "${LOCAL_IMAGE}" >/dev/null
 else
   "${build_args[@]}"
   prune_superseded_dependency_images

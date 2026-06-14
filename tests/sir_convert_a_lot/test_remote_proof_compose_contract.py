@@ -22,6 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 REMOTE_PROOF_COMPOSE_FILE = REPO_ROOT / "compose.remote-proof.yaml"
 PROD_COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 REMOTE_PROOF_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "remote-proof-compose.sh"
+DOCKER_COMMAND_SCRIPT = REPO_ROOT / "scripts" / "devops" / "docker-command.sh"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 
@@ -122,13 +123,21 @@ def test_remote_proof_wrapper_and_pdm_scripts_are_first_class() -> None:
     assert "/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env" in (
         script_text
     )
-    assert 'SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO="1"' in script_text
+    assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
 
     compose_actions = (REPO_ROOT / "scripts" / "devops" / "compose-actions.sh").read_text(
         encoding="utf-8"
     )
-    assert "SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO" in compose_actions
-    assert "sudo -n docker" in compose_actions
+    assert "docker-command.sh" in compose_actions
+    assert "SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO" not in compose_actions
+    service_deps = (REPO_ROOT / "scripts" / "devops" / "service-deps-image.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "docker-command.sh" in service_deps
+    assert "SIR_CONVERT_A_LOT_COMPOSE_USE_SUDO" not in service_deps
+    docker_command = DOCKER_COMMAND_SCRIPT.read_text(encoding="utf-8")
+    assert "SIR_CONVERT_A_LOT_DOCKER_USE_SUDO" in docker_command
+    assert "sudo -n docker" in docker_command
 
     pyproject = tomllib.loads(PYPROJECT_FILE.read_text(encoding="utf-8"))
     scripts = pyproject["tool"]["pdm"]["scripts"]

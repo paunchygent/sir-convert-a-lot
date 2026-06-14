@@ -26,6 +26,7 @@ from scripts.sir_convert_a_lot.devops.service_dependency_inputs import (
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEV_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "dev-compose.sh"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
+REMOTE_PROOF_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "remote-proof-compose.sh"
 SERVICE_REQUIREMENTS = REPO_ROOT / "docker" / "service-deps" / "service-requirements.txt"
 
 
@@ -132,6 +133,26 @@ exit 0
         encoding="utf-8",
     )
     fake_docker.chmod(fake_docker.stat().st_mode | stat.S_IXUSR)
+
+
+def _write_fake_sudo(script_dir: Path) -> None:
+    fake_sudo = script_dir / "sudo"
+    fake_sudo.write_text(
+        """
+        #!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
+  printf "sudo %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
+fi
+if [[ "${1:-}" == "-n" ]]; then
+  shift
+fi
+exec "$@"
+""",
+        encoding="utf-8",
+    )
+    fake_sudo.chmod(fake_sudo.stat().st_mode | stat.S_IXUSR)
 
 
 def _run_wrapper(
@@ -353,3 +374,30 @@ def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
     assert any(
         f"--build-arg SERVICE_RECIPE_HASH={identity['recipe_hash']}" in line for line in log_lines
     )
+
+
+def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker(
+    tmp_path: Path,
+) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
+    log_file = tmp_path / "docker.log"
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["FAKE_DOCKER_LOG_BUILDS"] = "1"
+    env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "remote_proof_rev"
+    env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "remote_proof_rev"
+    env = _with_fake_hemma_env(env)
+
+    result = _run_wrapper(REMOTE_PROOF_COMPOSE_SCRIPT, ["start"], env)
+    assert result.returncode == 0
+
+    log_text = log_file.read_text(encoding="utf-8")
+    assert "sudo -n docker compose version" in log_text
+    assert "sudo -n docker image inspect" in log_text
+    assert "sudo -n docker buildx build" in log_text
+    assert f"sudo -n docker compose -f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
