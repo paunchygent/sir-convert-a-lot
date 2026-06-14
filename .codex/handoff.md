@@ -182,8 +182,14 @@ decision/performance work.
   exist; focused green proof passed with `6 passed`; `format-all`,
   `typecheck-all`, `lint-fix`, `docs-sync`, `docs-validate`,
   `skills-validate`, `handoff-validate`, and `git diff --check` passed before
-  Hemma deployment prep. Live local and native Hemma production STT proofs are
-  still required before Task 365 is complete.
+  Hemma deployment prep. Later local STT E2E proof through `hemma-remote-proof`
+  passed trust preflight but failed media probing because the borrowed
+  production STT sidecar could not see the remote-proof data volume
+  (`jobv2_e6e21993b1d7415681ececc4ed`, `audio_stream_missing`,
+  `sidecar_status_code=422`). The active fix adds a dedicated remote-proof STT
+  sidecar mounted on `sir-convert-a-lot-remote-proof-data`; focused compose and
+  helper proof now passes with `25 passed`. Live local and native Hemma
+  production STT proofs are still required before Task 365 is complete.
 
 ## Stop Conditions
 

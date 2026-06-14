@@ -35,6 +35,7 @@ def test_remote_proof_compose_declares_fenced_api_and_worker_services() -> None:
     assert set(services) == {
         "sir_convert_a_lot_remote_proof",
         "sir_convert_a_lot_remote_proof_worker",
+        "sir_convert_a_lot_remote_proof_stt_sidecar",
     }
 
     api_service = _require_service(compose, "sir_convert_a_lot_remote_proof")
@@ -63,7 +64,7 @@ def test_remote_proof_compose_declares_fenced_api_and_worker_services() -> None:
         )
         assert (
             env_map["SIR_CONVERT_A_LOT_STT_SIDECAR_BASE_URL"]
-            == "http://sir_convert_a_lot_stt_sidecar:8095"
+            == "http://sir_convert_a_lot_remote_proof_stt_sidecar:8095"
         )
         assert "VIRTUAL_HOST" not in env_map
         assert "LETSENCRYPT_HOST" not in env_map
@@ -74,6 +75,66 @@ def test_remote_proof_compose_declares_fenced_api_and_worker_services() -> None:
         "${SIR_CONVERT_A_LOT_REMOTE_PROOF_GPU_AVAILABLE:-1}"
     )
     assert worker_env["SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR"] == "1"
+
+    expected_sidecar_dependency = {
+        "sir_convert_a_lot_remote_proof_stt_sidecar": {"condition": "service_healthy"}
+    }
+    assert api_service.get("depends_on") == expected_sidecar_dependency
+    assert worker_service.get("depends_on") == expected_sidecar_dependency
+
+
+def test_remote_proof_compose_declares_dedicated_stt_sidecar_with_shared_remote_data() -> None:
+    compose = _load_yaml_mapping(REMOTE_PROOF_COMPOSE_FILE)
+    sidecar_service = _require_service(compose, "sir_convert_a_lot_remote_proof_stt_sidecar")
+
+    assert (
+        sidecar_service.get("image")
+        == "sir-convert-a-lot-stt-sidecar:${SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG:-local}"
+    )
+    assert sidecar_service.get("build") == {
+        "context": ".",
+        "dockerfile": "containers/stt-sidecar-benchmark/Dockerfile",
+        "args": {
+            "BASE_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
+        },
+    }
+    assert sidecar_service.get("container_name") == "sir_convert_a_lot_remote_proof_stt_sidecar"
+    assert sidecar_service.get("command") == [
+        "uvicorn",
+        "scripts.sir_convert_a_lot.stt_sidecar.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8095",
+    ]
+    assert sidecar_service.get("expose") == ["8095"]
+    assert sidecar_service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    assert sidecar_service.get("group_add") == [
+        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
+        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
+    ]
+    assert sidecar_service.get("volumes") == [
+        "sir-convert-a-lot-remote-proof-data:/var/lib/sir-convert-a-lot/remote-proof",
+        (
+            "${SIR_CONVERT_A_LOT_HF_CACHE_HOST_DIR:-"
+            "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}:"
+            "/cache/huggingface"
+        ),
+    ]
+    env_map = _service_env_map(sidecar_service)
+    assert env_map["HF_HOME"] == "/cache/huggingface"
+    assert env_map["HF_HUB_CACHE"] == "/cache/huggingface/hub"
+    assert env_map["TRANSFORMERS_CACHE"] == "/cache/huggingface"
+    assert env_map["SIR_STT_SIDECAR_ACCELERATION_FAMILY"] == "rocm"
+    assert env_map["SIR_STT_SIDECAR_BACKEND_PROFILE_ID"] == "stt_sv_en_primary"
+    assert env_map["SIR_STT_SIDECAR_DIARIZATION_PROFILE_LABEL"] == "diarization_sv_en_primary"
+    assert sidecar_service.get("healthcheck") == {
+        "test": ["CMD", "curl", "-fsS", "http://localhost:8095/health"],
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": 20,
+        "start_period": "120s",
+    }
 
 
 def test_remote_proof_compose_uses_distinct_volume_entrypoint_and_key_mount() -> None:

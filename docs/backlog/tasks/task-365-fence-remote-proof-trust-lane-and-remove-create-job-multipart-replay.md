@@ -96,10 +96,10 @@ bleeding local-auth trust into production Sir Convert.
   without replaying the multipart parser after upload bytes are read.
 - Added `scripts/sir_convert_a_lot/service_remote_proof.py` so `/readyz` can
   report the fenced `remote-proof` service profile separately from production.
-- Added `compose.remote-proof.yaml` with distinct API/worker containers,
-  `sir-convert-a-lot-remote-proof-data`, remote-proof API-key env surface,
-  local-auth trust-profile/public-key env surfaces, no public ingress labels,
-  and existing Hemma STT sidecar consumption for remote hosted model execution.
+- Added `compose.remote-proof.yaml` with distinct API/worker/STT-sidecar
+  containers, `sir-convert-a-lot-remote-proof-data`, remote-proof API-key env
+  surface, local-auth trust-profile/public-key env surfaces, no public ingress
+  labels, and remote-proof-owned Hemma STT sidecar execution.
 - Added `scripts/devops/remote-proof-compose.sh` and `remote-proof-*` PDM
   scripts. The wrapper sources only
   `/home/paunchygent/.data/sir-convert-a-lot/remote-proof/remote-proof.env`
@@ -165,6 +165,14 @@ bleeding local-auth trust into production Sir Convert.
   The first packaging patch then exposed the `.dockerignore` whitelist omission.
   A red packaging contract now ties the remote-proof compose entrypoint to both
   the runtime image copy list and build context.
+- The first local STT E2E proof through `hemma-remote-proof` passed trust-lane
+  preflight but failed the job at sidecar media probing. The remote-proof API
+  accepted `jobv2_e6e21993b1d7415681ececc4ed`, but the manifest recorded
+  `audio_stream_missing` with `sidecar_status_code=422`. The sidecar container
+  only mounted the production data volume, so it could not read
+  `/var/lib/sir-convert-a-lot/remote-proof/.../raw/input.audio`. A red compose
+  contract now requires a dedicated remote-proof STT sidecar mounted on the
+  same remote-proof data volume and targeted by the remote-proof API/worker.
 
 ## Focused Green Evidence
 
@@ -174,7 +182,9 @@ bleeding local-auth trust into production Sir Convert.
   passed with `1 passed`, proving DigiExam companion rejection still uses the
   submitted part names after the parser replay removal.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py -q`
-  passed with `4 passed`.
+  passed with `6 passed`, proving the remote-proof lane owns API, worker, and
+  STT sidecar services and that the sidecar shares the remote-proof data volume
+  needed for media probing.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
   passed with `6 passed`.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_remote_proof_compose_contract.py::test_remote_proof_wrapper_and_pdm_scripts_are_first_class -q`
@@ -201,7 +211,7 @@ bleeding local-auth trust into production Sir Convert.
   passed with `11 passed`, proving the Docker policy resolver did not change
   the local/dev compose wrapper behavior.
 - `pdm run pytest-root tests/sir_convert_a_lot/test_create_job_admission_multipart_replay_v2.py tests/sir_convert_a_lot/test_remote_proof_compose_contract.py tests/sir_convert_a_lot/test_dev_compose_wrapper.py tests/sir_convert_a_lot/test_prune_superseded_deps_images.py tests/sir_convert_a_lot/test_digiexam_migration_access_control_api_v2.py::test_digiexam_migration_rejects_generic_resources_companion -q`
-  passed with `24 passed`.
+  passed with `25 passed`.
 - Local compose syntax expansion for `compose.remote-proof.yaml` passed with
   dummy non-secret values via `docker compose -f compose.remote-proof.yaml config`.
 
