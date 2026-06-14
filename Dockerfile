@@ -17,6 +17,7 @@ FROM ${DEPS_IMAGE} AS runtime
 COPY scripts/__init__.py ./scripts/__init__.py
 COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
 COPY scripts/sir_convert_a_lot/service.py ./scripts/sir_convert_a_lot/service.py
+COPY scripts/sir_convert_a_lot/service_remote_proof.py ./scripts/sir_convert_a_lot/service_remote_proof.py
 COPY scripts/sir_convert_a_lot/application ./scripts/sir_convert_a_lot/application
 COPY scripts/sir_convert_a_lot/domain ./scripts/sir_convert_a_lot/domain
 COPY scripts/sir_convert_a_lot/infrastructure ./scripts/sir_convert_a_lot/infrastructure
