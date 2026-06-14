@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-06-13
+updated: 2026-06-14
 owners:
   - platform
 tags:
@@ -165,7 +165,10 @@ contracts:
   replay `pdf_options` and `execution`; applies speaker display names only to
   formatter projection; emits requested `transcript_txt`, `transcript_md`,
   `transcript_vtt`, and `transcript_srt`; and does not emit a new
-  `transcript_json` artifact.
+  `transcript_json` artifact. Replay executes through a producer-owned fast
+  lane outside the generic heavy conversion worker queue; for replay,
+  `POST /v2/convert/jobs?wait_seconds=0` returns a terminal succeeded or
+  failed job when admission succeeds.
 
 Important:
 

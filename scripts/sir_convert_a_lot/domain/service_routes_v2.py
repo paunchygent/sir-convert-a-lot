@@ -243,7 +243,7 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
         requires_transcript_formatter_options=True,
         allows_transcript_formatter_options=True,
         rejects_retention_pin=True,
-        dispatches_runtime_jobs=True,
+        dispatches_runtime_jobs=False,
         unsupported_option_context="transcript formatter replay routes",
     ),
 )
@@ -281,6 +281,19 @@ def route_dispatches_runtime_jobs_v2(
     if policy is None:
         return False
     return policy.dispatches_runtime_jobs
+
+
+def is_transcript_formatter_replay_route_v2(
+    *,
+    source_format: SourceFormatV2,
+    output_format: OutputFormatV2,
+) -> bool:
+    """Return whether the route is the fast transcript formatter replay lane."""
+
+    return (
+        source_format == SourceFormatV2.TRANSCRIPT_JSON
+        and output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
+    )
 
 
 def supported_route_keys_v2() -> tuple[RouteKeyV2, ...]:

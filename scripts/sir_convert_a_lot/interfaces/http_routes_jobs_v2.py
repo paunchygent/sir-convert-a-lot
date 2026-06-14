@@ -27,6 +27,7 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
     JobRecordResponseV2,
 )
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
+    is_transcript_formatter_replay_route_v2,
     normalized_fingerprint_payload_for_spec_v2,
     route_dispatches_runtime_jobs_v2,
 )
@@ -43,6 +44,9 @@ from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
     StructuredLLMAdmissionError,
     resolve_structured_llm_admission_snapshot,
+)
+from scripts.sir_convert_a_lot.infrastructure.transcript_formatter_replay_fast_lane_v2 import (
+    run_transcript_formatter_replay_fast_lane_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_app_state import runtime_v2_for_request
 from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
@@ -110,6 +114,7 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         digiexam_ingestion_overlay: UploadFile | None = File(None),
         wait_seconds: int = Query(default=0, ge=0, le=20),
     ) -> JSONResponse:
+        admission_started_at = time.perf_counter()
         auth_context = require_api_key_v2(request, service_started_at=service_started_at)
         owner_scope = auth_context.owner_api_key_scope
         public_grant_access = None
@@ -195,6 +200,10 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 },
             )
 
+        replay_fast_lane = is_transcript_formatter_replay_route_v2(
+            source_format=spec.source.format,
+            output_format=spec.conversion.output_format,
+        )
         route_handler = route_registry.require_handler_for_spec(spec)
         if route_handler.policy.create_required_grant is not None:
             if public_conversion_grant_header_present_v2(request):
@@ -325,7 +334,14 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             structured_llm_admission=structured_llm_admission,
         )
         runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
-        if runtime.config.run_jobs_on_submit and _should_dispatch_submitted_job_v2(spec):
+        if replay_fast_lane:
+            run_transcript_formatter_replay_fast_lane_v2(
+                runtime=runtime,
+                job_id=job.job_id,
+                correlation_id=str(getattr(request.state, "correlation_id", "unknown")),
+                admission_started_at=admission_started_at,
+            )
+        elif runtime.config.run_jobs_on_submit and _should_dispatch_submitted_job_v2(spec):
             runtime.run_job_async(job.job_id)
 
         deadline = time.monotonic() + wait_seconds

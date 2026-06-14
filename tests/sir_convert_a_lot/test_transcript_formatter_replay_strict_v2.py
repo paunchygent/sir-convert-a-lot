@@ -106,7 +106,8 @@ def test_replay_idempotency_does_not_ignore_rejected_runtime_options(tmp_path: P
         spec=rejected_spec,
     )
 
-    assert accepted_response.status_code == 202
+    assert accepted_response.status_code == 200
+    assert accepted_response.json()["job"]["status"] == JobStatus.SUCCEEDED.value
     assert rejected_response.status_code == 422
     assert rejected_response.headers.get("X-Idempotent-Replay") is None
     assert rejected_response.json()["error"]["code"] == "validation_error"

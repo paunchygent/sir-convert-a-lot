@@ -4,7 +4,7 @@ id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
 status: active
 created: 2026-06-09
-updated: 2026-06-13
+updated: 2026-06-14
 owners:
   - platform
 tags:
@@ -166,6 +166,19 @@ display names, duplicate display names, control characters, malformed JSON,
 partial transcript state, unsupported requested artifacts, and
 `retention.pin=true`. The replay route must not call STT, diarization,
 alignment, sidecar, codec, source-audio, or model-provider code.
+
+Task 363 makes replay a producer-owned fast lane under the existing Service
+API v2 job contract. An admitted replay request is persisted as a normal v2 job
+and executed immediately outside the generic heavy conversion worker queue, so
+`POST /v2/convert/jobs?wait_seconds=0` returns a terminal replay job: `200`
+with `job.status="succeeded"` when artifacts were produced or `200` with
+`job.status="failed"` for fail-closed replay execution errors such as malformed
+canonical JSON or unknown speaker labels. Request-shape validation failures
+still return the existing v2 error envelope before job creation. Replay timing
+telemetry records bounded admission and execution durations using route/job
+metadata only; transcript text, utterances, speaker display names, source
+content, credentials, and signed headers are not logged or used as metric
+labels.
 
 The product/browser route is HuleEdu Gateway-owned:
 
@@ -602,7 +615,9 @@ For `transcript_json -> transcript_bundle` replay jobs:
   `transcript_srt` artifacts appear as available named artifacts;
 - the primary result artifact is the content-safe
   `transcript_formatter_replay_result_v1` manifest, not the uploaded canonical
-  JSON and not overlay truth.
+  JSON and not overlay truth;
+- the named artifact manifest and named artifact endpoints are the downstream
+  authority for available replay outputs.
 
 ## Progress Semantics
 
