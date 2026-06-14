@@ -53,6 +53,13 @@ durable implementation authority lives in governed docs.
   Skriptoteket `PR-0350` has consumed the contract and passed final
   authenticated live proof at
   `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0349-transcript-parity-live/20260614T030725Z/proof-summary.json`.
+- Task 364 truthful STT progress/timing is completed and accepted in Review
+  49; see task/review docs for full evidence. The audio `job.progress`
+  contract adds
+  `audio_pipeline_percent_complete` and `audio_pipeline_eta_seconds`, emits
+  `diarizing` before blocking diarization, and persists canonical audio phase
+  timings. The Skriptoteket PR-0351 field handoff is recorded in
+  `docs/converters/downstream_integration_contract_v2.md`.
 - Story 54 / Task 358 is complete and accepted in Review 44. Product-neutral
   TXT, Markdown, WebVTT, and SRT artifacts are implemented over validated
   canonical `transcript_json`; downstream apps own product meaning, durable
@@ -177,6 +184,11 @@ decision/performance work.
   `95.34%` coverage; Review 48 approved; Hemma deploy verification passed for
   `e2bf342110571fa07e082b4bb340cac5ca511f90`. Full details are in the task,
   Review 48, and the 2026-06-14 long-term-memory entry.
+- Task 364 red-first evidence on 2026-06-14: focused trio failed with
+  `5 failed`, then passed with `5 passed`; regression/helper proof passed with
+  `20 passed`; `coverage-gate` passed with `1721 passed, 6 skipped` and
+  `95.37%` coverage. Review 49 approved after rerunning focused proof with
+  `10 passed`, `docs-sync`, `docs-validate`, and `git diff --check`.
 
 ## Stop Conditions
 

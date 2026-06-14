@@ -12,6 +12,11 @@ Relationships:
 from __future__ import annotations
 
 from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
+    TIMING_KEY_AUDIO_ALIGNMENT_MS,
+    TIMING_KEY_AUDIO_DIARIZATION_MS,
+    TIMING_KEY_AUDIO_PACKAGING_MS,
+    TIMING_KEY_AUDIO_PROBE_NORMALIZE_MS,
+    TIMING_KEY_AUDIO_TRANSCRIPTION_MS,
     TIMING_KEY_CHECKPOINT_PERSIST_MS,
     TIMING_KEY_CONVERSION_TOTAL_MS,
     TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
@@ -30,6 +35,11 @@ def test_normalize_phase_timings_map_keeps_canonical_keys() -> None:
             TIMING_KEY_CONVERSION_TOTAL_MS: 11,
             TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS: 2,
             "chunk_total_ms": 7,
+            TIMING_KEY_AUDIO_PROBE_NORMALIZE_MS: 8,
+            TIMING_KEY_AUDIO_DIARIZATION_MS: 9,
+            TIMING_KEY_AUDIO_TRANSCRIPTION_MS: 10,
+            TIMING_KEY_AUDIO_ALIGNMENT_MS: 11,
+            TIMING_KEY_AUDIO_PACKAGING_MS: 12,
         }
     )
     assert normalized[TIMING_KEY_OCR_LAYOUT_EXTRACT_MS] == 10
@@ -37,6 +47,11 @@ def test_normalize_phase_timings_map_keeps_canonical_keys() -> None:
     assert normalized[TIMING_KEY_CONVERSION_TOTAL_MS] == 11
     assert normalized[TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS] == 2
     assert normalized["chunk_total_ms"] == 7
+    assert normalized[TIMING_KEY_AUDIO_PROBE_NORMALIZE_MS] == 8
+    assert normalized[TIMING_KEY_AUDIO_DIARIZATION_MS] == 9
+    assert normalized[TIMING_KEY_AUDIO_TRANSCRIPTION_MS] == 10
+    assert normalized[TIMING_KEY_AUDIO_ALIGNMENT_MS] == 11
+    assert normalized[TIMING_KEY_AUDIO_PACKAGING_MS] == 12
 
 
 def test_normalize_phase_timings_map_drops_unknown_keys_and_invalid_values() -> None:

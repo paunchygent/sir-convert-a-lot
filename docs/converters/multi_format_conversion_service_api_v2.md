@@ -227,6 +227,11 @@ Canonical v2 timing keys in `phase_timings_ms`:
 - `final_artifact_persist_ms`
 - `chunk_total_ms`
 - `conversion_total_ms`
+- `audio_probe_normalize_ms`
+- `audio_diarization_ms`
+- `audio_transcription_ms`
+- `audio_alignment_ms`
+- `audio_packaging_ms`
 
 v2 timing contract is strict:
 
@@ -244,7 +249,10 @@ PDF-only fields (per ADR-0005) are optional and may be `null` for non-PDF routes
 
 Audio transcription uses route-specific `audio_*` progress fields through its
 converter contract and OpenAPI update. It must not overload PDF page counters
-for processed duration or audio chunks.
+for processed duration or audio chunks. The `audio_pipeline_percent_complete`
+and `audio_pipeline_eta_seconds` fields are additive whole-pipeline measured
+estimates based only on explicit phase transitions and accepted chunk
+checkpoints; heartbeat freshness does not advance them.
 
 ### Metrics Label Policy (v2)
 

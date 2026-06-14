@@ -54,6 +54,8 @@ class JobProgressV2(BaseModel):
     audio_percent_complete: float | None = Field(default=None, ge=0.0, le=100.0)
     audio_current_chunk_index: int | None = Field(default=None, ge=0)
     audio_total_chunks: int | None = Field(default=None, ge=0)
+    audio_pipeline_percent_complete: float | None = Field(default=None, ge=0.0, le=100.0)
+    audio_pipeline_eta_seconds: int | None = Field(default=None, ge=0)
 
 
 class JobLinksV2(BaseModel):
@@ -271,6 +273,8 @@ class JobEventProgressV2(BaseModel):
     audio_percent_complete: float | None = Field(default=None, ge=0.0, le=100.0)
     audio_current_chunk_index: int | None = Field(default=None, ge=0)
     audio_total_chunks: int | None = Field(default=None, ge=0)
+    audio_pipeline_percent_complete: float | None = Field(default=None, ge=0.0, le=100.0)
+    audio_pipeline_eta_seconds: int | None = Field(default=None, ge=0)
 
 
 class JobEventSseMetricsV2(BaseModel):

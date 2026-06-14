@@ -182,7 +182,7 @@ No production remediation is required by this review.
 1. Deploy/runtime owners still need a separate governed deployment and live
    capability/job proof after this code lands. This review did not deploy or
    verify the current production container.
-2. A future hardening test could add an explicit missing-`BatchedInferencePipeline`
+1. A future hardening test could add an explicit missing-`BatchedInferencePipeline`
    negative startup case. The current code fails closed, and the production
    regression itself is covered by the existing startup-wrapper and transcribe
    tests, so this is not an approval blocker.

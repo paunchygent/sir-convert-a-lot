@@ -254,6 +254,8 @@ class ServiceRuntimeV2:
             audio_percent_complete=record.audio_percent_complete,
             audio_current_chunk_index=record.audio_current_chunk_index,
             audio_total_chunks=record.audio_total_chunks,
+            audio_pipeline_percent_complete=record.audio_pipeline_percent_complete,
+            audio_pipeline_eta_seconds=record.audio_pipeline_eta_seconds,
             warnings=list(record.warnings),
             artifact_sha256=record.artifact_sha256,
             artifact_size_bytes=record.artifact_size_bytes,

@@ -54,6 +54,8 @@ class StoredJobRecordV2:
     audio_percent_complete: float | None
     audio_current_chunk_index: int | None
     audio_total_chunks: int | None
+    audio_pipeline_percent_complete: float | None
+    audio_pipeline_eta_seconds: int | None
     warnings: list[str]
     upload_path: Path
     resources_zip_path: Path | None

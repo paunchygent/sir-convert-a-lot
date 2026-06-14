@@ -73,6 +73,8 @@ def _event_payload(
             audio_percent_complete=record.audio_percent_complete,
             audio_current_chunk_index=record.audio_current_chunk_index,
             audio_total_chunks=record.audio_total_chunks,
+            audio_pipeline_percent_complete=record.audio_pipeline_percent_complete,
+            audio_pipeline_eta_seconds=record.audio_pipeline_eta_seconds,
         ),
         sse_metrics=JobEventSseMetricsV2(sent_at=sent_at, emit_to_send_ms=emit_to_send_ms),
     )

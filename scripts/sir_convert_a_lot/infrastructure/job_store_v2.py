@@ -248,6 +248,8 @@ class JobStoreV2(JobStoreV2Core):
                 if audio_total is not None:
                     progress["audio_processed_media_seconds"] = audio_total
                 progress["audio_percent_complete"] = 100.0
+                progress["audio_pipeline_percent_complete"] = 100.0
+                progress["audio_pipeline_eta_seconds"] = 0
 
             payload["error"] = None
             payload["result_metadata"] = {

@@ -627,8 +627,8 @@ Required stage markers:
 - `starting`
 - `probing_media`
 - `normalizing_audio`
-- `transcribing`
 - `diarizing`
+- `transcribing`
 - `aligning_segments`
 - `packaging`
 - `succeeded`
@@ -647,10 +647,41 @@ Required audio progress fields:
 | `audio_percent_complete` | `float | null` | Monotonic; range `0..100`. |
 | `audio_current_chunk_index` | `int | null` | Set during chunked execution. |
 | `audio_total_chunks` | `int | null` | Set when chunk plan is known. |
+| `audio_pipeline_percent_complete` | `float | null` | Additive whole-pipeline measured estimate; monotonic; range `0..100`; advances only on explicit phase transitions and accepted chunk checkpoints. |
+| `audio_pipeline_eta_seconds` | `int | null` | Additive whole-pipeline ETA estimate; nonnegative; updated only with explicit progress or phase timing events. |
 
 Heartbeat freshness must update at least every `30` seconds while codec,
 transcription, diarization, alignment, or packaging work is active. Heartbeats
-do not advance numeric audio progress.
+do not advance numeric audio progress or whole-pipeline estimates.
+
+The existing `audio_total_media_seconds`, `audio_processed_media_seconds`,
+`audio_percent_complete`, `audio_current_chunk_index`, and
+`audio_total_chunks` fields are observed media/chunk facts. They must remain
+truthful to accepted chunk checkpoints and must not claim work for an active
+but unfinished chunk.
+
+The additive `audio_pipeline_percent_complete` and
+`audio_pipeline_eta_seconds` fields are measured estimates for the full audio
+pipeline. They are allowed to move from `probing_media` into `diarizing`
+before any transcription chunk is accepted, but only because a real phase
+transition occurred. They must never advance from `last_heartbeat_at`, polling
+freshness, or elapsed wall time alone. Terminal successful audio jobs set
+`audio_pipeline_percent_complete=100.0` and `audio_pipeline_eta_seconds=0`;
+failed jobs retain the last explicit measured estimate.
+
+Canonical audio timing keys in `job.progress.phase_timings_ms`:
+
+- `audio_probe_normalize_ms`
+- `audio_diarization_ms`
+- `audio_transcription_ms`
+- `audio_alignment_ms`
+- `audio_packaging_ms`
+
+These keys are additive with the existing `final_artifact_persist_ms` and
+`conversion_total_ms` counters. Timing telemetry must use only bounded
+job/route/correlation metadata and must not include transcript text,
+utterances, speaker display names, raw filenames as labels, media hashes as
+labels, signed headers, credentials, secrets, or artifact bytes.
 
 ### Checkpoints, Retry, And Cancellation
 

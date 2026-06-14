@@ -2,7 +2,7 @@
 
 Purpose:
     Centralize best-effort parsing and monotonic update rules for the optional
-    PDF-only page progress fields introduced by ADR-0005.
+    PDF page progress fields and route-specific audio progress fields.
 
 Relationships:
     - Used by v2 manifest parsing (`job_store_manifest_v2`) and lifecycle event
@@ -94,3 +94,101 @@ def clamp_monotonic_float(previous: float | None, updated: float | None) -> floa
     if previous is None:
         return updated
     return previous if updated < previous else updated
+
+
+def apply_audio_progress_update(
+    progress: dict[str, object],
+    *,
+    audio_total_media_seconds: float | None,
+    audio_processed_media_seconds: float | None,
+    audio_percent_complete: float | None,
+    audio_current_chunk_index: int | None,
+    audio_total_chunks: int | None,
+    audio_pipeline_percent_complete: float | None,
+    audio_pipeline_eta_seconds: int | None,
+) -> bool:
+    """Apply monotonic route-specific audio progress fields in-place."""
+
+    progress.setdefault("audio_total_media_seconds", None)
+    progress.setdefault("audio_processed_media_seconds", None)
+    progress.setdefault("audio_percent_complete", None)
+    progress.setdefault("audio_current_chunk_index", None)
+    progress.setdefault("audio_total_chunks", None)
+    progress.setdefault("audio_pipeline_percent_complete", None)
+    progress.setdefault("audio_pipeline_eta_seconds", None)
+
+    progress_changed = False
+    existing_audio_total = parse_optional_nonneg_float(progress.get("audio_total_media_seconds"))
+    updated_audio_total = parse_optional_nonneg_float(audio_total_media_seconds)
+    if updated_audio_total is not None and existing_audio_total is None and updated_audio_total > 0:
+        progress["audio_total_media_seconds"] = updated_audio_total
+        existing_audio_total = updated_audio_total
+        progress_changed = True
+
+    existing_audio_processed = parse_optional_nonneg_float(
+        progress.get("audio_processed_media_seconds")
+    )
+    updated_audio_processed = parse_optional_nonneg_float(audio_processed_media_seconds)
+    if existing_audio_total is not None and updated_audio_processed is not None:
+        updated_audio_processed = min(updated_audio_processed, existing_audio_total)
+    resolved_audio_processed = clamp_monotonic_float(
+        existing_audio_processed,
+        updated_audio_processed,
+    )
+    if resolved_audio_processed != existing_audio_processed:
+        progress["audio_processed_media_seconds"] = resolved_audio_processed
+        progress_changed = True
+
+    existing_audio_percent = parse_optional_percent(progress.get("audio_percent_complete"))
+    resolved_audio_percent = clamp_monotonic_float(
+        existing_audio_percent,
+        parse_optional_percent(audio_percent_complete),
+    )
+    if resolved_audio_percent != existing_audio_percent:
+        progress["audio_percent_complete"] = resolved_audio_percent
+        progress_changed = True
+
+    existing_audio_chunk_index = parse_optional_nonneg_int(
+        progress.get("audio_current_chunk_index")
+    )
+    resolved_audio_chunk_index = clamp_monotonic_int(
+        existing_audio_chunk_index,
+        parse_optional_nonneg_int(audio_current_chunk_index),
+    )
+    if resolved_audio_chunk_index != existing_audio_chunk_index:
+        progress["audio_current_chunk_index"] = resolved_audio_chunk_index
+        progress_changed = True
+
+    existing_audio_total_chunks = parse_optional_nonneg_int(progress.get("audio_total_chunks"))
+    updated_audio_total_chunks = parse_optional_nonneg_int(audio_total_chunks)
+    if (
+        updated_audio_total_chunks is not None
+        and existing_audio_total_chunks is None
+        and updated_audio_total_chunks >= 0
+    ):
+        progress["audio_total_chunks"] = updated_audio_total_chunks
+        progress_changed = True
+
+    existing_audio_pipeline_percent = parse_optional_percent(
+        progress.get("audio_pipeline_percent_complete")
+    )
+    resolved_audio_pipeline_percent = clamp_monotonic_float(
+        existing_audio_pipeline_percent,
+        parse_optional_percent(audio_pipeline_percent_complete),
+    )
+    if resolved_audio_pipeline_percent != existing_audio_pipeline_percent:
+        progress["audio_pipeline_percent_complete"] = resolved_audio_pipeline_percent
+        progress_changed = True
+
+    existing_audio_pipeline_eta = parse_optional_nonneg_int(
+        progress.get("audio_pipeline_eta_seconds")
+    )
+    updated_audio_pipeline_eta = parse_optional_nonneg_int(audio_pipeline_eta_seconds)
+    if (
+        updated_audio_pipeline_eta is not None
+        and updated_audio_pipeline_eta != existing_audio_pipeline_eta
+    ):
+        progress["audio_pipeline_eta_seconds"] = updated_audio_pipeline_eta
+        progress_changed = True
+
+    return progress_changed

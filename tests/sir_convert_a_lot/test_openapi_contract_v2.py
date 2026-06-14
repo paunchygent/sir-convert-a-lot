@@ -175,6 +175,11 @@ def test_service_api_v2_consumer_components_are_published() -> None:
     assert "transcript_json" in source_format_enum
     assert "transcript_bundle" in output_format_enum
 
+    job_progress = _mapping(schemas["JobProgressV2"])
+    job_progress_properties = _mapping(job_progress["properties"])
+    assert "audio_pipeline_percent_complete" in job_progress_properties
+    assert "audio_pipeline_eta_seconds" in job_progress_properties
+
     replay_options = _mapping(schemas["TranscriptFormatterReplayOptionsV2"])
     replay_properties = _mapping(replay_options["properties"])
     replay_schema_version = _mapping(replay_properties["schema_version"])

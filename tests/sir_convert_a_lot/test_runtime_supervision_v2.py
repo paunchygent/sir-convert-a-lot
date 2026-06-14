@@ -118,6 +118,8 @@ def _record(
         audio_percent_complete=None,
         audio_current_chunk_index=None,
         audio_total_chunks=None,
+        audio_pipeline_percent_complete=None,
+        audio_pipeline_eta_seconds=None,
         warnings=[],
         upload_path=upload_path,
         resources_zip_path=None,

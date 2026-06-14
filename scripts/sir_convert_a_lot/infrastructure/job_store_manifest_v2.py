@@ -118,6 +118,8 @@ def build_initial_manifest(
             "audio_percent_complete": None,
             "audio_current_chunk_index": None,
             "audio_total_chunks": None,
+            "audio_pipeline_percent_complete": None,
+            "audio_pipeline_eta_seconds": None,
         },
         "timestamps": {
             "created_at": dt_to_rfc3339(now),
@@ -210,6 +212,12 @@ def parse_stored_job_record(
     audio_percent_complete = parse_optional_percent(progress.get("audio_percent_complete"))
     audio_current_chunk_index = parse_optional_nonneg_int(progress.get("audio_current_chunk_index"))
     audio_total_chunks = parse_optional_nonneg_int(progress.get("audio_total_chunks"))
+    audio_pipeline_percent_complete = parse_optional_percent(
+        progress.get("audio_pipeline_percent_complete")
+    )
+    audio_pipeline_eta_seconds = parse_optional_nonneg_int(
+        progress.get("audio_pipeline_eta_seconds")
+    )
 
     diagnostics = payload.get("diagnostics")
     diagnostics_obj = diagnostics if isinstance(diagnostics, dict) else {}
@@ -390,6 +398,8 @@ def parse_stored_job_record(
         audio_percent_complete=audio_percent_complete,
         audio_current_chunk_index=audio_current_chunk_index,
         audio_total_chunks=audio_total_chunks,
+        audio_pipeline_percent_complete=audio_pipeline_percent_complete,
+        audio_pipeline_eta_seconds=audio_pipeline_eta_seconds,
         warnings=warnings,
         upload_path=upload_path,
         resources_zip_path=resources_zip_path,

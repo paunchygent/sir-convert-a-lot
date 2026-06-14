@@ -30,6 +30,9 @@ class AudioProgressUpdateV2:
     audio_percent_complete: float | None = None
     audio_current_chunk_index: int | None = None
     audio_total_chunks: int | None = None
+    audio_pipeline_percent_complete: float | None = None
+    audio_pipeline_eta_seconds: int | None = None
+    phase_timings_ms: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

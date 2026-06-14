@@ -4704,6 +4704,31 @@
             ],
             "title": "Audio Percent Complete"
           },
+          "audio_pipeline_eta_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Pipeline Eta Seconds"
+          },
+          "audio_pipeline_percent_complete": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Pipeline Percent Complete"
+          },
           "audio_processed_media_seconds": {
             "anyOf": [
               {

@@ -143,6 +143,55 @@ not include `pdf_options` or `execution`. Replay does not return a
 generic heavy conversion worker queue; `wait_seconds=0` returns a terminal
 success or terminal fail-closed replay job when the request is admitted.
 
+### Skriptoteket PR-0351 STT Progress Contract
+
+For `audio -> transcript_bundle`, downstream callers should render progress
+from `job.progress` on the existing create/poll lifecycle. The exact public
+fields for Skriptoteket `PR-0351` are:
+
+| Field | Downstream meaning |
+| --- | --- |
+| `stage` | Safe phase marker. `diarizing` is emitted before the blocking sidecar diarization call starts. |
+| `last_heartbeat_at` | Liveness only; do not use it to advance progress bars. |
+| `audio_total_media_seconds` | Observed source media duration after probe/normalization succeeds. |
+| `audio_processed_media_seconds` | Observed accepted chunk coverage; monotonic and never greater than total. |
+| `audio_percent_complete` | Observed accepted chunk completion only; monotonic `0..100`. |
+| `audio_current_chunk_index` | Observed most recently accepted chunk index. |
+| `audio_total_chunks` | Observed chunk plan size after probe/normalization succeeds. |
+| `audio_pipeline_percent_complete` | Measured whole-pipeline estimate; monotonic `0..100`; advances only on explicit phase transitions and accepted chunk checkpoints. |
+| `audio_pipeline_eta_seconds` | Measured whole-pipeline ETA; nonnegative; updated only with explicit progress/phase timing events. |
+| `phase_timings_ms` | Content-safe timing map with canonical audio phase keys plus `final_artifact_persist_ms` and `conversion_total_ms` when available. |
+
+Use the observed `audio_*` chunk fields when presenting exact media/chunk
+facts. Use `audio_pipeline_percent_complete` for a UI progress bar that should
+not appear dead during `diarizing` or other long blocking phases. Use
+`audio_pipeline_eta_seconds` as an estimate only; it may be `null` until there
+is a measured phase basis, and it may change on later explicit phase events.
+
+Safe stage names for normal Swedish UI copy include:
+
+| Stage | Example Swedish copy |
+| --- | --- |
+| `queued` | Väntar |
+| `starting` | Startar |
+| `probing_media` | Läser in ljud |
+| `normalizing_audio` | Förbereder ljud |
+| `diarizing` | Hittar talare |
+| `transcribing` | Transkriberar |
+| `aligning_segments` | Synkar talare och text |
+| `packaging` | Förbereder resultat |
+| `succeeded` | Klar |
+| `failed` | Misslyckades |
+| `canceled` | Avbruten |
+
+Failure and timeout semantics stay on the existing Service API v2 lifecycle:
+failed or canceled jobs remain terminal job records, `/result` and `/artifact`
+return `409 job_not_succeeded`, and no partial transcript artifacts are exposed.
+Failed audio jobs retain any phase timings measured before failure. Progress
+and timing telemetry must not include transcript text, utterances, speaker
+display names, raw filenames as labels, media hashes as labels, signed headers,
+credentials, secrets, or artifact bytes.
+
 ## PDF Page CSS Modes
 
 ADR-0004 defines the typed PDF layout preset surface `conversion.pdf_layout`.

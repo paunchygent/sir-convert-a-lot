@@ -75,6 +75,8 @@ class JobLifecycleEventRecordV2:
     audio_percent_complete: float | None
     audio_current_chunk_index: int | None
     audio_total_chunks: int | None
+    audio_pipeline_percent_complete: float | None
+    audio_pipeline_eta_seconds: int | None
 
 
 @dataclass
@@ -210,6 +212,12 @@ def _event_records(payload: dict[str, object]) -> list[JobLifecycleEventRecordV2
             progress_obj.get("audio_current_chunk_index")
         )
         audio_total_chunks = parse_optional_nonneg_int(progress_obj.get("audio_total_chunks"))
+        audio_pipeline_percent_complete = parse_optional_percent(
+            progress_obj.get("audio_pipeline_percent_complete")
+        )
+        audio_pipeline_eta_seconds = parse_optional_nonneg_int(
+            progress_obj.get("audio_pipeline_eta_seconds")
+        )
 
         try:
             event_type = _parse_event_type(event_type_obj)
@@ -242,6 +250,8 @@ def _event_records(payload: dict[str, object]) -> list[JobLifecycleEventRecordV2
                     audio_percent_complete=audio_percent_complete,
                     audio_current_chunk_index=audio_current_chunk_index,
                     audio_total_chunks=audio_total_chunks,
+                    audio_pipeline_percent_complete=audio_pipeline_percent_complete,
+                    audio_pipeline_eta_seconds=audio_pipeline_eta_seconds,
                 )
             )
         except (KeyError, ValueError):
@@ -277,6 +287,8 @@ def _record_to_payload(record: JobLifecycleEventRecordV2) -> dict[str, object]:
             "audio_percent_complete": record.audio_percent_complete,
             "audio_current_chunk_index": record.audio_current_chunk_index,
             "audio_total_chunks": record.audio_total_chunks,
+            "audio_pipeline_percent_complete": record.audio_pipeline_percent_complete,
+            "audio_pipeline_eta_seconds": record.audio_pipeline_eta_seconds,
         },
     }
 
@@ -320,6 +332,12 @@ def append_lifecycle_event(
     audio_percent_complete = parse_optional_percent(progress.get("audio_percent_complete"))
     audio_current_chunk_index = parse_optional_nonneg_int(progress.get("audio_current_chunk_index"))
     audio_total_chunks = parse_optional_nonneg_int(progress.get("audio_total_chunks"))
+    audio_pipeline_percent_complete = parse_optional_percent(
+        progress.get("audio_pipeline_percent_complete")
+    )
+    audio_pipeline_eta_seconds = parse_optional_nonneg_int(
+        progress.get("audio_pipeline_eta_seconds")
+    )
 
     record = JobLifecycleEventRecordV2(
         event_id=generate_event_ulid(now=occurred_at),
@@ -343,6 +361,8 @@ def append_lifecycle_event(
         audio_percent_complete=audio_percent_complete,
         audio_current_chunk_index=audio_current_chunk_index,
         audio_total_chunks=audio_total_chunks,
+        audio_pipeline_percent_complete=audio_pipeline_percent_complete,
+        audio_pipeline_eta_seconds=audio_pipeline_eta_seconds,
     )
 
     events_obj = payload.get("events")

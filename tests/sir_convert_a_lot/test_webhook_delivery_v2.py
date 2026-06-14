@@ -58,6 +58,8 @@ def _build_event(*, event_id: str, sequence: int, job_id: str) -> JobLifecycleEv
         audio_percent_complete=None,
         audio_current_chunk_index=None,
         audio_total_chunks=None,
+        audio_pipeline_percent_complete=None,
+        audio_pipeline_eta_seconds=None,
     )
 
 

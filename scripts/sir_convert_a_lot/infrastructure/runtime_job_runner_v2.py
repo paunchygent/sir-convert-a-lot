@@ -369,6 +369,9 @@ def _execute_conversion(
                     audio_percent_complete=update.audio_percent_complete,
                     audio_current_chunk_index=update.audio_current_chunk_index,
                     audio_total_chunks=update.audio_total_chunks,
+                    audio_pipeline_percent_complete=update.audio_pipeline_percent_complete,
+                    audio_pipeline_eta_seconds=update.audio_pipeline_eta_seconds,
+                    phase_timings_ms=update.phase_timings_ms,
                 )
                 webhook_service.enqueue_webhook_events_for_job(job_id=job_id)
                 return
