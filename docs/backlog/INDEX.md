@@ -443,7 +443,7 @@ Generated index for backlog planning documents.
 | task-363-fast-transcript-formatter-replay-lane-outside-heavy-conversion-queue | [Fast transcript formatter replay lane outside heavy conversion queue](tasks/task-363-fast-transcript-formatter-replay-lane-outside-heavy-conversion-queue.md) | task | completed |
 | task-364-truthful-stt-progress-and-phase-timing-telemetry | [Truthful STT progress and phase timing telemetry](tasks/task-364-truthful-stt-progress-and-phase-timing-telemetry.md) | task | completed |
 | task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay | [Fence remote-proof trust lane and remove create-job multipart replay](tasks/task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay.md) | task | done |
-| task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload | [Implement STT sidecar lazy model load and idle unload](tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md) | task | in_progress |
+| task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload | [Implement STT sidecar lazy model load and idle unload](tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md) | task | completed |
 | task-37-service-v2-route-html-css-pdf-weasyprint | [Service v2 route: html + css -> pdf (WeasyPrint)](tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |
 | task-39-hemma-v2-conversion-smoke-verification | [Hemma v2 conversion smoke verification](tasks/task-39-hemma-v2-conversion-smoke-verification.md) | task | completed |

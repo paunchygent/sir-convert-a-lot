@@ -2,7 +2,7 @@
 id: task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload
 title: Implement STT sidecar lazy model load and idle unload
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-27'
 last_updated: '2026-06-27'
@@ -124,6 +124,41 @@ model-using work is active.
   regression test loads models, advances a controlled monotonic clock past the
   configured timeout, calls `health()`, and observes `models_resident=false`
   plus the fake CTranslate2 unload counter incrementing once.
+
+## Live Deployment And Memory Evidence
+
+- 2026-06-27 Hemma deploy verification:
+  `pdm run hemma-deploy-and-verify --expected-revision 115bb2e06b04952e71ddc6d6c2a35c7994f3d2a9 --lane host`
+  passed. The retained report is
+  `build/verification/hemma-deploy-verify/report.md`.
+- Deploy report generated at `2026-06-27T09:54:29Z` and proved
+  `remote_revision=115bb2e06b04952e71ddc6d6c2a35c7994f3d2a9` plus
+  `service_revision=115bb2e06b04952e71ddc6d6c2a35c7994f3d2a9`.
+- The same report passed readiness parity, structured LLM reachability,
+  structured microprobe, live smoke, metrics scan, public HTTPS reserved
+  placeholder proof, TLS proof, nginx proxy host registration, and default-host
+  reserved placeholder proof.
+- Post-deploy sidecar runtime proof:
+  `/health` reported `ready=true`, `gpu_ready=true`, and
+  `models_resident=false`; `/capabilities.cache` reported
+  `cache_roots_ready=true`, `model_artifacts_present=true`,
+  `models_resident=false`, `active_model_uses=0`, and
+  `idle_unload_seconds=900.0`.
+- Live memory proof, using the HuleEdu TASK-0814 three-sample
+  `/proc/<pid>/smaps_rollup` probe:
+  - Pre-deploy window: `2026-06-27T09:52:58Z` to
+    `2026-06-27T09:53:19Z`.
+  - Post-deploy window: `2026-06-27T10:00:00Z` to
+    `2026-06-27T10:00:21Z`.
+  - `sir_convert_a_lot_stt_sidecar` mean PSS changed from
+    `4,300,782,592` to `467,500,032` bytes
+    (`-3,833,282,560` bytes, `-3.570 GiB`).
+  - Mean USS changed from `4,300,279,808` to `346,484,736` bytes
+    (`-3,953,795,072` bytes, `-3.682 GiB`).
+  - Mean private dirty changed from `3,556,282,368` to `321,257,472`
+    bytes (`-3,235,024,896` bytes, `-3.013 GiB`).
+- The live proof did not use allocator changes, quantization, model
+  replacement, concurrency reduction, CPU fallback, or heavy-lane routing.
 
 ## Checklist
 
