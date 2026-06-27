@@ -41,6 +41,9 @@ class _FakeSttBackend:
     def startup(self) -> None:
         self.started = True
 
+    def shutdown(self) -> None:
+        self.started = False
+
     def health(self) -> Mapping[str, object]:
         return {
             "status": "ok",

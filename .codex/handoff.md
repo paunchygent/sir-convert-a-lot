@@ -31,6 +31,8 @@ durable implementation authority lives in governed docs.
   signed headers were retained.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
+- Task 366 is active for HuleEdu TASK-0814 STT lazy-load/idle-unload:
+  `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`; Worker A self-verified with `33 passed`, review pending.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper

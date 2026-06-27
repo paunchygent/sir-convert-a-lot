@@ -338,6 +338,9 @@ def test_compose_declares_private_stt_sidecar_runtime() -> None:
     assert env_map["SIR_STT_SIDECAR_DIARIZATION_PROFILE_LABEL"] == "diarization_sv_en_primary"
     assert env_map["SIR_STT_SIDECAR_ACCELERATION_FAMILY"] == "rocm"
     assert env_map["SIR_STT_SIDECAR_BATCH_SIZE"] == "8"
+    assert env_map["SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS"] == (
+        "${SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS:-900}"
+    )
 
     assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
     assert service.get("group_add") == [

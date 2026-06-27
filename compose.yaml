@@ -192,6 +192,7 @@ services:
       - SIR_STT_SIDECAR_DIARIZATION_PROFILE_LABEL=diarization_sv_en_primary
       - SIR_STT_SIDECAR_ACCELERATION_FAMILY=rocm
       - SIR_STT_SIDECAR_BATCH_SIZE=8
+      - SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS=${SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS:-900}
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.stt_sidecar.app:app

@@ -31,7 +31,10 @@ def create_stt_sidecar_app(backend: SttSidecarBackend, *, title: str) -> FastAPI
     @asynccontextmanager
     async def _lifespan(_: FastAPI):
         backend.startup()
-        yield
+        try:
+            yield
+        finally:
+            backend.shutdown()
 
     app = FastAPI(title=title, lifespan=_lifespan)
 

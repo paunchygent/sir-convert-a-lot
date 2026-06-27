@@ -32,7 +32,10 @@ class SttSidecarBackend(Protocol):
     """Backend contract implemented by STT sidecar runtime adapters."""
 
     def startup(self) -> None:
-        """Load runtime dependencies and model pipelines."""
+        """Prepare the runtime to accept sidecar work."""
+
+    def shutdown(self) -> None:
+        """Release runtime-owned resources during sidecar shutdown."""
 
     def health(self) -> Mapping[str, object]:
         """Return the bounded health payload consumed by the main service."""

@@ -22,6 +22,7 @@ import pytest
 
 from scripts.sir_convert_a_lot.stt_sidecar import media
 from scripts.sir_convert_a_lot.stt_sidecar.contracts import SttSidecarRequestError
+from scripts.sir_convert_a_lot.stt_sidecar.model_lifecycle import LoadedSttModels
 from scripts.sir_convert_a_lot.stt_sidecar.normalized_audio import NormalizedAudioStore
 from scripts.sir_convert_a_lot.stt_sidecar.runtime import SttSidecarRuntime
 from scripts.sir_convert_a_lot.stt_sidecar.settings import SttSidecarSettings
@@ -95,6 +96,9 @@ class _FakeDiarizationOutput:
 
 
 class _SuccessfulWhisperModel:
+    def unload_model(self) -> None:
+        return None
+
     def transcribe(
         self,
         audio: str,
@@ -159,9 +163,8 @@ def test_sidecar_runtime_rejects_over_limit_duration_before_model_work(
     runtime = SttSidecarRuntime(_settings())
     whisper_model = _ForbiddenWhisperModel()
     diarization_pipeline = _ForbiddenDiarizationPipeline()
-    runtime._stt_model = whisper_model
-    runtime._diarization_pipeline = diarization_pipeline
     runtime._ready = True
+    runtime._gpu_ready = True
 
     with pytest.raises(SttSidecarRequestError) as exc_info:
         runtime.probe_media(_transcribe_request(source_path=source_path))
@@ -389,8 +392,11 @@ def _settings() -> SttSidecarSettings:
 
 def _ready_runtime(tmp_path: Path) -> SttSidecarRuntime:
     runtime = SttSidecarRuntime(_settings())
-    runtime._stt_model = _SuccessfulWhisperModel()
-    runtime._diarization_pipeline = _SuccessfulDiarizationPipeline()
+    runtime._model_lifecycle._models = LoadedSttModels(
+        whisper_model=_SuccessfulWhisperModel(),
+        stt_model=_SuccessfulWhisperModel(),
+        diarization_pipeline=_SuccessfulDiarizationPipeline(),
+    )
     runtime._ready = True
     runtime._gpu_ready = True
     runtime._normalized_audio = NormalizedAudioStore(tmp_path / "sidecar")

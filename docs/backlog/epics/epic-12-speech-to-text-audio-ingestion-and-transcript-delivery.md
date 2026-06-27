@@ -27,6 +27,7 @@ related:
   - docs/backlog/tasks/task-359-define-transcript-speaker-overlay-formatter-replay-contract.md
   - docs/backlog/tasks/task-360-implement-transcript-speaker-overlay-formatter-replay-artifacts.md
   - docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md
+  - docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-09-expose-transcript-formatter-replay-through-sir-convert-auth-edge.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md
@@ -187,6 +188,12 @@ Planned story slices:
   output, and prod compose drift tests. The 34-second first-response issue is
   not treated as solved by Gateway timeout alone; production runtime must use
   batched inference.
+- `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`
+  owns the Sir Convert implementation slice for HuleEdu TASK-0814: sidecar
+  readiness remains model-free, first STT/diarization work lazy-loads the
+  accepted FasterWhisper plus pyannote profile once under concurrency control,
+  and idle/shutdown cleanup drops model references without allocator or routing
+  experiments.
 
 ## Acceptance Criteria
 

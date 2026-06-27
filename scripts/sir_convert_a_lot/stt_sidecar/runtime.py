@@ -15,11 +15,9 @@ from __future__ import annotations
 
 import os
 import threading
-from collections.abc import Iterable, Mapping
-from importlib import import_module
+from collections.abc import Mapping
 from pathlib import Path
 from tempfile import TemporaryDirectory, gettempdir
-from typing import Protocol
 
 from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
     DAY_ONE_MEDIA_CONTAINERS,
@@ -35,6 +33,13 @@ from scripts.sir_convert_a_lot.stt_sidecar.media import (
     duration_seconds,
     normalize_audio,
     trim_normalized_audio,
+)
+from scripts.sir_convert_a_lot.stt_sidecar.model_lifecycle import (
+    BatchedWhisperModelLike,
+    DiarizationPipelineLike,
+    SttModelLifecycle,
+    cache_root_ready,
+    model_artifacts_present,
 )
 from scripts.sir_convert_a_lot.stt_sidecar.normalized_audio import NormalizedAudioStore
 from scripts.sir_convert_a_lot.stt_sidecar.request_parsing import (
@@ -57,76 +62,12 @@ from scripts.sir_convert_a_lot.stt_sidecar.segments import (
 from scripts.sir_convert_a_lot.stt_sidecar.settings import SttSidecarSettings
 
 
-class WhisperModelLike(Protocol):
-    """Loaded FasterWhisper model accepted by the batched pipeline."""
-
-
-class BatchedWhisperModelLike(Protocol):
-    """Batched FasterWhisper pipeline behavior used by the sidecar runtime."""
-
-    def transcribe(
-        self,
-        audio: str,
-        *,
-        beam_size: int,
-        batch_size: int,
-        word_timestamps: bool,
-        language: str | None,
-    ) -> tuple[Iterable[object], object]:
-        """Return transcription segments and metadata."""
-
-
-class WhisperModelFactory(Protocol):
-    """Callable FasterWhisper model factory."""
-
-    def __call__(
-        self,
-        model_size_or_path: str,
-        *,
-        device: str,
-        compute_type: str,
-    ) -> WhisperModelLike:
-        """Build a FasterWhisper model."""
-
-
-class BatchedInferencePipelineFactory(Protocol):
-    """Callable FasterWhisper batched inference pipeline factory."""
-
-    def __call__(self, *, model: WhisperModelLike) -> BatchedWhisperModelLike:
-        """Wrap a FasterWhisper model with batched inference."""
-
-
-class DiarizationPipelineLike(Protocol):
-    """pyannote pipeline behavior used by the sidecar runtime."""
-
-    def __call__(
-        self,
-        file: str,
-        *,
-        num_speakers: int | None = None,
-        min_speakers: int | None = None,
-        max_speakers: int | None = None,
-    ) -> object:
-        """Return diarization output for one audio file."""
-
-    def to(self, device: object) -> object:
-        """Move the pipeline to a GPU device."""
-
-
-class DiarizationPipelineFactory(Protocol):
-    """Callable pyannote pipeline factory."""
-
-    def from_pretrained(self, checkpoint_path: str, *, token: str) -> DiarizationPipelineLike:
-        """Build a pyannote pipeline from a gated checkpoint."""
-
-
 class SttSidecarRuntime:
     """Production STT sidecar runtime backed by FasterWhisper and pyannote."""
 
     def __init__(self, settings: SttSidecarSettings) -> None:
         self._settings = settings
-        self._stt_model: BatchedWhisperModelLike | None = None
-        self._diarization_pipeline: DiarizationPipelineLike | None = None
+        self._model_lifecycle = SttModelLifecycle(settings)
         self._ready = False
         self._gpu_ready = False
         self._lock = threading.Lock()
@@ -136,44 +77,22 @@ class SttSidecarRuntime:
         )
 
     def startup(self) -> None:
-        """Load GPU-only STT and diarization backends."""
-        torch_module = import_module("torch")
-        cuda_obj = getattr(torch_module, "cuda")
-        self._gpu_ready = bool(cuda_obj.is_available())
+        """Prepare GPU-only STT sidecar capability without loading models."""
+        self._gpu_ready = self._model_lifecycle.gpu_ready()
         if not self._gpu_ready:
             raise RuntimeError("GPU runtime is required for the STT sidecar.")
-        faster_whisper_module = import_module("faster_whisper")
-        whisper_factory: WhisperModelFactory = getattr(faster_whisper_module, "WhisperModel")
-        try:
-            batched_pipeline_factory: BatchedInferencePipelineFactory = getattr(
-                faster_whisper_module,
-                "BatchedInferencePipeline",
-            )
-        except AttributeError as exc:
-            raise RuntimeError(
-                "faster-whisper BatchedInferencePipeline is required for the STT sidecar."
-            ) from exc
-        whisper_model = whisper_factory(
-            self._settings.stt_model_id,
-            device="cuda",
-            compute_type=self._settings.compute_type,
-        )
-        self._stt_model = batched_pipeline_factory(model=whisper_model)
-        pyannote_module = import_module("pyannote.audio")
-        pipeline_factory: DiarizationPipelineFactory = getattr(pyannote_module, "Pipeline")
-        token = os.environ.get(self._settings.hf_token_env_name, "").strip()
-        if token == "":
+        if not self._model_lifecycle.required_secret_present():
             raise RuntimeError("HF token is required for the STT sidecar diarization profile.")
-        self._diarization_pipeline = pipeline_factory.from_pretrained(
-            self._settings.diarization_model_id,
-            token=token,
-        )
-        device_factory = getattr(torch_module, "device")
-        self._diarization_pipeline.to(device_factory("cuda"))
         self._ready = True
+
+    def shutdown(self) -> None:
+        """Drop resident STT and diarization model references."""
+        self._model_lifecycle.shutdown()
 
     def health(self) -> Mapping[str, object]:
         """Return sanitized readiness truth for the main service."""
+        self.unload_idle_models()
+        residency = self._model_lifecycle.snapshot()
         return {
             "status": "ok" if self._ready and self._gpu_ready else "degraded",
             "ready": self._ready,
@@ -181,10 +100,15 @@ class SttSidecarRuntime:
             "backend_version": self._settings.backend_version,
             "gpu_ready": self._gpu_ready,
             "capability_version": STT_SIDECAR_CONTRACT_VERSION,
+            "models_resident": residency["models_resident"],
         }
 
     def capabilities(self) -> Mapping[str, object]:
         """Return sanitized capability truth for the main service."""
+        self.unload_idle_models()
+        residency = self._model_lifecycle.snapshot()
+        cache_ready = cache_root_ready(self._settings.hf_cache_container_root)
+        artifacts_present = model_artifacts_present(self._settings)
         return {
             "adapter_contract_version": STT_SIDECAR_CONTRACT_VERSION,
             "runtime": {
@@ -224,8 +148,11 @@ class SttSidecarRuntime:
                 "cache_family": "huggingface",
                 "host_root": self._settings.hf_cache_host_label,
                 "container_root": self._settings.hf_cache_container_label,
-                "cache_roots_ready": self._settings.hf_cache_container_root.exists(),
-                "model_artifacts_present": self._ready,
+                "cache_roots_ready": cache_ready,
+                "model_artifacts_present": artifacts_present,
+                "models_resident": residency["models_resident"],
+                "active_model_uses": residency["active_model_uses"],
+                "idle_unload_seconds": residency["idle_unload_seconds"],
             },
             "secrets": {
                 "required_secret_names": [self._settings.hf_token_env_name],
@@ -279,10 +206,12 @@ class SttSidecarRuntime:
         self._raise_if_canceled(request_handle)
         normalized_audio = self._normalized_audio.resolve(request)
         options = mapping_at(request, "options")
-        speakers = self._diarize_segments(
-            normalized_path=normalized_audio.path,
-            options=options,
-        )
+        with self._model_lifecycle.use_models() as models:
+            speakers = self._diarize_segments(
+                normalized_path=normalized_audio.path,
+                options=options,
+                diarization_pipeline=models.diarization_pipeline,
+            )
         self._raise_if_canceled(request_handle)
         return {
             "status": "succeeded",
@@ -334,12 +263,14 @@ class SttSidecarRuntime:
                 start_seconds=start_seconds,
                 end_seconds=end_seconds,
             )
-            segments = self._transcribe_segments(
-                normalized_path=chunk_path,
-                language=language,
-                start_offset_seconds=start_seconds,
-                segment_id_prefix=f"chunk-{chunk_index}-seg",
-            )
+            with self._model_lifecycle.use_models() as models:
+                segments = self._transcribe_segments(
+                    normalized_path=chunk_path,
+                    language=language,
+                    stt_model=models.stt_model,
+                    start_offset_seconds=start_seconds,
+                    segment_id_prefix=f"chunk-{chunk_index}-seg",
+                )
         self._raise_if_canceled(request_handle)
         if not segments:
             raise SttSidecarRequestError(
@@ -385,17 +316,20 @@ class SttSidecarRuntime:
             "removed_normalized_media": removed,
         }
 
+    def unload_idle_models(self) -> Mapping[str, object]:
+        """Drop resident model references after the configured idle timeout."""
+        return self._model_lifecycle.unload_idle_models()
+
     def _transcribe_segments(
         self,
         *,
         normalized_path: Path,
         language: str | None,
+        stt_model: BatchedWhisperModelLike,
         start_offset_seconds: float = 0.0,
         segment_id_prefix: str = "seg",
     ) -> list[TranscriptSegment]:
-        if self._stt_model is None:
-            raise RuntimeError("STT model is not loaded.")
-        segment_iterable, info = self._stt_model.transcribe(
+        segment_iterable, info = stt_model.transcribe(
             normalized_path.as_posix(),
             beam_size=self._settings.beam_size,
             batch_size=self._settings.batch_size,
@@ -422,7 +356,7 @@ class SttSidecarRuntime:
         return parsed
 
     def _require_ready(self) -> None:
-        if self._stt_model is None or self._diarization_pipeline is None or not self._ready:
+        if not self._ready or not self._gpu_ready:
             raise SttSidecarRequestError(
                 code="audio_sidecar_unavailable",
                 message="STT sidecar runtime is not ready.",
@@ -434,11 +368,10 @@ class SttSidecarRuntime:
         *,
         normalized_path: Path,
         options: Mapping[str, object],
+        diarization_pipeline: DiarizationPipelineLike,
     ) -> list[SpeakerSegment]:
-        if self._diarization_pipeline is None:
-            raise RuntimeError("Diarization pipeline is not loaded.")
         diarization_options = mapping_at(options, "diarization")
-        output = self._diarization_pipeline(
+        output = diarization_pipeline(
             normalized_path.as_posix(),
             num_speakers=optional_int(diarization_options, "num_speakers"),
             min_speakers=optional_int(diarization_options, "min_speakers"),
