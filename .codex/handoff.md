@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-28'
+last_updated: '2026-06-29'
 ---
 
 ## Purpose
@@ -33,6 +33,9 @@ durable implementation authority lives in governed docs.
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
 - Task 366 is completed for STT lazy-load/idle-unload: `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`.
 - Task 367 is completed, reviewed, deployed, and live-proved at `873c5ae1`; proof summary is `build/verification/task-367-stt-sidecar-idle-unload-live-proof/20260628T203221Z/summary.json`, with post-idle `/health` returning `models_resident=false` at `2026-06-28T20:50:02Z` and no strict `audio_sidecar_unavailable`/`unload_model` log matches.
+- Proposed Task 368 centralizes retryable-failed idempotency reattempts in
+  Service API v2; linked Task 369 must then remove the Task 63 CLI-side
+  failed-replay auto-rerun wrapper. See the task docs for live proof gates.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper
@@ -165,33 +168,9 @@ decision/performance work.
   362 covers batched FasterWhisper production STT sidecar remediation.
 - Task 363 and Task 364 red/green/review evidence is retained in their task and
   review docs; Task 363 Review 48 and Task 364 Review 49 are approved.
-- Task 365 evidence on 2026-06-14 so far: admission replay red test failed at
-  `interfaces/http_routes_jobs_v2.py:254` on the second `request.form()` call;
-  remote-proof compose contract initially failed because the lane did not
-  exist; focused green proof passed with `6 passed`; `format-all`,
-  `typecheck-all`, `lint-fix`, `docs-sync`, `docs-validate`,
-  `skills-validate`, `handoff-validate`, and `git diff --check` passed before
-  Hemma deployment prep. Later local STT E2E proof through `hemma-remote-proof`
-  passed trust preflight but failed media probing because the borrowed
-  production STT sidecar could not see the remote-proof data volume
-  (`jobv2_e6e21993b1d7415681ececc4ed`, `audio_stream_missing`,
-  `sidecar_status_code=422`). A rejected dedicated remote-proof STT sidecar
-  then failed with GPU memory pressure and must not be retained. The current
-  shared-staging fix removes that sidecar, stages audio into
-  `sir-convert-a-lot-stt-sidecar-inputs`, and keeps the existing hosted STT
-  sidecar as the only model worker. Red shared-staging proof failed with
-  `9 failed, 15 passed`; focused green proof passed with `24 passed`; broadened
-  Task 365 proof passed with `43 passed`; `coverage-gate` passed with
-  `1733 passed, 6 skipped` and `95.37%` coverage. The retained-job capacity
-  red test failed with repeated `JobStoreV2.sweep_expired` calls during audio
-  admission; the fixed route now scans direct job-store subjects and focused
-  proof passed with `1 passed`, then `44 passed` for the audio admission/parser
-  replay plus evidence-helper slice. Formatter recovery proof failed red with
-  `202 Accepted`, then passed with `1 passed`; adjacent proof passed with
-  `35 passed`. Local downstream proof passed at
-  `20260614T184817Z`; native Hemma production proof passed at
-  `20260614T191738Z` with container logs retained under
-  `/home/paunchygent/apps/skriptoteket/.artifacts/pr-0352-native-proof-logs/20260614T191737Z/`.
+- Task 365 detailed validation and native/local proof evidence is retained in
+  its task doc and linked long-term entry; active warning: do not revive the
+  rejected dedicated remote-proof STT sidecar.
 
 ## Stop Conditions
 

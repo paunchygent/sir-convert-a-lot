@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-06-28
-last_updated: 2026-06-28
+created: 2026-06-29
+last_updated: 2026-06-29
 related: []
 labels:
   - generated
@@ -446,6 +446,8 @@ Generated index for backlog planning documents.
 | task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay | [Fence remote-proof trust lane and remove create-job multipart replay](tasks/task-365-fence-remote-proof-trust-lane-and-remove-create-job-multipart-replay.md) | task | done |
 | task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload | [Implement STT sidecar lazy model load and idle unload](tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md) | task | completed |
 | task-367-remediate-stt-sidecar-idle-unload-fasterwhisper-lifecycle-regression | [Remediate STT sidecar idle unload FasterWhisper lifecycle regression](tasks/task-367-remediate-stt-sidecar-idle-unload-fasterwhisper-lifecycle-regression.md) | task | completed |
+| task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2 | [Centralize retryable-failed idempotency reattempts in Service API v2](tasks/task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2.md) | task | proposed |
+| task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts | [Remove CLI auto-rerun wrappers after Service API v2 owns retryable reattempts](tasks/task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts.md) | task | proposed |
 | task-37-service-v2-route-html-css-pdf-weasyprint | [Service v2 route: html + css -> pdf (WeasyPrint)](tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |
 | task-39-hemma-v2-conversion-smoke-verification | [Hemma v2 conversion smoke verification](tasks/task-39-hemma-v2-conversion-smoke-verification.md) | task | completed |
