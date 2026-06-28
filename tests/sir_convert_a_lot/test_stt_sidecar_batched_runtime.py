@@ -23,6 +23,7 @@ from types import ModuleType
 
 import pytest
 
+from scripts.sir_convert_a_lot.stt_sidecar.model_lifecycle import LoadedSttModels
 from scripts.sir_convert_a_lot.stt_sidecar.normalized_audio import NormalizedAudioStore
 from scripts.sir_convert_a_lot.stt_sidecar.runtime import SttSidecarRuntime
 from scripts.sir_convert_a_lot.stt_sidecar.settings import SttSidecarSettings
@@ -84,6 +85,10 @@ class _FakeDiarizationPipeline:
         return self
 
 
+class _FakeWhisperModel:
+    """Fake FasterWhisper model without lifecycle methods."""
+
+
 def test_sidecar_runtime_transcribes_chunks_with_configured_batched_inference_size(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -123,7 +128,8 @@ def test_sidecar_runtime_transcribes_chunks_with_configured_batched_inference_si
     assert transcription["batch_size"] == 8
 
 
-def test_sidecar_startup_wraps_whisper_model_with_batched_inference_pipeline(
+def test_first_model_use_wraps_whisper_model_with_batched_inference_pipeline(
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     wrapped_model_ids: list[str] = []
@@ -153,8 +159,29 @@ def test_sidecar_startup_wraps_whisper_model_with_batched_inference_pipeline(
     _install_pyannote_module(monkeypatch)
     monkeypatch.setenv("HF_TOKEN", "hf_test_token")
     runtime = SttSidecarRuntime(_settings())
+    runtime._normalized_audio = NormalizedAudioStore(tmp_path / "sidecar")
+    _patch_successful_media(monkeypatch)
+    source_path = tmp_path / "meeting.m4a"
+    source_path.write_bytes(b"audio bytes")
 
     runtime.startup()
+    probe_payload = runtime.probe_media(_transcribe_request(source_path=source_path))
+    media = _required_mapping(probe_payload, "media")
+    runtime.transcribe_chunk(
+        {
+            **_normalized_request(
+                request_handle="job-audio",
+                handle=_required_string(media, "normalized_audio_handle"),
+                sha=_required_string(media, "normalized_audio_sha256"),
+            ),
+            "chunk": {
+                "chunk_index": 0,
+                "start_seconds": 0.0,
+                "end_seconds": 2.0,
+                "overlap_seconds": 0.0,
+            },
+        }
+    )
 
     assert wrapped_model_ids == ["internal_stt_profile"]
     transcription = _required_mapping(runtime.capabilities(), "transcription")
@@ -187,8 +214,11 @@ def _ready_runtime(
     stt_model: _RecordingBatchedWhisperModel,
 ) -> SttSidecarRuntime:
     runtime = SttSidecarRuntime(_settings())
-    runtime._stt_model = stt_model
-    runtime._diarization_pipeline = _FakeDiarizationPipeline()
+    runtime._model_lifecycle._models = LoadedSttModels(
+        whisper_model=_FakeWhisperModel(),
+        stt_model=stt_model,
+        diarization_pipeline=_FakeDiarizationPipeline(),
+    )
     runtime._ready = True
     runtime._gpu_ready = True
     runtime._normalized_audio = NormalizedAudioStore(tmp_path / "sidecar")

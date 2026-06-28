@@ -35,6 +35,7 @@ class SttSidecarSettings:
     acceleration_family: str
     beam_size: int
     batch_size: int
+    idle_unload_seconds: float = 900.0
 
     @classmethod
     def from_env(cls) -> "SttSidecarSettings":
@@ -69,6 +70,10 @@ class SttSidecarSettings:
             acceleration_family=_env("SIR_STT_SIDECAR_ACCELERATION_FAMILY", "rocm"),
             beam_size=_positive_int_env("SIR_STT_SIDECAR_BEAM_SIZE", 5),
             batch_size=_positive_int_env("SIR_STT_SIDECAR_BATCH_SIZE", 8),
+            idle_unload_seconds=_non_negative_float_env(
+                "SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS",
+                900.0,
+            ),
         )
 
 
@@ -82,4 +87,12 @@ def _positive_int_env(name: str, default: int) -> int:
     value = int(raw_value)
     if value < 1:
         raise ValueError(f"{name} must be a positive integer.")
+    return value
+
+
+def _non_negative_float_env(name: str, default: float) -> float:
+    raw_value = _env(name, str(default))
+    value = float(raw_value)
+    if value < 0.0:
+        raise ValueError(f"{name} must be non-negative.")
     return value
