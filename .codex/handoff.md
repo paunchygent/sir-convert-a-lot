@@ -32,7 +32,7 @@ durable implementation authority lives in governed docs.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
 - Task 366 is completed for STT lazy-load/idle-unload: `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`.
-- Task 367 local implementation and Review 51 are approved; only Hemma deploy/live proof remains in `docs/backlog/tasks/task-367-remediate-stt-sidecar-idle-unload-fasterwhisper-lifecycle-regression.md`.
+- Task 367 is completed, reviewed, deployed, and live-proved at `873c5ae1`; proof summary is `build/verification/task-367-stt-sidecar-idle-unload-live-proof/20260628T203221Z/summary.json`, with post-idle `/health` returning `models_resident=false` at `2026-06-28T20:50:02Z` and no strict `audio_sidecar_unavailable`/`unload_model` log matches.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper

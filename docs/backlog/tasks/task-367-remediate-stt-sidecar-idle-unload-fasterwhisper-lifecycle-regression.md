@@ -2,7 +2,7 @@
 id: task-367-remediate-stt-sidecar-idle-unload-fasterwhisper-lifecycle-regression
 title: Remediate STT sidecar idle unload FasterWhisper lifecycle regression
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-28'
 last_updated: '2026-06-28'
@@ -79,9 +79,9 @@ Production RCA on 2026-06-28:
       idle-unload triggering.
 - [x] Focused STT sidecar tests and quality gates.
 - [x] Retained Review 51 artifact with independent ruthless review approval.
-- [ ] Hemma deployment and live production proof showing sidecar health recovers
+- [x] Hemma deployment and live production proof showing sidecar health recovers
       and a post-idle `audio -> transcript_bundle` job succeeds.
-- [ ] Updated `.codex/handoff.md` with exact validation and live proof paths.
+- [x] Updated `.codex/handoff.md` with exact validation and live proof paths.
 
 ## Acceptance Criteria
 
@@ -97,7 +97,7 @@ Production RCA on 2026-06-28:
       protection, and batched FasterWhisper execution.
 - [x] Review 51 is approved after the reviewer verifies behavior, typing,
   docs-as-code state, and missing-test risk.
-- [ ] Live Hemma proof after deploy includes bounded logs or manifests showing:
+- [x] Live Hemma proof after deploy includes bounded logs or manifests showing:
   sidecar `/health` returns `200`, Docker health is healthy, a real
   production `audio -> transcript_bundle` job reaches `succeeded`, result
   and `transcript_json` artifact fetch succeed, and no new
@@ -107,7 +107,7 @@ Production RCA on 2026-06-28:
 ## Checklist
 
 - [x] Implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated
 
 ## Red-First Evidence
@@ -168,10 +168,38 @@ Production RCA on 2026-06-28:
   `pdm run docs-validate`, `pdm run skills-validate`,
   `pdm run handoff-validate`, and `git diff --check` passed.
 
+## Hemma Deployment And Live Proof Evidence
+
+- Deployed and verified commit
+  `873c5ae183a9aa7b9cd6ecb6fd63426eace293bd` with
+  `pdm run hemma-deploy-and-verify --expected-revision 873c5ae183a9aa7b9cd6ecb6fd63426eace293bd --lane host`.
+  Report:
+  `build/verification/hemma-deploy-verify/report.md`, generated at
+  `2026-06-28T20:28:52Z`, status `passed`, with expected, remote, and service
+  revisions all matching `873c5ae183a9aa7b9cd6ecb6fd63426eace293bd`.
+- Live production transcript proof:
+  `build/verification/task-367-stt-sidecar-idle-unload-live-proof/20260628T203221Z/summary.json`.
+  The proof observed `ready=true`, `service_profile=prod`, and
+  `service_revision=873c5ae183a9aa7b9cd6ecb6fd63426eace293bd`, then completed
+  job `jobv2_db9a0d46ace646188cc6340a90` with `status=succeeded`,
+  `backend_used=stt_sidecar`, `acceleration_policy_requested=gpu_required`,
+  `acceleration_used=rocm`, and `pipeline_used=audio_to_transcript_bundle_v2`.
+- Artifact proof: the proof manifest reported `transcript_json=available`; the
+  fetched transcript JSON contained `27` segments and speaker labels
+  `SPEAKER_00` and `SPEAKER_01`.
+- Health proof: Docker reported `sir_convert_a_lot_stt_sidecar` as
+  `Up ... (healthy)` after the live job. The post-idle sidecar `/health` poll
+  at `2026-06-28T20:50:02Z` returned `ready=true`, `gpu_ready=true`, and
+  `models_resident=false`, proving idle cleanup no longer makes health fail.
+- Bounded production log scans since `2026-06-28T20:29:00Z` for both
+  `sir_convert_a_lot_stt_sidecar` and `sir_convert_a_lot_prod` returned no
+  strict matches for `audio_sidecar_unavailable`, `unload_model`,
+  `AttributeError`, `Internal Server Error`, or sidecar/prod `500` failure
+  signatures in the proof interval.
+
 ## Residual Follow-Up
 
-- Independent Review 51, Hemma deployment, and live post-idle production proof
-  remain for the overseer. Recommended live proof should verify sidecar
-  `/health` returns `200` after idle unload, Docker health is healthy, and a
-  real `audio -> transcript_bundle` job succeeds without new
-  `audio_sidecar_unavailable` or `unload_model` log entries.
+- No Task 367 remediation follow-up remains. The only known residual is the
+  unrelated local `coverage-gate` Qwen durable-checkpoint free-space failure
+  recorded above; it did not affect STT sidecar coverage or live production
+  proof.
