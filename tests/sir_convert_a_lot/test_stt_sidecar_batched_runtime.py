@@ -86,8 +86,7 @@ class _FakeDiarizationPipeline:
 
 
 class _FakeWhisperModel:
-    def unload_model(self) -> None:
-        return None
+    """Fake FasterWhisper model without lifecycle methods."""
 
 
 def test_sidecar_runtime_transcribes_chunks_with_configured_batched_inference_size(
@@ -147,9 +146,6 @@ def test_first_model_use_wraps_whisper_model_with_batched_inference_pipeline(
             assert device == "cuda"
             assert compute_type == "float16"
             self.model_size_or_path = model_size_or_path
-
-        def unload_model(self) -> None:
-            return None
 
     class FakeBatchedInferencePipeline(_RecordingBatchedWhisperModel):
         def __init__(self, *, model: FakeWhisperModel) -> None:

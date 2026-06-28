@@ -96,9 +96,6 @@ class _FakeDiarizationOutput:
 
 
 class _SuccessfulWhisperModel:
-    def unload_model(self) -> None:
-        return None
-
     def transcribe(
         self,
         audio: str,

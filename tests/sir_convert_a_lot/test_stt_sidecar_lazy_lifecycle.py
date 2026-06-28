@@ -211,7 +211,6 @@ def test_idle_unload_waits_for_active_model_work_and_shutdown_drops_references(
 
     assert active_unload["models_resident"] is True
     assert active_unload["active_model_uses"] == 1
-    assert counters.unloads == 0
     transcribe_release.set()
     thread.join(timeout=2.0)
     assert failures == []
@@ -219,14 +218,14 @@ def test_idle_unload_waits_for_active_model_work_and_shutdown_drops_references(
     idle_unload = runtime.unload_idle_models()
 
     assert idle_unload["models_resident"] is False
-    assert counters.unloads == 1
     runtime.transcribe_chunk(request)
     assert counters.whisper_loads == 2
 
     runtime.shutdown()
 
     assert runtime.health()["models_resident"] is False
-    assert counters.unloads == 2
+    runtime.shutdown()
+    assert runtime.health()["models_resident"] is False
 
 
 def test_health_triggers_idle_unload_after_elapsed_timeout(
@@ -270,4 +269,4 @@ def test_health_triggers_idle_unload_after_elapsed_timeout(
     health = runtime.health()
 
     assert health["models_resident"] is False
-    assert counters.unloads == 1
+    assert health["ready"] is True

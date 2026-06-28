@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-14'
+last_updated: '2026-06-28'
 ---
 
 ## Purpose
@@ -31,8 +31,8 @@ durable implementation authority lives in governed docs.
   signed headers were retained.
 - Active speech-to-text lane: Epic 12; ADR-0013 accepted; Story 53 JSON
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
-- Task 366 is active for HuleEdu TASK-0814 STT lazy-load/idle-unload:
-  `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`; Worker A self-verified with `33 passed`, review pending.
+- Task 366 is completed for STT lazy-load/idle-unload: `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`.
+- Task 367 local implementation and Review 51 are approved; only Hemma deploy/live proof remains in `docs/backlog/tasks/task-367-remediate-stt-sidecar-idle-unload-fasterwhisper-lifecycle-regression.md`.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper

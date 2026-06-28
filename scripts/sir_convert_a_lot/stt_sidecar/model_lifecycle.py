@@ -29,9 +29,6 @@ from scripts.sir_convert_a_lot.stt_sidecar.settings import SttSidecarSettings
 class WhisperModelLike(Protocol):
     """Loaded FasterWhisper model accepted by the batched pipeline."""
 
-    def unload_model(self) -> None:
-        """Release CTranslate2 model residency when supported."""
-
 
 class BatchedWhisperModelLike(Protocol):
     """Batched FasterWhisper pipeline behavior used by the sidecar runtime."""
@@ -99,10 +96,6 @@ class LoadedSttModels:
     whisper_model: WhisperModelLike
     stt_model: BatchedWhisperModelLike
     diarization_pipeline: DiarizationPipelineLike
-
-    def unload(self) -> None:
-        """Drop backend-native residency owned by the loaded bundle."""
-        self.whisper_model.unload_model()
 
 
 class SttModelLifecycle:
@@ -245,7 +238,6 @@ class SttModelLifecycle:
     def _drop_models_locked(self) -> None:
         if self._models is None:
             return
-        self._models.unload()
         self._models = None
         self._last_used_at = None
         self._condition.notify_all()

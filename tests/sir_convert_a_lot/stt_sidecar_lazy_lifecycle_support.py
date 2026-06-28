@@ -32,7 +32,6 @@ class ModelLoadCounters:
     whisper_loads: int = 0
     batched_wraps: int = 0
     diarization_loads: int = 0
-    unloads: int = 0
 
 
 @dataclass(slots=True)
@@ -163,9 +162,6 @@ def install_stt_modules(
                 first_load_entered.set()
             if load_release is not None:
                 assert load_release.wait(timeout=2.0)
-
-        def unload_model(self) -> None:
-            counters.unloads += 1
 
     class FakeBatchedInferencePipeline:
         def __init__(self, *, model: FakeWhisperModel) -> None:

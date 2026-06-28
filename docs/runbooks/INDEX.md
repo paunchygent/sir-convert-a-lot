@@ -3,8 +3,8 @@ type: runbook
 id: RUN-runbook-index
 title: Runbook Index
 status: active
-created: 2026-06-27
-last_updated: 2026-06-27
+created: 2026-06-28
+last_updated: 2026-06-28
 owners:
   - platform
 system: docs
