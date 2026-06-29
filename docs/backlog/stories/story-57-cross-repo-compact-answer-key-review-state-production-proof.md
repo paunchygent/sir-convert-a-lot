@@ -2,7 +2,7 @@
 id: story-57-cross-repo-compact-answer-key-review-state-production-proof
 title: Cross-repo compact answer-key review state production proof
 type: story
-status: proposed
+status: completed
 priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -64,32 +64,32 @@ production browser proof below passes and is retained in both repos.
 
 ## Acceptance Criteria
 
-- [ ] Task 373 closes the state vocabulary as strict producer codes:
+- [x] Task 373 closes the state vocabulary as strict producer codes:
   `review_required`, `review_complete`, `teacher_modified`,
   `validation_required`.
-- [ ] Task 373 closes key origin as strict producer codes:
+- [x] Task 373 closes key origin as strict producer codes:
   `none`, `source_provided`, `reviewed_advisory`, `teacher_authored`,
   `teacher_edited_advisory`, `mixed`.
-- [ ] Task 373 emits both the first-pass named artifact
+- [x] Task 373 emits both the first-pass named artifact
   `answer_key_review_state_report` and top-level correction-apply
   `answer_key_review_state`.
-- [ ] Task 373 exposes bounded `provenance_detail` only; schema/tests reject
+- [x] Task 373 exposes bounded `provenance_detail` only; schema/tests reject
   generic `history`, `review_decision`, and accepted-current-state substitute
   fields.
-- [ ] Task 373 uses one shared projection builder for bundle generation and
+- [x] Task 373 uses one shared projection builder for bundle generation and
   correction apply/replay result generation.
-- [ ] Task 373 keeps target readiness separate from item review state; the
+- [x] Task 373 keeps target readiness separate from item review state; the
   compact projection cannot unlock PDF/QTI.
-- [ ] PR-0406 consumes the producer projection through one narrow adapter and
+- [x] PR-0406 consumes the producer projection through one narrow adapter and
   fails closed on unknown schema versions, unknown state/origin/reason codes,
   missing projection, or missing replay artifact references.
-- [ ] PR-0406 proves list/detail/report/mobile labels from producer state:
+- [x] PR-0406 proves list/detail/report/mobile labels from producer state:
   pending advisory -> `Granska`; reviewed complete -> plain `Klart`; teacher
   modified -> teacher-owned with no AI marker; missing key/value ->
   `Kontrollera` with current validation reason.
-- [ ] PR-0406 proves local saved intent is draft/readback only until Sir
+- [x] PR-0406 proves local saved intent is draft/readback only until Sir
   Convert replay returns fresh projection/readiness evidence.
-- [ ] Final production browser proof uses a real browser against the production
+- [x] Final production browser proof uses a real browser against the production
   Skriptoteket surface and records redacted evidence for each step in the gate
   below.
 
@@ -127,13 +127,13 @@ checks are complete.
 
 ## Test Requirements
 
-- [ ] Red-first Sir Convert tests for bundle artifact, apply response,
+- [x] Red-first Sir Convert tests for bundle artifact, apply response,
   state/origin/reason vocabulary, missing key/value reasons, rejected legacy
   fields, replay artifact references, and OpenAPI/schema export.
-- [ ] Red-first Skriptoteket tests for parser rejection, exhaustive state
+- [x] Red-first Skriptoteket tests for parser rejection, exhaustive state
   mapping, desktop/mobile rendering, stale replay/local draft behavior, report,
   files, and replay artifact authority.
-- [ ] Retained independent review artifacts approve Task 373 and PR-0406 before
+- [x] Retained independent review artifacts approve Task 373 and PR-0406 before
   final production proof starts.
 
 ## Done Definition
@@ -144,8 +144,30 @@ browser gate passes with retained redacted evidence linked from both repos.
 
 ## Checklist
 
-- [ ] Task 373 approved
-- [ ] PR-0406 approved
-- [ ] Production deploys healthy
-- [ ] Final live browser proof retained
-- [ ] Docs synchronized
+- [x] Task 373 approved
+- [x] PR-0406 approved
+- [x] Production deploys healthy
+- [x] Final live browser proof retained
+- [x] Docs synchronized
+
+## Production Closeout
+
+Closed on 2026-06-29 after retained review approval, production deploys, HuleEdu
+Gateway recovery, and the final production DXE proof.
+
+- Sir Convert production revision:
+  `95937ea6e9a892a2825521149ecbcc29262d6252`; deploy verifier:
+  `build/verification/hemma-deploy-verify/report.md`.
+- Skriptoteket production revision:
+  `63e27ad4e65bc0cb5f3abceb8f8498dc12d6303e`; deploy log:
+  `/home/paunchygent/apps/skriptoteket/.artifacts/hemma-deploy-20260629-150551.log`.
+- HuleEdu Gateway/browser-session recovery log:
+  `/home/paunchygent/apps/huleedu/.artifacts/hemma-deploy-20260629T151038Z.log`.
+- Final production proof bundle:
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T152928Z/manifest.redacted.json`.
+  The proof covers HuleEdu login, production DXE upload, first-pass
+  `digiexam_answer_key_review_state_v1`, `Acceptera -> Klart`,
+  `Ändra -> Ändrat`, validation key repair, report/files views, disabled draft
+  downloads/saves, replay-scoped PDF/QTI download and save, reload persistence,
+  mobile detail/list/files/report screenshots with no horizontal overflow, no
+  page errors, and clean PDF/QTI inspection.

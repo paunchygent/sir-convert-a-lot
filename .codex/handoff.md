@@ -118,8 +118,8 @@ durable implementation authority lives in governed docs.
   downstream formatter, source-audio replay, or Gateway rewriting is part of
   the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Task 373 implementation is in progress for Story 57; it adds the compact
-  review-state projection and records focused red/green evidence in the task doc.
+- Story 57 / Task 373 is completed, reviewed in Review 58, deployed at `95937ea6`,
+  and production-proved through Skriptoteket PR-0406/ST-21-11 artifact `20260629T152928Z`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -160,7 +160,7 @@ decision/performance work.
 
 ## Next Actions
 
-1. Story 57 now tracks Task 373 plus Skriptoteket ST-21-11/PR-0406; use it for the compact review-state overseer loop and final production DXE browser proof gate.
+1. Story 57 is closed with Task 373, Skriptoteket ST-21-11/PR-0406, deploy checks, and the final production DXE proof retained.
 1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated
    sidecar approaches without new governed evidence and explicit user approval.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
