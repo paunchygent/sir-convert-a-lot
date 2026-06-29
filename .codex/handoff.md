@@ -40,6 +40,10 @@ durable implementation authority lives in governed docs.
   then proved service-owned `service_reattempt` admission and successful
   `transcript_json` fetch without idempotency pointer edits. Task 369 may now
   remove the Task 63 CLI-side failed-replay auto-rerun wrapper.
+- Task 369 implementation and retained Review 54 are approved:
+  CLI/client Task 63 failed-replay auto-rerun wrappers are removed, `--new-job`
+  is explicit independent intent only, and docs/tests record one-submit
+  service-owned idempotency behavior. Deploy and Hemma live proof remain.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper
@@ -178,6 +182,13 @@ decision/performance work.
 - Task 368 validation and live-proof evidence is retained in its task doc and
   Review 52; do not reintroduce caller-side idempotency salting or auto-rerun
   remediation.
+- Task 369 local implementation gates passed in the corrected worker run:
+  focused red/green CLI/client tests, manifest tests, `typecheck-all`,
+  `docs-sync`, `docs-validate`, `skills-validate`, `handoff-validate`, and
+  `coverage-gate` (`1748 passed, 6 skipped`, coverage `95.53%`). Whole-repo
+  mutating `format-all`/`lint-fix` were intentionally not run because unrelated
+  Task 367/370 dirty work is present; check-only `lint` found no Python issues
+  but reported pre-existing Task 368 Markdown formatting drift.
 
 ## Stop Conditions
 

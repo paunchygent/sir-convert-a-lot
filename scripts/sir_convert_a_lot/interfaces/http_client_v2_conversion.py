@@ -1,9 +1,9 @@
 """HTTP client conversion orchestration for service API v2.
 
 Purpose:
-    Keep submit/wait/retry/download conversion orchestration outside the main
-    HTTP client class while preserving idempotency replay and progress callback
-    behavior for CLI and adapter callers.
+    Keep submit/wait/download conversion orchestration outside the main HTTP
+    client class while preserving service-owned idempotency replay reporting
+    and progress callback behavior for CLI and adapter callers.
 
 Relationships:
     - Called by `interfaces.http_client_v2.SirConvertALotClientV2`.
@@ -79,7 +79,7 @@ def convert_upload_to_artifact_v2(
     progress_callback: Callable[[dict[str, object]], None] | None = None,
 ) -> ArtifactOutcomeV2:
     """Submit a v2 job, wait for success, and download artifact bytes."""
-    if retry_mode not in {"auto", "replay_only", "new_job"}:
+    if retry_mode not in {"auto", "new_job"}:
         raise ClientErrorV2(
             code="invalid_request",
             message=f"Unknown retry_mode '{retry_mode}'.",
@@ -101,24 +101,6 @@ def convert_upload_to_artifact_v2(
         reference_docx_bytes=reference_docx_bytes,
     )
     _report_submitted_job_v2(progress_callback=progress_callback, submitted=submitted)
-
-    rerun_of_job_id: str | None = None
-    if (
-        retry_mode == "auto"
-        and submitted.idempotent_replay
-        and submitted.status in {JobStatus.FAILED, JobStatus.CANCELED}
-    ):
-        rerun_of_job_id = submitted.job_id
-        submitted = client.submit_job(
-            source_path=source_path,
-            job_spec=job_spec,
-            idempotency_key=f"{idempotency_key}_rerun_{uuid4().hex}",
-            wait_seconds=wait_seconds,
-            correlation_id=correlation_id,
-            resources_zip_bytes=resources_zip_bytes,
-            reference_docx_bytes=reference_docx_bytes,
-        )
-        _report_submitted_job_v2(progress_callback=progress_callback, submitted=submitted)
 
     final_status = submitted.status
     if final_status not in TERMINAL_JOB_STATUSES:
@@ -157,7 +139,6 @@ def convert_upload_to_artifact_v2(
         job_id=submitted.job_id,
         status=JobStatus.SUCCEEDED,
         artifact_bytes=artifact_bytes,
-        rerun_of_job_id=rerun_of_job_id,
         formula_authority=formula_authority,
     )
 

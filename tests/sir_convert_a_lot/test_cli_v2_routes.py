@@ -363,34 +363,9 @@ def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mon
     assert captured["retry_mode"] == "auto"
 
 
-def test_cli_retry_mode_flags_are_mutually_exclusive(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
-
-    source_file = tmp_path / "note.md"
-    source_file.write_text("# Title\n\nHello.\n", encoding="utf-8")
-    output_dir = tmp_path / "out"
-
-    result = runner.invoke(
-        cli_app.app,
-        [
-            "convert",
-            str(source_file),
-            "--output-dir",
-            str(output_dir),
-            "--to",
-            "pdf",
-            "--api-key",
-            "dev-key",
-            "--replay-only",
-            "--new-job",
-        ],
-    )
-
-    assert result.exit_code != 0
-    assert "--replay-only and --new-job are mutually exclusive" in result.output
-
-
-def test_cli_retry_mode_flags_map_to_client_retry_mode(tmp_path: Path, monkeypatch) -> None:
+def test_cli_new_job_flag_maps_to_independent_client_retry_mode(
+    tmp_path: Path, monkeypatch
+) -> None:
     FakeV2Client.captured_requests = []
     monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
 
@@ -398,24 +373,6 @@ def test_cli_retry_mode_flags_map_to_client_retry_mode(tmp_path: Path, monkeypat
     source_file.write_text("# Title\n\nHello.\n", encoding="utf-8")
     output_dir = tmp_path / "out"
 
-    result = runner.invoke(
-        cli_app.app,
-        [
-            "convert",
-            str(source_file),
-            "--output-dir",
-            str(output_dir),
-            "--to",
-            "pdf",
-            "--api-key",
-            "dev-key",
-            "--replay-only",
-        ],
-    )
-    assert result.exit_code == 0
-    assert FakeV2Client.captured_requests[0]["retry_mode"] == "replay_only"
-
-    FakeV2Client.captured_requests = []
     result = runner.invoke(
         cli_app.app,
         [

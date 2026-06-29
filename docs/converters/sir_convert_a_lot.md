@@ -97,12 +97,13 @@ User-facing rerun behavior:
   `idempotency.state="service_reattempt"` and lineage to the failed job.
 - Active, succeeded, non-retryable failed, and canceled jobs remain strict
   service replays. Canceled semantics are unchanged.
-- Historical Task 63 CLI auto-rerun behavior may remain in the client until
-  Task 369 removes that compatibility wrapper. Do not add new caller-side
-  retry wrappers, filename mutation, or idempotency-key salting for retryable
-  failed Service API v2 replays.
-- `--replay-only`: disable the auto-rerun behavior and keep strict replay semantics.
-- `--new-job`: always submit with a new `Idempotency-Key`, even if a prior job succeeded.
+- The CLI submits once per conversion invocation and records the service
+  returned job in the manifest. It must not remediate failed replays by
+  salting idempotency keys, changing filenames, or submitting a caller-side
+  second create-job request.
+- `--new-job`: explicit independent user intent to start a separate
+  conversion with a new `Idempotency-Key`, even if a prior job succeeded. This
+  is not retry remediation.
 
 ## Service Contract
 

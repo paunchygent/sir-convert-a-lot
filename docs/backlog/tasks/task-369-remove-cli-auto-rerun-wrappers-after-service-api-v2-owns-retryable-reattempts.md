@@ -1,9 +1,9 @@
 ---
-id: 'task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts'
-title: 'Remove CLI auto-rerun wrappers after Service API v2 owns retryable reattempts'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts
+title: Remove CLI auto-rerun wrappers after Service API v2 owns retryable reattempts
+type: task
+status: in_progress
+priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
 related:
@@ -20,6 +20,7 @@ labels:
   - service-boundary
   - cleanup
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -55,38 +56,38 @@ align with the service-owned idempotency state machine.
 
 ## Deliverables
 
-- [ ] Red-first CLI/client test proving the current DDD violation: the CLI
-      performs a second client-side create-job request after a terminal failed
-      idempotent replay.
-- [ ] Removal of client-owned failed-replay auto-rerun logic from the v2 HTTP
-      client and CLI command path.
-- [ ] Simplified CLI option/help text and docs with no `replay-only` workaround
-      language and no failed-replay compatibility mode.
-- [ ] Updated tests proving the CLI submits once and accepts the service-owned
-      response, including Task 368 reattempt metadata when present.
-- [ ] Independent retained review focused on removal completeness, no hidden
-      compatibility shim, and preserved CLI progress/artifact behavior.
+- [x] Red-first CLI/client test proving the current DDD violation: the CLI
+  performs a second client-side create-job request after a terminal failed
+  idempotent replay.
+- [x] Removal of client-owned failed-replay auto-rerun logic from the v2 HTTP
+  client and CLI command path.
+- [x] Simplified CLI option/help text and docs with no `replay-only` workaround
+  language and no failed-replay compatibility mode.
+- [x] Updated tests proving the CLI submits once and accepts the service-owned
+  response, including Task 368 reattempt metadata when present.
+- [x] Independent retained review focused on removal completeness, no hidden
+  compatibility shim, and preserved CLI progress/artifact behavior.
 - [ ] Hemma live CLI proof after deploy showing the CLI does not issue a
-      caller-side reattempt and still succeeds through the service-owned
-      Task 368 policy.
+  caller-side reattempt and still succeeds through the service-owned
+  Task 368 policy.
 
 ## Acceptance Criteria
 
-- [ ] The CLI and v2 HTTP client no longer synthesize a new idempotency key
-      because a replayed job is terminal failed or canceled.
-- [ ] No remaining public docs describe CLI auto-rerun of terminal failed or
-      canceled idempotent replays as accepted behavior.
-- [ ] Tests prove the CLI handles service responses for:
+- [x] The CLI and v2 HTTP client no longer synthesize a new idempotency key
+  because a replayed job is terminal failed or canceled.
+- [x] No remaining public docs describe CLI auto-rerun of terminal failed or
+  canceled idempotent replays as accepted behavior.
+- [x] Tests prove the CLI handles service responses for:
   - strict replay of active/succeeded/non-retryable failed jobs;
   - service-owned reattempt after retryable failed replay;
   - explicit independent-new-job user intent only if that behavior remains in
     scope.
-- [ ] Any retained "new job" affordance is named and documented as a deliberate
-      independent conversion request, not as retry remediation.
-- [ ] CLI manifests remain truthful: they must record the job actually returned
-      by the service and must not hide a second caller-side POST.
-- [ ] Red/green evidence includes the same focused command failing before the
-      removal and passing after it.
+- [x] Any retained "new job" affordance is named and documented as a deliberate
+  independent conversion request, not as retry remediation.
+- [x] CLI manifests remain truthful: they must record the job actually returned
+  by the service and must not hide a second caller-side POST.
+- [x] Red/green evidence includes the same focused command failing before the
+  removal and passing after it.
 - [ ] Close-out includes live Hemma evidence:
   - deployed service revision includes Task 368;
   - deployed CLI revision includes this task;
@@ -148,6 +149,56 @@ Required evidence bundle:
 - terminal success manifest and artifact fetch proof;
 - bounded log scan for the proof interval.
 
+## Implementation Evidence
+
+Corrected implementation worker evidence only; review, deploy, and live proof
+remain for the overseer loop.
+
+- Red-first evidence:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_cli_does_not_client_side_rerun_retryable_failed_replay -q`
+  failed before production edits with `Failed: DID NOT RAISE ClientErrorV2`, proving the old client performed a caller-side second submit
+  after the terminal failed replay.
+- Green same-node evidence:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py::test_cli_does_not_client_side_rerun_retryable_failed_replay -q`
+  passed after removing the Task 63 compatibility path.
+- Focused green evidence:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py tests/sir_convert_a_lot/test_cli_v2_routes.py tests/sir_convert_a_lot/test_convert_a_lot_cli.py -q`
+  passed with `17 passed`.
+- Manifest-focused evidence:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py -q`
+  passed with `6 passed`.
+- Removal/source-search evidence:
+  code and active tests no longer contain `replay_only`, `--replay-only`,
+  `_rerun_`, or `rerun_of_job_id`.
+- Broad local gates:
+  `pdm run typecheck-all`, `pdm run docs-sync`, `pdm run docs-validate`,
+  `pdm run skills-validate`, `pdm run handoff-validate`, and
+  `pdm run coverage-gate` passed. `coverage-gate` passed with
+  `1748 passed, 6 skipped`; total coverage `95.53%`.
+- Skipped gates:
+  whole-repo mutating `pdm run format-all` and `pdm run lint-fix` were not run
+  in this corrected worker pass because the worktree contains unrelated Task
+  367 and Task 370/Qwen changes. Check-only `pdm run lint` found no Python
+  issues but failed on pre-existing Markdown formatting drift in Task 368 docs.
+  `git diff --check` is run after recording this evidence.
+
+## Review Evidence
+
+- Retained review:
+  `docs/backlog/reviews/review-54-ruthless-review-of-task-369-remove-cli-auto-rerun-wrappers.md`
+- Decision: approved.
+- Reviewer-run evidence:
+  `pdm run pytest-root tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py tests/sir_convert_a_lot/test_cli_v2_routes.py tests/sir_convert_a_lot/test_convert_a_lot_cli.py -q`
+  passed with `17 passed`;
+  `pdm run pytest-root tests/sir_convert_a_lot/test_cli_route_submission_and_manifest_v2.py -q`
+  passed with `6 passed`; `docs-sync`, `docs-validate`,
+  `skills-validate`, `handoff-validate`, and scoped `git diff --check`
+  passed.
+- Review scope explicitly approved removal of the failed-replay client
+  second-submit path, removal of `--replay-only`, retained `--new-job` as
+  independent user intent only, and manifest truth around the service-returned
+  job.
+
 ## Stop Conditions
 
 - Stop if Task 368 has not been completed, reviewed, deployed, and live-proved.
@@ -158,6 +209,6 @@ Required evidence bundle:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

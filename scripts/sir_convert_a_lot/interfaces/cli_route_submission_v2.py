@@ -395,11 +395,6 @@ def _submit_one_source_file_v2(
             reference_docx_bytes=companion_payload.reference_docx_bytes,
             progress_callback=_progress_callback,
         )
-        if v2_outcome.rerun_of_job_id is not None:
-            message_sink(
-                f"[rerun] Replay hit terminal failure for {relative_label}: "
-                f"{v2_outcome.rerun_of_job_id} -> {v2_outcome.job_id}"
-            )
         target_path.write_bytes(v2_outcome.artifact_bytes)
         message_sink(f"✓ Converted {relative_label} -> {target_path}")
         return _SingleSubmissionOutcomeV2(

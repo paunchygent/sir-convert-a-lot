@@ -180,15 +180,12 @@ def convert_command(
         "--manifest-name",
         help="Output manifest filename written in the output directory.",
     ),
-    replay_only: bool = typer.Option(
-        False,
-        "--replay-only",
-        help="Do not auto-rerun terminal failed/canceled idempotent replays.",
-    ),
     new_job: bool = typer.Option(
         False,
         "--new-job",
-        help="Always submit with a new Idempotency-Key (disables replay benefits).",
+        help=(
+            "Start an independent conversion with a new Idempotency-Key (not retry remediation)."
+        ),
     ),
 ) -> None:
     """Convert one file or a folder of files through Sir Convert-a-Lot."""
@@ -249,13 +246,8 @@ def convert_command(
     else:
         resolved_api_key = ""
 
-    if replay_only and new_job:
-        raise typer.BadParameter("--replay-only and --new-job are mutually exclusive.")
-
     retry_mode: RetryModeV2 = "auto"
-    if replay_only:
-        retry_mode = "replay_only"
-    elif new_job:
+    if new_job:
         retry_mode = "new_job"
 
     output_dir.mkdir(parents=True, exist_ok=True)

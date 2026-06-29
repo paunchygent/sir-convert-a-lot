@@ -19,7 +19,7 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 
 RequestFileValue: TypeAlias = tuple[str, IO[bytes] | bytes | str, str]
 
-RetryModeV2: TypeAlias = Literal["auto", "replay_only", "new_job"]
+RetryModeV2: TypeAlias = Literal["auto", "new_job"]
 
 
 @dataclass
@@ -50,5 +50,4 @@ class ArtifactOutcomeV2:
     job_id: str
     status: Literal[JobStatus.SUCCEEDED]
     artifact_bytes: bytes
-    rerun_of_job_id: str | None = None
     formula_authority: dict[str, object] = field(default_factory=dict)

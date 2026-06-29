@@ -1,14 +1,16 @@
 ---
 id: task-63-cli-auto-rerun-on-idempotent-failed-replays
-title: CLI auto-rerun on idempotent failed replays
+title: Superseded CLI failed-replay workaround
 type: task
 status: completed
 priority: high
 created: '2026-03-01'
-last_updated: '2026-03-01'
+last_updated: '2026-06-29'
 related:
   - docs/converters/sir_convert_a_lot.md
   - docs/converters/multi_format_conversion_service_api_v2.md
+  - docs/backlog/tasks/task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2.md
+  - docs/backlog/tasks/task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts.md
 labels:
   - cli
   - v2
@@ -19,44 +21,54 @@ PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
 
-Make reruns after fixes feel obvious and safe:
+Historical Task 63 introduced a CLI-side failed-replay workaround before
+Service API v2 owned retryable failed reattempts.
 
-- Default `convert-a-lot convert` should not require filename hacks to rerun after a previously failed
-  idempotent replay.
-- Preserve strict service idempotency semantics (no server behavior changes).
+This behavior is superseded. Task 368 moved retryable failed reattempts to
+Service API v2, and Task 369 removes the caller-side compatibility wrapper.
+This document is retained only as historical context and is no longer current
+CLI or client behavior authority.
+
+Current authority:
+
+- `docs/converters/multi_format_conversion_service_api_v2.md`
+- `docs/converters/downstream_integration_contract_v2.md`
+- `docs/converters/sir_convert_a_lot.md`
+- `docs/backlog/tasks/task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2.md`
+- `docs/backlog/tasks/task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts.md`
+
+Current policy:
+
+- Service API v2 owns retryable failed reattempts and exposes
+  `idempotency.state = "service_reattempt"` when it admits a fresh active
+  attempt for the same logical request.
+- CLI/client invocations submit one create-job request for a conversion and
+  record only the service-returned job in the manifest.
+- `--new-job` is explicit independent user intent to start a separate
+  conversion with a new `Idempotency-Key`; it is not failed-replay
+  remediation.
 
 ## PR Scope
 
-- Extend v2 client submit surface to expose `X-Idempotent-Replay` state.
-- Add a v2 client retry mode that:
-  - defaults to auto-rerun only when the server indicates an idempotent replay and the replayed job is
-    terminal `failed` or `canceled`,
-  - does not auto-rerun for non-replayed jobs that fail (real failures stay failures),
-  - is bounded (no unbounded retry loops).
-- Add CLI UX controls:
-  - `--replay-only`: never auto-rerun; strict replay behavior.
-  - `--new-job`: always submit with a new idempotency key.
-- Update CLI docs to describe retry modes and the reasons for them.
-- Add tests that lock the behavior to prevent regressions.
+Superseded historical scope:
+
+- The client exposed replay state before the service-owned JSON idempotency
+  contract existed.
+- The CLI provided temporary failed-replay UX around strict service
+  idempotency.
+- Task 369 removes that workaround from current runtime behavior.
 
 ## Deliverables
 
-- [x] `convert-a-lot convert` auto-reruns when it replays a terminal failed/canceled job.
-- [x] `--replay-only` and `--new-job` are available and mutually exclusive.
-- [x] Tests cover auto-rerun vs strict replay behavior.
+- [x] Historical workaround implemented in 2026-03-01 slice.
+- [x] Superseded by Task 368 service-owned reattempt policy.
+- [x] Runtime workaround removal governed by Task 369.
 
 ## Acceptance Criteria
 
-- [x] Default CLI behavior:
-  - running the same command twice after a previously failed replay results in a new job submission
-    (no filename hacks required).
-- [x] Flags:
-  - `--replay-only` preserves deterministic replay semantics.
-  - `--new-job` forces a new submission even when a prior job succeeded.
-- [x] Quality gates:
-  - `pdm run run-local-pdm typecheck-all` passes.
-  - `pdm run run-local-pdm coverage-gate` remains >=90%.
-  - `pdm run run-local-pdm validate-tasks` and `validate-docs` pass.
+Superseded historical acceptance is no longer current behavior authority. See
+Task 368 and Task 369 for the accepted service-owned replacement and removal
+evidence.
 
 ## Validation Commands
 

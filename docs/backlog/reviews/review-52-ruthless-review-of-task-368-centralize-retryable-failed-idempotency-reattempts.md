@@ -162,15 +162,15 @@ not classify them as Task 368 blockers.
 ## Follow-up Actions
 
 1. Task 369 remains required after Task 368 is deployed and live-proved: remove
-  the historical CLI/client failed-replay auto-rerun wrapper so retry policy is
-  not preserved outside the service boundary.
+   the historical CLI/client failed-replay auto-rerun wrapper so retry policy is
+   not preserved outside the service boundary.
 1. If the API deployment ever moves beyond the current single-process uvicorn
-  shape for create-job traffic, add a governed race-safety task for
-  inter-process idempotency locking before enabling that process model.
+   shape for create-job traffic, add a governed race-safety task for
+   inter-process idempotency locking before enabling that process model.
 1. Separately track the full-suite timing failure observed in
-  `tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py::test_parallel_resume_requires_valid_retained_checkpoint_and_returns_new_job_id`.
-  The node passed in isolation and is not attributed to Task 368, but
-  `coverage-gate` did not exit green in this review run.
+   `tests/sir_convert_a_lot/test_pdf_parallel_execution_contracts.py::test_parallel_resume_requires_valid_retained_checkpoint_and_returns_new_job_id`.
+   The node passed in isolation and is not attributed to Task 368, but
+   `coverage-gate` did not exit green in this review run.
 
 ## Decision
 

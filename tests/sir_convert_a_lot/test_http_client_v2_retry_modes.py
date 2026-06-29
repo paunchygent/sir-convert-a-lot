@@ -32,7 +32,117 @@ def _job_payload(*, job_id: str, status: JobStatus) -> dict[str, object]:
     }
 
 
-def test_convert_upload_to_artifact_auto_reruns_terminal_failed_idempotent_replay(
+def test_cli_does_not_client_side_rerun_retryable_failed_replay(tmp_path: Path) -> None:
+    source = tmp_path / "paper.pdf"
+    source.write_bytes(b"%PDF-1.4\n% stable\n%%EOF\n")
+    job_spec: dict[str, object] = {
+        "api_version": "v2",
+        "source": {"kind": "upload", "filename": "paper.pdf", "format": "pdf"},
+        "conversion": {"output_format": "docx"},
+        "pdf_options": {},
+        "execution": None,
+        "retention": {"pin": False},
+    }
+
+    post_count = 0
+    idempotency_keys: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal post_count
+        if request.method == "POST" and request.url.path == "/v2/convert/jobs":
+            post_count += 1
+            key = request.headers.get("Idempotency-Key")
+            if key is not None:
+                idempotency_keys.append(key)
+            if post_count == 1:
+                return httpx.Response(
+                    200,
+                    headers={"X-Idempotent-Replay": "true"},
+                    json={
+                        **_job_payload(job_id="job_old", status=JobStatus.FAILED),
+                        "idempotency": {
+                            "state": "strict_replay",
+                            "idempotent_replay": True,
+                            "active_job_id": "job_old",
+                            "attempt_count": 1,
+                            "current_attempt": {
+                                "job_id": "job_old",
+                                "status": "failed",
+                                "failure_retryable": True,
+                            },
+                            "previous_attempts": [],
+                            "replayed_job_id": "job_old",
+                            "reattempt_of_job_id": None,
+                        },
+                    },
+                )
+            return httpx.Response(
+                200,
+                json=_job_payload(job_id="job_unwanted_second_submit", status=JobStatus.SUCCEEDED),
+            )
+
+        if (
+            request.method == "GET"
+            and request.url.path == "/v2/convert/jobs/job_unwanted_second_submit/result"
+        ):
+            return httpx.Response(
+                200,
+                json={
+                    "api_version": "v2",
+                    "job_id": "job_unwanted_second_submit",
+                    "status": "succeeded",
+                    "result": {
+                        "artifact": {
+                            "filename": "output.docx",
+                            "format": "docx",
+                            "size_bytes": 10,
+                            "sha256": "abc",
+                            "content_type": (
+                                "application/vnd.openxmlformats-officedocument"
+                                ".wordprocessingml.document"
+                            ),
+                        },
+                        "conversion_metadata": {
+                            "pipeline_used": "pdf_to_docx_v2",
+                            "options_fingerprint": "sha256:test",
+                            "formula_authority": {},
+                        },
+                        "warnings": [],
+                    },
+                },
+            )
+
+        if (
+            request.method == "GET"
+            and request.url.path == "/v2/convert/jobs/job_unwanted_second_submit/artifact"
+        ):
+            return httpx.Response(200, content=b"docx-bytes")
+
+        return httpx.Response(404, json={"api_version": "v2", "error": {"code": "not_found"}})
+
+    transport = httpx.MockTransport(handler)
+    http_client = httpx.Client(base_url="http://test", transport=transport)
+
+    with SirConvertALotClientV2(
+        base_url="http://test", api_key="k", http_client=http_client
+    ) as client:
+        with pytest.raises(ClientErrorV2) as excinfo:
+            client.convert_upload_to_artifact(
+                source_path=source,
+                job_spec=job_spec,
+                idempotency_key="idemv2_base",
+                wait_seconds=0,
+                max_poll_seconds=1.0,
+                retry_mode="auto",
+            )
+
+    assert post_count == 1
+    assert idempotency_keys == ["idemv2_base"]
+    assert excinfo.value.code == "job_not_succeeded"
+    assert excinfo.value.job_id == "job_old"
+
+
+def test_convert_upload_to_artifact_accepts_service_reattempt_without_client_rerun(
     tmp_path: Path,
 ) -> None:
     source = tmp_path / "paper.pdf"
@@ -55,16 +165,32 @@ def test_convert_upload_to_artifact_auto_reruns_terminal_failed_idempotent_repla
 
         if request.method == "POST" and request.url.path == "/v2/convert/jobs":
             post_calls += 1
-            if post_calls == 2:
-                return httpx.Response(
-                    200,
-                    json=_job_payload(job_id="job_new", status=JobStatus.SUCCEEDED),
-                )
-            # First call: idempotent replay of a terminal failure.
             return httpx.Response(
                 200,
-                headers={"X-Idempotent-Replay": "true"},
-                json=_job_payload(job_id="job_old", status=JobStatus.FAILED),
+                headers={"X-Idempotent-Replay": "false"},
+                json={
+                    **_job_payload(job_id="job_new", status=JobStatus.SUCCEEDED),
+                    "idempotency": {
+                        "state": "service_reattempt",
+                        "idempotent_replay": False,
+                        "active_job_id": "job_new",
+                        "attempt_count": 2,
+                        "current_attempt": {
+                            "job_id": "job_new",
+                            "status": "succeeded",
+                            "failure_retryable": None,
+                        },
+                        "previous_attempts": [
+                            {
+                                "job_id": "job_old",
+                                "status": "failed",
+                                "failure_retryable": True,
+                            }
+                        ],
+                        "replayed_job_id": None,
+                        "reattempt_of_job_id": "job_old",
+                    },
+                },
             )
 
         if request.method == "GET" and request.url.path == "/v2/convert/jobs/job_new/artifact":
@@ -125,17 +251,18 @@ def test_convert_upload_to_artifact_auto_reruns_terminal_failed_idempotent_repla
         )
 
     assert outcome.job_id == "job_new"
-    assert outcome.rerun_of_job_id == "job_old"
     assert outcome.artifact_bytes == b"docx-bytes"
     assert outcome.formula_authority == {
         "action": "fallback",
         "source_evidence_state": "partial_or_unusable",
         "reason": "formula_vlm_runtime_unavailable",
     }
-    assert calls.count(("POST", "/v2/convert/jobs")) == 2
+    assert calls.count(("POST", "/v2/convert/jobs")) == 1
 
 
-def test_convert_upload_to_artifact_replay_only_does_not_rerun(tmp_path: Path) -> None:
+def test_convert_upload_to_artifact_strict_failed_replay_does_not_rerun(
+    tmp_path: Path,
+) -> None:
     source = tmp_path / "paper.pdf"
     source.write_bytes(b"%PDF-1.4\n% stable\n%%EOF\n")
     job_spec: dict[str, object] = json.loads(
@@ -176,7 +303,7 @@ def test_convert_upload_to_artifact_replay_only_does_not_rerun(tmp_path: Path) -
                 idempotency_key="idemv2_base",
                 wait_seconds=0,
                 max_poll_seconds=1.0,
-                retry_mode="replay_only",
+                retry_mode="auto",
             )
 
     assert post_count == 1

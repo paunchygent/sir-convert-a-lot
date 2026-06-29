@@ -220,8 +220,7 @@ Required evidence bundle:
   state. Failed attempt `jobv2_663656992a7442da9cb460aa2f` recorded
   `audio_sidecar_unavailable` with `retryable=true`; the identical
   payload/spec/key then returned service-owned reattempt
-  `jobv2_7300eae55fa84efb8bf15165df` with `idempotency.state =
-  service_reattempt`, `attempt_count = 2`, and retryable failed lineage. The
+  `jobv2_7300eae55fa84efb8bf15165df` with `idempotency.state = service_reattempt`, `attempt_count = 2`, and retryable failed lineage. The
   reattempt reached `succeeded`; `/result` and
   `/artifacts/transcript_json` returned `200`; the named artifact had 27
   segments; bounded service, gpu_worker, and stt_sidecar logs showed no poisoned
