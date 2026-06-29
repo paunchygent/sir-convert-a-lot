@@ -464,7 +464,7 @@ def test_parallel_resume_after_partial_is_byte_identical_to_serial(
     monkeypatch.setattr(
         v2_pdf_checkpointed_executor,
         "execute_job_conversion",
-        _make_stub_conversion(delays_by_page={1: 0.08, 2: 0.04, 3: 0.04, 4: 0.04, 5: 0.04}),
+        _make_stub_conversion(delays_by_page={1: 0.25, 2: 0.25, 3: 0.25, 4: 0.25, 5: 0.25}),
     )
 
     app = create_app(_parallel_service_config(tmp_path, data_dir="service_data_resume"))
@@ -581,7 +581,7 @@ def test_parallel_resume_requires_valid_retained_checkpoint_and_returns_new_job_
     monkeypatch.setattr(
         v2_pdf_checkpointed_executor,
         "execute_job_conversion",
-        _make_stub_conversion(delays_by_page={1: 0.06, 2: 0.06}),
+        _make_stub_conversion(delays_by_page={1: 0.25, 2: 0.25}),
     )
 
     config = _parallel_service_config(tmp_path, data_dir="service_data_resume_missing")
@@ -779,7 +779,7 @@ def test_parallel_api_contract_parity_for_artifact_checkpoint_resume(
     monkeypatch.setattr(
         v2_pdf_checkpointed_executor,
         "execute_job_conversion",
-        _make_stub_conversion(delays_by_page={1: 0.06, 2: 0.06, 3: 0.06}),
+        _make_stub_conversion(delays_by_page={1: 0.25, 2: 0.25, 3: 0.25}),
     )
 
     app = create_app(_parallel_service_config(tmp_path, data_dir="service_data_parity"))

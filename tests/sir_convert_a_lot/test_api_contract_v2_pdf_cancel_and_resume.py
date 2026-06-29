@@ -118,6 +118,7 @@ def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_fina
     monkeypatch,
 ) -> None:
     from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
+    from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import PdfCheckpointV2
 
     execute_calls: list[str] = []
 
@@ -224,6 +225,41 @@ def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_fina
     assert baseline_artifact.status_code == 200
     baseline_bytes = baseline_artifact.content
 
+    checkpoint_ready = threading.Event()
+    source_worker_can_continue = threading.Event()
+    checkpoint_gate_lock = threading.Lock()
+    checkpoint_gate_used = False
+    original_persist_pdf_checkpoint = v2_pdf_checkpointed_executor.persist_pdf_checkpoint
+
+    def _persist_pdf_checkpoint_with_cancel_gate(
+        *,
+        upload_path: Path,
+        checkpoint: PdfCheckpointV2,
+    ) -> None:
+        nonlocal checkpoint_gate_used
+        original_persist_pdf_checkpoint(upload_path=upload_path, checkpoint=checkpoint)
+
+        should_hold_source_worker = False
+        with checkpoint_gate_lock:
+            if not checkpoint_gate_used and checkpoint.processed_pages > 0:
+                checkpoint_gate_used = True
+                should_hold_source_worker = True
+
+        if not should_hold_source_worker:
+            return
+        checkpoint_ready.set()
+        _wait_for_signal(
+            source_worker_can_continue,
+            timeout_seconds=10.0,
+            failure_message="Source worker was not released after checkpoint gate.",
+        )
+
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor,
+        "persist_pdf_checkpoint",
+        _persist_pdf_checkpoint_with_cancel_gate,
+    )
+
     create = _post_create(
         client,
         api_key="secret-key",
@@ -234,33 +270,27 @@ def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_fina
     )
     job_id = create.json()["job"]["job_id"]
 
-    for _ in range(100):
-        status = client.get(
-            f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"}
-        ).json()["job"]["status"]
-        if status == JobStatus.RUNNING.value:
-            break
-    else:
-        raise AssertionError("Job never reached running status.")
-
-    checkpoint = None
-    for _ in range(200):
-        response = client.get(
-            f"/v2/convert/jobs/{job_id}/checkpoint", headers={"X-API-Key": "secret-key"}
-        )
-        if response.status_code == 200:
-            candidate = response.json()
-            if isinstance(candidate, dict) and int(candidate.get("processed_pages", 0)) > 0:
-                checkpoint = candidate
-                break
+    _wait_for_signal(
+        checkpoint_ready,
+        timeout_seconds=10.0,
+        failure_message="Checkpoint was not persisted before cancellation.",
+    )
+    checkpoint_response = client.get(
+        f"/v2/convert/jobs/{job_id}/checkpoint", headers={"X-API-Key": "secret-key"}
+    )
+    assert checkpoint_response.status_code == 200
+    checkpoint = checkpoint_response.json()
     assert checkpoint is not None
     assert checkpoint["processed_pages"] > 0
 
-    cancel = client.post(
-        f"/v2/convert/jobs/{job_id}/cancel",
-        headers={"X-API-Key": "secret-key"},
-    )
-    assert cancel.status_code in {200, 202}
+    try:
+        cancel = client.post(
+            f"/v2/convert/jobs/{job_id}/cancel",
+            headers={"X-API-Key": "secret-key"},
+        )
+        assert cancel.status_code in {200, 202}
+    finally:
+        source_worker_can_continue.set()
 
     partial = None
     for _ in range(200):

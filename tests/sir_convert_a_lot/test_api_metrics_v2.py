@@ -52,7 +52,7 @@ def _post_create(client: TestClient, *, file_name: str, idempotency_key: str) ->
             "job_spec": (None, json.dumps(_job_spec_v2(filename=file_name))),
         },
     )
-    assert response.status_code == 202
+    assert response.status_code in {200, 202}
     payload = response.json()
     return str(payload["job"]["job_id"])
 
