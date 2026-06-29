@@ -2,7 +2,7 @@
 id: task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2
 title: Centralize retryable-failed idempotency reattempts in Service API v2
 type: task
-status: proposed
+status: completed
 priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -87,53 +87,53 @@ Design intent:
 
 ## Deliverables
 
-- [ ] Red-first create-job contract test proving the current bug: a matching
+- [x] Red-first create-job contract test proving the current bug: a matching
   idempotency replay of a terminal `failed` job with `retryable=true`
   returns the old failed `job_id` instead of admitting a new attempt.
-- [ ] Service-owned idempotency attempt state with race-safe reattempt
+- [x] Service-owned idempotency attempt state with race-safe reattempt
   admission for terminal retryable failures.
-- [ ] Public JSON response contract for idempotency replay/reattempt metadata,
+- [x] Public JSON response contract for idempotency replay/reattempt metadata,
   with headers kept accurate but non-authoritative.
-- [ ] Focused tests for succeeded, active, non-retryable failed, retryable
+- [x] Focused tests for succeeded, active, non-retryable failed, retryable
   failed, canceled, fingerprint mismatch, missing old job, and concurrent
   replay behavior.
-- [ ] Contract docs synchronized:
+- [x] Contract docs synchronized:
   `multi_format_conversion_service_api_v2.md`,
   `audio-transcription-service-api-artifact-contract.md`,
   `downstream_integration_contract_v2.md`, and CLI docs only insofar as
   they point to the service-owned policy before Task 369 removes the old
   CLI workaround.
-- [ ] Independent retained review before completion.
-- [ ] Hemma live proof after deploy showing retryable-failed replay admits a
+- [x] Independent retained review before completion.
+- [x] Hemma live proof after deploy showing retryable-failed replay admits a
   new attempt and succeeds without manual idempotency deletion,
   quarantine, filename changes, or caller-side idempotency-key salting.
 
 ## Acceptance Criteria
 
-- [ ] Existing strict idempotency behavior remains unchanged for active jobs,
+- [x] Existing strict idempotency behavior remains unchanged for active jobs,
   successful jobs, non-retryable failed jobs, canceled jobs, and
   same-key/different-fingerprint conflicts.
-- [ ] A terminal `failed` job whose manifest records `failure_retryable=true`
+- [x] A terminal `failed` job whose manifest records `failure_retryable=true`
   is not replayed forever. The next identical create-job call admits a
   fresh attempt, records lineage to the failed attempt, and returns the new
   active `job_id`.
-- [ ] The idempotency store records enough state to audit which job is active
+- [x] The idempotency store records enough state to audit which job is active
   for the logical request and which retryable failed jobs were superseded.
-- [ ] Reattempt admission is atomic under the idempotency scope: concurrent
+- [x] Reattempt admission is atomic under the idempotency scope: concurrent
   identical replay requests after a retryable failure create at most one
   fresh job.
-- [ ] Callers can determine from the JSON body whether a response is a strict
+- [x] Callers can determine from the JSON body whether a response is a strict
   replay, a fresh first admission, or a service-owned reattempt after a
   retryable terminal failure.
-- [ ] Result and artifact endpoints preserve original failure retryability in
+- [x] Result and artifact endpoints preserve original failure retryability in
   their error details where that information is service-owned and safe to
   expose.
-- [ ] No caller compatibility wrapper is added. If a downstream gap appears,
+- [x] No caller compatibility wrapper is added. If a downstream gap appears,
   stop and record it as a consumer contract alignment task rather than
   moving retry policy out of Sir Convert.
-- [ ] Red/green evidence includes the same focused command failing before the
+- [x] Red/green evidence includes the same focused command failing before the
   implementation and passing after it.
-- [ ] Close-out includes live Hemma evidence:
+- [x] Close-out includes live Hemma evidence:
   - deployed service revision matches the implementing commit;
   - a retained retryable failed idempotency record exists before the proof;
   - re-submitting the same payload/spec/key through the production Service API
@@ -190,6 +190,43 @@ Required evidence bundle:
 - result and named `transcript_json` artifact fetch proof;
 - bounded service/gpu_worker/stt_sidecar log scan for the proof interval.
 
+## Close-Out Evidence
+
+- Implementation commit: `0c2184e0402660753f637a8045e5f9cdbd02eb70`.
+- Retained review:
+  `docs/backlog/reviews/review-52-ruthless-review-of-task-368-centralize-retryable-failed-idempotency-reattempts.md`;
+  decision `approved`.
+- Red-first evidence: the focused test
+  `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py::test_retryable_failed_idempotency_replay_admits_new_attempt`
+  failed before implementation because the old terminal retryable failed job was
+  replayed instead of admitting a new attempt.
+- Green focused evidence:
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py::test_retryable_failed_idempotency_replay_admits_new_attempt -q`
+    passed.
+  - `pdm run pytest-root tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py tests/sir_convert_a_lot/test_api_contract_v2.py tests/sir_convert_a_lot/test_audio_transcription_route_admission_v2.py tests/sir_convert_a_lot/test_http_client_v2_retry_modes.py -q`
+    passed with `90 passed`.
+  - `pdm run format-all`, `pdm run lint-fix`, and `pdm run typecheck-all`
+    passed; `coverage-gate` coverage exceeded the threshold but the full suite
+    hit one unrelated timing-sensitive PDF resume failure that passed in
+    isolation, as recorded in Review 52.
+- Deploy evidence:
+  `build/verification/hemma-deploy-verify/report.json`; expected, remote, and
+  `/readyz` revisions all matched
+  `0c2184e0402660753f637a8045e5f9cdbd02eb70`.
+- Live proof evidence:
+  `build/verification/task-368-idempotency-live-proof/20260629T003205Z/summary.json`.
+  The proof created the precondition through the real Service API path by
+  briefly making only the STT sidecar unavailable, not by editing idempotency
+  state. Failed attempt `jobv2_663656992a7442da9cb460aa2f` recorded
+  `audio_sidecar_unavailable` with `retryable=true`; the identical
+  payload/spec/key then returned service-owned reattempt
+  `jobv2_7300eae55fa84efb8bf15165df` with `idempotency.state =
+  service_reattempt`, `attempt_count = 2`, and retryable failed lineage. The
+  reattempt reached `succeeded`; `/result` and
+  `/artifacts/transcript_json` returned `200`; the named artifact had 27
+  segments; bounded service, gpu_worker, and stt_sidecar logs showed no poisoned
+  replay loop for `2026-06-29T00:32:05Z` to `2026-06-29T00:34:46Z`.
+
 ## Stop Conditions
 
 - Stop before changing `canceled` replay semantics without an accepted
@@ -201,6 +238,6 @@ Required evidence bundle:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

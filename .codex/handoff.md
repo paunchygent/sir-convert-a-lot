@@ -33,9 +33,13 @@ durable implementation authority lives in governed docs.
   runtime is live after accepted Tasks 355, 356, and 357 plus Reviews 41-43.
 - Task 366 is completed for STT lazy-load/idle-unload: `docs/backlog/tasks/task-366-implement-stt-sidecar-lazy-model-load-and-idle-unload.md`.
 - Task 367 is completed, reviewed, deployed, and live-proved at `873c5ae1`; proof summary is `build/verification/task-367-stt-sidecar-idle-unload-live-proof/20260628T203221Z/summary.json`, with post-idle `/health` returning `models_resident=false` at `2026-06-28T20:50:02Z` and no strict `audio_sidecar_unavailable`/`unload_model` log matches.
-- Proposed Task 368 centralizes retryable-failed idempotency reattempts in
-  Service API v2; linked Task 369 must then remove the Task 63 CLI-side
-  failed-replay auto-rerun wrapper. See the task docs for live proof gates.
+- Task 368 is completed, reviewed, deployed, and live-proved at
+  `0c2184e0`; proof summary is
+  `build/verification/task-368-idempotency-live-proof/20260629T003205Z/summary.json`.
+  The live proof created a real retryable failed job through the Service API,
+  then proved service-owned `service_reattempt` admission and successful
+  `transcript_json` fetch without idempotency pointer edits. Task 369 may now
+  remove the Task 63 CLI-side failed-replay auto-rerun wrapper.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper
@@ -171,6 +175,9 @@ decision/performance work.
 - Task 365 detailed validation and native/local proof evidence is retained in
   its task doc and linked long-term entry; active warning: do not revive the
   rejected dedicated remote-proof STT sidecar.
+- Task 368 validation and live-proof evidence is retained in its task doc and
+  Review 52; do not reintroduce caller-side idempotency salting or auto-rerun
+  remediation.
 
 ## Stop Conditions
 
