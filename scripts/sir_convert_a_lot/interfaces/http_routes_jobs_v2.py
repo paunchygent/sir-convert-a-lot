@@ -36,15 +36,9 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     JobSpecV2,
     normalized_exam_migration_targets_v2,
 )
-from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
-    StructuredLLMAdmittedRouteSnapshot,
-)
 from scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 import fingerprint_for_request_v2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
-from scripts.sir_convert_a_lot.infrastructure.structured_llm_admission import (
-    StructuredLLMAdmissionError,
-    resolve_structured_llm_admission_snapshot,
-)
+from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.infrastructure.transcript_formatter_replay_fast_lane_v2 import (
     run_transcript_formatter_replay_fast_lane_v2,
 )
@@ -59,11 +53,18 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_create_job_form_parts_v2 import (
     bound_create_job_form_part_names_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_create_job_idempotency_v2 import (
+    admit_create_job_with_idempotency_v2,
+    idempotency_metadata_with_current_job_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     CreateJobCompanionPartsV2,
     build_create_job_route_registry_v2,
     enforce_audio_transcription_route_capacity_v2,
     infer_source_format_from_filename_v2,
+)
+from scripts.sir_convert_a_lot.interfaces.http_create_job_structured_llm_v2 import (
+    structured_llm_admission_for_create_request_v2,
 )
 from scripts.sir_convert_a_lot.interfaces.http_job_record_response_v2 import (
     job_record_response_v2,
@@ -81,9 +82,6 @@ from scripts.sir_convert_a_lot.interfaces.http_routes_job_artifacts_v2 import (
 )
 from scripts.sir_convert_a_lot.interfaces.http_routes_job_resume_v2 import (
     register_job_resume_routes_v2,
-)
-from scripts.sir_convert_a_lot.interfaces.http_structured_llm_settings_state_v2 import (
-    structured_llm_hot_settings_store_for_request,
 )
 
 
@@ -290,59 +288,53 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
             digiexam_ingestion_overlay_sha256=(prepared_route.digiexam_ingestion_overlay_sha256),
         )
 
-        existing_record = runtime.get_idempotency(scope_key)
-        if existing_record is not None:
-            if existing_record.fingerprint != request_fingerprint:
-                raise ServiceError(
-                    status_code=409,
-                    code="idempotency_key_reused_with_different_payload",
-                    message=(
-                        "Idempotency-Key was already used with a different request payload "
-                        "within the idempotency window."
-                    ),
-                    retryable=False,
-                )
-            existing_job = runtime.get_job(existing_record.job_id)
-            if existing_job is None:
-                raise ServiceError(
-                    status_code=404,
-                    code="job_not_found",
-                    message="Idempotent job no longer exists.",
-                    retryable=False,
-                )
-            body = job_record_response_v2(existing_job).model_dump(mode="json")
+        def _create_fresh_attempt() -> StoredJobV2:
+            enforce_audio_transcription_route_capacity_v2(spec=spec, runtime=runtime)
+            structured_llm_admission = structured_llm_admission_for_create_request_v2(
+                spec=spec,
+                request=request,
+                service_started_at=service_started_at,
+                public_grant_request=public_grant_access is not None,
+            )
+            return runtime.create_job(
+                spec=spec,
+                owner_api_key_scope=owner_scope,
+                upload_bytes=payload_bytes,
+                resources_zip_bytes=prepared_route.resources_zip_bytes,
+                reference_docx_bytes=prepared_route.reference_docx_bytes,
+                graded_result_pdf_bytes=prepared_route.graded_result_pdf_bytes,
+                parity_pdf_bytes=prepared_route.parity_pdf_bytes,
+                digiexam_ingestion_overlay_bytes=(prepared_route.digiexam_ingestion_overlay_bytes),
+                structured_llm_admission=structured_llm_admission,
+            )
+
+        idempotency_decision = admit_create_job_with_idempotency_v2(
+            store=runtime.idempotency_store,
+            scope_key=scope_key,
+            request_fingerprint=request_fingerprint,
+            get_job=runtime.get_job,
+            create_job=_create_fresh_attempt,
+        )
+        job = idempotency_decision.job
+
+        if idempotency_decision.metadata.state == "strict_replay":
+            body = job_record_response_v2(job).model_dump(mode="json")
+            body["idempotency"] = idempotency_decision.metadata.model_dump(mode="json")
             if public_grant_access is not None:
                 body["public_artifact_read_lease"] = issue_public_artifact_read_lease_fragment_v2(
                     request=request,
                     service_started_at=service_started_at,
                     verified_grant=public_grant_access,
-                    job=existing_job,
+                    job=job,
                     artifact_key=public_bundle_manifest_artifact_key_v2(),
                 )
-            replay_status_code = 200 if existing_job.status in TERMINAL_JOB_STATUSES else 202
+            replay_status_code = 200 if job.status in TERMINAL_JOB_STATUSES else 202
             response = JSONResponse(status_code=replay_status_code, content=body)
-            response.headers["X-Idempotent-Replay"] = "true"
+            response.headers["X-Idempotent-Replay"] = (
+                "true" if idempotency_decision.idempotent_replay_header else "false"
+            )
             return response
 
-        enforce_audio_transcription_route_capacity_v2(spec=spec, runtime=runtime)
-        structured_llm_admission = _structured_llm_admission_for_create_request(
-            spec=spec,
-            request=request,
-            service_started_at=service_started_at,
-            public_grant_request=public_grant_access is not None,
-        )
-        job = runtime.create_job(
-            spec=spec,
-            owner_api_key_scope=owner_scope,
-            upload_bytes=payload_bytes,
-            resources_zip_bytes=prepared_route.resources_zip_bytes,
-            reference_docx_bytes=prepared_route.reference_docx_bytes,
-            graded_result_pdf_bytes=prepared_route.graded_result_pdf_bytes,
-            parity_pdf_bytes=prepared_route.parity_pdf_bytes,
-            digiexam_ingestion_overlay_bytes=(prepared_route.digiexam_ingestion_overlay_bytes),
-            structured_llm_admission=structured_llm_admission,
-        )
-        runtime.put_idempotency(scope_key, request_fingerprint, job.job_id)
         if replay_fast_lane:
             run_transcript_formatter_replay_fast_lane_v2(
                 runtime=runtime,
@@ -373,6 +365,10 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
 
         response_status = 200 if current.status in TERMINAL_JOB_STATUSES else 202
         payload = job_record_response_v2(current).model_dump(mode="json")
+        payload["idempotency"] = idempotency_metadata_with_current_job_v2(
+            metadata=idempotency_decision.metadata,
+            current_job=current,
+        ).model_dump(mode="json")
         if public_grant_access is not None:
             payload["public_artifact_read_lease"] = issue_public_artifact_read_lease_fragment_v2(
                 request=request,
@@ -381,7 +377,11 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
                 job=current,
                 artifact_key=public_bundle_manifest_artifact_key_v2(),
             )
-        return JSONResponse(status_code=response_status, content=payload)
+        response = JSONResponse(status_code=response_status, content=payload)
+        response.headers["X-Idempotent-Replay"] = (
+            "true" if idempotency_decision.idempotent_replay_header else "false"
+        )
+        return response
 
     @router.get("/v2/convert/jobs/{job_id}", response_model=JobRecordResponseV2)
     async def get_job(job_id: str, request: Request) -> JSONResponse:
@@ -465,37 +465,3 @@ def build_job_router_v2(*, service_started_at: str) -> APIRouter:
         return JSONResponse(status_code=status_code, content=payload)
 
     return router
-
-
-def _structured_llm_admission_for_create_request(
-    *,
-    spec: JobSpecV2,
-    request: Request,
-    service_started_at: str,
-    public_grant_request: bool,
-) -> StructuredLLMAdmittedRouteSnapshot | None:
-    runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-    hot_settings_store = None
-    if (
-        runtime.config.structured_llm.enabled
-        and runtime.config.structured_llm.provider_set is not None
-    ):
-        hot_settings_store = structured_llm_hot_settings_store_for_request(
-            request,
-            service_started_at=service_started_at,
-        )
-    try:
-        return resolve_structured_llm_admission_snapshot(
-            spec=spec,
-            structured_config=runtime.config.structured_llm,
-            hot_settings_store=hot_settings_store,
-            public_grant_request=public_grant_request,
-        )
-    except StructuredLLMAdmissionError as exc:
-        raise ServiceError(
-            status_code=403,
-            code="structured_llm_route_admission_rejected",
-            message="Structured LLM provider routing is not allowed for this job.",
-            retryable=False,
-            details={"failure_code": exc.failure_code.value},
-        ) from exc

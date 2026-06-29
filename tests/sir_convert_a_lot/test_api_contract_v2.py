@@ -432,7 +432,10 @@ def test_result_and_artifact_return_conflict_when_job_failed(tmp_path: Path, mon
     result_payload = result_response.json()
     assert result_payload["api_version"] == "v2"
     assert result_payload["error"]["code"] == "job_not_succeeded"
-    assert result_payload["error"]["details"] == {"status": "failed"}
+    assert result_payload["error"]["details"] == {
+        "status": "failed",
+        "failure_retryable": False,
+    }
 
     artifact_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifact",
@@ -442,7 +445,10 @@ def test_result_and_artifact_return_conflict_when_job_failed(tmp_path: Path, mon
     artifact_payload = artifact_response.json()
     assert artifact_payload["api_version"] == "v2"
     assert artifact_payload["error"]["code"] == "job_not_succeeded"
-    assert artifact_payload["error"]["details"] == {"status": "failed"}
+    assert artifact_payload["error"]["details"] == {
+        "status": "failed",
+        "failure_retryable": False,
+    }
 
 
 def test_cancel_returns_202_then_200_for_already_canceled(tmp_path: Path, monkeypatch) -> None:

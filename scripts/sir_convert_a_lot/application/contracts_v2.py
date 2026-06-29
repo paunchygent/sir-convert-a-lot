@@ -96,10 +96,36 @@ class JobRecordResponseV2(BaseModel):
     job: JobRecordDataV2
 
 
+class IdempotencyAttemptMetadataV2(BaseModel):
+    """Sanitized create-job idempotency attempt metadata."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str
+    status: JobStatus
+    failure_retryable: bool | None = None
+
+
+class IdempotencyMetadataV2(BaseModel):
+    """Create-job idempotency decision metadata for callers and operators."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    state: Literal["fresh_admission", "strict_replay", "service_reattempt"]
+    idempotent_replay: bool
+    active_job_id: str
+    attempt_count: int = Field(ge=1)
+    current_attempt: IdempotencyAttemptMetadataV2
+    previous_attempts: list[IdempotencyAttemptMetadataV2] = Field(default_factory=list)
+    replayed_job_id: str | None = None
+    reattempt_of_job_id: str | None = None
+
+
 class JobCreateResponseV2(JobRecordResponseV2):
     """Response payload for v2 job creation endpoints."""
 
     public_artifact_read_lease: PublicArtifactReadLeaseResponseV2 | None = None
+    idempotency: IdempotencyMetadataV2 | None = None
 
 
 class ArtifactMetadataV2(BaseModel):

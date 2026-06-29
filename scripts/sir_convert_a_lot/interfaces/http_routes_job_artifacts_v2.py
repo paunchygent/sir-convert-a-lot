@@ -90,6 +90,13 @@ def _primary_artifact_filename(job: StoredJobV2) -> str:
     return job.artifact_path.name
 
 
+def _terminal_without_result_details(job: StoredJobV2) -> dict[str, object]:
+    details: dict[str, object] = {"status": job.status.value}
+    if job.status == JobStatus.FAILED:
+        details["failure_retryable"] = job.failure_retryable
+    return details
+
+
 def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
     @router.get(
         "/v2/convert/jobs/{job_id}/result",
@@ -135,7 +142,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 code="job_not_succeeded",
                 message="Job is terminal but has no successful conversion result.",
                 retryable=False,
-                details={"status": job.status.value},
+                details=_terminal_without_result_details(job),
             )
 
         if job.artifact_sha256 is None or job.artifact_size_bytes is None:
@@ -200,7 +207,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 code="job_not_succeeded",
                 message="Job is terminal but has no successful conversion result.",
                 retryable=False,
-                details={"status": job.status.value},
+                details=_terminal_without_result_details(job),
             )
 
         content_type = _content_type_for_output(job.output_format)
@@ -388,7 +395,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 code="partial_artifact_not_available",
                 message="Job is terminal and no partial artifact is available.",
                 retryable=False,
-                details={"status": job.status.value},
+                details=_terminal_without_result_details(job),
             )
 
         return FileResponse(
@@ -445,7 +452,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 code="checkpoint_not_available",
                 message="Job is terminal and no checkpoint is available.",
                 retryable=False,
-                details={"status": job.status.value},
+                details=_terminal_without_result_details(job),
             )
 
         return JSONResponse(status_code=200, content=checkpoint.model_dump(mode="json"))
@@ -476,6 +483,6 @@ def _pending_or_unsuccessful_response(job: StoredJobV2) -> Response | None:
             code="job_not_succeeded",
             message="Job is terminal but has no successful conversion result.",
             retryable=False,
-            details={"status": job.status.value},
+            details=_terminal_without_result_details(job),
         )
     return None

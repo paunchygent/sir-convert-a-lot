@@ -4590,6 +4590,105 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "IdempotencyAttemptMetadataV2": {
+        "additionalProperties": false,
+        "description": "Sanitized create-job idempotency attempt metadata.",
+        "properties": {
+          "failure_retryable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Retryable"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        },
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "IdempotencyAttemptMetadataV2",
+        "type": "object"
+      },
+      "IdempotencyMetadataV2": {
+        "additionalProperties": false,
+        "description": "Create-job idempotency decision metadata for callers and operators.",
+        "properties": {
+          "active_job_id": {
+            "title": "Active Job Id",
+            "type": "string"
+          },
+          "attempt_count": {
+            "minimum": 1.0,
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "current_attempt": {
+            "$ref": "#/components/schemas/IdempotencyAttemptMetadataV2"
+          },
+          "idempotent_replay": {
+            "title": "Idempotent Replay",
+            "type": "boolean"
+          },
+          "previous_attempts": {
+            "items": {
+              "$ref": "#/components/schemas/IdempotencyAttemptMetadataV2"
+            },
+            "title": "Previous Attempts",
+            "type": "array"
+          },
+          "reattempt_of_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reattempt Of Job Id"
+          },
+          "replayed_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replayed Job Id"
+          },
+          "state": {
+            "enum": [
+              "fresh_admission",
+              "strict_replay",
+              "service_reattempt"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "idempotent_replay",
+          "active_job_id",
+          "attempt_count",
+          "current_attempt"
+        ],
+        "title": "IdempotencyMetadataV2",
+        "type": "object"
+      },
       "JobCreateResponseV2": {
         "additionalProperties": false,
         "description": "Response payload for v2 job creation endpoints.",
@@ -4599,6 +4698,16 @@
             "default": "v2",
             "title": "Api Version",
             "type": "string"
+          },
+          "idempotency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdempotencyMetadataV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "job": {
             "$ref": "#/components/schemas/JobRecordDataV2"

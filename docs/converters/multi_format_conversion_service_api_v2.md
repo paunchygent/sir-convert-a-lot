@@ -4,7 +4,7 @@ id: CONV-multi-format-conversion-service-api-v2
 title: Multi-format Conversion Service API v2
 status: active
 created: 2026-02-18
-updated: 2026-06-14
+updated: 2026-06-29
 owners:
   - platform
 tags:
@@ -121,13 +121,60 @@ Semantics:
 - Request fingerprint: normalized request JSON + uploaded file SHA256 (+ optional resources SHA256
   and reference-docx SHA256 when present)
 - TTL: 24h
-- Same key + same fingerprint:
-  - Return same `job_id`
-  - Return current state for that job
-  - Response header: `X-Idempotent-Replay: true`
+- Same key + same fingerprint, active job (`queued|running`):
+  - strict replay; return the same `job_id` and current state for that job
+  - response header: `X-Idempotent-Replay: true`
+- Same key + same fingerprint, successful job:
+  - strict replay; return the same successful `job_id`
+  - response header: `X-Idempotent-Replay: true`
+- Same key + same fingerprint, failed job with `failure_retryable=false`:
+  - strict replay; return the same failed `job_id`
+  - expose `idempotency.current_attempt.failure_retryable=false`
+  - response header: `X-Idempotent-Replay: true`
+- Same key + same fingerprint, failed job with `failure_retryable=true`:
+  - service-owned reattempt; atomically admit one fresh active attempt for the
+    same logical request
+  - update the idempotency pointer to the new active `job_id`
+  - retain previous failed attempts in `idempotency.previous_attempts`
+  - response header: `X-Idempotent-Replay: false`
+- Same key + same fingerprint, canceled job:
+  - strict replay; return the same canceled `job_id`
+  - response header: `X-Idempotent-Replay: true`
 - Same key + different fingerprint:
   - `409 Conflict`
   - `error.code = "idempotency_key_reused_with_different_payload"`
+
+Create-job responses include `idempotency` JSON metadata. Clients must prefer
+this body field over the header when deciding whether the response is a fresh
+admission, strict replay, or service-owned reattempt:
+
+```json
+{
+  "state": "fresh_admission | strict_replay | service_reattempt",
+  "idempotent_replay": false,
+  "active_job_id": "jobv2_...",
+  "attempt_count": 2,
+  "current_attempt": {
+    "job_id": "jobv2_new",
+    "status": "queued",
+    "failure_retryable": null
+  },
+  "previous_attempts": [
+    {
+      "job_id": "jobv2_failed",
+      "status": "failed",
+      "failure_retryable": true
+    }
+  ],
+  "replayed_job_id": null,
+  "reattempt_of_job_id": "jobv2_failed"
+}
+```
+
+`fresh_admission` has `attempt_count=1` and no previous attempts.
+`strict_replay` sets `idempotent_replay=true` and `replayed_job_id` to the
+returned job. `service_reattempt` sets `reattempt_of_job_id` to the retryable
+failed attempt that was superseded.
 
 ## Supported Routes (Active Runtime)
 
@@ -688,7 +735,9 @@ Response matrix:
 - `202 Accepted`: job is `queued|running`; returns `JobPendingResultResponseV2`.
 - `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
 - `409 Conflict`: job is terminal but not successful (`failed|canceled`);
-  `error.code = "job_not_succeeded"` with `error.details = {"status":"failed|canceled"}`.
+  `error.code = "job_not_succeeded"` with
+  `error.details.status = "failed|canceled"`. Failed jobs also include
+  `error.details.failure_retryable`.
 
 ### `GET /v2/convert/jobs/{job_id}/artifact`
 
@@ -711,7 +760,9 @@ Response matrix:
 - `202 Accepted`: job is `queued|running`; returns `JobPendingResultResponseV2`.
 - `404 Not Found`: job missing/expired; `error.code = "job_not_found"`.
 - `409 Conflict`: job is terminal but not successful (`failed|canceled`);
-  `error.code = "job_not_succeeded"` with `error.details = {"status":"failed|canceled"}`.
+  `error.code = "job_not_succeeded"` with
+  `error.details.status = "failed|canceled"`. Failed jobs also include
+  `error.details.failure_retryable`.
 
 ### `GET /v2/convert/jobs/{job_id}/artifact/partial`
 

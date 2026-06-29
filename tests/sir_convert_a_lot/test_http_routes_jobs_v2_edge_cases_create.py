@@ -13,6 +13,7 @@ Relationships:
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -458,6 +459,8 @@ def test_create_job_returns_404_when_job_missing_after_wait_loop(
     class _CreatedJob:
         def __init__(self, job_id: str) -> None:
             self.job_id = job_id
+            self.status = JobStatus.QUEUED
+            self.failure_retryable = False
 
     class _QueuedJob:
         status = JobStatus.QUEUED
@@ -571,6 +574,197 @@ def test_create_job_idempotency_same_key_different_fingerprint_returns_409(
     assert payload["error"]["code"] == "idempotency_key_reused_with_different_payload"
 
 
+def test_retryable_failed_idempotency_replay_admits_new_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    disable_run_job_async(monkeypatch)
+    client, app = build_client(tmp_path)
+
+    first = post_create(
+        client,
+        idempotency_key="idem-edge-retryable-failed",
+        file_bytes=b"stable-retryable-failed-body",
+    )
+    assert first.status_code == 202
+    failed_job_id = first.json()["job"]["job_id"]
+    _mark_job_failed(app.state.runtime_v2, failed_job_id, retryable=True)
+
+    replay = post_create(
+        client,
+        idempotency_key="idem-edge-retryable-failed",
+        file_bytes=b"stable-retryable-failed-body",
+    )
+
+    assert replay.status_code == 202
+    assert replay.headers["X-Idempotent-Replay"] == "false"
+    payload = replay.json()
+    new_job_id = payload["job"]["job_id"]
+    assert new_job_id != failed_job_id
+    assert payload["job"]["status"] == JobStatus.QUEUED.value
+    assert payload["idempotency"] == {
+        "state": "service_reattempt",
+        "idempotent_replay": False,
+        "active_job_id": new_job_id,
+        "attempt_count": 2,
+        "current_attempt": {
+            "job_id": new_job_id,
+            "status": JobStatus.QUEUED.value,
+            "failure_retryable": None,
+        },
+        "previous_attempts": [
+            {
+                "job_id": failed_job_id,
+                "status": JobStatus.FAILED.value,
+                "failure_retryable": True,
+            }
+        ],
+        "replayed_job_id": None,
+        "reattempt_of_job_id": failed_job_id,
+    }
+
+
+def test_non_retryable_failed_idempotency_replay_remains_strict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    disable_run_job_async(monkeypatch)
+    client, app = build_client(tmp_path)
+
+    first = post_create(
+        client,
+        idempotency_key="idem-edge-nonretryable-failed",
+        file_bytes=b"stable-nonretryable-failed-body",
+    )
+    assert first.status_code == 202
+    failed_job_id = first.json()["job"]["job_id"]
+    _mark_job_failed(app.state.runtime_v2, failed_job_id, retryable=False)
+
+    replay = post_create(
+        client,
+        idempotency_key="idem-edge-nonretryable-failed",
+        file_bytes=b"stable-nonretryable-failed-body",
+    )
+
+    assert replay.status_code == 200
+    assert replay.headers["X-Idempotent-Replay"] == "true"
+    payload = replay.json()
+    assert payload["job"]["job_id"] == failed_job_id
+    assert payload["job"]["status"] == JobStatus.FAILED.value
+    assert payload["idempotency"]["state"] == "strict_replay"
+    assert payload["idempotency"]["current_attempt"] == {
+        "job_id": failed_job_id,
+        "status": JobStatus.FAILED.value,
+        "failure_retryable": False,
+    }
+
+
+def test_active_succeeded_and_canceled_idempotency_replays_remain_strict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    disable_run_job_async(monkeypatch)
+    client, app = build_client(tmp_path)
+
+    active = post_create(
+        client,
+        idempotency_key="idem-edge-active-strict",
+        file_bytes=b"stable-active-body",
+    )
+    assert active.status_code == 202
+    active_job_id = active.json()["job"]["job_id"]
+    active_replay = post_create(
+        client,
+        idempotency_key="idem-edge-active-strict",
+        file_bytes=b"stable-active-body",
+    )
+    assert active_replay.status_code == 202
+    assert active_replay.headers["X-Idempotent-Replay"] == "true"
+    assert active_replay.json()["job"]["job_id"] == active_job_id
+    assert active_replay.json()["idempotency"]["state"] == "strict_replay"
+
+    succeeded = post_create(
+        client,
+        idempotency_key="idem-edge-succeeded-strict",
+        file_bytes=b"stable-succeeded-body",
+    )
+    assert succeeded.status_code == 202
+    succeeded_job_id = succeeded.json()["job"]["job_id"]
+    _mark_job_succeeded(app.state.runtime_v2, succeeded_job_id)
+    succeeded_replay = post_create(
+        client,
+        idempotency_key="idem-edge-succeeded-strict",
+        file_bytes=b"stable-succeeded-body",
+    )
+    assert succeeded_replay.status_code == 200
+    assert succeeded_replay.headers["X-Idempotent-Replay"] == "true"
+    assert succeeded_replay.json()["job"]["job_id"] == succeeded_job_id
+    assert succeeded_replay.json()["idempotency"]["state"] == "strict_replay"
+
+    canceled = post_create(
+        client,
+        idempotency_key="idem-edge-canceled-strict",
+        file_bytes=b"stable-canceled-body",
+    )
+    assert canceled.status_code == 202
+    canceled_job_id = canceled.json()["job"]["job_id"]
+    assert app.state.runtime_v2.cancel_job(canceled_job_id) == "accepted"
+    canceled_replay = post_create(
+        client,
+        idempotency_key="idem-edge-canceled-strict",
+        file_bytes=b"stable-canceled-body",
+    )
+    assert canceled_replay.status_code == 200
+    assert canceled_replay.headers["X-Idempotent-Replay"] == "true"
+    assert canceled_replay.json()["job"]["job_id"] == canceled_job_id
+    assert canceled_replay.json()["job"]["status"] == JobStatus.CANCELED.value
+    assert canceled_replay.json()["idempotency"]["state"] == "strict_replay"
+
+
+def test_concurrent_retryable_failed_idempotency_replay_converges_to_one_new_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    disable_run_job_async(monkeypatch)
+    client, app = build_client(tmp_path)
+
+    first = post_create(
+        client,
+        idempotency_key="idem-edge-concurrent-retryable-failed",
+        file_bytes=b"stable-concurrent-retryable-failed-body",
+    )
+    assert first.status_code == 202
+    failed_job_id = first.json()["job"]["job_id"]
+    _mark_job_failed(app.state.runtime_v2, failed_job_id, retryable=True)
+
+    def _submit_replay() -> tuple[str, int]:
+        response = post_create(
+            client,
+            idempotency_key="idem-edge-concurrent-retryable-failed",
+            file_bytes=b"stable-concurrent-retryable-failed-body",
+        )
+        assert response.status_code == 202
+        payload = response.json()
+        assert isinstance(payload, dict)
+        job_payload = payload.get("job")
+        assert isinstance(job_payload, dict)
+        job_id = job_payload.get("job_id")
+        assert isinstance(job_id, str)
+        idempotency_payload = payload.get("idempotency")
+        assert isinstance(idempotency_payload, dict)
+        attempt_count = idempotency_payload.get("attempt_count")
+        assert isinstance(attempt_count, int)
+        return job_id, attempt_count
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_result, second_result = executor.map(lambda _: _submit_replay(), range(2))
+
+    first_job_id, first_attempt_count = first_result
+    second_job_id, second_attempt_count = second_result
+    assert first_job_id == second_job_id
+    assert first_job_id != failed_job_id
+    assert first_attempt_count == 2
+    assert second_attempt_count == 2
+    job_ids = app.state.runtime_v2.job_store.list_job_ids()
+    assert sorted(job_ids) == sorted([failed_job_id, first_job_id])
+
+
 def test_create_job_idempotency_existing_job_missing_returns_404(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -605,3 +799,27 @@ def test_create_job_idempotency_existing_job_missing_returns_404(
     payload = replay.json()
     assert payload["api_version"] == "v2"
     assert payload["error"]["code"] == "job_not_found"
+
+
+def _mark_job_failed(runtime: ServiceRuntimeV2, job_id: str, *, retryable: bool) -> None:
+    assert runtime.job_store.claim_queued_job(job_id)
+    runtime.job_store.mark_failed(
+        job_id,
+        code="conversion_failed_for_test",
+        message="Intentional test failure.",
+        retryable=retryable,
+        details={"source": "idempotency_test"},
+    )
+
+
+def _mark_job_succeeded(runtime: ServiceRuntimeV2, job_id: str) -> None:
+    assert runtime.job_store.claim_queued_job(job_id)
+    runtime.job_store.mark_succeeded(
+        job_id,
+        artifact_bytes=b"%PDF-1.4\n% fake\n%%EOF\n",
+        pipeline_used="md_to_pdf_v2",
+        backend_used="test",
+        acceleration_used=None,
+        options_fingerprint="sha256:idempotency-test",
+        warnings=[],
+    )

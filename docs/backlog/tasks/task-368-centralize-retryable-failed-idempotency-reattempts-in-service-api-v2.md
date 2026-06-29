@@ -1,9 +1,9 @@
 ---
-id: 'task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2'
-title: 'Centralize retryable-failed idempotency reattempts in Service API v2'
-type: 'task'
-status: 'proposed'
-priority: 'high'
+id: task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2
+title: Centralize retryable-failed idempotency reattempts in Service API v2
+type: task
+status: proposed
+priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
 related:
@@ -24,6 +24,7 @@ labels:
   - stt
   - production-remediation
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Objective
@@ -87,51 +88,51 @@ Design intent:
 ## Deliverables
 
 - [ ] Red-first create-job contract test proving the current bug: a matching
-      idempotency replay of a terminal `failed` job with `retryable=true`
-      returns the old failed `job_id` instead of admitting a new attempt.
+  idempotency replay of a terminal `failed` job with `retryable=true`
+  returns the old failed `job_id` instead of admitting a new attempt.
 - [ ] Service-owned idempotency attempt state with race-safe reattempt
-      admission for terminal retryable failures.
+  admission for terminal retryable failures.
 - [ ] Public JSON response contract for idempotency replay/reattempt metadata,
-      with headers kept accurate but non-authoritative.
+  with headers kept accurate but non-authoritative.
 - [ ] Focused tests for succeeded, active, non-retryable failed, retryable
-      failed, canceled, fingerprint mismatch, missing old job, and concurrent
-      replay behavior.
+  failed, canceled, fingerprint mismatch, missing old job, and concurrent
+  replay behavior.
 - [ ] Contract docs synchronized:
-      `multi_format_conversion_service_api_v2.md`,
-      `audio-transcription-service-api-artifact-contract.md`,
-      `downstream_integration_contract_v2.md`, and CLI docs only insofar as
-      they point to the service-owned policy before Task 369 removes the old
-      CLI workaround.
+  `multi_format_conversion_service_api_v2.md`,
+  `audio-transcription-service-api-artifact-contract.md`,
+  `downstream_integration_contract_v2.md`, and CLI docs only insofar as
+  they point to the service-owned policy before Task 369 removes the old
+  CLI workaround.
 - [ ] Independent retained review before completion.
 - [ ] Hemma live proof after deploy showing retryable-failed replay admits a
-      new attempt and succeeds without manual idempotency deletion,
-      quarantine, filename changes, or caller-side idempotency-key salting.
+  new attempt and succeeds without manual idempotency deletion,
+  quarantine, filename changes, or caller-side idempotency-key salting.
 
 ## Acceptance Criteria
 
 - [ ] Existing strict idempotency behavior remains unchanged for active jobs,
-      successful jobs, non-retryable failed jobs, canceled jobs, and
-      same-key/different-fingerprint conflicts.
+  successful jobs, non-retryable failed jobs, canceled jobs, and
+  same-key/different-fingerprint conflicts.
 - [ ] A terminal `failed` job whose manifest records `failure_retryable=true`
-      is not replayed forever. The next identical create-job call admits a
-      fresh attempt, records lineage to the failed attempt, and returns the new
-      active `job_id`.
+  is not replayed forever. The next identical create-job call admits a
+  fresh attempt, records lineage to the failed attempt, and returns the new
+  active `job_id`.
 - [ ] The idempotency store records enough state to audit which job is active
-      for the logical request and which retryable failed jobs were superseded.
+  for the logical request and which retryable failed jobs were superseded.
 - [ ] Reattempt admission is atomic under the idempotency scope: concurrent
-      identical replay requests after a retryable failure create at most one
-      fresh job.
+  identical replay requests after a retryable failure create at most one
+  fresh job.
 - [ ] Callers can determine from the JSON body whether a response is a strict
-      replay, a fresh first admission, or a service-owned reattempt after a
-      retryable terminal failure.
+  replay, a fresh first admission, or a service-owned reattempt after a
+  retryable terminal failure.
 - [ ] Result and artifact endpoints preserve original failure retryability in
-      their error details where that information is service-owned and safe to
-      expose.
+  their error details where that information is service-owned and safe to
+  expose.
 - [ ] No caller compatibility wrapper is added. If a downstream gap appears,
-      stop and record it as a consumer contract alignment task rather than
-      moving retry policy out of Sir Convert.
+  stop and record it as a consumer contract alignment task rather than
+  moving retry policy out of Sir Convert.
 - [ ] Red/green evidence includes the same focused command failing before the
-      implementation and passing after it.
+  implementation and passing after it.
 - [ ] Close-out includes live Hemma evidence:
   - deployed service revision matches the implementing commit;
   - a retained retryable failed idempotency record exists before the proof;

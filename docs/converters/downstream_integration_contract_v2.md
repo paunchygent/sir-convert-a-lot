@@ -4,7 +4,7 @@ id: CONV-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 status: active
 created: 2026-02-28
-updated: 2026-06-14
+updated: 2026-06-29
 owners:
   - platform
 tags:
@@ -393,9 +393,32 @@ curl -sS -X POST "${SIR_BASE_URL}/v2/convert/jobs?wait_seconds=0" \
 
 Replay (same key + same payload):
 
-- response returns same `job_id`
-- status code is `202` while non-terminal, `200` once terminal
-- response header: `X-Idempotent-Replay: true`
+- active (`queued|running`), succeeded, non-retryable failed, and canceled
+  jobs are strict replays;
+- strict replay responses return the same `job_id`;
+- strict replay status code is `202` while non-terminal and `200` once terminal;
+- strict replay response header is `X-Idempotent-Replay: true`;
+- retryable failed jobs are service-owned reattempt candidates: the next
+  identical create-job call admits exactly one fresh active attempt, returns
+  the new `job_id`, and exposes the superseded failed job under
+  `idempotency.previous_attempts`;
+- service-owned reattempt responses use
+  `idempotency.state = "service_reattempt"` and
+  `idempotency.reattempt_of_job_id = <failed-job-id>`.
+
+Create-job consumers must read the JSON `idempotency.state` field rather than
+inferring policy from headers alone:
+
+| State | Meaning |
+| --- | --- |
+| `fresh_admission` | First accepted attempt for this idempotency scope. |
+| `strict_replay` | Same logical request returned the same active, succeeded, non-retryable failed, or canceled job. |
+| `service_reattempt` | Same logical request superseded a retryable failed job with one fresh active attempt. |
+
+Gateway and browser integrations must forward Sir Convert create-job responses
+without rewriting `idempotency` metadata. They must not solve retryable failed
+replays by salting keys, changing filenames, or submitting caller-side retry
+wrappers.
 
 Collision (same key + different payload):
 
@@ -432,7 +455,8 @@ Terminal non-success retrieval (`409`):
     "message": "Job is terminal but has no successful conversion result.",
     "retryable": false,
     "details": {
-      "status": "failed"
+      "status": "failed",
+      "failure_retryable": true
     },
     "correlation_id": "corr_..."
   }

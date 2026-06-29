@@ -4,7 +4,7 @@ id: CONV-sir-convert-a-lot
 title: Sir Convert-a-Lot CLI and Service Usage
 status: active
 created: '2026-02-11'
-updated: '2026-03-06'
+updated: '2026-06-29'
 owners:
   - platform
 tags:
@@ -91,8 +91,16 @@ deterministic key for safety (double-clicks/retries do not spawn duplicate jobs)
 
 User-facing rerun behavior:
 
-- Default: if the server returns an idempotent replay and the replayed job is terminal `failed` or
-  `canceled`, the CLI automatically submits a new job once (no filename hacks required).
+- Service API v2 owns retryable-failed reattempts. If a same-key/same-payload
+  replay points at a terminal failed job with `failure_retryable=true`, the
+  service returns one fresh active attempt with
+  `idempotency.state="service_reattempt"` and lineage to the failed job.
+- Active, succeeded, non-retryable failed, and canceled jobs remain strict
+  service replays. Canceled semantics are unchanged.
+- Historical Task 63 CLI auto-rerun behavior may remain in the client until
+  Task 369 removes that compatibility wrapper. Do not add new caller-side
+  retry wrappers, filename mutation, or idempotency-key salting for retryable
+  failed Service API v2 replays.
 - `--replay-only`: disable the auto-rerun behavior and keep strict replay semantics.
 - `--new-job`: always submit with a new `Idempotency-Key`, even if a prior job succeeded.
 

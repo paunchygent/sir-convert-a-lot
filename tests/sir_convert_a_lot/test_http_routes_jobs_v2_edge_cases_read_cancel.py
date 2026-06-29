@@ -64,7 +64,7 @@ def test_result_and_artifact_terminal_failed_return_409(
     payload = response.json()
     assert payload["api_version"] == "v2"
     assert payload["error"]["code"] == "job_not_succeeded"
-    assert payload["error"]["details"] == {"status": "failed"}
+    assert payload["error"]["details"] == {"status": "failed", "failure_retryable": False}
 
 
 def test_get_job_missing_returns_404(tmp_path: Path) -> None:

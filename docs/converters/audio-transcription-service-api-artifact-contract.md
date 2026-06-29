@@ -4,7 +4,7 @@ id: CONV-audio-transcription-service-api-artifact-contract
 title: Audio Transcription Service API Artifact Contract
 status: active
 created: 2026-06-09
-updated: 2026-06-14
+updated: 2026-06-29
 owners:
   - platform
 tags:
@@ -720,6 +720,17 @@ canceled jobs must not expose partial transcripts as terminal artifacts.
 Transient retry is allowed only for main-service-classified retryable sidecar
 failures. Replayed work must be idempotent under the v2 request fingerprint and
 must not duplicate transcript segments, diarization windows, or artifacts.
+When an identical `Idempotency-Key` plus request fingerprint points at a
+terminal failed audio job with `failure_retryable=true`, Service API v2 owns the
+reattempt: it admits exactly one fresh active job, records the failed attempt in
+idempotency lineage, and returns `idempotency.state = "service_reattempt"`.
+Active, succeeded, non-retryable failed, and canceled audio jobs remain strict
+idempotent replays. Callers, Gateway routes, and Skriptoteket must not create
+filename or key-salting retry wrappers for retryable failed audio submissions.
+For failed audio jobs, `/result`, `/artifact`, and named artifact reads stay
+fail-closed with `409 job_not_succeeded`; safe error details include
+`failure_retryable` when the terminal state is `failed`, but no partial
+transcript artifacts are exposed.
 
 ## Error Policy
 
