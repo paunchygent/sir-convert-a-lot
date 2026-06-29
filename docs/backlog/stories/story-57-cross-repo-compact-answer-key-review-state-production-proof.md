@@ -2,7 +2,7 @@
 id: story-57-cross-repo-compact-answer-key-review-state-production-proof
 title: Cross-repo compact answer-key review state production proof
 type: story
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -49,7 +49,7 @@ bind-mounted Sir Convert dev service:
 The proof accepts one advisory key, verifies sibling `item-002` remains
 `Granska` with advisory detail visible, completes replay/download/save checks,
 reloads, and passes mobile list/detail/files/report checks. Production deploy
-and production proof remain required before reclosing this story.
+and production proof then passed before reclosing this story.
 
 ## Objective
 
@@ -196,3 +196,23 @@ Gateway recovery, and the final production DXE proof.
   downloads/saves, replay-scoped PDF/QTI download and save, reload persistence,
   mobile detail/list/files/report screenshots with no horizontal overflow, no
   page errors, and clean PDF/QTI inspection.
+
+## Task 374 Production Closeout
+
+Reclosed on 2026-06-29 after Task 374 approval, Sir Convert deploy,
+Skriptoteket deploy, and renewed production DXE proof for the post-accept
+sibling advisory replay regression.
+
+- Sir Convert production revision:
+  `92c77bd43909b1d01407e650164836039a105ca1`; deploy verifier:
+  `build/verification/hemma-deploy-verify/report.md`.
+- Skriptoteket production revision:
+  `5cfab283b741fb9076ec5213834e26576874458c`; deploy log:
+  `/home/paunchygent/apps/skriptoteket/.artifacts/hemma-deploy-20260629-194500.log`.
+- Final production proof bundle:
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T194902Z/manifest.redacted.json`.
+  The proof covers HuleEdu login, production DXE upload, post-accept replay
+  preservation (`item-001` accepted while untouched `item-002` remained
+  `Granska` with advisory detail visible), replay-scoped PDF/QTI download and
+  save, reload persistence, mobile detail/list/files/report screenshots with no
+  horizontal overflow, no page errors, and clean PDF/QTI inspection.

@@ -2,7 +2,7 @@
 id: 'task-374-preserve-advisory-candidates-during-correction-apply-replay'
 title: 'Preserve advisory candidates during correction apply replay'
 type: 'task'
-status: 'in_progress'
+status: 'completed'
 priority: 'high'
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -188,3 +188,18 @@ Cross-repo dev proof:
   The manifest records `post_accept_untouched_advisory_sibling` with accepted
   `item-001`, sibling `item-002`, sibling status `Granska`, and
   `sibling_advisory_panel_visible: true`.
+
+Production closeout:
+
+- Sir Convert was deployed on Hemma at
+  `92c77bd43909b1d01407e650164836039a105ca1`; deploy verification report:
+  `build/verification/hemma-deploy-verify/report.md`.
+- Skriptoteket was deployed at
+  `5cfab283b741fb9076ec5213834e26576874458c`; deploy log:
+  `/home/paunchygent/apps/skriptoteket/.artifacts/hemma-deploy-20260629-194500.log`.
+- Production browser proof passed at
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T194902Z/manifest.redacted.json`.
+  The proof accepts `item-001`, verifies untouched sibling `item-002` remains
+  `Granska` with advisory detail visible, completes replay-scoped PDF/QTI
+  download and save, reloads, and passes mobile list/detail/files/report
+  checks.

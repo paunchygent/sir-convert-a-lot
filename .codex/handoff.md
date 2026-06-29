@@ -118,7 +118,7 @@ durable implementation authority lives in governed docs.
   downstream formatter, source-audio replay, or Gateway rewriting is part of
   the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Story 57 is reopened after production post-accept replay dropped untouched advisory candidates into generic missing-facit warnings. Task 374 producer remediation is implemented, independently approved, and dev-proved through Skriptoteket at `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T193503Z/manifest.redacted.json`; deploy plus renewed production proof remain required.
+- Story 57 / Task 374 are completed after the production post-accept replay regression fix. Sir Convert is deployed at `92c77bd43909b1d01407e650164836039a105ca1`; Skriptoteket is deployed at `5cfab283b741fb9076ec5213834e26576874458c`; production proof is green at `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T194902Z/manifest.redacted.json`.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -159,7 +159,7 @@ decision/performance work.
 
 ## Next Actions
 
-1. Deploy/reprove Story 57/PR-0408 with production DXE post-accept replay evidence before reclosing; dev proof is green at `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T193503Z/manifest.redacted.json`.
+1. Story 57 / Task 374 are closed; keep the production proof bundle `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T194902Z/manifest.redacted.json` as the retained post-accept replay evidence.
 1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated
    sidecar approaches without new governed evidence and explicit user approval.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
