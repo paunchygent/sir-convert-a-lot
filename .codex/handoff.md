@@ -158,6 +158,7 @@ decision/performance work.
 
 ## Next Actions
 
+1. Story 57 now tracks Task 373 plus Skriptoteket ST-21-11/PR-0406; use it for the compact review-state overseer loop and final production DXE browser proof gate.
 1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated
    sidecar approaches without new governed evidence and explicit user approval.
 1. Keep downstream transcript work on saved canonical `transcript_json`,

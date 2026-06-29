@@ -1,9 +1,9 @@
 ---
-id: 'task-372-normalize-source-labelled-choice-options-for-examnet-pdf-replay'
-title: 'Normalize source-labelled choice options for Examnet PDF replay'
-type: 'task'
-status: 'completed'
-priority: 'high'
+id: task-372-normalize-source-labelled-choice-options-for-examnet-pdf-replay
+title: Normalize source-labelled choice options for Examnet PDF replay
+type: task
+status: completed
+priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
 related:
@@ -18,6 +18,7 @@ labels:
   - correction-replay
   - incident-remediation
 ---
+
 PR-sized incident remediation for authenticated Exam Converter correction
 replay.
 
@@ -47,9 +48,9 @@ student-visible option text in the imported exam.
 ## Deliverables
 
 - [x] Behavioral regression test for labelled MCQ options rendering without
-      labels in Exam.net PDF output.
+  labels in Exam.net PDF output.
 - [x] Correction replay regression proving a corrected labelled MCQ item emits
-      `correction_replay_examnet_pdf` when no other target blockers remain.
+  `correction_replay_examnet_pdf` when no other target blockers remain.
 - [x] Production code change scoped to Exam.net PDF option normalization.
 - [x] Validation evidence retained in this task.
 
@@ -57,13 +58,13 @@ student-visible option text in the imported exam.
 
 - [x] Source labels are removed from option text before Exam.net PDF rendering.
 - [x] Correct-answer text uses the same normalized option text as the rendered
-      alternatives.
+  alternatives.
 - [x] Duplicate option text is still detected after label stripping and remains
-      fail-closed.
+  fail-closed.
 - [x] The incident class no longer blocks PDF generation solely because
-      DigiExam source options include `A.`, `B.`, `C.`, or `D.` prefixes.
+  DigiExam source options include `A.`, `B.`, `C.`, or `D.` prefixes.
 - [x] Target readiness and replay artifact tests prove PDF and QTI behavior at
-      the service boundary.
+  the service boundary.
 
 ## Checklist
 

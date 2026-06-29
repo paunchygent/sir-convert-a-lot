@@ -17,6 +17,8 @@ related:
   - docs/backlog/tasks/task-333-implement-non-matching-unified-correction-apply-runtime-for-digiexam-pr-0332.md
   - docs/backlog/tasks/task-332-implement-matching-capable-source-state-producer-for-unified-corrections.md
   - docs/backlog/tasks/task-337-remove-accepted-current-state-from-authoring-correction-contracts.md
+  - docs/backlog/tasks/task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket.md
+  - docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md
   - docs/decisions/0011-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/converters/exam-authoring-corrections-apply-contract.md
   - docs/reference/ref-digiexam-machine-marked-answer-key-completion-architecture.md
@@ -83,6 +85,14 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - Task 337 removes accepted-current-state export from authoring correction
   contracts. Downstream durable sessions must not persist or replay
   `review_decision` / `accept_current_state_for_export` as correction state.
+- Task 373 is the proposed compact review-state projection follow-up. It must
+  make Sir Convert the producer of item-level answer-key review semantics so
+  Skriptoteket can render compact states without re-deriving truth from
+  multiple artifact families. It is blocked on its own open questions before
+  implementation.
+- Story 57 is the cross-repo tracking surface for Task 373 and Skriptoteket
+  PR-0406. It owns the final live production browser proof gate with the tracked
+  DXE fixture before this workflow can be called end-to-end complete.
 - Task 332 remains the separate matching-capable producer task. Skriptoteket
   must not submit `manual_matching_answer_key` until Task 332 emits real
   matching source state and proves unified-route apply behavior.

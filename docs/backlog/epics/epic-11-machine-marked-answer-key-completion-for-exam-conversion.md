@@ -11,6 +11,7 @@ related:
   - docs/backlog/stories/story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
+  - docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md
   - docs/backlog/tasks/task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan.md
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
   - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
@@ -25,6 +26,7 @@ related:
   - docs/backlog/tasks/task-324-add-source-neutral-matching-correction-apply-route-for-skriptoteket-pr-0332.md
   - docs/backlog/tasks/task-327-define-unified-source-neutral-exam-authoring-correction-apply-contract.md
   - docs/backlog/tasks/task-337-remove-accepted-current-state-from-authoring-correction-contracts.md
+  - docs/backlog/tasks/task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket.md
   - docs/backlog/tasks/task-328-audit-open-proposed-adr-product-decisions-before-further-architecture-expansion.md
   - docs/backlog/tasks/task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md
   - docs/backlog/tasks/task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md
@@ -120,6 +122,9 @@ review gates.
 1. `docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md`
    defines the cross-product teacher review workflow and the HuleEdu provider
    decision checkpoint.
+1. `docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md`
+   tracks Task 373, Skriptoteket PR-0406, and the final production browser
+   proof with a tracked DXE fixture.
 
 ## Roadmap
 
@@ -159,6 +164,15 @@ The unified correction contract must remove `review_decision` /
 `accept_current_state_for_export`, keep missing keys blocked until real
 authoring corrections supply them, and leave any future incomplete export mode
 to a separate export-only contract.
+Task 373 is the proposed compact review-state projection follow-up. It should
+derive a versioned item review-state report from Sir Convert-owned source,
+effective, advisory, correction, and readiness state so Skriptoteket no longer
+assembles review semantics from multiple producer artifacts and local UI state.
+Its open questions must be resolved before implementation because this is a
+cross-repo contract surface.
+Story 57 is the cross-repo overseer tracking surface for Task 373 plus
+Skriptoteket PR-0406. It is not a replacement for either task; it records the
+shared final state goals and the required production browser proof gate.
 Task 328 is the separate proposed-decision audit slice. It keeps ADR-0002 and
 ADR-0009 status cleanup out of ADR-0011 and preserves the rule that ADR-0009
 requires its explicit Gateway acceptance path before acceptance.
