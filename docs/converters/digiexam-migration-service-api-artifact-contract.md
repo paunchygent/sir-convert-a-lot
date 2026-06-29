@@ -4,7 +4,7 @@ id: CONV-digiexam-migration-service-api-artifact-contract
 title: DigiExam Migration Service API Artifact Contract
 status: active
 created: 2026-05-11
-updated: 2026-05-18
+updated: 2026-06-29
 owners:
   - platform
 tags:
@@ -1019,6 +1019,7 @@ Strict reason values are:
 - `reviewed_advisory_accepted`
 - `teacher_answer_key_present`
 - `teacher_edited_advisory_candidate`
+- `answer_key_not_applicable`
 - `manual_answer_key_required`
 - `no_correct_choice_selected`
 - `required_gap_accepted_values_missing`
@@ -1040,6 +1041,25 @@ contain generic `history`, `review_decision`,
 private paths, raw source/provider/student data, provider diagnostics, or public
 advisory `provenance_detail` unless a later governed public grant explicitly
 allows it.
+
+The first-pass DigiExam bundle also persists the bounded advisory candidate
+context inside the signed correction source-state sidecar as
+`advisory_answer_key_candidates`. Correction apply/replay consumes that
+producer-owned context so accepting one advisory candidate does not erase
+untouched valid sibling candidates from the compact projection. Accepted
+advisory corrections project as `review_complete` with
+`current_key_origin = reviewed_advisory` and
+`reasons = [reviewed_advisory_accepted]`; untouched valid advisory siblings
+remain `review_required` with `current_key_origin = none` and
+`reasons = [advisory_candidate_pending]`; keyed siblings with no valid advisory
+remain validation rows. Free-text/open-writing rows that are outside keyed
+answer-key review project as `review_complete` with
+`current_key_origin = none` and `reasons = [answer_key_not_applicable]` even if
+bad source-state context contains an advisory candidate row for them. This
+context is limited to item binding, candidate digest, provider/profile/schema
+identifiers, prompt-template version, and validation state. It must not include
+raw provider prompts or responses, source files, private paths,
+identity/session data, credentials, browser-local state, or student data.
 
 ## Artifact Bundle Contract
 

@@ -2,7 +2,7 @@
 id: story-57-cross-repo-compact-answer-key-review-state-production-proof
 title: Cross-repo compact answer-key review state production proof
 type: story
-status: completed
+status: in_progress
 priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -11,6 +11,7 @@ related:
   - docs/backlog/epics/epic-11-machine-marked-answer-key-completion-for-exam-conversion.md
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
   - docs/backlog/tasks/task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket.md
+  - docs/backlog/tasks/task-374-preserve-advisory-candidates-during-correction-apply-replay.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/exam-authoring-corrections-apply-contract.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-11-cross-repo-compact-answer-key-review-state-production-proof.md
@@ -25,6 +26,30 @@ labels:
 
 Cross-repo overseer tracking story for Sir Convert producer work and
 Skriptoteket consumer proof.
+
+## Reopened Production Regression
+
+Reopened on 2026-06-29 after production UI testing showed that accepting the
+first advisory answer key could make untouched sibling advisory candidates
+render as generic missing-facit validation rows. Docker/service logs showed the
+source-state issue, Skriptoteket correction-session intent save, and Sir Convert
+correction apply requests all completed with HTTP 200, with no service
+tracebacks. The failure is therefore in the producer/consumer review-state
+handshake, not transport.
+
+Task 374 owns the producer-side remediation: correction apply/replay must
+preserve first-pass bounded advisory candidates for untouched keyed items.
+Skriptoteket must consume the returned producer state and must not infer a
+pending suggestion from local browser state when Sir Convert returns a current
+`validation_required` row.
+
+Dev proof on 2026-06-29 passed against local shared-auth Skriptoteket and the
+bind-mounted Sir Convert dev service:
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T193503Z/manifest.redacted.json`.
+The proof accepts one advisory key, verifies sibling `item-002` remains
+`Granska` with advisory detail visible, completes replay/download/save checks,
+reloads, and passes mobile list/detail/files/report checks. Production deploy
+and production proof remain required before reclosing this story.
 
 ## Objective
 
@@ -150,7 +175,7 @@ browser gate passes with retained redacted evidence linked from both repos.
 - [x] Final live browser proof retained
 - [x] Docs synchronized
 
-## Production Closeout
+## Superseded Production Closeout
 
 Closed on 2026-06-29 after retained review approval, production deploys, HuleEdu
 Gateway recovery, and the final production DXE proof.

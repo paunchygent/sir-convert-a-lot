@@ -31,6 +31,12 @@ ExamAuthoringAnswerKeyProvenanceV1 = Literal[
     "reviewed",
     "mixed",
 ]
+ExamAuthoringAdvisoryCandidateValidationStateV1 = Literal[
+    "valid",
+    "invalid",
+    "manual_follow_up_required",
+    "skipped",
+]
 
 
 class ExamAuthoringCorrectionSourceBindingV1(BaseModel):
@@ -208,6 +214,22 @@ class ExamAuthoringCorrectionSourceItemV1(BaseModel):
     matching_interactions: tuple[ExamAuthoringMatchingInteractionV1, ...] = ()
 
 
+class ExamAuthoringAnswerKeyAdvisoryCandidateV1(BaseModel):
+    """Bounded first-pass advisory answer-key candidate context."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    item_id: str = Field(min_length=1)
+    sequence: int = Field(ge=1)
+    candidate_id: str = Field(min_length=1)
+    candidate_payload_digest: str = Field(min_length=1)
+    provider_profile_id: str = Field(min_length=1)
+    schema_name: str = Field(min_length=1)
+    schema_version: str = Field(min_length=1)
+    prompt_template_version: str = Field(min_length=1)
+    validation_state: ExamAuthoringAdvisoryCandidateValidationStateV1
+
+
 class ExamAuthoringCorrectionSourceStateV1(BaseModel):
     """Sanitized producer-returned state used for correction validation."""
 
@@ -219,6 +241,7 @@ class ExamAuthoringCorrectionSourceStateV1(BaseModel):
     source_authoring_schema_version: ExamAuthoringIrSchemaVersion
     source_state_sha256: str = Field(min_length=1)
     items: tuple[ExamAuthoringCorrectionSourceItemV1, ...]
+    advisory_answer_key_candidates: tuple[ExamAuthoringAnswerKeyAdvisoryCandidateV1, ...] = ()
 
 
 class ExamAuthoringCorrectionSourceStateIssueRequestV1(BaseModel):

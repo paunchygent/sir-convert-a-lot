@@ -1036,6 +1036,7 @@
                 "reviewed_advisory_accepted",
                 "teacher_answer_key_present",
                 "teacher_edited_advisory_candidate",
+                "answer_key_not_applicable",
                 "manual_answer_key_required",
                 "no_correct_choice_selected",
                 "required_gap_accepted_values_missing",
@@ -3033,6 +3034,75 @@
         "title": "DigiExamTargetReadinessRowV1",
         "type": "object"
       },
+      "ExamAuthoringAnswerKeyAdvisoryCandidateV1": {
+        "additionalProperties": false,
+        "description": "Bounded first-pass advisory answer-key candidate context.",
+        "properties": {
+          "candidate_id": {
+            "minLength": 1,
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "candidate_payload_digest": {
+            "minLength": 1,
+            "title": "Candidate Payload Digest",
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "title": "Item Id",
+            "type": "string"
+          },
+          "prompt_template_version": {
+            "minLength": 1,
+            "title": "Prompt Template Version",
+            "type": "string"
+          },
+          "provider_profile_id": {
+            "minLength": 1,
+            "title": "Provider Profile Id",
+            "type": "string"
+          },
+          "schema_name": {
+            "minLength": 1,
+            "title": "Schema Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "minLength": 1,
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "validation_state": {
+            "enum": [
+              "valid",
+              "invalid",
+              "manual_follow_up_required",
+              "skipped"
+            ],
+            "title": "Validation State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "sequence",
+          "candidate_id",
+          "candidate_payload_digest",
+          "provider_profile_id",
+          "schema_name",
+          "schema_version",
+          "prompt_template_version",
+          "validation_state"
+        ],
+        "title": "ExamAuthoringAnswerKeyAdvisoryCandidateV1",
+        "type": "object"
+      },
       "ExamAuthoringCandidateLineageV1": {
         "additionalProperties": false,
         "description": "Bounded advisory-candidate lineage without raw provider data.",
@@ -3690,6 +3760,14 @@
         "additionalProperties": false,
         "description": "Sanitized producer-returned state used for correction validation.",
         "properties": {
+          "advisory_answer_key_candidates": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamAuthoringAnswerKeyAdvisoryCandidateV1"
+            },
+            "title": "Advisory Answer Key Candidates",
+            "type": "array"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/ExamAuthoringCorrectionSourceItemV1"

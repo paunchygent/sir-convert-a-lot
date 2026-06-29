@@ -43,6 +43,7 @@ DigiExamAnswerKeyReviewReasonCodeV1: TypeAlias = Literal[
     "reviewed_advisory_accepted",
     "teacher_answer_key_present",
     "teacher_edited_advisory_candidate",
+    "answer_key_not_applicable",
     "manual_answer_key_required",
     "no_correct_choice_selected",
     "required_gap_accepted_values_missing",

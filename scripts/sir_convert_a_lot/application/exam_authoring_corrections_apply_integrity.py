@@ -46,6 +46,10 @@ def source_state_content_digest(state: ExamAuthoringCorrectionSourceStateV1) -> 
             "schema_version": state.schema_version,
             "source_authoring_schema_version": state.source_authoring_schema_version,
             "items": tuple(item.model_dump(mode="json") for item in state.items),
+            "advisory_answer_key_candidates": tuple(
+                candidate.model_dump(mode="json")
+                for candidate in state.advisory_answer_key_candidates
+            ),
         }
     )
 

@@ -17,6 +17,7 @@ from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state impo
     build_digiexam_answer_key_review_state,
 )
 from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewAdvisoryCandidateInput,
     DigiExamAnswerKeyReviewCorrectionOutcomeInput,
     DigiExamAnswerKeyReviewStateV1,
     DigiExamAnswerKeyReviewSubmissionOriginV1,
@@ -62,7 +63,9 @@ def build_answer_key_review_state_for_apply_result(
             accepted_entries=accepted_entries,
             rejected_entries=rejected_entries,
         ),
+        advisory_candidates=_advisory_candidates(request_body.source_authoring_state),
         target_readiness=_target_readiness(readiness_rows),
+        include_advisory_provenance_detail=True,
     )
 
 
@@ -127,4 +130,23 @@ def _target_readiness(
             artifact_key=row.artifact_key,
         )
         for row in rows
+    )
+
+
+def _advisory_candidates(
+    source_state: ExamAuthoringCorrectionSourceStateV1,
+) -> tuple[DigiExamAnswerKeyReviewAdvisoryCandidateInput, ...]:
+    return tuple(
+        DigiExamAnswerKeyReviewAdvisoryCandidateInput(
+            item_id=candidate.item_id,
+            sequence=candidate.sequence,
+            candidate_id=candidate.candidate_id,
+            candidate_payload_digest=candidate.candidate_payload_digest,
+            provider_profile_id=candidate.provider_profile_id,
+            schema_name=candidate.schema_name,
+            schema_version=candidate.schema_version,
+            prompt_template_version=candidate.prompt_template_version,
+            validation_state=candidate.validation_state,
+        )
+        for candidate in source_state.advisory_answer_key_candidates
     )

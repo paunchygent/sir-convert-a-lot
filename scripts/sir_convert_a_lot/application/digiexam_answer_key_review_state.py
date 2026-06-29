@@ -118,6 +118,8 @@ def _item_projection(
     for row in target_rows:
         mapped_reason = _target_reason(row)
         if mapped_reason is not None:
+            if "answer_key_not_applicable" in reasons and mapped_reason == "manual_answer_key_required":
+                continue
             if (
                 advisory is not None
                 and origin == "none"
@@ -156,7 +158,10 @@ def _item_projection(
         message_key=f"exam_converter.answer_key_review.{reasons[0]}",
         provenance_detail=(
             _provenance_detail(advisory)
-            if include_advisory_provenance_detail and advisory is not None
+            if include_advisory_provenance_detail
+            and advisory is not None
+            and origin == "none"
+            and "advisory_candidate_pending" in reasons
             else None
         ),
         replay_artifact_references=_replay_references(target_rows),
@@ -169,7 +174,9 @@ def _base_reasons(
     origin: DigiExamAnswerKeyOriginCodeV1,
     advisory: DigiExamAnswerKeyReviewAdvisoryCandidateInput | None,
 ) -> tuple[DigiExamAnswerKeyReviewReasonCodeV1, ...]:
-    if advisory is not None and origin == "none":
+    if not _answer_key_applicable(item):
+        return ("answer_key_not_applicable",)
+    if advisory is not None and origin == "none" and _advisory_reviewable(item):
         return ("advisory_candidate_pending",)
     if origin == "source_provided":
         return ("source_answer_key_present",)
@@ -181,9 +188,9 @@ def _base_reasons(
         return ("no_correct_choice_selected",)
     if _missing_gap_values(item):
         return ("required_gap_accepted_values_missing",)
-    if item.choice_interactions or item.gap_open_cloze_interactions or item.matching_interactions:
+    if _answer_key_applicable(item):
         return ("manual_answer_key_required",)
-    return ("unsupported_item_type",)
+    return ("answer_key_not_applicable",)
 
 
 def _current_origin(item: ExamAuthoringCorrectionSourceItemV1) -> DigiExamAnswerKeyOriginCodeV1:
@@ -252,6 +259,8 @@ def _review_state(
 ) -> DigiExamAnswerKeyReviewStateCodeV1:
     if "correction_rejected" in reasons or any(_validation_reason(reason) for reason in reasons):
         return "validation_required"
+    if "answer_key_not_applicable" in reasons:
+        return "review_complete"
     if advisory is not None and origin == "none":
         return "review_required"
     if origin in {"teacher_authored", "teacher_edited_advisory", "mixed"}:
@@ -259,6 +268,18 @@ def _review_state(
     if origin in {"source_provided", "reviewed_advisory"}:
         return "review_complete"
     return "validation_required"
+
+
+def _answer_key_applicable(item: ExamAuthoringCorrectionSourceItemV1) -> bool:
+    return bool(
+        item.choice_interactions
+        or item.gap_open_cloze_interactions
+        or item.matching_interactions
+    )
+
+
+def _advisory_reviewable(item: ExamAuthoringCorrectionSourceItemV1) -> bool:
+    return bool(item.choice_interactions or item.gap_open_cloze_interactions)
 
 
 def _validation_reason(reason: DigiExamAnswerKeyReviewReasonCodeV1) -> bool:

@@ -4,7 +4,7 @@ id: CONV-exam-authoring-corrections-apply-contract
 title: Exam Authoring Corrections Apply Contract
 status: active
 created: 2026-05-18
-updated: 2026-05-18
+updated: 2026-06-29
 owners:
   - platform
 tags:
@@ -186,7 +186,8 @@ The request envelope binds the correction batch to producer-returned state:
     "schema_version": "exam_authoring_correction_source_state_v1",
     "source_authoring_schema_version": "exam_authoring_ir_v1",
     "source_state_sha256": "sha256:source-state",
-    "items": []
+    "items": [],
+    "advisory_answer_key_candidates": []
   },
   "corrections": [],
   "requested_targets": ["examnet_pdf", "qti_package"]
@@ -213,7 +214,20 @@ teacher corrections:
 - choice IDs, gap IDs, matching source IDs, and matching target IDs where
   present;
 - existing answer-key state and provenance when needed for validation;
+- bounded first-pass advisory answer-key candidate context when advisory
+  completion produced validated candidates;
 - source or effective-state digests needed for stale-state rejection.
+
+`advisory_answer_key_candidates` is producer-owned context for correction apply
+and replay. Each row is item-addressed and limited to `item_id`, `sequence`,
+`candidate_id`, `candidate_payload_digest`, `provider_profile_id`,
+`schema_name`, `schema_version`, `prompt_template_version`, and
+`validation_state`. It must not carry raw provider prompts or responses, source
+file content, source paths, identity/session data, credentials, browser-local
+state, student data, or UI drafts. Valid untouched candidates may project as
+`review_required` / `current_key_origin = none` /
+`advisory_candidate_pending`; invalid, skipped, or manual-follow-up candidates
+do not become pending review rows.
 
 For DigiExam `.dxe` producer state, the signed sidecar exposes only the
 source-owned structures DigiExam actually carries: visible item text,
@@ -229,7 +243,8 @@ items, prompt prose, or browser-local drafts.
 `source_authoring_state.source_state_sha256`. The submitted
 `source_authoring_state.source_state_sha256` must also equal Sir Convert's
 canonical stable digest of the sanitized source-authoring state content,
-computed without the digest field itself. The binding must also carry
+computed without the digest field itself and including
+`advisory_answer_key_candidates`. The binding must also carry
 `source_state_signature`, a Sir Convert server signature over the source-state
 digest, source-authoring schema version, source bundle ID, and source file
 digest. A consumer may echo this signature from the producer-returned state but
@@ -559,6 +574,18 @@ It uses strict `review_state`, `current_key_origin`, and reason vocabularies
 from Task 373, may include bounded `provenance_detail` for detail display, and
 must reject generic `history`, `review_decision`,
 `accept_current_state_for_export`, and other accepted-current-state substitutes.
+When one advisory candidate is accepted, that item becomes `review_complete`
+with `current_key_origin = reviewed_advisory` and
+`reasons = [reviewed_advisory_accepted]`. Untouched valid sibling candidates
+from the signed source-state remain `review_required` with
+`current_key_origin = none` and `reasons = [advisory_candidate_pending]`.
+Untouched keyed rows with no valid advisory candidate remain validation rows
+such as `no_correct_choice_selected` or
+`required_gap_accepted_values_missing`. Free-text/open-writing rows are not
+expanded into advisory keyed answer-key review; they return
+`review_complete` / `current_key_origin = none` /
+`answer_key_not_applicable` for this projection even if malformed advisory
+context references them.
 
 Replay artifact references appear inside the projection only after Sir Convert
 has produced replay-scoped target artifacts such as

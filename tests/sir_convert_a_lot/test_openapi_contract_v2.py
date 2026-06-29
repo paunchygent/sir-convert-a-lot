@@ -150,6 +150,8 @@ def test_service_api_v2_consumer_components_are_published() -> None:
         "ExamAuthoringCorrectionsApplyResultV1",
         "ExamAuthoringCorrectionSourceStateIssueRequestV1",
         "ExamAuthoringCorrectionSourceStateIssueResultV1",
+        "ExamAuthoringCorrectionSourceStateV1",
+        "ExamAuthoringAnswerKeyAdvisoryCandidateV1",
         "ExamAuthoringCorrectionReportV1",
         "ExamAuthoringItemTextPatchCorrectionV1",
         "ExamAuthoringItemTextPatchOperationV1",
@@ -209,6 +211,35 @@ def test_service_api_v2_consumer_components_are_published() -> None:
     ]
     assert "history" not in review_item_properties
     assert "review_decision" not in review_item_properties
+    source_state = _mapping(schemas["ExamAuthoringCorrectionSourceStateV1"])
+    source_state_properties = _mapping(source_state["properties"])
+    assert source_state["additionalProperties"] is False
+    assert _mapping(source_state_properties["advisory_answer_key_candidates"]) == {
+        "default": [],
+        "items": {"$ref": "#/components/schemas/ExamAuthoringAnswerKeyAdvisoryCandidateV1"},
+        "title": "Advisory Answer Key Candidates",
+        "type": "array",
+    }
+    source_candidate = _mapping(schemas["ExamAuthoringAnswerKeyAdvisoryCandidateV1"])
+    source_candidate_properties = _mapping(source_candidate["properties"])
+    assert source_candidate["additionalProperties"] is False
+    assert set(source_candidate_properties) == {
+        "item_id",
+        "sequence",
+        "candidate_id",
+        "candidate_payload_digest",
+        "provider_profile_id",
+        "schema_name",
+        "schema_version",
+        "prompt_template_version",
+        "validation_state",
+    }
+    assert _mapping(source_candidate_properties["validation_state"])["enum"] == [
+        "valid",
+        "invalid",
+        "manual_follow_up_required",
+        "skipped",
+    ]
     effective_exam = _mapping(schemas["DigiExamEffectiveExamV1"])
     effective_properties = _mapping(effective_exam["properties"])
     effective_schema_version = _mapping(effective_properties["schema_version"])

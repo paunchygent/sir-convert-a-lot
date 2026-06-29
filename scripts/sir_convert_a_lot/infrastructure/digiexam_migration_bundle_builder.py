@@ -34,6 +34,10 @@ from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_stat
     correction_source_state_artifact_path_for_job,
     write_exam_authoring_correction_source_state_artifact,
 )
+from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_models import (
+    ExamAuthoringAdvisoryCandidateValidationStateV1,
+    ExamAuthoringAnswerKeyAdvisoryCandidateV1,
+)
 from scripts.sir_convert_a_lot.application.public_exam_converter_contract_v2 import (
     PUBLIC_OWNER_SCOPE_PREFIX,
 )
@@ -206,8 +210,13 @@ def execute_digiexam_migration_bundle_job(
         exam=effective_exam,
         config=config,
     )
+    advisory_candidates = _review_advisory_candidates(answer_key_completion_report_entry.report)
     review_source_state = correction_state_projection.digiexam_exam_to_correction_source_state(
         effective_exam
+    ).model_copy(
+        update={
+            "advisory_answer_key_candidates": _source_state_advisory_candidates(advisory_candidates)
+        }
     )
     write_exam_authoring_correction_source_state_artifact(
         path=correction_source_state_artifact_path_for_job(job),
@@ -292,9 +301,7 @@ def execute_digiexam_migration_bundle_job(
         answer_key_review_state_path,
         build_digiexam_answer_key_review_state(
             source_state=review_source_state,
-            advisory_candidates=_review_advisory_candidates(
-                answer_key_completion_report_entry.report
-            ),
+            advisory_candidates=advisory_candidates,
             target_readiness=tuple(
                 DigiExamAnswerKeyReviewTargetReadinessInput(
                     target=row.target,
@@ -418,6 +425,41 @@ def _review_advisory_candidates(
         and item.schema_version is not None
         and item.prompt_template_version is not None
     )
+
+
+def _source_state_advisory_candidates(
+    candidates: tuple[DigiExamAnswerKeyReviewAdvisoryCandidateInput, ...],
+) -> tuple[ExamAuthoringAnswerKeyAdvisoryCandidateV1, ...]:
+    return tuple(
+        ExamAuthoringAnswerKeyAdvisoryCandidateV1(
+            item_id=candidate.item_id,
+            sequence=candidate.sequence,
+            candidate_id=candidate.candidate_id,
+            candidate_payload_digest=candidate.candidate_payload_digest,
+            provider_profile_id=candidate.provider_profile_id,
+            schema_name=candidate.schema_name,
+            schema_version=candidate.schema_version,
+            prompt_template_version=candidate.prompt_template_version,
+            validation_state=_source_state_candidate_validation_state(
+                candidate.validation_state
+            ),
+        )
+        for candidate in candidates
+    )
+
+
+def _source_state_candidate_validation_state(
+    value: str,
+) -> ExamAuthoringAdvisoryCandidateValidationStateV1:
+    if value == "valid":
+        return "valid"
+    if value == "invalid":
+        return "invalid"
+    if value == "manual_follow_up_required":
+        return "manual_follow_up_required"
+    if value == "skipped":
+        return "skipped"
+    raise ValueError(f"Unsupported advisory candidate validation state: {value}")
 
 
 def _include_advisory_provenance_detail(job: StoredJobV2) -> bool:

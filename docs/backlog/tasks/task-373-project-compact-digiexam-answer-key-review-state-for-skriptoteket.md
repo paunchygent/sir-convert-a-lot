@@ -146,9 +146,10 @@ The projection must preserve the accepted boundary:
    - Decision: initial reason codes include
      `source_answer_key_present`, `advisory_candidate_pending`,
      `reviewed_advisory_accepted`, `teacher_answer_key_present`,
-     `teacher_edited_advisory_candidate`, `manual_answer_key_required`,
-     `no_correct_choice_selected`, `required_gap_accepted_values_missing`,
-     `unsupported_item_type`, `unsupported_target_shape`,
+     `teacher_edited_advisory_candidate`, `answer_key_not_applicable`,
+     `manual_answer_key_required`, `no_correct_choice_selected`,
+     `required_gap_accepted_values_missing`, `unsupported_item_type`,
+     `unsupported_target_shape`,
      `target_validation_failed`, `provider_unavailable`,
      `correction_rejected`, `stale_source_state`,
      `replay_artifact_unavailable`, and `matching_source_state_unavailable`.
