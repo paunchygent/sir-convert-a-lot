@@ -476,6 +476,7 @@ Dry-run route resolution examples:
 ```bash
 pdm run convert-a-lot convert ./template.docx --to md --output-dir ./out --dry-run
 pdm run convert-a-lot convert ./index.html --to md --output-dir ./out --dry-run
+pdm run convert-a-lot convert ./lesson.mp3 --to transcript_bundle --output-dir ./out --dry-run
 ```
 
 Manifest entry shape includes deterministic route metadata:
@@ -489,9 +490,17 @@ Manifest entry shape includes deterministic route metadata:
   "error_code": null,
   "source_format": "html",
   "target_format": "pdf",
-  "pipeline_used": "service: html -> pdf (v2)"
+  "pipeline_used": "service: html -> pdf (v2)",
+  "idempotency": {}
 }
 ```
+
+For `audio -> transcript_bundle`, CLI parity means the local client submits the
+same Service API v2 audio route as browser/downstream callers, writes the
+primary canonical transcript JSON as `<source-stem>.transcript.json`, and
+preserves any service JSON `idempotency` metadata in the manifest. A
+`service_reattempt` entry must still represent one caller-side create-job
+submission and the service-returned job.
 
 ## Adapter Integration Patterns
 

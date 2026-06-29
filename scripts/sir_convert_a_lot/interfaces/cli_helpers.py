@@ -28,6 +28,21 @@ from scripts.sir_convert_a_lot.interfaces.cli_routes import (
     list_routes,
 )
 
+AUDIO_SOURCE_EXTENSIONS = (
+    ".wav",
+    ".mp3",
+    ".m4a",
+    ".aac",
+    ".flac",
+    ".ogg",
+    ".opus",
+    ".webm",
+    ".aiff",
+    ".mp4",
+    ".mov",
+    ".mkv",
+)
+
 
 def parse_target_format(raw: str) -> TargetFormat:
     """Parse `--to` into a typed TargetFormat value."""
@@ -64,6 +79,10 @@ def discover_source_files(
     source: Path, *, source_format: SourceFormat, recursive: bool
 ) -> list[Path]:
     """Discover source files based on SourceFormat rules."""
+    if source_format is SourceFormat.AUDIO:
+        return discover_files_by_extension(
+            source, extensions=AUDIO_SOURCE_EXTENSIONS, recursive=recursive
+        )
     if source_format is SourceFormat.PDF:
         return discover_files_by_extension(source, extensions=(".pdf",), recursive=recursive)
     if source_format is SourceFormat.MD:
@@ -137,7 +156,24 @@ def default_job_spec_v2(
         "retention": {"pin": False},
     }
 
-    if source_format == SourceFormatV2.PDF:
+    if source_format == SourceFormatV2.AUDIO:
+        payload["audio_transcription_options"] = {
+            "language": "auto",
+            "diarization": {
+                "mode": "auto",
+                "num_speakers": None,
+                "min_speakers": None,
+                "max_speakers": None,
+            },
+            "max_duration_seconds": 7200,
+            "output_artifacts": ["json"],
+        }
+        payload["execution"] = {
+            "acceleration_policy": acceleration_policy,
+            "priority": "normal",
+            "document_timeout_seconds": 7200,
+        }
+    elif source_format == SourceFormatV2.PDF:
         payload["pdf_options"] = {
             "backend_strategy": backend_strategy,
             "ocr_mode": ocr_mode,

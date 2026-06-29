@@ -140,6 +140,7 @@ def convert_upload_to_artifact_v2(
         status=JobStatus.SUCCEEDED,
         artifact_bytes=artifact_bytes,
         formula_authority=formula_authority,
+        idempotency=dict(submitted.idempotency),
     )
 
 
@@ -163,12 +164,11 @@ def _report_submitted_job_v2(
 ) -> None:
     if progress_callback is None:
         return
-    progress_callback(
-        {
-            "job": {
-                "job_id": submitted.job_id,
-                "status": submitted.status.value,
-                "idempotent_replay": submitted.idempotent_replay,
-            }
-        }
-    )
+    job_payload: dict[str, object] = {
+        "job_id": submitted.job_id,
+        "status": submitted.status.value,
+        "idempotent_replay": submitted.idempotent_replay,
+    }
+    if submitted.idempotency:
+        job_payload["idempotency"] = dict(submitted.idempotency)
+    progress_callback({"job": job_payload})

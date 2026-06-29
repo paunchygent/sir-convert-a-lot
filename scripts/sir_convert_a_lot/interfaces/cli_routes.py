@@ -20,6 +20,7 @@ from pathlib import Path
 class SourceFormat(str, Enum):
     """Supported CLI source formats."""
 
+    AUDIO = "audio"
     PDF = "pdf"
     MD = "md"
     HTML = "html"
@@ -32,6 +33,7 @@ class TargetFormat(str, Enum):
     MD = "md"
     PDF = "pdf"
     DOCX = "docx"
+    TRANSCRIPT_BUNDLE = "transcript_bundle"
 
 
 class PipelineKind(str, Enum):
@@ -64,6 +66,13 @@ class CliRoute:
 
 
 _ROUTES: tuple[CliRoute, ...] = (
+    CliRoute(
+        source=SourceFormat.AUDIO,
+        target=TargetFormat.TRANSCRIPT_BUNDLE,
+        pipeline_kind=PipelineKind.SERVICE,
+        implemented=True,
+        pipeline_steps=("service: audio -> transcript_bundle (v2)",),
+    ),
     CliRoute(
         source=SourceFormat.PDF,
         target=TargetFormat.MD,
@@ -149,6 +158,21 @@ def infer_source_format_from_path(path: Path) -> SourceFormat | None:
     """Infer source format from a file path extension."""
 
     suffix = path.suffix.lower()
+    if suffix in {
+        ".wav",
+        ".mp3",
+        ".m4a",
+        ".aac",
+        ".flac",
+        ".ogg",
+        ".opus",
+        ".webm",
+        ".aiff",
+        ".mp4",
+        ".mov",
+        ".mkv",
+    }:
+        return SourceFormat.AUDIO
     if suffix == ".pdf":
         return SourceFormat.PDF
     if suffix in {".md", ".markdown"}:

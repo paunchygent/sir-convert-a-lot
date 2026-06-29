@@ -257,6 +257,9 @@ def test_convert_upload_to_artifact_accepts_service_reattempt_without_client_rer
         "source_evidence_state": "partial_or_unusable",
         "reason": "formula_vlm_runtime_unavailable",
     }
+    assert outcome.idempotency["state"] == "service_reattempt"
+    assert outcome.idempotency["attempt_count"] == 2
+    assert outcome.idempotency["reattempt_of_job_id"] == "job_old"
     assert calls.count(("POST", "/v2/convert/jobs")) == 1
 
 

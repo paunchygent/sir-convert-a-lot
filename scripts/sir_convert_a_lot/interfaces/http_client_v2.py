@@ -164,7 +164,9 @@ class SirConvertALotClientV2:
                 status_code=500,
             ) from exc
 
-        return SubmittedJobV2(job_id=job_id_obj, status=status)
+        idempotency = _idempotency_metadata_from_payload(payload)
+
+        return SubmittedJobV2(job_id=job_id_obj, status=status, idempotency=idempotency)
 
     def submit_job(
         self,
@@ -212,6 +214,7 @@ class SirConvertALotClientV2:
             job_id=submitted.job_id,
             status=submitted.status,
             idempotent_replay=idempotent_replay,
+            idempotency=dict(submitted.idempotency),
         )
 
     def get_job_payload(
@@ -306,6 +309,7 @@ class SirConvertALotClientV2:
             job_id=status.job_id,
             status=status.status,
             idempotent_replay=idempotent_replay,
+            idempotency=dict(status.idempotency),
         )
 
     def download_partial_artifact(self, job_id: str, *, correlation_id: str | None = None) -> bytes:
@@ -432,3 +436,10 @@ class SirConvertALotClientV2:
             reference_docx_bytes=reference_docx_bytes,
             progress_callback=progress_callback,
         )
+
+
+def _idempotency_metadata_from_payload(payload: dict[str, object]) -> dict[str, object]:
+    idempotency_obj = payload.get("idempotency")
+    if not isinstance(idempotency_obj, dict):
+        return {}
+    return {str(key): value for key, value in idempotency_obj.items()}

@@ -196,6 +196,7 @@ class CliManifestEntry(BaseModel):
     output_path: str | None
     error_code: str | None
     formula_authority: dict[str, object] = Field(default_factory=dict)
+    idempotency: dict[str, object] = Field(default_factory=dict)
 
 
 class CliManifest(BaseModel):

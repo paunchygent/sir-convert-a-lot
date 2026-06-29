@@ -17,6 +17,9 @@ from pathlib import Path
 
 import pytest
 
+from tests.sir_convert_a_lot.ml.qwen.training.checkpoint_space_test_support import (
+    fake_disk_usage,
+)
 from tests.sir_convert_a_lot.ml.qwen.training.training_test_support import (
     DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES,
     SFT_12HZ_CHECKPOINTING,
@@ -318,17 +321,9 @@ def test_save_durable_checkpoint_fails_closed_for_first_checkpoint_when_free_spa
     output_model_path = tmp_path / "run" / "checkpoints"
     required_free_bytes = DEFAULT_DURABLE_CHECKPOINT_ESTIMATE_BYTES + (16 * 1024**3)
 
-    class _FakeDiskUsage:
-        """Minimal disk-usage record for the free-space guard test."""
-
-        def __init__(self, free: int) -> None:
-            self.total = free * 2
-            self.used = free
-            self.free = free
-
     monkeypatch.setattr(
         "scripts.devops.qwen_finetuning_patches.sft_12hz_checkpointing.shutil.disk_usage",
-        lambda _path: _FakeDiskUsage(required_free_bytes - 1),
+        lambda _path: fake_disk_usage(free=required_free_bytes - 1),
     )
 
     with pytest.raises(RuntimeError, match="enough free space"):

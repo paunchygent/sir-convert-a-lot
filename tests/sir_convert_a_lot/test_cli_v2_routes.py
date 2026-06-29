@@ -22,12 +22,45 @@ from typer.testing import CliRunner
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.interfaces import cli_app
+from scripts.sir_convert_a_lot.interfaces.cli_helpers import discover_source_files
+from scripts.sir_convert_a_lot.interfaces.cli_routes import (
+    SourceFormat,
+    infer_source_format_from_path,
+)
 from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
     ArtifactOutcomeV2,
     ClientErrorV2,
 )
 
 runner = CliRunner()
+
+
+def test_audio_transcript_bundle_route_is_cli_visible() -> None:
+    result = runner.invoke(cli_app.app, ["routes"])
+
+    assert result.exit_code == 0
+    assert "- audio -> transcript_bundle [service] (implemented)" in result.stdout
+
+
+def test_audio_source_inference_and_discovery_include_audio_and_video_extensions(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "media"
+    source_dir.mkdir()
+    audio_file = source_dir / "lesson.mp3"
+    video_file = source_dir / "seminar.mp4"
+    ignored_file = source_dir / "notes.md"
+    audio_file.write_bytes(b"fake-mp3")
+    video_file.write_bytes(b"fake-mp4")
+    ignored_file.write_text("# Notes\n", encoding="utf-8")
+
+    assert infer_source_format_from_path(audio_file) is SourceFormat.AUDIO
+    assert infer_source_format_from_path(video_file) is SourceFormat.AUDIO
+    assert discover_source_files(
+        source_dir,
+        source_format=SourceFormat.AUDIO,
+        recursive=True,
+    ) == [audio_file, video_file]
 
 
 class FakeV2Client:
@@ -92,12 +125,24 @@ class FakeV2Client:
             artifact_prefix = b"%PDF-1.4\n"
         elif output_format == "md":
             artifact_prefix = b"# "
+        elif output_format == "transcript_bundle":
+            artifact_prefix = b'{"schema_version":"transcript_json_v1",'
         else:
             artifact_prefix = b"PK"
+        idempotency_metadata = {}
+        if output_format == "transcript_bundle":
+            idempotency_metadata = {
+                "state": "service_reattempt",
+                "idempotent_replay": False,
+                "active_job_id": f"job_ok_{source_path.stem}",
+                "attempt_count": 2,
+                "reattempt_of_job_id": "job_failed_audio",
+            }
         return ArtifactOutcomeV2(
             job_id=f"job_ok_{source_path.stem}",
             status=JobStatus.SUCCEEDED,
             artifact_bytes=artifact_prefix + b"fake-artifact",
+            idempotency=dict(idempotency_metadata),
         )
 
 
@@ -361,6 +406,85 @@ def test_docx_to_md_route_submits_v2_job_and_writes_manifest(tmp_path: Path, mon
     assert spec["source"]["format"] == "docx"
     assert spec["conversion"]["output_format"] == "md"
     assert captured["retry_mode"] == "auto"
+
+
+def test_audio_transcript_bundle_route_submits_once_and_records_service_reattempt(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    FakeV2Client.captured_requests = []
+    monkeypatch.setattr(cli_app, "SirConvertALotClientV2", FakeV2Client)
+
+    source_file = tmp_path / "lesson.mp3"
+    source_file.write_bytes(b"fake-audio")
+    output_dir = tmp_path / "out"
+
+    result = runner.invoke(
+        cli_app.app,
+        [
+            "convert",
+            str(source_file),
+            "--output-dir",
+            str(output_dir),
+            "--to",
+            "transcript_bundle",
+            "--api-key",
+            "dev-key",
+        ],
+    )
+
+    assert result.exit_code == 0
+    output_json = output_dir / "lesson.transcript.json"
+    assert output_json.exists()
+    assert output_json.read_bytes().startswith(b'{"schema_version":"transcript_json_v1"')
+
+    assert len(FakeV2Client.captured_requests) == 1
+    captured = FakeV2Client.captured_requests[0]
+    spec = captured["job_spec"]
+    assert isinstance(spec, dict)
+    assert spec["api_version"] == "v2"
+    assert spec["source"] == {"kind": "upload", "filename": "lesson.mp3", "format": "audio"}
+    assert spec["conversion"] == {
+        "output_format": "transcript_bundle",
+        "css_filenames": [],
+        "reference_docx_filename": None,
+    }
+    assert spec["audio_transcription_options"] == {
+        "language": "auto",
+        "diarization": {
+            "mode": "auto",
+            "num_speakers": None,
+            "min_speakers": None,
+            "max_speakers": None,
+        },
+        "max_duration_seconds": 7200,
+        "output_artifacts": ["json"],
+    }
+    assert spec["execution"] == {
+        "acceleration_policy": "gpu_required",
+        "priority": "normal",
+        "document_timeout_seconds": 7200,
+    }
+    captured_idempotency = captured["idempotency_key"]
+    assert isinstance(captured_idempotency, str)
+    assert captured_idempotency.startswith("idemv2_")
+    assert captured["retry_mode"] == "auto"
+    assert captured["resources_zip_bytes"] is None
+    assert captured["reference_docx_bytes"] is None
+
+    manifest_path = output_dir / "sir_convert_a_lot_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    entry = payload["entries"][0]
+    assert entry["source_file_path"] == "lesson.mp3"
+    assert entry["source_format"] == "audio"
+    assert entry["target_format"] == "transcript_bundle"
+    assert entry["pipeline_used"] == "service: audio -> transcript_bundle (v2)"
+    assert entry["job_id"] == "job_ok_lesson"
+    assert entry["status"] == "succeeded"
+    assert entry["output_path"] == str(output_json)
+    assert entry["idempotency"]["state"] == "service_reattempt"
+    assert entry["idempotency"]["attempt_count"] == 2
+    assert entry["idempotency"]["reattempt_of_job_id"] == "job_failed_audio"
 
 
 def test_cli_new_job_flag_maps_to_independent_client_retry_mode(

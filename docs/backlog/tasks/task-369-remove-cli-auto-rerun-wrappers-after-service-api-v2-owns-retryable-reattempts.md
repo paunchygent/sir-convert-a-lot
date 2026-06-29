@@ -10,6 +10,7 @@ related:
   - docs/backlog/tasks/task-368-centralize-retryable-failed-idempotency-reattempts-in-service-api-v2.md
   - docs/backlog/tasks/task-63-cli-auto-rerun-on-idempotent-failed-replays.md
   - docs/backlog/tasks/task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md
+  - docs/backlog/tasks/task-371-expose-audio-transcript-bundle-cli-route-for-public-browser-idempotency-proof.md
   - docs/converters/sir_convert_a_lot.md
   - docs/converters/multi_format_conversion_service_api_v2.md
   - docs/converters/downstream_integration_contract_v2.md
@@ -148,6 +149,21 @@ Required evidence bundle:
   not from a CLI-generated alternate key;
 - terminal success manifest and artifact fetch proof;
 - bounded log scan for the proof interval.
+
+## Accepted Live Proof Gap
+
+Olof accepted the corrected-worker finding that this task cannot be closed with
+a truthful CLI live proof as currently scoped. The known safe retryable-failed
+precondition is the audio/STT sidecar-unavailable route used by Task 368, while
+the current CLI exposes only document conversion routes. Creating a
+retryable-failed precondition through a document route would require
+out-of-scope production GPU, dependency, or timeout perturbation.
+
+Do not complete this task with a weaker CLI, proxy, tunnel, or document-route
+proof. Task 371 is the governed follow-up that must expose
+`audio -> transcript_bundle` through the CLI/client surface and define the
+public browser proof path before additional behavior work attempts this final
+live closeout.
 
 ## Implementation Evidence
 

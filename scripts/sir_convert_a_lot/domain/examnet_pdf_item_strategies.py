@@ -321,22 +321,19 @@ def _option_text_by_id(
     option_text_by_id: dict[int, str] = {}
     warnings: list[DigiExamExamNetPdfWarning] = []
     for option in item.options:
-        option_text = " ".join(option.text.split())
+        option_text = _target_option_text(option.text)
         if option_text == "":
             continue
-        if _LABELLED_OPTION_PATTERN.match(option_text):
-            warnings.append(
-                DigiExamExamNetPdfWarning(
-                    code=DigiExamExamNetPdfWarningCode.OPTION_TEXT_LOOKS_LABELLED,
-                    message=f"Option text for item {item.item_id} looks source-labelled.",
-                    item_id=item.item_id,
-                )
-            )
         option_text_by_id[option.option_id] = option_text
 
     if len(set(option_text_by_id.values())) != len(option_text_by_id):
         return {}, (_answer_key_mismatch(item, "duplicate option text is unsafe"),)
     return option_text_by_id, tuple(warnings)
+
+
+def _target_option_text(source_text: str) -> str:
+    normalized_text = " ".join(source_text.split())
+    return _LABELLED_OPTION_PATTERN.sub("", normalized_text, count=1)
 
 
 def _missing_answer_key(item: PdfExamItemSemantics) -> DigiExamExamNetPdfWarning:

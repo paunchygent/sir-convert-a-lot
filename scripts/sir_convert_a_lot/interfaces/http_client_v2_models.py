@@ -41,6 +41,7 @@ class SubmittedJobV2:
     job_id: str
     status: JobStatus
     idempotent_replay: bool = False
+    idempotency: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -51,3 +52,4 @@ class ArtifactOutcomeV2:
     status: Literal[JobStatus.SUCCEEDED]
     artifact_bytes: bytes
     formula_authority: dict[str, object] = field(default_factory=dict)
+    idempotency: dict[str, object] = field(default_factory=dict)

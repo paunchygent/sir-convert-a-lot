@@ -72,14 +72,15 @@ def convert_command(
             "Target format. Implemented routes include: "
             "'md' (pdf->md, docx->md, and html->md via service v2), "
             "'pdf' (html->pdf and md->pdf via service v2), and 'docx' (pdf->docx, md->docx, "
-            "and html->docx via service v2). "
+            "and html->docx via service v2), plus 'transcript_bundle' "
+            "(audio/video-with-audio -> transcript_bundle via service v2). "
             "Use 'convert-a-lot routes' for details."
         ),
     ),
     from_format: str | None = typer.Option(
         None,
         "--from",
-        help="Override source format inference: pdf, md, html, or docx.",
+        help="Override source format inference: audio, pdf, md, html, or docx.",
     ),
     dry_run: bool = typer.Option(
         False,

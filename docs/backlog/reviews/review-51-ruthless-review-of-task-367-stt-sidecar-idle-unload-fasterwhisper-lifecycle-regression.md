@@ -20,6 +20,7 @@ labels:
   - sidecar
   - idle-unload
 ---
+
 Structured review artifact for implementation or readiness checks.
 
 ## Review Scope
@@ -159,26 +160,35 @@ Reviewer-run evidence:
 - Context7 `/systran/faster-whisper` query for `WhisperModel` lifecycle:
   documented model construction and transcription, with no documented
   `WhisperModel.unload_model()` API found.
+
 - Context7 `/opennmt/ctranslate2` query for memory management:
   documented `unload_model()` for CTranslate2 translator-style objects and
   deletion of model objects as a resource-release path.
+
 - `pdm run pytest-root tests/sir_convert_a_lot/test_stt_sidecar_lazy_lifecycle.py tests/sir_convert_a_lot/test_stt_sidecar_batched_runtime.py tests/sir_convert_a_lot/test_stt_sidecar_media_runtime.py tests/sir_convert_a_lot/test_stt_sidecar_http_contract.py tests/sir_convert_a_lot/test_compose_contract.py tests/sir_convert_a_lot/test_audio_transcription_sidecar_readiness.py -q`
   passed: `47 passed in 0.62s`.
+
 - `pdm run typecheck-all` passed:
   `Success: no issues found in 894 source files`.
+
 - Static scan for `unload_model`, `Any`, `typing.Any`, `cast(`,
   `type: ignore`, `noqa`, lint ignores, pyright, and mypy escape hatches in the
   reviewed STT sidecar files returned no matches.
+
 - `wc -l` confirmed reviewed production/test modules stay within the repo
   400-500 line budget.
 
 - `pdm run docs-sync` refreshed generated docs indexes:
   `docs/backlog/INDEX.md`, `docs/reference/INDEX.md`,
   `docs/runbooks/INDEX.md`, and `docs/index.md`.
+
 - `pdm run docs-validate` passed: `Validated 489 backlog files` and
   `Validated docs=565 rules=11`.
+
 - `pdm run skills-validate` passed: `skills-validate: ok`.
+
 - `pdm run handoff-validate` passed: `handoff-validate: ok`.
+
 - `git diff --check` passed.
 
 ## Checklist

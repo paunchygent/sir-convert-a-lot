@@ -28,6 +28,7 @@ def test_routes_command_lists_supported_routes_in_stable_order() -> None:
     assert result.exit_code == 0
     assert result.stdout.splitlines() == [
         "Supported routes:",
+        "- audio -> transcript_bundle [service] (implemented)",
         "- pdf -> md [service] (implemented)",
         "- docx -> md [service] (implemented)",
         "- docx -> pdf [service] (implemented)",

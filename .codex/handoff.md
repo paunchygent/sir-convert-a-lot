@@ -43,7 +43,9 @@ durable implementation authority lives in governed docs.
 - Task 369 implementation and retained Review 54 are approved:
   CLI/client Task 63 failed-replay auto-rerun wrappers are removed, `--new-job`
   is explicit independent intent only, and docs/tests record one-submit
-  service-owned idempotency behavior. Deploy and Hemma live proof remain.
+  service-owned idempotency behavior. Olof accepted the live-proof mismatch:
+  no weaker CLI/proxy/tunnel proof; Task 371 must first expose the audio CLI
+  route and public browser proof path.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper
@@ -182,13 +184,14 @@ decision/performance work.
 - Task 368 validation and live-proof evidence is retained in its task doc and
   Review 52; do not reintroduce caller-side idempotency salting or auto-rerun
   remediation.
-- Task 369 local implementation gates passed in the corrected worker run:
-  focused red/green CLI/client tests, manifest tests, `typecheck-all`,
-  `docs-sync`, `docs-validate`, `skills-validate`, `handoff-validate`, and
-  `coverage-gate` (`1748 passed, 6 skipped`, coverage `95.53%`). Whole-repo
-  mutating `format-all`/`lint-fix` were intentionally not run because unrelated
-  Task 367/370 dirty work is present; check-only `lint` found no Python issues
-  but reported pre-existing Task 368 Markdown formatting drift.
+- Task 371 local implementation is in progress for the audio CLI
+  transcript-bundle route. Red/green route, manifest, one-submit idempotency,
+  route-registry, `typecheck-all`, `validate-tasks`, `skills-validate`,
+  `handoff-validate`, `git diff --check`, and `coverage-gate` passed
+  (`1752 passed, 6 skipped`, coverage `95.53%`). `docs-validate`/`lint`
+  remain blocked by already-dirty generated `docs/backlog/INDEX.md` drift from
+  unrelated Task 367/370 work; do not run `docs-sync` without accepting that
+  generated-index mix.
 
 ## Stop Conditions
 

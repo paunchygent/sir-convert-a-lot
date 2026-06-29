@@ -57,44 +57,54 @@ def build_detached_training_command(
     container_run_root = containerize_scratch_path(
         effective_run_root,
         scratch_root=settings.scratch_build_root,
+        label="run_root",
     )
     container_train_jsonl = containerize_scratch_path(
         train_manifest_path(settings),
         scratch_root=settings.scratch_build_root,
+        label="train_jsonl",
     )
     container_eval_jsonl = containerize_scratch_path(
         eval_manifest_path(settings),
         scratch_root=settings.scratch_build_root,
+        label="eval_jsonl",
     )
     container_launch_metadata_path = containerize_scratch_path(
         launch_root / "launch.json",
         scratch_root=settings.scratch_build_root,
+        label="launch_metadata_path",
     )
     container_pilot_bundle_root = containerize_scratch_path(
         settings.pilot_bundle_root,
         scratch_root=settings.scratch_build_root,
+        label="pilot_bundle_root",
     )
     container_mlflow_artifact_root = containerize_scratch_path(
         mlflow_artifact_root(effective_run_root),
         scratch_root=settings.scratch_build_root,
+        label="mlflow_artifact_root",
     )
     container_tensorboard_logging_dir = containerize_scratch_path(
         tensorboard_logging_dir(effective_run_root),
         scratch_root=settings.scratch_build_root,
+        label="tensorboard_logging_dir",
     )
     container_pytorch_profiling_dir = containerize_scratch_path(
         pytorch_profiling_dir(effective_run_root),
         scratch_root=settings.scratch_build_root,
+        label="pytorch_profiling_dir",
     )
     container_rocm_profiling_dir = containerize_scratch_path(
         rocm_profiling_dir(effective_run_root),
         scratch_root=settings.scratch_build_root,
+        label="rocm_profiling_dir",
     )
     container_resume_checkpoint = None
     if resume_from_checkpoint is not None:
         container_resume_checkpoint = containerize_scratch_path(
             resume_from_checkpoint,
             scratch_root=settings.scratch_build_root,
+            label="resume_from_checkpoint",
         )
     probe_args = [
         "--launch-id",

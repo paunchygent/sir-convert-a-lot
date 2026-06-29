@@ -45,6 +45,8 @@ The CLI exposes a typed route registry for supported/planned conversions. Routes
 - `html -> docx` (service v2)
 - `md -> html -> pdf` (service v2)
 - `md -> html -> docx` (service v2)
+- `audio -> transcript_bundle` (service v2; audio/video-with-audio to
+  canonical transcript JSON)
 - approved next route: `md -> wav` (Hemma sidecar TTS; not yet implemented)
 
 Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
@@ -320,6 +322,36 @@ pdm run convert-a-lot convert ./paper.pdf \
 
 `pdf -> docx` is delivered by the explicit service API v2 surface.
 
+Create a transcript bundle from uploaded audio or video-with-audio through the
+operator direct-service CLI lane:
+
+```bash
+pdm run convert-a-lot convert ./lesson.mp3 \
+  --to transcript_bundle \
+  --output-dir ./out \
+  --service-url https://convert.hule.education \
+  --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
+```
+
+This direct `https://convert.hule.education` CLI example is operator/service
+evidence only. It cannot close the Task 371 public browser proof or the Task
+369 live gate, which must use the HuleEdu Gateway browser surface
+`/sir-convert/v2/convert/jobs` and correlate the downstream Sir Convert
+create-job request.
+
+The CLI infers supported media extensions as `audio`, including `wav`, `mp3`,
+`m4a`, `aac`, `flac`, `ogg`, `opus`, `webm`, `aiff`, `mp4`, `mov`, and `mkv`.
+The submitted v2 job uses `source.format="audio"` and
+`conversion.output_format="transcript_bundle"` with the governed public audio
+options from
+`docs/converters/audio-transcription-service-api-artifact-contract.md`.
+
+The downloaded primary artifact is the canonical transcript JSON and is written
+as `<source-stem>.transcript.json`. Named service artifacts such as
+`transcript_json`, `transcript_txt`, `transcript_md`, `transcript_vtt`, and
+`transcript_srt` remain governed by the Service API v2 result/artifacts
+endpoints.
+
 Optional styling via a reference DOCX is supported for this service v2 route as well:
 
 ```bash
@@ -431,6 +463,8 @@ Each batch writes `sir_convert_a_lot_manifest.json` in `--output-dir` with entri
 - `status`
 - `output_path`
 - `error_code`
+- `idempotency`
+- route-specific metadata such as `formula_authority` when available
 
 This manifest is the canonical audit artifact for assistant-driven batch conversions.
 
@@ -443,6 +477,10 @@ Long-running note:
 - Submitted and idempotent-replay jobs are printed as explicit operator lines
   before terminal artifact download, so a reused running job is not mistaken for
   a duplicate fresh submission or a silent stall.
+- For service-owned reattempts, the manifest records the service-returned job
+  and copies the service JSON `idempotency` metadata, such as
+  `state="service_reattempt"` and `reattempt_of_job_id`. The CLI must not hide
+  a second caller-side create-job request because no such request is allowed.
 - If `--max-poll-seconds` is exceeded, CLI records the entry as `status: running` with `job_id` and
   `error_code: job_poll_window_exceeded` instead of marking it as failed.
 - Conversion continues server-side; callers can query:

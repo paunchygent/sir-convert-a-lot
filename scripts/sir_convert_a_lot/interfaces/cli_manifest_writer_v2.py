@@ -38,6 +38,7 @@ def build_success_manifest_entry_v2(
     job_id: str,
     output_path: Path,
     formula_authority: dict[str, object] | None = None,
+    idempotency: dict[str, object] | None = None,
 ) -> CliManifestEntry:
     """Return one deterministic succeeded conversion manifest entry."""
     return CliManifestEntry(
@@ -50,6 +51,7 @@ def build_success_manifest_entry_v2(
         output_path=output_path.as_posix(),
         error_code=None,
         formula_authority=dict(formula_authority or {}),
+        idempotency=dict(idempotency or {}),
     )
 
 

@@ -192,6 +192,15 @@ class _SingleSubmissionOutcomeV2:
 
 def _validate_route_companion_options_v2(options: CliRouteSubmissionOptionsV2) -> None:
     route = options.route
+    if route.target is TargetFormat.TRANSCRIPT_BUNDLE:
+        if options.css_paths:
+            raise typer.BadParameter("--css is not supported for audio transcript outputs.")
+        if options.reference_docx is not None:
+            raise typer.BadParameter(
+                "--reference-docx is not supported for audio transcript outputs."
+            )
+        if options.resources is not None:
+            raise typer.BadParameter("--resources is not supported for audio transcript outputs.")
     if route.target is TargetFormat.DOCX and options.css_paths:
         raise typer.BadParameter("--css is only supported for PDF outputs.")
     if route.target is TargetFormat.PDF and options.reference_docx is not None:
@@ -256,6 +265,8 @@ def _prepare_companion_payload_v2(
 
 
 def _source_format_v2_for_route_source(source_format: SourceFormat) -> SourceFormatV2:
+    if source_format is SourceFormat.AUDIO:
+        return SourceFormatV2.AUDIO
     if source_format is SourceFormat.PDF:
         return SourceFormatV2.PDF
     if source_format is SourceFormat.DOCX:
@@ -272,6 +283,8 @@ def _output_format_v2_for_route_target(target_format: TargetFormat) -> OutputFor
         return OutputFormatV2.MD
     if target_format is TargetFormat.PDF:
         return OutputFormatV2.PDF
+    if target_format is TargetFormat.TRANSCRIPT_BUNDLE:
+        return OutputFormatV2.TRANSCRIPT_BUNDLE
     return OutputFormatV2.DOCX
 
 
@@ -284,6 +297,8 @@ def _target_suffix_for_output_format(output_format: OutputFormatV2) -> str:
         return ".md"
     if output_format == OutputFormatV2.PDF:
         return ".pdf"
+    if output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
+        return ".transcript.json"
     return ".docx"
 
 
@@ -405,6 +420,7 @@ def _submit_one_source_file_v2(
                 job_id=v2_outcome.job_id,
                 output_path=target_path,
                 formula_authority=dict(v2_outcome.formula_authority),
+                idempotency=dict(v2_outcome.idempotency),
             ),
             failed=False,
         )

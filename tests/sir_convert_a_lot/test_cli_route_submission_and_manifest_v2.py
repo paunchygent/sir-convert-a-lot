@@ -203,6 +203,7 @@ def test_cli_route_submission_writes_manifest_when_job_id_is_observed(
                 {
                     "error_code": "job_running",
                     "formula_authority": {},
+                    "idempotency": {},
                     "job_id": "job_running_long",
                     "output_path": None,
                     "pipeline_used": "service: md -> pdf (v2)",
@@ -233,6 +234,102 @@ def test_cli_route_submission_writes_manifest_when_job_id_is_observed(
     assert payload["entries"][0]["status"] == "succeeded"
     assert payload["entries"][0]["job_id"] == "job_running_long"
     assert payload["entries"][0]["output_path"] == (output_dir / "long.pdf").as_posix()
+
+
+def test_audio_route_submission_records_service_reattempt_metadata_without_extra_submit(
+    tmp_path: Path,
+) -> None:
+    source_file = tmp_path / "lesson.m4a"
+    source_file.write_bytes(b"fake-audio")
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    route = resolve_route(source=SourceFormat.AUDIO, target=TargetFormat.TRANSCRIPT_BUNDLE)
+    assert route is not None
+    messages: list[str] = []
+    idempotency_keys: list[str] = []
+    submitted_specs: list[dict[str, object]] = []
+
+    class _AudioReattemptClient(_FakeClient):
+        def convert_upload_to_artifact(self, **kwargs) -> ArtifactOutcomeV2:
+            idempotency_key = kwargs["idempotency_key"]
+            job_spec = kwargs["job_spec"]
+            assert isinstance(idempotency_key, str)
+            assert isinstance(job_spec, dict)
+            idempotency_keys.append(idempotency_key)
+            submitted_specs.append(job_spec)
+            return ArtifactOutcomeV2(
+                job_id="job_audio_reattempt",
+                status=JobStatus.SUCCEEDED,
+                artifact_bytes=b'{"schema_version":"transcript_json_v1"}',
+                idempotency={
+                    "state": "service_reattempt",
+                    "idempotent_replay": False,
+                    "active_job_id": "job_audio_reattempt",
+                    "attempt_count": 2,
+                    "previous_attempts": [
+                        {
+                            "job_id": "job_audio_failed",
+                            "status": "failed",
+                            "failure_retryable": True,
+                        }
+                    ],
+                    "reattempt_of_job_id": "job_audio_failed",
+                },
+            )
+
+    result = submit_service_route_batch_v2(
+        options=CliRouteSubmissionOptionsV2(
+            source=source_file,
+            output_dir=output_dir,
+            route=route,
+            source_files=(source_file,),
+            service_url="https://convert.hule.education",
+            api_key="dev-key",
+            wait_seconds=0,
+            max_poll_seconds=5,
+            stall_timeout_seconds=30,
+            retry_mode="auto",
+            css_paths=(),
+            resources=None,
+            reference_docx=None,
+            acceleration_policy="gpu_required",
+            backend_strategy="auto",
+            ocr_mode="auto",
+            ocr_engine="auto",
+            ocr_languages=(),
+            table_mode="accurate",
+            normalize="strict",
+        ),
+        client_factory=_AudioReattemptClient,
+        message_sink=messages.append,
+    )
+
+    assert result.has_failures is False
+    assert len(result.entries) == 1
+    assert len(idempotency_keys) == 1
+    assert idempotency_keys[0].startswith("idemv2_")
+    assert len(submitted_specs) == 1
+    spec = submitted_specs[0]
+    assert spec["source"] == {"kind": "upload", "filename": "lesson.m4a", "format": "audio"}
+    conversion_obj = spec["conversion"]
+    audio_options_obj = spec["audio_transcription_options"]
+    assert isinstance(conversion_obj, dict)
+    assert isinstance(audio_options_obj, dict)
+    assert conversion_obj["output_format"] == "transcript_bundle"
+    assert audio_options_obj["output_artifacts"] == ["json"]
+    entry = result.entries[0]
+    assert entry.source_format == "audio"
+    assert entry.target_format == "transcript_bundle"
+    assert entry.job_id == "job_audio_reattempt"
+    assert entry.output_path == (output_dir / "lesson.transcript.json").as_posix()
+    assert entry.idempotency["state"] == "service_reattempt"
+    assert entry.idempotency["reattempt_of_job_id"] == "job_audio_failed"
+    assert (output_dir / "lesson.transcript.json").read_bytes() == (
+        b'{"schema_version":"transcript_json_v1"}'
+    )
+    assert messages == [
+        f"✓ Converted lesson.m4a -> {output_dir / 'lesson.transcript.json'}",
+    ]
 
 
 def test_cli_route_submission_preserves_running_manifest_on_interrupt(
@@ -281,6 +378,7 @@ def test_cli_route_submission_preserves_running_manifest_on_interrupt(
         {
             "error_code": "client_interrupted",
             "formula_authority": {},
+            "idempotency": {},
             "job_id": "job_interrupted",
             "output_path": None,
             "pipeline_used": "service: md -> pdf (v2)",

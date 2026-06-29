@@ -209,6 +209,9 @@ contracts:
   Audio create-job admission with `wait_seconds=0` must remain bounded: retained
   job capacity checks must not invoke runtime status APIs that sweep the job
   store once per retained job.
+  The CLI exposes this route as `audio -> transcript_bundle`; it is a thin
+  Service API v2 submit/poll/download wrapper and must preserve service-owned
+  idempotency metadata rather than adding caller-side retry remediation.
 - `transcript_json -> transcript_bundle` is implemented for stateless
   formatter replay over one uploaded canonical `transcript_json_v1` payload.
   It accepts strict `transcript_formatter_options`, exact lowercase requested

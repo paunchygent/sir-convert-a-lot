@@ -74,27 +74,27 @@ Production RCA on 2026-06-28:
 ## Deliverables
 
 - [x] Focused red-first regression test that fails with the current
-      `unload_model` call when the fake FasterWhisper model has no such method.
+  `unload_model` call when the fake FasterWhisper model has no such method.
 - [x] Production lifecycle fix for idle unload, shutdown cleanup, and health
-      idle-unload triggering.
+  idle-unload triggering.
 - [x] Focused STT sidecar tests and quality gates.
 - [x] Retained Review 51 artifact with independent ruthless review approval.
 - [x] Hemma deployment and live production proof showing sidecar health recovers
-      and a post-idle `audio -> transcript_bundle` job succeeds.
+  and a post-idle `audio -> transcript_bundle` job succeeds.
 - [x] Updated `.codex/handoff.md` with exact validation and live proof paths.
 
 ## Acceptance Criteria
 
 - [x] `LoadedSttModels.unload()` and lifecycle cleanup do not depend on
-      `WhisperModel.unload_model()` or any undocumented FasterWhisper method.
+  `WhisperModel.unload_model()` or any undocumented FasterWhisper method.
 - [x] Calling `runtime.health()` after the idle timeout drops resident model
-      references, returns ready health when preconditions are still satisfied,
-      and does not make `/health` return `500`.
+  references, returns ready health when preconditions are still satisfied,
+  and does not make `/health` return `500`.
 - [x] Shutdown cleanup remains idempotent and does not throw when models are
-      resident.
+  resident.
 - [x] Existing sidecar behavior is preserved for `/probe-media`,
-      `/capabilities`, first transcription/diarization lazy load, active-use
-      protection, and batched FasterWhisper execution.
+  `/capabilities`, first transcription/diarization lazy load, active-use
+  protection, and batched FasterWhisper execution.
 - [x] Review 51 is approved after the reviewer verifies behavior, typing,
   docs-as-code state, and missing-test risk.
 - [x] Live Hemma proof after deploy includes bounded logs or manifests showing:

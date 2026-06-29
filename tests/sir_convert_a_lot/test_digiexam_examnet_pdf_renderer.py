@@ -172,17 +172,45 @@ def test_examnet_pdf_target_profile_labels_do_not_mutate_ir_item_semantics() -> 
     assert exam.items[0].answer_key == original_item.answer_key
 
 
-def test_examnet_pdf_document_blocks_source_labelled_options() -> None:
+def test_examnet_pdf_document_strips_source_labelled_options_at_target_boundary() -> None:
     payload = _renderable_payload()
     payload["exams"][0]["questions"][1]["alternatives"][0]["title"] = "A. Alpha"
+    payload["exams"][0]["questions"][1]["alternatives"][1]["title"] = "B) Beta"
+    payload["exams"][0]["questions"][2]["alternatives"][0]["title"] = "1. First"
+    payload["exams"][0]["questions"][2]["alternatives"][2]["title"] = "3) Third"
     exam = _exam_from_payload(payload, filename="labelled-options.dxe")
 
     document = build_digiexam_examnet_pdf_document(exam)
 
+    assert document.status == DigiExamExamNetPdfStatus.SUCCESS
+    assert document.warnings == ()
+    assert "<p>Alpha</p>" in document.html
+    assert "<p>Beta</p>" in document.html
+    assert "Correct answer: Beta" in document.html
+    assert "Correct answers: First; Third" in document.html
+    assert "A. Alpha" not in document.html
+    assert "B) Beta" not in document.html
+    assert "1. First" not in document.html
+    assert "3) Third" not in document.html
+
+
+def test_examnet_pdf_document_blocks_duplicate_options_after_label_stripping() -> None:
+    payload = _renderable_payload()
+    payload["exams"][0]["questions"][1]["alternatives"][0]["title"] = "A. Alpha"
+    payload["exams"][0]["questions"][1]["alternatives"][1]["title"] = "B. Alpha"
+    exam = _exam_from_payload(payload, filename="duplicate-normalized-options.dxe")
+
+    document = build_digiexam_examnet_pdf_document(exam)
+
     assert document.status == DigiExamExamNetPdfStatus.BLOCKED
-    assert DigiExamExamNetPdfWarningCode.OPTION_TEXT_LOOKS_LABELLED in {
+    assert DigiExamExamNetPdfWarningCode.ALTERNATIVE_ANSWER_KEY_MISMATCH in {
         warning.code for warning in document.warnings
     }
+    assert [
+        warning.message
+        for warning in document.warnings
+        if warning.code == DigiExamExamNetPdfWarningCode.ALTERNATIVE_ANSWER_KEY_MISMATCH
+    ] == ["Item item-002 cannot render safely: duplicate option text is unsafe."]
 
 
 def test_examnet_pdf_document_preserves_unsupported_source_type_warning() -> None:

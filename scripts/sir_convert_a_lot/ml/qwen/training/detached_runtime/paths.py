@@ -18,14 +18,38 @@ from scripts.sir_convert_a_lot.ml.qwen.training.models import TrainingSettings
 CONTAINER_BUILD_ROOT = Path("/app/build")
 
 
+def require_scratch_path(host_path: Path, *, scratch_root: Path, label: str) -> Path:
+    """Return one resolved path or fail closed when it escapes the scratch root."""
+    resolved_path = host_path.resolve()
+    resolved_scratch_root = scratch_root.resolve()
+    try:
+        resolved_path.relative_to(resolved_scratch_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"`{label}` escaped configured Qwen scratch build root: "
+            f"offending_path=`{resolved_path.as_posix()}` "
+            f"expected_scratch_root=`{resolved_scratch_root.as_posix()}`"
+        ) from exc
+    return resolved_path
+
+
 def run_root_for_launch(settings: TrainingSettings, *, launch_id: str) -> Path:
     """Return the canonical host-side run root for one training launch."""
     return settings.runs_root / launch_id
 
 
-def containerize_scratch_path(host_path: Path, *, scratch_root: Path) -> str:
+def containerize_scratch_path(
+    host_path: Path,
+    *,
+    scratch_root: Path,
+    label: str = "scratch_path",
+) -> str:
     """Translate one host scratch path into the mounted container build path."""
-    relative_path = host_path.resolve().relative_to(scratch_root.resolve())
+    relative_path = require_scratch_path(
+        host_path,
+        scratch_root=scratch_root,
+        label=label,
+    ).relative_to(scratch_root.resolve())
     return (CONTAINER_BUILD_ROOT / relative_path).as_posix()
 
 

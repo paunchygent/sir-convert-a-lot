@@ -25,4 +25,28 @@ def content_type_for_source_path(path: Path) -> str:
         return "text/html"
     if suffix == ".docx":
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    if suffix == ".wav":
+        return "audio/wav"
+    if suffix == ".mp3":
+        return "audio/mpeg"
+    if suffix == ".m4a":
+        return "audio/mp4"
+    if suffix == ".aac":
+        return "audio/aac"
+    if suffix == ".flac":
+        return "audio/flac"
+    if suffix == ".ogg":
+        return "audio/ogg"
+    if suffix == ".opus":
+        return "audio/opus"
+    if suffix == ".aiff":
+        return "audio/aiff"
+    if suffix == ".mp4":
+        return "video/mp4"
+    if suffix == ".mov":
+        return "video/quicktime"
+    if suffix == ".mkv":
+        return "video/x-matroska"
+    if suffix == ".webm":
+        return "video/webm"
     return "application/octet-stream"
