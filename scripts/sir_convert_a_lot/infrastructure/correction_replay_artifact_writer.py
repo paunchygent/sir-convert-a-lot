@@ -19,6 +19,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state import (
+    attach_digiexam_answer_key_review_replay_references,
+)
+from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewTargetReadinessInput,
+)
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_replay_artifacts import (
     ExamAuthoringCorrectionReplayArtifactDefinition,
     replay_artifact_definition_for_key,
@@ -219,13 +225,28 @@ def _with_replay_artifact_references(
     result: ExamAuthoringCorrectionsApplyResultV1,
     outcome: _ReplayRenderOutcome,
 ) -> ExamAuthoringCorrectionsApplyResultV1:
+    target_readiness = ExamAuthoringCorrectionTargetReadinessReportV1(
+        targets=tuple(
+            _readiness_with_artifact_reference(row=row, outcome=outcome)
+            for row in result.target_readiness.targets
+        )
+    )
     return result.model_copy(
         update={
-            "target_readiness": ExamAuthoringCorrectionTargetReadinessReportV1(
-                targets=tuple(
-                    _readiness_with_artifact_reference(row=row, outcome=outcome)
-                    for row in result.target_readiness.targets
-                )
+            "target_readiness": target_readiness,
+            "answer_key_review_state": attach_digiexam_answer_key_review_replay_references(
+                report=result.answer_key_review_state,
+                target_readiness=tuple(
+                    DigiExamAnswerKeyReviewTargetReadinessInput(
+                        target=row.target,
+                        export_enabled=row.export_enabled,
+                        reason_code=row.reason_code,
+                        item_id=row.item_id,
+                        sequence=row.sequence,
+                        artifact_key=row.artifact_key,
+                    )
+                    for row in target_readiness.targets
+                ),
             ),
             "artifact_availability": tuple(
                 _availability_with_rendering(row=row, outcome=outcome)

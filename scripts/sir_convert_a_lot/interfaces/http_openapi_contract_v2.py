@@ -75,6 +75,7 @@ def _patch_create_job_multipart_contract(schema: MutableMapping[str, object]) ->
             "#/components/schemas/DigiExamMigrationBundleManifestV2"
         ),
         "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1",
+        "answer_key_review_state_report": ("#/components/schemas/DigiExamAnswerKeyReviewStateV1"),
         "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
         "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
         "answer_key_completion_report": (

@@ -22,6 +22,7 @@ DigiExamIngestionOverlaySchemaVersion: TypeAlias = Literal["digiexam_ingestion_o
 DigiExamEffectiveExamSchemaVersion: TypeAlias = Literal["digiexam_effective_exam_v2"]
 DigiExamMigrationBundleSchemaVersion: TypeAlias = Literal["digiexam_migration_bundle_v3"]
 TargetReadinessReportSchemaVersion: TypeAlias = Literal["target_readiness_report_v1"]
+AnswerKeyReviewStateSchemaVersion: TypeAlias = Literal["digiexam_answer_key_review_state_v1"]
 IngestionOverlayReportSchemaVersion: TypeAlias = Literal["ingestion_overlay_report_v1"]
 AnswerKeyCompletionReportSchemaVersion: TypeAlias = Literal["answer_key_completion_report_v1"]
 DigiExamChoiceAnswerKeyDecisionSchemaVersion: TypeAlias = Literal[
@@ -49,6 +50,9 @@ DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION: Final[DigiExamMigrationBundleSchemaVer
 TARGET_READINESS_REPORT_SCHEMA_VERSION: Final[TargetReadinessReportSchemaVersion] = (
     "target_readiness_report_v1"
 )
+ANSWER_KEY_REVIEW_STATE_SCHEMA_VERSION: Final[AnswerKeyReviewStateSchemaVersion] = (
+    "digiexam_answer_key_review_state_v1"
+)
 INGESTION_OVERLAY_REPORT_SCHEMA_VERSION: Final[IngestionOverlayReportSchemaVersion] = (
     "ingestion_overlay_report_v1"
 )
@@ -73,6 +77,7 @@ def digiexam_schema_version_extension() -> dict[str, str]:
         "effective_exam": DIGIEXAM_EFFECTIVE_EXAM_SCHEMA_VERSION,
         "migration_bundle": DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
         "target_readiness_report": TARGET_READINESS_REPORT_SCHEMA_VERSION,
+        "answer_key_review_state_report": ANSWER_KEY_REVIEW_STATE_SCHEMA_VERSION,
         "ingestion_overlay_report": INGESTION_OVERLAY_REPORT_SCHEMA_VERSION,
         "answer_key_completion_report": ANSWER_KEY_COMPLETION_REPORT_SCHEMA_VERSION,
         "choice_answer_key_decision": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,

@@ -19,6 +19,9 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewStateV1,
+)
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_models import (
     ExamAuthoringCorrectionSourceBindingV1,
     ExamAuthoringCorrectionSourceItemV1,
@@ -303,5 +306,6 @@ class ExamAuthoringCorrectionsApplyResultV1(BaseModel):
     source_binding: ExamAuthoringCorrectionSourceBindingV1
     effective_state: ExamAuthoringEffectiveStateV1
     correction_report: ExamAuthoringCorrectionReportV1
+    answer_key_review_state: DigiExamAnswerKeyReviewStateV1
     target_readiness: ExamAuthoringCorrectionTargetReadinessReportV1
     artifact_availability: tuple[ExamAuthoringCorrectionArtifactAvailabilityRowV1, ...]

@@ -100,6 +100,13 @@ def test_digiexam_correction_replay_pdf_downloads_with_source_labelled_options(
     assert readiness_by_target["examnet_pdf"]["export_enabled"] is True
     assert readiness_by_target["examnet_pdf"]["artifact_key"] == "correction_replay_examnet_pdf"
     assert readiness_by_target["qti_package"]["export_enabled"] is True
+    review_item = apply_payload["answer_key_review_state"]["items"][0]
+    assert review_item["review_state"] == "teacher_modified"
+    assert review_item["current_key_origin"] == "teacher_authored"
+    assert review_item["replay_artifact_references"] == [
+        {"target": "examnet_pdf", "artifact_key": "correction_replay_examnet_pdf"},
+        {"target": "qti_package", "artifact_key": "correction_replay_qti_package"},
+    ]
 
     pdf_response = client.get(
         f"/v2/convert/jobs/{job_id}/artifacts/correction_replay_examnet_pdf",

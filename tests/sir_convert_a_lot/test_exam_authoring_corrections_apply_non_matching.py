@@ -91,6 +91,13 @@ def test_non_matching_entries_apply_and_recompute_effective_state(tmp_path: Path
     }
     assert all(row["readiness"] == "ready" for row in result["target_readiness"]["targets"])
     assert all(row["availability"] == "available" for row in result["artifact_availability"])
+    review_items = {item["item_id"]: item for item in result["answer_key_review_state"]["items"]}
+    assert review_items["item-choice"]["review_state"] == "teacher_modified"
+    assert review_items["item-choice"]["current_key_origin"] == "teacher_authored"
+    assert review_items["item-choice"]["reasons"] == ["teacher_answer_key_present"]
+    assert review_items["item-gap"]["review_state"] == "teacher_modified"
+    assert review_items["item-gap"]["current_key_origin"] == "teacher_authored"
+    assert review_items["item-gap"]["reasons"] == ["teacher_answer_key_present"]
 
 
 def test_non_matching_choice_advisory_candidate_digest_mismatch_rejected(
@@ -126,8 +133,13 @@ def test_non_matching_gap_teacher_edited_candidate_allows_digest_drift(
     response = client.post(_ROUTE, headers=_API_HEADERS, json=payload)
 
     assert response.status_code == 200
-    accepted = response.json()["correction_report"]["accepted_entries"]
+    result = response.json()
+    accepted = result["correction_report"]["accepted_entries"]
     assert accepted[0]["effective_provenance"] == "teacher_provided"
+    gap_review = _review_item(result, "item-gap")
+    assert gap_review["review_state"] == "teacher_modified"
+    assert gap_review["current_key_origin"] == "teacher_edited_advisory"
+    assert gap_review["reasons"] == ["teacher_edited_advisory_candidate"]
 
 
 def test_non_matching_unknown_nested_ids_reject_before_readiness(tmp_path: Path) -> None:
@@ -161,6 +173,13 @@ def test_non_matching_mixed_unsupported_batch_fails_closed(tmp_path: Path) -> No
     assert _result_item(result, "item-choice")["max_score"] == 2
     assert result["target_readiness"]["targets"] == []
     assert result["artifact_availability"] == []
+    choice_review = _review_item(result, "item-choice")
+    assert choice_review["review_state"] == "validation_required"
+    assert choice_review["current_key_origin"] == "none"
+    assert choice_review["reasons"] == [
+        "no_correct_choice_selected",
+        "correction_rejected",
+    ]
 
 
 def test_non_matching_choice_advisory_candidate_digest_match_is_reviewed(
@@ -179,8 +198,13 @@ def test_non_matching_choice_advisory_candidate_digest_match_is_reviewed(
     response = client.post(_ROUTE, headers=_API_HEADERS, json=payload)
 
     assert response.status_code == 200
-    accepted = response.json()["correction_report"]["accepted_entries"]
+    result = response.json()
+    accepted = result["correction_report"]["accepted_entries"]
     assert accepted[0]["effective_provenance"] == "reviewed"
+    choice_review = _review_item(result, "item-choice")
+    assert choice_review["review_state"] == "review_complete"
+    assert choice_review["current_key_origin"] == "reviewed_advisory"
+    assert choice_review["reasons"] == ["reviewed_advisory_accepted"]
 
 
 def test_non_matching_gap_advisory_candidate_digest_mismatch_rejected(
@@ -225,8 +249,13 @@ def test_non_matching_gap_advisory_candidate_digest_match_is_reviewed(
     response = client.post(_ROUTE, headers=_API_HEADERS, json=payload)
 
     assert response.status_code == 200
-    accepted = response.json()["correction_report"]["accepted_entries"]
+    result = response.json()
+    accepted = result["correction_report"]["accepted_entries"]
     assert accepted[0]["effective_provenance"] == "reviewed"
+    gap_review = _review_item(result, "item-gap")
+    assert gap_review["review_state"] == "review_complete"
+    assert gap_review["current_key_origin"] == "reviewed_advisory"
+    assert gap_review["reasons"] == ["reviewed_advisory_accepted"]
 
 
 def _non_matching_payload(corrections: list[dict[str, object]]) -> dict[str, object]:
@@ -397,6 +426,18 @@ def _result_item(result: dict[str, object], item_id: str) -> dict[str, object]:
         if item["item_id"] == item_id:
             return item
     raise AssertionError(f"missing result item {item_id}")
+
+
+def _review_item(result: dict[str, object], item_id: str) -> dict[str, object]:
+    review_state = result["answer_key_review_state"]
+    assert isinstance(review_state, dict)
+    items = review_state["items"]
+    assert isinstance(items, list)
+    for item in items:
+        assert isinstance(item, dict)
+        if item["item_id"] == item_id:
+            return item
+    raise AssertionError(f"missing review item {item_id}")
 
 
 def _first_mapping(value: object) -> dict[str, object]:

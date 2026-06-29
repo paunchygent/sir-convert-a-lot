@@ -1,9 +1,9 @@
 ---
-id: 'task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket'
-title: 'Project compact DigiExam answer-key review state for Skriptoteket'
-type: 'task'
-status: 'ready'
-priority: 'high'
+id: task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket
+title: Project compact DigiExam answer-key review state for Skriptoteket
+type: task
+status: completed
+priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
 related:
@@ -24,6 +24,7 @@ labels:
   - skriptoteket
   - service-contract
 ---
+
 PR-sized service-contract planning and implementation slice.
 
 ## Objective
@@ -244,8 +245,33 @@ written:
 - Stop if the projection cannot distinguish current key truth from historical
   advisory lineage.
 
+## Implementation Notes
+
+2026-06-29 implementation slice adds one shared
+`digiexam_answer_key_review_state_v1` builder over sanitized producer state.
+First-pass bundle generation emits `answer_key_review_state_report`; correction
+apply/replay responses expose top-level `answer_key_review_state`; replay
+artifact references are copied into the projection only after Sir Convert
+produces replay-scoped target artifacts. `target_readiness_report_v1` remains
+the export authority.
+
+Red evidence captured:
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_review_state.py tests/sir_convert_a_lot/test_exam_authoring_corrections_apply_non_matching.py::test_non_matching_entries_apply_and_recompute_effective_state tests/sir_convert_a_lot/test_openapi_contract_v2.py::test_create_job_openapi_contract_exposes_typed_multipart_json_parts`
+  failed with missing projection module.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports`
+  failed because the bundle manifest lacked
+  `answer_key_review_state_report`.
+
+Focused green evidence before full gates:
+
+- `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_answer_key_review_state.py tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py::test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports tests/sir_convert_a_lot/test_openapi_contract_v2.py::test_service_api_v2_consumer_components_are_published`
+  passed.
+- `pdm run pytest-root tests/sir_convert_a_lot/test_exam_authoring_corrections_apply_non_matching.py tests/sir_convert_a_lot/test_digiexam_migration_labelled_choice_correction_replay.py::test_digiexam_correction_replay_pdf_downloads_with_source_labelled_options`
+  passed.
+
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

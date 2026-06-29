@@ -18,6 +18,7 @@ import json
 import time
 from pathlib import Path
 
+import pytest
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from fastapi.testclient import TestClient
@@ -26,11 +27,27 @@ from httpx import Response
 from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
     PublicExamConverterAccessProfileV2,
 )
+from scripts.sir_convert_a_lot.domain.specs_v2 import DigiExamAnswerKeyCompletionModeV2
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
+    StructuredLLMProviderProfile,
+    StructuredLLMRequest,
+    StructuredLLMResponse,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import (
     PublicExamConverterRuntimeAccessConfig,
     ServiceConfig,
 )
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
+    StructuredLLMRuntimeConfig,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
+    HttpStructuredChatProvider,
+)
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
+from tests.sir_convert_a_lot.digiexam_migration_bundle_api_fixtures import (
+    _missing_answer_key_payload,
+    _structured_llm_config,
+)
 
 _API_KEY = "secret-key"
 _KEY_ID = "gateway-identity-rs256-v1"
@@ -97,6 +114,92 @@ def test_public_exam_converter_grant_submit_poll_manifest_and_download(
     assert pdf_response.status_code == 200
     assert pdf_response.headers["content-type"] == "application/pdf"
     assert pdf_response.content.startswith(b"%PDF")
+
+
+def test_public_exam_converter_grant_review_state_omits_advisory_provenance_detail(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def advisory_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self, request, profile
+        return StructuredLLMResponse(
+            content={
+                "decision_state": "answered",
+                "correct_alternative_ids": [2],
+                "manual_follow_up_code": None,
+            },
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        advisory_provider_call,
+    )
+    signer = _PublicGrantSigner()
+    client = _client(
+        tmp_path=tmp_path,
+        signer=signer,
+        structured_llm=_structured_llm_config(),
+    )
+    response = _post_public_digiexam_job(
+        client=client,
+        signer=signer,
+        idempotency_key="idem-public-review-state-advisory",
+        targets=("examnet_pdf",),
+        wait_seconds=20,
+        payload=_missing_answer_key_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    job_id = body["job"]["job_id"]
+    manifest_headers = _public_headers(
+        signer=signer,
+        targets=("examnet_pdf",),
+        upload_digest=_upload_digest(json.dumps(_missing_answer_key_payload()).encode("utf-8")),
+    )
+    manifest_headers["X-Public-Artifact-Read-Lease"] = body["public_artifact_read_lease"]["token"]
+    manifest = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts",
+        headers=manifest_headers,
+    ).json()
+    entries = {entry["artifact_key"]: entry for entry in manifest["artifacts"]}
+    review_state_lease = entries["answer_key_review_state_report"]["public_artifact_read_lease"][
+        "token"
+    ]
+
+    artifact_headers = dict(manifest_headers)
+    artifact_headers["X-Public-Artifact-Read-Lease"] = review_state_lease
+    review_state_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_review_state_report",
+        headers=artifact_headers,
+    )
+
+    assert review_state_response.status_code == 200
+    [item] = review_state_response.json()["items"]
+    assert item["review_state"] == "review_required"
+    assert item["current_key_origin"] == "none"
+    assert item["reasons"] == ["advisory_candidate_pending"]
+    assert item["provenance_detail"] is None
+
+    rendered_projection = json.dumps(
+        review_state_response.json(), ensure_ascii=False, sort_keys=True
+    )
+    assert "local-structured" not in rendered_projection
+    assert "candidate_payload_digest" not in rendered_projection
+    assert "Choose the Greek letter" not in rendered_projection
+    assert "history" not in rendered_projection
+    assert "review_decision" not in rendered_projection
+    assert "accept_current_state_for_export" not in rendered_projection
 
 
 def test_public_exam_converter_grant_rejects_uncovered_target(tmp_path: Path) -> None:
@@ -192,7 +295,12 @@ class _PublicGrantSigner:
         return f"{header_segment}.{payload_segment}.{_b64url(signature)}"
 
 
-def _client(*, tmp_path: Path, signer: _PublicGrantSigner) -> TestClient:
+def _client(
+    *,
+    tmp_path: Path,
+    signer: _PublicGrantSigner,
+    structured_llm: StructuredLLMRuntimeConfig | None = None,
+) -> TestClient:
     profile = PublicExamConverterAccessProfileV2()
     app = create_app(
         ServiceConfig(
@@ -206,6 +314,7 @@ def _client(*, tmp_path: Path, signer: _PublicGrantSigner) -> TestClient:
                 grant_public_keys={_KEY_ID: signer.public_key_pem},
                 artifact_read_lease_secret=_LEASE_SECRET,
             ),
+            structured_llm=structured_llm or StructuredLLMRuntimeConfig(),
         )
     )
     return TestClient(app)
@@ -219,14 +328,22 @@ def _post_public_digiexam_job(
     targets: tuple[str, ...],
     grant_targets: tuple[str, ...] | None = None,
     wait_seconds: int = 0,
+    payload: dict[str, object] | None = None,
+    completion_mode: str | None = None,
 ) -> Response:
-    file_bytes = json.dumps(_digiexam_payload()).encode("utf-8")
+    file_bytes = json.dumps(payload or _digiexam_payload()).encode("utf-8")
     headers = _public_headers(
         signer=signer,
         targets=grant_targets or targets,
         upload_digest=_upload_digest(file_bytes),
     )
     headers["Idempotency-Key"] = idempotency_key
+    digiexam_options: dict[str, object] = {
+        "result_pdf_usage": "correct_machine_marked_answers_only",
+        "manual_follow_up_policy": "emit_item_addressable_report",
+    }
+    if completion_mode is not None:
+        digiexam_options["completion_mode"] = completion_mode
     spec = {
         "api_version": "v2",
         "source": {"kind": "upload", "filename": "exam.dxe", "format": "digiexam_dxe"},
@@ -235,10 +352,7 @@ def _post_public_digiexam_job(
             "targets": list(targets),
             "artifact_language": "sv",
         },
-        "digiexam_migration_options": {
-            "result_pdf_usage": "correct_machine_marked_answers_only",
-            "manual_follow_up_policy": "emit_item_addressable_report",
-        },
+        "digiexam_migration_options": digiexam_options,
         "retention": {"pin": False},
     }
     return client.post(

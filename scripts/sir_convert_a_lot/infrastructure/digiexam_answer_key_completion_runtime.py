@@ -17,6 +17,7 @@ Relationships:
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion import (
@@ -65,13 +66,21 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
 )
 
 
+@dataclass(frozen=True)
+class DigiExamAnswerKeyCompletionArtifactResult:
+    """Persisted advisory completion artifact plus in-memory report."""
+
+    entry: DigiExamMigrationArtifactEntry | None
+    report: DigiExamAnswerKeyCompletionReport | None
+
+
 def write_requested_digiexam_answer_key_completion_report(
     *,
     job: StoredJobV2,
     artifacts_dir: Path,
     exam: DigiExamIntermediateExam,
     config: ServiceConfig,
-) -> DigiExamMigrationArtifactEntry | None:
+) -> DigiExamAnswerKeyCompletionArtifactResult:
     """Write the advisory completion report when explicitly requested."""
 
     options = job.spec.digiexam_migration_options
@@ -81,11 +90,11 @@ def write_requested_digiexam_answer_key_completion_report(
         else DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY
     )
     if completion_mode == DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY:
-        return None
+        return DigiExamAnswerKeyCompletionArtifactResult(entry=None, report=None)
     if completion_mode == (
         DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
     ):
-        return None
+        return DigiExamAnswerKeyCompletionArtifactResult(entry=None, report=None)
 
     report_path = artifact_path(
         artifacts_dir,
@@ -99,10 +108,13 @@ def write_requested_digiexam_answer_key_completion_report(
         admitted_route=job.structured_llm_admission,
     )
     write_json(report_path, report_to_json_payload(report))
-    return available_entry(
-        job=job,
-        key=DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
-        path=report_path,
+    return DigiExamAnswerKeyCompletionArtifactResult(
+        entry=available_entry(
+            job=job,
+            key=DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
+            path=report_path,
+        ),
+        report=report,
     )
 
 

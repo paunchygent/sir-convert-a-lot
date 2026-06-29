@@ -28,6 +28,7 @@ class DigiExamMigrationArtifactKey(StrEnum):
     EFFECTIVE_IR_JSON = "effective_ir_json"
     MIGRATION_MANIFEST = "migration_manifest"
     TARGET_READINESS_REPORT = "target_readiness_report"
+    ANSWER_KEY_REVIEW_STATE_REPORT = "answer_key_review_state_report"
     INGESTION_OVERLAY_REPORT = "ingestion_overlay_report"
     ANSWER_KEY_COMPLETION_REPORT = "answer_key_completion_report"
     MANUAL_FOLLOW_UP_REPORT = "manual_follow_up_report"
@@ -120,6 +121,13 @@ ARTIFACT_DEFINITIONS: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifa
         filename="target-readiness-report.json",
         content_type="application/json",
     ),
+    DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT: (
+        DigiExamMigrationArtifactDefinition(
+            artifact_key=DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT,
+            filename="answer-key-review-state-report.json",
+            content_type="application/json",
+        )
+    ),
     DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT: DigiExamMigrationArtifactDefinition(
         artifact_key=DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
         filename="ingestion-overlay-report.json",
@@ -156,6 +164,7 @@ REQUIRED_ARTIFACT_KEYS: tuple[DigiExamMigrationArtifactKey, ...] = (
     DigiExamMigrationArtifactKey.EFFECTIVE_IR_JSON,
     DigiExamMigrationArtifactKey.MIGRATION_MANIFEST,
     DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT,
+    DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT,
     DigiExamMigrationArtifactKey.INGESTION_OVERLAY_REPORT,
     DigiExamMigrationArtifactKey.ANSWER_KEY_COMPLETION_REPORT,
     DigiExamMigrationArtifactKey.MANUAL_FOLLOW_UP_REPORT,

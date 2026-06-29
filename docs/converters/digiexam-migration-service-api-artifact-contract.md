@@ -986,6 +986,63 @@ bundle manifest, including the `bundle_manifest` self-entry.
 `conversion_metadata.warning_count` is copied from the persisted manifest
 `warnings.count` value.
 
+## Compact Answer-Key Review State
+
+Task 373 adds `digiexam_answer_key_review_state_v1` as the compact,
+item-addressable answer-key review projection for DigiExam migration consumers.
+It is emitted as the named artifact `answer_key_review_state_report` for
+terminal first-pass bundle jobs.
+
+The projection is review-state only. `target_readiness_report_v1` remains the
+only authority for enabling PDF or QTI export actions. Consumers must not use
+`review_state`, `current_key_origin`, reasons, or replay references from this
+projection to unlock downloads without matching target-readiness rows.
+
+Strict review state values are:
+
+- `review_required`
+- `review_complete`
+- `teacher_modified`
+- `validation_required`
+
+Strict current-key origin values are:
+
+- `none`
+- `source_provided`
+- `reviewed_advisory`
+- `teacher_authored`
+- `teacher_edited_advisory`
+- `mixed`
+
+Strict reason values are:
+
+- `source_answer_key_present`
+- `advisory_candidate_pending`
+- `reviewed_advisory_accepted`
+- `teacher_answer_key_present`
+- `teacher_edited_advisory_candidate`
+- `manual_answer_key_required`
+- `no_correct_choice_selected`
+- `required_gap_accepted_values_missing`
+- `unsupported_item_type`
+- `unsupported_target_shape`
+- `target_validation_failed`
+- `provider_unavailable`
+- `correction_rejected`
+- `stale_source_state`
+- `replay_artifact_unavailable`
+- `matching_source_state_unavailable`
+
+Rows expose item binding, supported interaction IDs, choice IDs, gap IDs,
+correction affordances, reasons, `message_key`, optional bounded
+`provenance_detail`, and replay-scoped artifact references only when Sir
+Convert produced corrected replay target artifacts. The projection must not
+contain generic `history`, `review_decision`,
+`accept_current_state_for_export`, source-state signatures, identity/grant data,
+private paths, raw source/provider/student data, provider diagnostics, or public
+advisory `provenance_detail` unless a later governed public grant explicitly
+allows it.
+
 ## Artifact Bundle Contract
 
 The named artifact bundle is the product contract between Sir Convert and
@@ -1050,6 +1107,9 @@ The canonical bundle manifest schema version is
     "exportable_targets": ["examnet_pdf"],
     "review_required": true
   },
+  "answer_key_review_state": {
+    "artifact_key": "answer_key_review_state_report"
+  },
   "source_binding": {
     "source_ir_schema_version": "digiexam_intermediate_exam_v3",
     "source_ir_sha256": "sha256:...",
@@ -1102,6 +1162,7 @@ unavailable-artifact error.
 | `effective_ir_json` | `<source-stem>-digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
 | `migration_manifest` | `<source-stem>-migration-manifest.json` | `application/json` | Available when IR manifest generation succeeds. Must not embed raw asset payloads or result-PDF private data. |
 | `target_readiness_report` | `<source-stem>-target-readiness-report.json` | `application/json` | Always available for terminal v2 bundles. It is the consumer authority for enabling PDF/QTI export actions. |
+| `answer_key_review_state_report` | `<source-stem>-answer-key-review-state-report.json` | `application/json` | Always available for terminal v2 bundles. It is the compact item review-state projection for DigiExam answer keys and must not replace target readiness. |
 | `ingestion_overlay_report` | `<source-stem>-ingestion-overlay-report.json` | `application/json` | Available when an overlay is submitted. Summarizes accepted/rejected overlay entries without exposing raw overlay JSON. |
 | `answer_key_completion_report` | `<source-stem>-answer-key-completion-report.json` | `application/json` | Available for advisory `local_llm_suggest_missing_machine_marked`. Not requested for reviewed apply mode in this slice; reviewed apply consumes submitted bounded lineage and must not call the provider. |
 | `manual_follow_up_report` | `<source-stem>-manual-follow-up.md` | `text/markdown; charset=utf-8` | Always available for terminal bundles. Empty or review-only when no action is required. |

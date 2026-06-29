@@ -23,9 +23,22 @@ from pathlib import Path
 from scripts.sir_convert_a_lot.application import (
     exam_authoring_correction_source_state_projection as correction_state_projection,
 )
+from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state import (
+    build_digiexam_answer_key_review_state,
+)
+from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewAdvisoryCandidateInput,
+    DigiExamAnswerKeyReviewTargetReadinessInput,
+)
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_issuer import (
     correction_source_state_artifact_path_for_job,
     write_exam_authoring_correction_source_state_artifact,
+)
+from scripts.sir_convert_a_lot.application.public_exam_converter_contract_v2 import (
+    PUBLIC_OWNER_SCOPE_PREFIX,
+)
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
+    DigiExamAnswerKeyCompletionReport,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import DigiExamParseStatus
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay import (
@@ -193,11 +206,12 @@ def execute_digiexam_migration_bundle_job(
         exam=effective_exam,
         config=config,
     )
+    review_source_state = correction_state_projection.digiexam_exam_to_correction_source_state(
+        effective_exam
+    )
     write_exam_authoring_correction_source_state_artifact(
         path=correction_source_state_artifact_path_for_job(job),
-        source_state=correction_state_projection.digiexam_exam_to_correction_source_state(
-            effective_exam
-        ),
+        source_state=review_source_state,
     )
     migration_manifest_path = artifact_path(
         artifacts_dir, DigiExamMigrationArtifactKey.MIGRATION_MANIFEST
@@ -261,18 +275,39 @@ def execute_digiexam_migration_bundle_job(
         if entry.artifact_key
         in {DigiExamMigrationArtifactKey.EXAMNET_PDF, DigiExamMigrationArtifactKey.QTI_PACKAGE}
     )
+    target_readiness_report = build_digiexam_target_readiness_report(
+        job_id=job.job_id,
+        exam=effective_exam,
+        entries=target_readiness_entries,
+        source_ir_sha256=source_ir_sha256,
+        effective_exam_sha256=effective_exam_sha256,
+        source_item_fingerprints=source_item_fingerprints,
+    )
+    write_json(target_readiness_path, asdict(target_readiness_report))
+    answer_key_review_state_path = artifact_path(
+        artifacts_dir,
+        DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT,
+    )
     write_json(
-        target_readiness_path,
-        asdict(
-            build_digiexam_target_readiness_report(
-                job_id=job.job_id,
-                exam=effective_exam,
-                entries=target_readiness_entries,
-                source_ir_sha256=source_ir_sha256,
-                effective_exam_sha256=effective_exam_sha256,
-                source_item_fingerprints=source_item_fingerprints,
-            )
-        ),
+        answer_key_review_state_path,
+        build_digiexam_answer_key_review_state(
+            source_state=review_source_state,
+            advisory_candidates=_review_advisory_candidates(
+                answer_key_completion_report_entry.report
+            ),
+            target_readiness=tuple(
+                DigiExamAnswerKeyReviewTargetReadinessInput(
+                    target=row.target,
+                    export_enabled=row.export_enabled,
+                    reason_code=row.reason_code,
+                    item_id=row.item_id,
+                    sequence=row.sequence,
+                    artifact_key=row.artifact_key,
+                )
+                for row in target_readiness_report.targets
+            ),
+            include_advisory_provenance_detail=_include_advisory_provenance_detail(job),
+        ).model_dump(mode="json"),
     )
 
     entries = complete_entries(
@@ -282,7 +317,7 @@ def execute_digiexam_migration_bundle_job(
         qti_entries=qti_entries,
         effective_ir_entry=effective_ir_entry,
         ingestion_overlay_report_entry=ingestion_overlay_report_entry,
-        answer_key_completion_report_entry=answer_key_completion_report_entry,
+        answer_key_completion_report_entry=answer_key_completion_report_entry.entry,
     )
     resolved_bundle_status = bundle_status(entries, manual_follow_up_count)
     manifest = {
@@ -305,6 +340,9 @@ def execute_digiexam_migration_bundle_job(
             "artifact_key": DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT.value,
             "exportable_targets": _exportable_targets(entries),
             "review_required": manual_follow_up_count > 0,
+        },
+        "answer_key_review_state": {
+            "artifact_key": DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT.value,
         },
         "source_binding": {
             "source_ir_schema_version": exam.schema_version,
@@ -353,3 +391,34 @@ def _artifact_sha256(path: Path) -> str:
 
 def _elapsed_ms(started: float) -> int:
     return max(0, int((time.perf_counter() - started) * 1000))
+
+
+def _review_advisory_candidates(
+    report: DigiExamAnswerKeyCompletionReport | None,
+) -> tuple[DigiExamAnswerKeyReviewAdvisoryCandidateInput, ...]:
+    if report is None:
+        return ()
+    return tuple(
+        DigiExamAnswerKeyReviewAdvisoryCandidateInput(
+            item_id=item.item_id,
+            sequence=item.sequence,
+            candidate_id=item.candidate_id,
+            candidate_payload_digest=item.candidate_payload_digest,
+            provider_profile_id=item.provider_profile_id,
+            schema_name=item.schema_name,
+            schema_version=item.schema_version,
+            prompt_template_version=item.prompt_template_version,
+            validation_state=item.validation_state.value,
+        )
+        for item in report.items
+        if item.candidate_id is not None
+        and item.candidate_payload_digest is not None
+        and item.provider_profile_id is not None
+        and item.schema_name is not None
+        and item.schema_version is not None
+        and item.prompt_template_version is not None
+    )
+
+
+def _include_advisory_provenance_detail(job: StoredJobV2) -> bool:
+    return not job.owner_api_key_scope.startswith(PUBLIC_OWNER_SCOPE_PREFIX)

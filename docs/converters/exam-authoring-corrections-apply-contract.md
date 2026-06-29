@@ -528,6 +528,10 @@ The route returns producer-owned effective state and reports:
     ],
     "rejected_entries": []
   },
+  "answer_key_review_state": {
+    "schema_version": "digiexam_answer_key_review_state_v1",
+    "items": []
+  },
   "target_readiness": {
     "schema_version": "target_readiness_report_v1",
     "targets": []
@@ -545,6 +549,22 @@ Accepted entries report applied fields by typed domain names, for example
 `item_text_patch`, `point_correction`, `answer_key`, or
 `candidate_suppression`. Candidate suppression is reported separately from
 answer-key application.
+
+`answer_key_review_state` is the same compact producer projection emitted as
+the DigiExam first-pass `answer_key_review_state_report` artifact. Correction
+apply/replay responses return it at top level so consumers do not join
+`effective_state`, correction reports, target readiness, local correction
+sessions, and first-pass advisory artifacts to infer answer-key review state.
+It uses strict `review_state`, `current_key_origin`, and reason vocabularies
+from Task 373, may include bounded `provenance_detail` for detail display, and
+must reject generic `history`, `review_decision`,
+`accept_current_state_for_export`, and other accepted-current-state substitutes.
+
+Replay artifact references appear inside the projection only after Sir Convert
+has produced replay-scoped target artifacts such as
+`correction_replay_examnet_pdf` or `correction_replay_qti_package`. They do not
+replace `target_readiness_report_v1`, which remains the export-action
+authority.
 
 ## Compatibility And Hard Cut
 

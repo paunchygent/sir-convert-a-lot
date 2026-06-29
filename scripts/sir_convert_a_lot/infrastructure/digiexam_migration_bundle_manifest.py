@@ -191,6 +191,7 @@ def complete_entries(
         DigiExamMigrationArtifactKey.IR_JSON,
         DigiExamMigrationArtifactKey.MIGRATION_MANIFEST,
         DigiExamMigrationArtifactKey.TARGET_READINESS_REPORT,
+        DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT,
         DigiExamMigrationArtifactKey.MANUAL_FOLLOW_UP_REPORT,
         DigiExamMigrationArtifactKey.WARNINGS_REPORT,
         DigiExamMigrationArtifactKey.ASSET_SUMMARY,

@@ -118,6 +118,8 @@ durable implementation authority lives in governed docs.
   downstream formatter, source-audio replay, or Gateway rewriting is part of
   the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
+- Task 373 implementation is in progress for Story 57; it adds the compact
+  review-state projection and records focused red/green evidence in the task doc.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 

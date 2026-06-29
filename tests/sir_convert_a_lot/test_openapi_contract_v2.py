@@ -57,6 +57,7 @@ def test_create_job_openapi_contract_exposes_typed_multipart_json_parts() -> Non
             "#/components/schemas/DigiExamMigrationBundleManifestV2"
         ),
         "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1",
+        "answer_key_review_state_report": ("#/components/schemas/DigiExamAnswerKeyReviewStateV1"),
         "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
         "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
         "answer_key_completion_report": (
@@ -139,6 +140,8 @@ def test_service_api_v2_consumer_components_are_published() -> None:
         "DigiExamIngestionOverlay",
         "DigiExamMigrationBundleManifestV2",
         "DigiExamTargetReadinessReportV1",
+        "DigiExamAnswerKeyReviewStateV1",
+        "DigiExamAnswerKeyReviewStateItemV1",
         "DigiExamEffectiveExamV1",
         "DigiExamEffectiveAnswerKeyLineageV1",
         "DigiExamIngestionOverlayReportV1",
@@ -192,6 +195,20 @@ def test_service_api_v2_consumer_components_are_published() -> None:
     readiness_properties = _mapping(readiness_report["properties"])
     readiness_schema_version = _mapping(readiness_properties["schema_version"])
     assert readiness_schema_version["const"] == TARGET_READINESS_REPORT_SCHEMA_VERSION
+    review_state_report = _mapping(schemas["DigiExamAnswerKeyReviewStateV1"])
+    review_properties = _mapping(review_state_report["properties"])
+    review_schema_version = _mapping(review_properties["schema_version"])
+    assert review_schema_version["const"] == "digiexam_answer_key_review_state_v1"
+    review_item = _mapping(schemas["DigiExamAnswerKeyReviewStateItemV1"])
+    review_item_properties = _mapping(review_item["properties"])
+    assert _mapping(review_item_properties["review_state"])["enum"] == [
+        "review_required",
+        "review_complete",
+        "teacher_modified",
+        "validation_required",
+    ]
+    assert "history" not in review_item_properties
+    assert "review_decision" not in review_item_properties
     effective_exam = _mapping(schemas["DigiExamEffectiveExamV1"])
     effective_properties = _mapping(effective_exam["properties"])
     effective_schema_version = _mapping(effective_properties["schema_version"])

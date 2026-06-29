@@ -13,6 +13,7 @@ Relationships:
 
 from __future__ import annotations
 
+import json
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -20,13 +21,26 @@ from pathlib import Path
 import pymupdf
 import pytest
 
+from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_contracts import (
+    CHOICE_PROMPT_TEMPLATE_VERSION,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
+    DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.digiexam_target_readiness import (
     TARGET_READINESS_REPORT_SCHEMA_VERSION,
 )
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.domain.specs_v2 import DigiExamAnswerKeyCompletionModeV2
+from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
+    StructuredLLMProviderProfile,
+    StructuredLLMRequest,
+    StructuredLLMResponse,
+)
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
+    HttpStructuredChatProvider,
+)
 from tests.sir_convert_a_lot.digiexam_migration_bundle_api_fixtures import (
     _LIVE_CORPUS_DXE_FILENAMES,
     _ONEDRIVE_CORPUS_ROOT,
@@ -38,6 +52,7 @@ from tests.sir_convert_a_lot.digiexam_migration_bundle_api_fixtures import (
     _pdf_bytes,
     _post_digiexam_job,
     _read_grants,
+    _structured_llm_config,
 )
 
 
@@ -78,6 +93,7 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
         "effective_ir_json",
         "migration_manifest",
         "target_readiness_report",
+        "answer_key_review_state_report",
         "ingestion_overlay_report",
         "answer_key_completion_report",
         "manual_follow_up_report",
@@ -93,6 +109,7 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
         f"{source_stem}-qti-validation-report.json"
     )
     assert artifact_entries["target_readiness_report"]["availability"] == "available"
+    assert artifact_entries["answer_key_review_state_report"]["availability"] == "available"
     assert artifact_entries["effective_ir_json"]["availability"] == "not_requested"
 
     pdf_response = client.get(
@@ -130,6 +147,109 @@ def test_digiexam_migration_bundle_route_produces_named_pdf_qti_and_reports(
     )
     assert readiness_response.status_code == 200
     assert readiness_response.json()["schema_version"] == TARGET_READINESS_REPORT_SCHEMA_VERSION
+
+    review_state_response = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_review_state_report",
+        headers=headers,
+    )
+    assert review_state_response.status_code == 200
+    review_state = review_state_response.json()
+    assert review_state["schema_version"] == "digiexam_answer_key_review_state_v1"
+    assert any(
+        item["review_state"] == "review_complete"
+        and item["current_key_origin"] == "source_provided"
+        and item["reasons"] == ["source_answer_key_present"]
+        for item in review_state["items"]
+    )
+
+
+def test_digiexam_migration_bundle_review_state_includes_bounded_pending_advisory_detail(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def advisory_provider_call(
+        self: HttpStructuredChatProvider,
+        *,
+        request: StructuredLLMRequest,
+        profile: StructuredLLMProviderProfile,
+    ) -> StructuredLLMResponse:
+        del self, request, profile
+        return StructuredLLMResponse(
+            content={
+                "decision_state": "answered",
+                "correct_alternative_ids": [2],
+                "manual_follow_up_code": None,
+            },
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        HttpStructuredChatProvider,
+        "complete_structured_chat",
+        advisory_provider_call,
+    )
+    identity = _IdentitySigner()
+    client = _client(tmp_path, identity, structured_llm=_structured_llm_config())
+    response = _post_digiexam_job(
+        client=client,
+        identity=identity,
+        subject="teacher-review-state-advisory",
+        idempotency_key="idem-review-state-advisory-detail",
+        wait_seconds=20,
+        payload=_missing_answer_key_payload(),
+        completion_mode=(
+            DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED
+        ).value,
+    )
+
+    assert response.status_code == 200
+    job_id = response.json()["job"]["job_id"]
+    headers = _headers(identity, subject="teacher-review-state-advisory", grants=_read_grants())
+    review_state = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/answer_key_review_state_report",
+        headers=headers,
+    ).json()
+    target_readiness = client.get(
+        f"/v2/convert/jobs/{job_id}/artifacts/target_readiness_report",
+        headers=headers,
+    ).json()
+
+    [item] = review_state["items"]
+    detail = item["provenance_detail"]
+    assert isinstance(detail, dict)
+    assert detail["candidate_id"].startswith("item-001:")
+    assert detail == {
+        "candidate_id": detail["candidate_id"],
+        "candidate_payload_digest": detail["candidate_payload_digest"],
+        "provider_profile_id": "local-structured",
+        "schema_name": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+        "schema_version": DIGIEXAM_CHOICE_ANSWER_KEY_DECISION_SCHEMA_VERSION,
+        "prompt_template_version": CHOICE_PROMPT_TEMPLATE_VERSION,
+        "validation_state": "valid",
+    }
+    assert detail["candidate_payload_digest"].startswith("sha256:")
+    assert item["review_state"] == "review_required"
+    assert item["current_key_origin"] == "none"
+    assert item["reasons"] == ["advisory_candidate_pending"]
+    assert item["replay_artifact_references"] == []
+    assert all(row["export_enabled"] is False for row in target_readiness["targets"])
+
+    rendered_projection = json.dumps(review_state, ensure_ascii=False, sort_keys=True)
+    forbidden_fragments = (
+        "Choose the Greek letter",
+        "Alpha",
+        "Beta",
+        "provider_request",
+        "provider_response",
+        "raw_provider",
+        "source_state_signature",
+        "private_path",
+        "history",
+        "review_decision",
+        "accept_current_state_for_export",
+        "student",
+    )
+    assert all(fragment not in rendered_projection for fragment in forbidden_fragments)
 
 
 def test_digiexam_migration_respects_examnet_pdf_only_target(tmp_path: Path) -> None:

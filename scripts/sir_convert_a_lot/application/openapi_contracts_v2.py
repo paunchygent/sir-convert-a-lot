@@ -18,6 +18,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewStateV1,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_ingestion_overlay_contracts import (
     DigiExamIngestionOverlay,
 )
@@ -94,6 +97,14 @@ class DigiExamMigrationBundleReadinessSummaryV2(BaseModel):
     review_required: bool
 
 
+class DigiExamMigrationBundleReviewStateSummaryV2(BaseModel):
+    """Review-state summary pointing consumers to the compact report."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    artifact_key: Literal["answer_key_review_state_report"]
+
+
 class DigiExamMigrationBundleSourceBindingV2(BaseModel):
     """Source/effective IR hashes published in bundle manifests."""
 
@@ -127,6 +138,7 @@ class DigiExamMigrationBundleManifestV2(BaseModel):
     artifacts: list[DigiExamMigrationBundleArtifactEntryV2]
     manual_follow_up: DigiExamMigrationBundleManualFollowUpV2
     readiness: DigiExamMigrationBundleReadinessSummaryV2
+    answer_key_review_state: DigiExamMigrationBundleReviewStateSummaryV2
     source_binding: DigiExamMigrationBundleSourceBindingV2
     warnings: DigiExamMigrationBundleWarningsV2
 
@@ -351,6 +363,7 @@ OPENAPI_CONTRACT_COMPONENT_MODELS: tuple[type[BaseModel], ...] = (
     DigiExamIngestionOverlay,
     DigiExamMigrationBundleManifestV2,
     DigiExamTargetReadinessReportV1,
+    DigiExamAnswerKeyReviewStateV1,
     DigiExamEffectiveExamV1,
     DigiExamIngestionOverlayReportV1,
     DigiExamAnswerKeyCompletionReportV1,

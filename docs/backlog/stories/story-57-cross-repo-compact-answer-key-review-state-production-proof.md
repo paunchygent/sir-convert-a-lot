@@ -1,9 +1,9 @@
 ---
-id: 'story-57-cross-repo-compact-answer-key-review-state-production-proof'
-title: 'Cross-repo compact answer-key review state production proof'
-type: 'story'
-status: 'proposed'
-priority: 'high'
+id: story-57-cross-repo-compact-answer-key-review-state-production-proof
+title: Cross-repo compact answer-key review state production proof
+type: story
+status: proposed
+priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
 related:
@@ -22,6 +22,7 @@ labels:
   - production-proof
   - skriptoteket
 ---
+
 Cross-repo overseer tracking story for Sir Convert producer work and
 Skriptoteket consumer proof.
 
