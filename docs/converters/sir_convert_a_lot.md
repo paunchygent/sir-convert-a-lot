@@ -23,8 +23,10 @@ links:
 Hemma-hosted conversion service over:
 
 - tunnel lane: `http://127.0.0.1:28085`
-- Gateway/public lane: disabled until the Gateway cutover deliberately
-  re-enables the intended public edge
+- operator direct-service lane: `https://convert.hule.education`
+- authenticated product/browser lane: HuleEdu Gateway
+  `/sir-convert/v2/convert/...` through approved products such as
+  Skriptoteket
 
 Natural-language usage convention for assistants:
 
@@ -334,10 +336,10 @@ pdm run convert-a-lot convert ./lesson.mp3 \
 ```
 
 This direct `https://convert.hule.education` CLI example is operator/service
-evidence only. It cannot close the Task 371 public browser proof or the Task
-369 live gate, which must use the HuleEdu Gateway browser surface
-`/sir-convert/v2/convert/jobs` and correlate the downstream Sir Convert
-create-job request.
+evidence only. The retained Task 371 / Task 369 closeout proof used the
+HuleEdu Gateway browser surface `/sir-convert/v2/convert/jobs`, correlated the
+downstream Sir Convert create-job request, and is retained at
+`build/verification/task-371-public-browser-audio-cli-proof/20260629T082206Z/summary.json`.
 
 The CLI infers supported media extensions as `audio`, including `wav`, `mp3`,
 `m4a`, `aac`, `flac`, `ogg`, `opus`, `webm`, `aiff`, `mp4`, `mov`, and `mkv`.

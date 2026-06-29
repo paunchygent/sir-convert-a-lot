@@ -2,7 +2,7 @@
 id: task-371-expose-audio-transcript-bundle-cli-route-for-public-browser-idempotency-proof
 title: Expose audio transcript bundle CLI route for public browser idempotency proof
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -88,7 +88,7 @@ Task 368 reattempt handling.
   execution, with Gateway public browser surface, credential handling, request
   counting, downstream Sir Convert correlation, evidence files, and bounded
   service-log collection described.
-- [ ] Retained public live proof after deploy, only if the accepted proof
+- [x] Retained public live proof after deploy, only if the accepted proof
   harness can create the retryable-failed precondition without forbidden state
   edits or out-of-scope runtime perturbation.
 
@@ -107,10 +107,10 @@ Task 368 reattempt handling.
   relevant idempotency state without hiding extra submissions.
 - [x] Focused tests prove service-owned retryable-failed reattempt metadata is
   accepted from the service response and represented truthfully by the CLI.
-- [ ] Public live proof uses the HuleEdu Gateway public browser surface rather
+- [x] Public live proof uses the HuleEdu Gateway public browser surface rather
   than `127.0.0.1`, a local Hemma tunnel, private-only endpoints, or the
   direct Sir Convert service host.
-- [ ] Browser proof evidence includes:
+- [x] Browser proof evidence includes:
   - deployed service revision including Task 368 and deployed CLI/client
     revision including Task 369 and this task;
   - scripted browser/client transcript of the public create-job replay
@@ -123,10 +123,9 @@ Task 368 reattempt handling.
   - terminal succeeded job and artifact fetch evidence;
   - bounded public/service logs showing no CLI-side compatibility rerun in the
     proof interval.
-- [ ] If the browser proof cannot safely create the retryable-failed
-  precondition through real public APIs and accepted runtime operations, stop
-  and record the exact mismatch instead of weakening proof or fabricating
-  state.
+- [x] Browser proof safely created the retryable-failed precondition through
+  real public APIs and accepted runtime operation, without weakened proof or
+  fabricated state.
 
 ## Red-First Test Plan
 
@@ -222,20 +221,59 @@ manual idempotency/job state edits.
 - Broad green evidence:
   `pdm run coverage-gate` passed with `1752 passed, 6 skipped` and total
   coverage `95.53%`.
-- Safe governance gates passed locally: `pdm run typecheck-all`,
-  `pdm run validate-tasks`, `pdm run skills-validate`,
+- Final stabilization gates later passed after the Task 369/371 closeout
+  stabilization commit: Task 368 focused/contract tests, Task 371/369
+  one-submit tests, route-registry proof, `pdm run format-all`,
+  `pdm run lint-fix`, `pdm run typecheck-all`, `pdm run coverage-gate`,
+  `pdm run docs-sync`, `pdm run docs-validate`, `pdm run skills-validate`,
   `pdm run handoff-validate`, and `git diff --check`.
-- `pdm run docs-validate` and the docs-validation phase of `pdm run lint`
-  remain blocked by the already-dirty generated
-  `docs/backlog/INDEX.md`. `pdm run docs-sync` was not run because it would
-  mix Task 371 index regeneration with unrelated Task 367/370 generated-index
-  drift in the shared working tree.
 
-This implementation does not execute deploy or live proof. Task 369 remains
-open until the public browser proof is reviewed, deployed, run, and retained.
+## Review Evidence
+
+- Task implementation review:
+  `docs/backlog/reviews/review-55-ruthless-review-of-task-371-audio-cli-public-browser-proof.md`.
+- Closeout stabilization review:
+  `docs/backlog/reviews/review-57-ruthless-review-of-task-369-371-closeout-stabilization.md`.
+- Both retained reviews approved the additive route implementation, the
+  one-submit caller invariant, the public Gateway browser proof shape, and the
+  prohibition on caller-side retry wrappers, pointer edits, direct-service
+  proof substitution, or document-route production perturbation.
+
+## Deploy And Live Proof Evidence
+
+- Deployed revision:
+  `65a04e4ad14531e183a68189c880812e0c37d74b`; deploy verification retained in
+  `build/verification/hemma-deploy-verify/report.md`.
+- Retained public proof:
+  `build/verification/task-371-public-browser-audio-cli-proof/20260629T082206Z/summary.json`.
+- Browser surface:
+  `https://skriptoteket.hule.education/apps/audio-transcription` through
+  HuleEdu Gateway `/sir-convert/v2/convert/jobs`.
+- Safe precondition:
+  the proof used the accepted STT sidecar-unavailable lane, stopped
+  `sir_convert_a_lot_stt_sidecar`, submitted the content-safe audio fixture,
+  and retained retryable failed job `jobv2_a25eb72cd1b447ce988143ecda` with
+  `audio_sidecar_unavailable` / `retryable=true`.
+- Replay:
+  after sidecar restore, the browser emitted exactly one replay
+  `POST /sir-convert/v2/convert/jobs?wait_seconds=0` with the same
+  idempotency key. Service API v2 returned `service_reattempt`,
+  `attempt_count=2`, and active job `jobv2_33ef8b5da9b440c8aafc5d6aea`.
+- Success/artifacts:
+  job `jobv2_33ef8b5da9b440c8aafc5d6aea` reached `succeeded`; result,
+  artifact manifest, and `transcript_json` fetches all returned `200`.
+- Runtime/logs:
+  sidecar was restored to `running healthy`; bounded logs showed no
+  auto-rerun, compatibility-rerun, failed-replay-remediation, or salted-key
+  indicators. A post-proof read-only manifest sweep found no top-level
+  queued/running jobs; the Prometheus queued gauge remained stale at `1.0` and
+  was not mutated as proof.
 
 ## Checklist
 
 - [x] Implementation complete
 - [x] Validation complete
+- [x] Retained review complete
+- [x] Deploy complete
+- [x] Public live proof complete
 - [x] Docs updated

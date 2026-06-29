@@ -2,7 +2,7 @@
 id: task-369-remove-cli-auto-rerun-wrappers-after-service-api-v2-owns-retryable-reattempts
 title: Remove CLI auto-rerun wrappers after Service API v2 owns retryable reattempts
 type: task
-status: in_progress
+status: completed
 priority: high
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -68,9 +68,9 @@ align with the service-owned idempotency state machine.
   response, including Task 368 reattempt metadata when present.
 - [x] Independent retained review focused on removal completeness, no hidden
   compatibility shim, and preserved CLI progress/artifact behavior.
-- [ ] Hemma live CLI proof after deploy showing the CLI does not issue a
-  caller-side reattempt and still succeeds through the service-owned
-  Task 368 policy.
+- [x] Retained public browser/Gateway proof after deploy showing the caller
+  path does not issue a compatibility reattempt and succeeds through the
+  service-owned Task 368 policy.
 
 ## Acceptance Criteria
 
@@ -89,13 +89,13 @@ align with the service-owned idempotency state machine.
   by the service and must not hide a second caller-side POST.
 - [x] Red/green evidence includes the same focused command failing before the
   removal and passing after it.
-- [ ] Close-out includes live Hemma evidence:
+- [x] Close-out includes live Hemma/public evidence:
   - deployed service revision includes Task 368;
-  - deployed CLI revision includes this task;
+  - deployed CLI/client revision includes this task and Task 371;
   - a same-payload retryable-failed idempotency scenario is exercised without
     manual pointer deletion or filename/key mutation;
-  - captured CLI/service evidence shows one create-job submission from the CLI
-    invocation;
+  - captured browser/Gateway evidence shows one create-job submission from the
+    caller replay invocation;
   - the service admits or reuses the Task 368-governed active attempt and the
     job reaches `succeeded`;
   - bounded logs show no CLI-side second-submit compatibility path in the proof
@@ -160,10 +160,41 @@ retryable-failed precondition through a document route would require
 out-of-scope production GPU, dependency, or timeout perturbation.
 
 Do not complete this task with a weaker CLI, proxy, tunnel, or document-route
-proof. Task 371 is the governed follow-up that must expose
-`audio -> transcript_bundle` through the CLI/client surface and define the
-public browser proof path before additional behavior work attempts this final
-live closeout.
+proof. Task 371 is the governed follow-up that exposed
+`audio -> transcript_bundle` through the CLI/client surface and supplied the
+public browser/Gateway proof path used for final live closeout.
+
+## Live Proof Evidence
+
+- Deployed revision:
+  `65a04e4ad14531e183a68189c880812e0c37d74b`; `readyz` in the retained proof
+  shows the service revision and expected revision match under the `prod`
+  profile.
+- Retained proof summary:
+  `build/verification/task-371-public-browser-audio-cli-proof/20260629T082206Z/summary.json`.
+- Public route:
+  `https://skriptoteket.hule.education/apps/audio-transcription` through the
+  HuleEdu Gateway `/sir-convert/v2/convert/jobs` surface.
+- Precondition:
+  the proof stopped `sir_convert_a_lot_stt_sidecar`, submitted the same
+  content-safe audio fixture through the browser, and retained retryable
+  failed job `jobv2_a25eb72cd1b447ce988143ecda` with
+  `audio_sidecar_unavailable` / `retryable=true`; no idempotency pointer or
+  job record was edited.
+- Replay:
+  after sidecar restore, the browser replay emitted exactly one
+  `POST /sir-convert/v2/convert/jobs?wait_seconds=0` with the same
+  idempotency key. The service returned `idempotency.state=service_reattempt`,
+  `attempt_count=2`, and new job `jobv2_33ef8b5da9b440c8aafc5d6aea`.
+- Result:
+  the replay job reached `succeeded`; result, artifact manifest, and
+  `transcript_json` artifact fetches all returned `200`.
+- Log/runtime evidence:
+  bounded logs retained under the proof directory reported no
+  `auto-rerun`, `auto_rerun`, compatibility rerun, failed replay remediation,
+  or salted-key indicators. Post-proof runtime checks showed the STT sidecar
+  `running healthy` and no top-level queued/running job manifests; the
+  Prometheus queued gauge remained stale at `1.0` and was not mutated as proof.
 
 ## Implementation Evidence
 
@@ -227,4 +258,7 @@ remain for the overseer loop.
 
 - [x] Implementation complete
 - [x] Validation complete
+- [x] Retained review complete
+- [x] Deploy complete
+- [x] Live proof complete
 - [x] Docs updated

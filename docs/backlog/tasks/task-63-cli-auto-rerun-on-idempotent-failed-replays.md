@@ -25,7 +25,7 @@ Historical Task 63 introduced a CLI-side failed-replay workaround before
 Service API v2 owned retryable failed reattempts.
 
 This behavior is superseded. Task 368 moved retryable failed reattempts to
-Service API v2, and Task 369 removes the caller-side compatibility wrapper.
+Service API v2, and Task 369 removed the caller-side compatibility wrapper.
 This document is retained only as historical context and is no longer current
 CLI or client behavior authority.
 
@@ -56,7 +56,7 @@ Superseded historical scope:
   contract existed.
 - The CLI provided temporary failed-replay UX around strict service
   idempotency.
-- Task 369 removes that workaround from current runtime behavior.
+- Task 369 removed that workaround from current runtime behavior.
 
 ## Deliverables
 

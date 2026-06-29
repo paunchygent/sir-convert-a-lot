@@ -40,12 +40,11 @@ durable implementation authority lives in governed docs.
   then proved service-owned `service_reattempt` admission and successful
   `transcript_json` fetch without idempotency pointer edits. Task 369 may now
   remove the Task 63 CLI-side failed-replay auto-rerun wrapper.
-- Task 369 implementation and retained Review 54 are approved:
-  CLI/client Task 63 failed-replay auto-rerun wrappers are removed, `--new-job`
-  is explicit independent intent only, and docs/tests record one-submit
-  service-owned idempotency behavior. Olof accepted the live-proof mismatch:
-  no weaker CLI/proxy/tunnel proof; Task 371 must first expose the audio CLI
-  route and public browser proof path.
+- Task 369 and Task 371 are completed, reviewed, deployed, and live-proved at
+  `65a04e4a`. Task 369 removed the Task 63 caller-side failed-replay
+  auto-rerun wrapper; Task 371 exposed the audio transcript-bundle route and
+  closed the accepted public browser/Gateway proof path. Retained proof:
+  `build/verification/task-371-public-browser-audio-cli-proof/20260629T082206Z/summary.json`.
 - STT production remediation Task 362 is completed:
   `docs/backlog/tasks/task-362-use-batched-fasterwhisper-inference-in-production-stt-sidecar.md`.
   The production sidecar now requires FasterWhisper
@@ -184,14 +183,11 @@ decision/performance work.
 - Task 368 validation and live-proof evidence is retained in its task doc and
   Review 52; do not reintroduce caller-side idempotency salting or auto-rerun
   remediation.
-- Task 371 local implementation is in progress for the audio CLI
-  transcript-bundle route. Red/green route, manifest, one-submit idempotency,
-  route-registry, `typecheck-all`, `validate-tasks`, `skills-validate`,
-  `handoff-validate`, `git diff --check`, and `coverage-gate` passed
-  (`1752 passed, 6 skipped`, coverage `95.53%`). `docs-validate`/`lint`
-  remain blocked by already-dirty generated `docs/backlog/INDEX.md` drift from
-  unrelated Task 367/370 work; do not run `docs-sync` without accepting that
-  generated-index mix.
+- Task 369/371 final validation is retained in task docs, Reviews 54, 55, and
+  57, and the public proof summary. Stabilization gates passed: Task 368
+  focused/contract tests, Task 369/371 one-submit tests, route registry,
+  `format-all`, `lint-fix`, `typecheck-all`, `coverage-gate`, `docs-sync`,
+  `docs-validate`, `skills-validate`, `handoff-validate`, and `git diff --check`.
 
 ## Stop Conditions
 
