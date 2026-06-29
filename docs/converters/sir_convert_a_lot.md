@@ -23,7 +23,7 @@ links:
 Hemma-hosted conversion service over:
 
 - tunnel lane: `http://127.0.0.1:28085`
-- operator direct-service lane: `https://convert.hule.education`
+- reserved public edge: `https://convert.hule.education` fail-closed proof only
 - authenticated product/browser lane: HuleEdu Gateway
   `/sir-convert/v2/convert/...` through approved products such as
   Skriptoteket
@@ -325,18 +325,18 @@ pdm run convert-a-lot convert ./paper.pdf \
 `pdf -> docx` is delivered by the explicit service API v2 surface.
 
 Create a transcript bundle from uploaded audio or video-with-audio through the
-operator direct-service CLI lane:
+operator tunnel CLI lane:
 
 ```bash
 pdm run convert-a-lot convert ./lesson.mp3 \
   --to transcript_bundle \
   --output-dir ./out \
-  --service-url https://convert.hule.education \
+  --service-url http://127.0.0.1:28085 \
   --api-key "$SIR_CONVERT_A_LOT_V2_API_KEY"
 ```
 
-This direct `https://convert.hule.education` CLI example is operator/service
-evidence only. The retained Task 371 / Task 369 closeout proof used the
+`https://convert.hule.education` is reserved/fail-closed and is not a normal
+operator conversion lane. The retained Task 371 / Task 369 closeout proof used the
 HuleEdu Gateway browser surface `/sir-convert/v2/convert/jobs`, correlated the
 downstream Sir Convert create-job request, and is retained at
 `build/verification/task-371-public-browser-audio-cli-proof/20260629T082206Z/summary.json`.

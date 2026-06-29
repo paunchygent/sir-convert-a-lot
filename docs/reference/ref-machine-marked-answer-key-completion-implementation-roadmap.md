@@ -60,7 +60,8 @@ task, reference, report, or retained review surface.
 1. Overlay runtime foundation: Task 295.
 1. Teacher item-content overlay application: Task 302.
 1. Generated OpenAPI consumer contract publication: Task 304.
-1. Unkeyed/manual QTI profile for accepted-current-state export: Task 303.
+1. Historical unkeyed/manual QTI profile exploration: Task 303, superseded by
+   Task 337 for active correction/export policy.
 1. Matching answer-key pair IR contract: Task 298.
 1. Gapped/open-cloze accepted-value IR contract: Task 305.
 1. Structured provider harness: Task 296.
@@ -236,12 +237,13 @@ Checklist:
 Checkpoint:
 
 - [ ] Unit tests cover stale overlay, wrong item, wrong type, unknown fields,
-  oversized overlay, forbidden payload content, accepted current state, and
-  valid manual overlay.
+  oversized overlay, forbidden payload content, rejected legacy
+  accepted-current-state payloads, and valid manual overlay.
 - [ ] Bundle tests prove source IR remains unchanged and effective IR changes
   only when expected.
-- [ ] Bundle tests prove accepted current state clears only the teacher-review
-  gate and keeps unsupported target shapes or failed QTI validation unavailable.
+- [ ] Bundle tests prove rejected legacy accepted-current-state payloads cannot
+  clear review/export gates and keep unsupported target shapes or failed QTI
+  validation unavailable.
 - [ ] Focused route tests prove overlay persistence and idempotency.
 
 Stop conditions:
@@ -501,6 +503,9 @@ Checklist:
 - [ ] Superseded by Task 337: do not report a removed accepted-current-state
   readiness unlock for `examnet_pdf`; missing-key PDF remains unavailable until
   real effective key state exists.
+- [ ] Completed by Task 373 / Story 57 / PR-0406: downstream review-state
+  display consumes the compact Sir Convert projection while target readiness
+  remains the export authority.
 - [ ] Use item-013 as the regression case for a five-blank `Lucktext` item
   with an embedded image and no accepted blank values.
 - [ ] Promote native multi-gap `Lucktext` PDF rendering if fixture proof

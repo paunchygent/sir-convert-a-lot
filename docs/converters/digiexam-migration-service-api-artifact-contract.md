@@ -124,23 +124,21 @@ source-only fallback lane, or dual-version response mode for older bundle
 contracts. Existing consumers must migrate to the v3 manifest, target
 readiness report, and effective-exam semantics before depending on this route.
 
-Planned Epic 11 overlay work keeps target readiness Sir Convert-owned. When
-Skriptoteket later sends teacher edits or a teacher decision to accept the
-current item state, that input is represented as a source-bound ingestion
-overlay, not as local UI readiness. Sir Convert must validate the overlay,
-recompute the effective exam, and emit per-target readiness before consumers
-enable PDF or QTI downloads. A teacher acceptance can clear the teacher-review
-gate for missing answer keys, but it must not synthesize answer keys, mutate
-source IR provenance, bypass QTI validation, or enable a target whose renderer
-still lacks a governed safe shape.
+Task 337 and Task 373 hard-cut the old accepted-current-state/review-decision
+model. Skriptoteket sends concrete teacher corrections, manual answer keys, or
+reviewed advisory acceptance/edit intents. Sir Convert validates those inputs,
+recomputes the effective exam, emits `answer_key_review_state` for correction
+apply/replay, and keeps `target_readiness_report_v1` as the export authority
+before consumers enable PDF or QTI downloads. No compatibility path accepts
+generic `review_decision`, `history`, or `accept_current_state_for_export`
+payloads.
 
-Task 295 implements runtime application for manual answer keys and review
-decisions. Task 302 implements runtime application of supported
+Task 295 implements runtime application for manual answer keys. Task 302
+implements runtime application of supported
 `effective_item_patch` values for item text, option text, prompt/body,
 and gap-fill visible prompt repair.
-Task 303 owns the later unkeyed/manual QTI profile that can make teacher
-acceptance enable QTI when the selected QTI package has no other schema/profile
-violations.
+Task 373 owns the compact answer-key review-state projection used by first-pass
+bundle jobs and correction apply/replay responses.
 
 ## Cutover Route Boundary
 
@@ -788,8 +786,8 @@ Accepted overlay report `applied_fields` may include `effective_item_patch`
 only when a supported visible-content patch changed effective renderer input.
 It includes `point_correction` when a bounded positive integer point correction
 is applied. Rejected patch fields remain item-addressable in
-`rejected_entries`; manual answer keys and review decisions continue through
-their separate Task 295 paths.
+`rejected_entries`; manual answer keys, reviewed advisory acceptance/edit
+intents, and teacher corrections continue through their bounded apply paths.
 
 `answer_key_completion_report_v1` records structured provider advisory
 candidates, admission-time provider lineage, and backend validation states,
@@ -1159,7 +1157,7 @@ unavailable-artifact error.
 | `qti_package` | `<source-stem>.zip` | `application/zip` | Available when the Task 280 QTI package generator passes the governed local profile. Blocked when local validation fails, when adapter mapping cannot represent all source items, or when required accepted values are missing. Live Exam.net import proof state is reported separately. |
 | `qti_validation_report` | `<source-stem>-qti-validation-report.json` | `application/json` | Present when QTI generation is requested or defaulted. Task 280 defines `examnet_qti_validation_report_v1`; Task 282 service bundles expose this report as a named artifact. |
 | `ir_json` | `<source-stem>-digiexam-ir.json` | `application/json` | Available when `.dxe` parsing reaches IR generation. May include teacher-owned embedded asset payloads required by renderers. |
-| `effective_ir_json` | `<source-stem>-digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, or review decision changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
+| `effective_ir_json` | `<source-stem>-digiexam-effective-exam.json` | `application/json` | Available when LLM completion, manual overlay, item patch, teacher correction, or reviewed advisory acceptance/edit intent changes renderer input. Uses `digiexam_effective_exam_v2`, not the parser-owned source IR schema. |
 | `migration_manifest` | `<source-stem>-migration-manifest.json` | `application/json` | Available when IR manifest generation succeeds. Must not embed raw asset payloads or result-PDF private data. |
 | `target_readiness_report` | `<source-stem>-target-readiness-report.json` | `application/json` | Always available for terminal v2 bundles. It is the consumer authority for enabling PDF/QTI export actions. |
 | `answer_key_review_state_report` | `<source-stem>-answer-key-review-state-report.json` | `application/json` | Always available for terminal v2 bundles. It is the compact item review-state projection for DigiExam answer keys and must not replace target readiness. |
@@ -1445,7 +1443,8 @@ Skriptoteket may store locally:
 - manifest item summaries, including `item_id`, `sequence`, `item_type`, and
   `source_item_fingerprint`;
 - artifact metadata and target readiness rows;
-- teacher edits, manual answer keys, and review decisions drafted in the UI.
+- teacher edits, manual answer keys, reviewed advisory acceptance/edit intents,
+  and correction-session drafts in the UI.
 
 Skriptoteket must echo unchanged when submitting overlays:
 

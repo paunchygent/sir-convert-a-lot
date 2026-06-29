@@ -92,44 +92,44 @@ The projection must preserve the accepted boundary:
 
 ## Deliverables
 
-- [ ] Contract docs update for the compact projection in
+- [x] Contract docs update for the compact projection in
   `docs/converters/digiexam-migration-service-api-artifact-contract.md`.
-- [ ] Contract docs update for correction apply result semantics in
+- [x] Contract docs update for correction apply result semantics in
   `docs/converters/exam-authoring-corrections-apply-contract.md`.
-- [ ] Pydantic/domain DTOs for the projection with strict literal states and
+- [x] Pydantic/domain DTOs for the projection with strict literal states and
   reason codes.
-- [ ] Projection builder used by both first-pass migration bundle generation
+- [x] Projection builder used by both first-pass migration bundle generation
   and correction apply/replay result generation.
-- [ ] Named artifact manifest support for first-pass bundle jobs.
-- [ ] OpenAPI/schema export updates where the correction apply response changes.
-- [ ] Focused red-first behavioral tests for initial bundle and correction
+- [x] Named artifact manifest support for first-pass bundle jobs.
+- [x] OpenAPI/schema export updates where the correction apply response changes.
+- [x] Focused red-first behavioral tests for initial bundle and correction
   apply/replay projection.
 
 ## Acceptance Criteria
 
-- [ ] Sir Convert emits an item-addressable projection that lets Skriptoteket
+- [x] Sir Convert emits an item-addressable projection that lets Skriptoteket
   render compact review states without joining multiple artifact families.
-- [ ] Pending usable advisory candidates are represented as review-needed with
+- [x] Pending usable advisory candidates are represented as review-needed with
   advisory provenance available for detail display.
-- [ ] Accepted unchanged advisory keys are represented as complete/reviewed
+- [x] Accepted unchanged advisory keys are represented as complete/reviewed
   current keys without requiring the consumer to show an AI marker in list
   state.
-- [ ] Teacher-edited advisory keys and teacher-authored keys are represented as
+- [x] Teacher-edited advisory keys and teacher-authored keys are represented as
   teacher-owned current keys; AI provenance is not represented as current key
   provenance after keyed content changes.
-- [ ] Choice items with no selected correct answer produce a validation/review
+- [x] Choice items with no selected correct answer produce a validation/review
   reason equivalent to `no_correct_choice_selected`; gap/open-cloze items with
   no accepted values produce an equivalent missing-value reason.
-- [ ] Missing-key states remain export-blocking through
+- [x] Missing-key states remain export-blocking through
   `target_readiness_report_v1`; the compact projection does not unlock target
   downloads.
-- [ ] Rejected correction entries and stale source-state failures are surfaced
+- [x] Rejected correction entries and stale source-state failures are surfaced
   as current review/correction problems without leaking raw submitted payloads.
-- [ ] Replay result projection carries replay artifact references only when
+- [x] Replay result projection carries replay artifact references only when
   Sir Convert produced replay-scoped target artifacts.
-- [ ] The projection is content-safe and excludes raw source/provider/student
+- [x] The projection is content-safe and excludes raw source/provider/student
   data listed in the scope.
-- [ ] Tests prove the states for source-provided key, missing key,
+- [x] Tests prove the states for source-provided key, missing key,
   pending advisory candidate, accepted unchanged advisory candidate,
   teacher-edited advisory candidate, teacher-authored key, rejected correction,
   target-specific blocker, and replay artifact reference.

@@ -85,11 +85,10 @@ conversion producer and HuleEdu remains an optional future provider/API owner.
 - Task 337 removes accepted-current-state export from authoring correction
   contracts. Downstream durable sessions must not persist or replay
   `review_decision` / `accept_current_state_for_export` as correction state.
-- Task 373 is the proposed compact review-state projection follow-up. It must
-  make Sir Convert the producer of item-level answer-key review semantics so
-  Skriptoteket can render compact states without re-deriving truth from
-  multiple artifact families. It is blocked on its own open questions before
-  implementation.
+- Task 373 completed the compact review-state projection follow-up. Sir Convert
+  is the producer of item-level answer-key review semantics so Skriptoteket can
+  render compact states without re-deriving truth from multiple artifact
+  families.
 - Story 57 is the cross-repo tracking surface for Task 373 and Skriptoteket
   PR-0406. It owns the final live production browser proof gate with the tracked
   DXE fixture before this workflow can be called end-to-end complete.

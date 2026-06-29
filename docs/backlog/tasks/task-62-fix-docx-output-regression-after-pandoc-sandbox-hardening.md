@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-01'
-last_updated: '2026-03-01'
+last_updated: '2026-06-29'
 related:
   - docs/backlog/tasks/task-61-enforce-pandoc-sandbox-and-bounded-subprocess-stderr-handling.md
 labels:
@@ -44,7 +44,9 @@ Pandoc sandbox mode for DOCX output.
 
 ## Deliverables
 
-- [ ] DOCX output routes succeed again in live internet lane (`convert.hule.education`).
+- [ ] DOCX output routes succeed again in the operator tunnel lane
+  (`http://127.0.0.1:28085`). The public `convert.hule.education` edge remains
+  reserved/fail-closed.
 - [ ] SSRF/LFI is still blocked for DOCX routes via validation + workdir sandboxing.
 - [ ] Tests updated for sandbox flag expectations and DOCX output behavior.
 
@@ -54,9 +56,9 @@ Pandoc sandbox mode for DOCX output.
 - [x] `pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py` passes.
 - [x] `pdm run run-local-pdm typecheck-all` passes.
 - [x] `pdm run run-local-pdm coverage-gate` remains >=90%.
-- [ ] Live internet lane smoke:
-  - `pdm run run-local-pdm convert-a-lot convert <md> --to docx --service-url https://convert.hule.education` succeeds.
-  - `pdm run run-local-pdm convert-a-lot convert <pdf> --to docx --service-url https://convert.hule.education` succeeds.
+- [ ] Live operator tunnel lane smoke:
+  - `pdm run run-local-pdm convert-a-lot convert <md> --to docx --service-url http://127.0.0.1:28085` succeeds.
+  - `pdm run run-local-pdm convert-a-lot convert <pdf> --to docx --service-url http://127.0.0.1:28085` succeeds.
 
 ## Validation Evidence
 

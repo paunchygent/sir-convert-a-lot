@@ -88,8 +88,9 @@ renderers need it to carry referenced assets instead of only comparing hashes.
 Task 294 did not extend source IR to carry teacher overlays or applied LLM
 completion. Source IR remains parser-owned truth. Runtime output that
 incorporates reviewed answer-key completion, manual answer keys, item patches,
-or review decisions MUST use the active `digiexam_effective_exam_v2` contract
-and retain source binding back to the parser-owned IR.
+teacher corrections, or reviewed advisory acceptance/edit intents MUST use the
+active `digiexam_effective_exam_v2` contract and retain source binding back to
+the parser-owned IR.
 
 Task 298/307 removes DigiExam-owned matching semantics from this contract
 rather than adding a speculative `.dxe` matching adapter. Matching answer-key
@@ -141,7 +142,8 @@ Each manifest item summary MUST include source-binding fields for overlays:
 item type, title/prompt text, alternatives, gap IDs/order,
 asset hashes/references, max score, and grading policy fields that affect
 target shape. It MUST exclude answer keys, result-PDF enrichment,
-teacher overlays, LLM suggestions, manual answer keys, and review decisions.
+teacher overlays, LLM suggestions, manual answer keys, and reviewed advisory
+acceptance/edit intents.
 
 The IR MUST preserve item structure separately from answer-key data. A multiple
 choice item with options and absent answer provenance remains a structured item
@@ -150,8 +152,9 @@ with a missing answer key, not a negative answer key.
 ## Effective Exam Contract
 
 `digiexam_effective_exam_v2` is the renderer input after source evidence,
-accepted manual overlays, applied completion, or review decisions have been
-resolved. It is not parser evidence and must not be serialized as
+accepted manual overlays, applied completion, teacher corrections, or reviewed
+advisory acceptance/edit intents have been resolved. It is not parser evidence
+and must not be serialized as
 `digiexam_intermediate_exam_v3`.
 
 The top-level effective exam MUST include:
@@ -177,11 +180,12 @@ Each effective item MUST include:
 - bounded reviewed-completion lineage when an applied key began as an advisory
   candidate;
 - applied overlay entry identifiers;
-- review decisions applied to the item.
+- reviewed advisory acceptance/edit intents applied to the item.
 
-Accepted-current-state review decisions may affect target readiness only after
-Sir Convert recomputes the effective exam and validates the target. They do not
-create answer keys and do not alter source IR provenance.
+Compact answer-key review state is projected separately from source IR and
+effective IR. It may report reviewed advisory keys or teacher-owned edits, but
+it does not replace `target_readiness_report_v1` and does not alter source IR
+provenance.
 
 ## Matching Answer-Pair Requirement
 

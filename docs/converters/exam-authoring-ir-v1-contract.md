@@ -231,10 +231,14 @@ accepted ADR-0011 target teacher-correction architecture is not one
 
 The unified contract uses typed correction entries for visible item text,
 points, manual choice keys, manual gap/open-cloze accepted values, manual
-matching keys, review decisions, and candidate suppression while keeping source
-adapters as ingestion details. Consumers should not need to know whether the
+matching keys, reviewed advisory acceptance/edit intents, and candidate
+suppression while keeping source adapters as ingestion details. Consumers
+should not need to know whether the
 original item came from DigiExam, Exam.net, CSV, DOCX, Markdown, or another
 source in order to submit teacher corrections.
+
+Task 373's `answer_key_review_state` is a producer projection output, not a
+correction input or review-decision compatibility layer.
 
 The unified correction/apply contract lives in
 `docs/converters/exam-authoring-corrections-apply-contract.md`. It defines

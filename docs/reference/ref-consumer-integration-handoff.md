@@ -89,7 +89,7 @@ with SirConvertALotClientV2(base_url="http://127.0.0.1:28085", api_key="...") as
 
 1. Import adapter profile helpers from this repo or mirror exactly.
 1. Bind profile explicitly (`huledu` or `skriptoteket`).
-1. Route submit/poll/result via canonical v1 endpoints.
+1. Route submit/poll/result via canonical Service API v2 endpoints.
 1. Preserve returned `job_id` for background completion workflows.
 1. Run conformance scenarios against canonical service before merge.
 1. Validate demanding scientific-paper workload in consumer context before Story 003c close-out.

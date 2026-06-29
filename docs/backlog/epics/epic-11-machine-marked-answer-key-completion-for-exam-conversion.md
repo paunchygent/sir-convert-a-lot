@@ -164,12 +164,10 @@ The unified correction contract must remove `review_decision` /
 `accept_current_state_for_export`, keep missing keys blocked until real
 authoring corrections supply them, and leave any future incomplete export mode
 to a separate export-only contract.
-Task 373 is the proposed compact review-state projection follow-up. It should
-derive a versioned item review-state report from Sir Convert-owned source,
+Task 373 completed the compact review-state projection follow-up. Sir Convert
+now derives a versioned item review-state report from producer-owned source,
 effective, advisory, correction, and readiness state so Skriptoteket no longer
 assembles review semantics from multiple producer artifacts and local UI state.
-Its open questions must be resolved before implementation because this is a
-cross-repo contract surface.
 Story 57 is the cross-repo overseer tracking surface for Task 373 plus
 Skriptoteket PR-0406. It is not a replacement for either task; it records the
 shared final state goals and the required production browser proof gate.
