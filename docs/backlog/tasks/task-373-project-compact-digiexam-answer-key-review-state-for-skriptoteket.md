@@ -2,7 +2,7 @@
 id: 'task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket'
 title: 'Project compact DigiExam answer-key review state for Skriptoteket'
 type: 'task'
-status: 'proposed'
+status: 'ready'
 priority: 'high'
 created: '2026-06-29'
 last_updated: '2026-06-29'
@@ -50,12 +50,12 @@ The projection must preserve the accepted boundary:
 
 ## PR Scope
 
-- Add a versioned compact projection, tentatively
+- Add a versioned compact projection,
   `digiexam_answer_key_review_state_v1`, derived from Sir Convert-owned state.
 - Emit the projection for first-pass DigiExam migration bundle jobs as a named
-  artifact, tentatively `answer_key_review_state_report`.
-- Add the same projection, or the source-neutral equivalent field, to
-  `exam_authoring_corrections_apply_result_v1` so corrected/replayed state can
+  artifact, `answer_key_review_state_report`.
+- Add the same projection to `exam_authoring_corrections_apply_result_v1` as
+  the top-level `answer_key_review_state` field so corrected/replayed state can
   be rendered without consumer-side inference.
 - Derive item states from source/effective state, answer-key completion report,
   correction report, manual follow-up rows, target readiness, artifact
@@ -133,15 +133,26 @@ The projection must preserve the accepted boundary:
   teacher-edited advisory candidate, teacher-authored key, rejected correction,
   target-specific blocker, and replay artifact reference.
 
-## Open Questions Before Implementation
+## Closed Implementation Decisions
 
 1. Exact state vocabulary.
-   - Open: should the producer states be `needs_review`, `complete`,
-     `modified`, and `needs_correction`, or should the contract use more
-     source-neutral names such as `review_required`, `review_complete`,
-     `teacher_modified`, and `validation_required`?
-   - Recommendation: use source-neutral semantic codes and keep Swedish labels
-     entirely in Skriptoteket.
+   - Decision: the producer `review_state` vocabulary is
+     `review_required`, `review_complete`, `teacher_modified`, and
+     `validation_required`.
+   - Decision: the producer `current_key_origin` vocabulary is `none`,
+     `source_provided`, `reviewed_advisory`, `teacher_authored`,
+     `teacher_edited_advisory`, and `mixed`.
+   - Decision: initial reason codes include
+     `source_answer_key_present`, `advisory_candidate_pending`,
+     `reviewed_advisory_accepted`, `teacher_answer_key_present`,
+     `teacher_edited_advisory_candidate`, `manual_answer_key_required`,
+     `no_correct_choice_selected`, `required_gap_accepted_values_missing`,
+     `unsupported_item_type`, `unsupported_target_shape`,
+     `target_validation_failed`, `provider_unavailable`,
+     `correction_rejected`, `stale_source_state`,
+     `replay_artifact_unavailable`, and `matching_source_state_unavailable`.
+   - Rationale: these are source-neutral semantic codes. Skriptoteket owns
+     Swedish labels such as `Granska`, `Klart`, `Ändrat`, and `Kontrollera`.
 1. Detail versus list provenance.
    - Decision: use a bounded `provenance_detail` object, not a generic
      `history` field.
@@ -150,37 +161,44 @@ The projection must preserve the accepted boundary:
      user-facing state machine. It may support a detail disclosure such as
      `Tidigare förslag`, but it must not affect list state or export readiness.
 1. Teacher-edited advisory display.
-   - Open: should Sir Convert expose a distinct `teacher_modified` state after
-     advisory edits, or simply `complete` plus `current_key_origin =
-     teacher_authored`?
-   - Recommendation: expose both compact review state and origin. Let
-     Skriptoteket decide whether the list says `Ändrat` or `Klart`, but make
-     the current key teacher-owned.
+   - Decision: expose both compact review state and origin. A teacher edit to
+     an advisory key or keyed content is represented as
+     `review_state = teacher_modified` and
+     `current_key_origin = teacher_edited_advisory`.
+   - Decision: the current key is teacher-owned after keyed content changes.
+     AI/advisory provenance may appear only in bounded `provenance_detail` and
+     must not be represented as current-key provenance.
 1. Correction apply placement.
-   - Open: should the correction apply response add a top-level
-     `answer_key_review_state` field, or should it write a named replay report
-     artifact referenced by the response?
-   - Recommendation: add a top-level response field for immediate UI use and a
-     named artifact only where bundle-style artifact listing needs it.
+   - Decision: first-pass bundle jobs emit named artifact
+     `answer_key_review_state_report`; correction apply returns top-level
+     `answer_key_review_state`.
+   - Decision: Task 373 does not require a separate named replay review-state
+     artifact. Replay-scoped target artifact references remain governed by
+     target readiness rows.
 1. Public lane exposure.
-   - Open: should anonymous public Exam Converter jobs receive the same compact
-     report when advisory completion is disabled or unavailable?
-   - Recommendation: emit a report when it can be derived without privileged
-     correction-session state; rows should simply omit advisory metadata.
+   - Decision: public Exam Converter jobs may receive the compact report when
+     it can be derived from public-safe producer state.
+   - Decision: public rows must omit privileged correction-session state,
+     source-state signatures, identity/grant data, private paths, raw
+     source/provider/student data, provider diagnostics, and advisory
+     `provenance_detail` unless a later signed public grant contract explicitly
+     authorizes it.
 1. Localization contract.
-   - Open: should Sir Convert ship `message_key` values for every review-state
-     reason, or only reason codes?
-   - Recommendation: ship `message_key` for consistency with target readiness,
-     but treat it as copy lookup metadata rather than fixed visible text.
+   - Decision: Sir Convert emits reason codes plus `message_key` values.
+   - Decision: `message_key` is copy lookup metadata only; Sir Convert must not
+     ship final Swedish UI strings for this projection.
 1. Matching items.
-   - Open: should matching rows be represented now with blocked affordances, or
-     omitted until matching source state is producer-backed?
-   - Recommendation: represent unsupported/missing matching state only when
-     source state exists; do not invite consumers to infer matching structure.
+   - Decision: represent matching/unsupported rows only from producer-backed
+     source state. Do not emit inferred `left_id` / `right_id` structures,
+     browser-draft pair slots, or consumer-fillable matching skeletons.
+   - Decision: when matching structure is unavailable or unsupported, emit a
+     validation/unsupported reason such as `unsupported_item_type` or
+     `matching_source_state_unavailable`.
 
-The remaining open questions must be closed before this task moves from
-`proposed` to implementation. Do not let an implementation agent choose
-defaults locally without updating this task or a linked decision.
+These decisions make Task 373 implementation-ready. An implementation agent may
+refine field grouping only when tests preserve the exact state/origin/reason
+vocabulary, the `provenance_detail` boundary, and the no-legacy-compatibility
+rules above.
 
 ## Red-First Test Plan
 
