@@ -296,9 +296,8 @@ source-state signature before source-job lookup, then fails closed with
 DigiExam correction apply still returns replay artifacts. Task 377 does not
 implement request-scoped correction replay artifact identity.
 
-Task 378 is implemented and approved in Review 63 as of 2026-06-30, but Story
-58 final closeout, deployment, and dev/prod live proof have not been
-performed. Correction replay artifacts now use
+Task 378 is implemented and approved in Review 63 as of 2026-06-30. Correction
+replay artifacts now use
 request-scoped immutable artifact sets under
 `correction-replays/{artifact_set_id}/manifest.json`, typed
 `correction_replay_artifact_reference_v1` references, and the nested download
@@ -315,12 +314,29 @@ exposes the nested route and typed reference shape; a bounded Skriptoteket
 consumer slice remains required before Story 58 closeout for generated types,
 parser/adapter updates, file-action routing, and fail-closed UI behavior.
 
+2026-06-30 correction replay download/save incident closeout: production
+download and Save to My Files failed for `ak7_lag_och_ratt_with_image.dxe`
+after successful correction conversion because HuleEdu Gateway did not expose
+Sir Convert's nested correction replay artifact route. This was not a Sir
+Convert replay/idempotency failure, not a File Service failure, and not a
+Skriptoteket stale-reference fallback. HuleEdu fixed the Gateway route in
+commit `f72e7c6cdb1a` and deployed it to production. Retained downstream proof
+now shows the exact-file production case passing at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T014512Z/manifest.redacted.json`,
+monitored production proof with Docker service logs passing at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T015236Z/manifest.redacted.json`,
+and monitored Dev proof with local Docker service logs passing at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T020711Z/manifest.redacted.json`.
+
 Final closeout for this story is a story-level gate, not the end of any single
 task. Tasks 375-378 are necessary prerequisites only. Story 58 remains open
 until live dev and production evidence proves the changed idempotency/replay
 contracts through the Sir Convert service surfaces and downstream product
 consumers, including the Skriptoteket companion slice for Task 378's nested
-correction replay artifact references.
+correction replay artifact references. The correction replay download/save
+incident is closed by the Dev/Prod evidence above; the broader stale-success
+replay acceptance remains open until the explicit stale incompatible replay
+proof is retained.
 
 Local gate refresh after task approval is green: `format-all`, `lint-fix`,
 `typecheck-all`, `coverage-gate`, `docs-sync`, `docs-validate`,
