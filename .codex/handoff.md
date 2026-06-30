@@ -47,9 +47,13 @@ durable implementation authority lives in governed docs.
   A current Dev full-manifest rerun with regenerated internal headers proved
   compatible strict replay but failed the captured correction rows with owner
   access denials; those rows require fresh browser-owner headers or new product
-  capture, not API-key-only or internal-identity substitution. Final story
-  closeout still needs stale incompatible replay plus Prod/full matrix
-  `overall_status=passed`; API-key-only Prod correction proof needs
+  capture, not API-key-only or internal-identity substitution. Stale replay
+  proof current-state artifact
+  `build/verification/story-58-prod-stale-replay-current-state/20260630T171951Z/summary.json`
+  shows the retained projected prod stale rows are now absent from the prod
+  idempotency volume; rerunning them would produce fresh admission. Final story
+  closeout still needs a new unexpired same-owner stale replay plus Prod/full
+  matrix `overall_status=passed`; API-key-only Prod correction proof needs
   owner-matching signed headers.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.

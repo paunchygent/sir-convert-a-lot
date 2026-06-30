@@ -225,6 +225,30 @@ ledger.
   exam content, signatures, private paths, secrets, idempotency keys, raw
   identity/grant envelopes, uploaded bytes, source text, or provider prompts.
 
+## Live Proof Current State
+
+- The canonical Skriptoteket Gateway proof for stale DigiExam replay is
+  `scripts/story58_gateway_stale_replay_proof.py`; it uses HuleEdu
+  browser-session login, CSRF, multipart DXE upload, and Gateway `/sir-convert`
+  routing. It remains the route-true stale proof surface when an unexpired
+  same-owner stale idempotency scope is available.
+- The 2026-06-30 production stale smoke at
+  `.artifacts/story-58-gateway-stale-replay/20260630T033858Z/manifest.redacted.json`
+  computed the expected request/scope digests for a projected stale row but
+  observed `idempotency.state = fresh_admission`, so it does not close the
+  stale replay requirement.
+- Current read-only production state on service revision
+  `7a32e47857019b2c0077c0976e573c7d928aa1a9` is retained at
+  `build/verification/story-58-prod-stale-replay-current-state/20260630T171951Z/summary.json`.
+  It records that the previously expected stale scope digest and both
+  recovered-owner projection digests are absent from the production idempotency
+  volume. Re-running those expired projected rows would produce fresh admission
+  rather than proving `service_reattempt`.
+- The stale replay closeout therefore requires a new unexpired same-owner stale
+  idempotency scope or an approved non-production stale setup. Do not mutate
+  production idempotency records, artifacts, or source jobs to manufacture this
+  proof.
+
 ## Acceptance Criteria
 
 - [ ] Same-key/same-fingerprint `succeeded` replays remain strict only when the
