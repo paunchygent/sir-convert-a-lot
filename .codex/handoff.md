@@ -54,7 +54,10 @@ durable implementation authority lives in governed docs.
   idempotency volume; rerunning them would produce fresh admission. Final story
   closeout still needs a new unexpired same-owner stale replay plus Prod/full
   matrix `overall_status=passed`; API-key-only Prod correction proof needs
-  owner-matching signed headers.
+  owner-matching signed headers. Production Skriptoteket `20260630T154502Z`
+  also proves the user-route duplicate final correction request digest,
+  final `crset_167617d2fede86c0a774ff2c10bbf67b` download/save, and
+  mismatch `409`, but not a second distinct production artifact set.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 

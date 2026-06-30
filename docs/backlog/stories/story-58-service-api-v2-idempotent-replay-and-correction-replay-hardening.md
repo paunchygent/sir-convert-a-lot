@@ -367,6 +367,23 @@ with 30 captured Gateway requests: 8 correction apply calls and 22 source-state
 issue calls. Earlier Dev/Prod downstream bundles remain retained at
 `20260630T111643Z`, `20260630T110339Z`, and `20260630T133443Z`.
 
+2026-06-30 production proof-surface audit: the `20260630T154502Z`
+Skriptoteket manifest also proves eight owner-authenticated correction apply
+calls through HuleEdu Gateway, with the final two correction apply request
+digests identical and the final replay downloads/saves bound to
+`crset_167617d2fede86c0a774ff2c10bbf67b`. This is strong user-route evidence
+for duplicate final request observation plus final download/save/mismatch
+behavior, but it does not prove the full production Service API artifact-set
+matrix. The Skriptoteket correction-session responses expose target readiness
+and artifact keys, while request-scoped `artifact_set_id` appears only in final
+download/save evidence; the run does not retain a Story 58 row verdict
+comparing artifact-set identities across duplicate apply responses, nor a
+second distinct production artifact set for a changed correction payload. The
+`exact duplicate correction retry` and `distinct correction applies` matrix
+rows therefore remain Dev Service API evidence only until a new browser-owner
+product/Gateway capture or owner-matching Service API proof retains comparable
+production artifact-set identities.
+
 Final closeout for this story is a story-level gate, not the end of any single
 task. Tasks 375-378 are necessary prerequisites only. Story 58 remains open
 until live dev and production evidence proves the changed idempotency/replay
