@@ -166,6 +166,12 @@ follow-up.
   literal `{source_job_id}`, `{artifact_set_id}`, and `{content_sha256}`
   placeholders, and unresolved placeholders reached the HTTP layer instead of
   failing closed.
+- Multipart transport follow-up red:
+  `/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py -q`
+  first failed because the proof runner sent `job_spec` outside the multipart
+  text-part shape accepted by the live create-job route, then failed again
+  when `job_spec` carried a per-part content type that the route treated as
+  non-string upload data.
 
 ### Green Evidence
 
@@ -196,6 +202,18 @@ follow-up.
   `story58_live_replay_proof.py`,
   `story58_live_replay_proof_context.py`, and
   `test_story58_live_replay_proof_context.py` passed.
+- Multipart transport follow-up:
+  `/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py -q`
+  passed: `1 passed`.
+- Log-capture regression check:
+  `/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof.py::test_story58_live_replay_proof_captures_logs_after_live_requests -q`
+  passed: `1 passed`.
+- Targeted transport style/type checks:
+  `/opt/homebrew/bin/pdm run ruff check scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`,
+  `/opt/homebrew/bin/pdm run ruff format --check scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`,
+  and
+  `/opt/homebrew/bin/pdm run mypy scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`
+  passed.
 - Current safe Dev/Prod Service API smoke proof passed with retained response
   files and Docker log-capture summaries:
   `build/verification/story-58-live-replay-proof-dev-current/20260630T074139Z/summary.json`
@@ -204,6 +222,14 @@ follow-up.
   Both runs proved `/readyz` plus generic `fresh_admission` followed by
   `strict_replay`; both remain `requires_governed_setup` for the full Story 58
   matrix.
+- Current production generic Service API proof after the multipart transport
+  follow-up passed on deployed revision
+  `7a32e47857019b2c0077c0976e573c7d928aa1a9`:
+  `build/verification/story-58-live-replay-proof-prod-current-generic-7a32/20260630T160411Z/summary.json`.
+  It retains redacted response files plus
+  `logs/sir_convert_a_lot_prod-live-wait20.redacted.log`, proving live generic
+  `fresh_admission` followed by `strict_replay` for
+  `jobv2_450466bdb3ec4c85bcaf01e87f`.
 - `/opt/homebrew/bin/pdm run docs-sync` passed and refreshed generated docs
   indexes.
 - `/opt/homebrew/bin/pdm run docs-validate` passed:

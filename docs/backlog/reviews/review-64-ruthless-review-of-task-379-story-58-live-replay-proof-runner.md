@@ -677,3 +677,107 @@ Task 379 route-key follow-up is approved. The proof runner now retains v2
 `route_key` result metadata without weakening code-owned invariants, and stale
 incompatible `service_reattempt` proof is bound to the active reattempt job id
 rather than any superseded job id.
+
+## Pass 7 Multipart Transport Follow-Up Review
+
+This independent follow-up reviewed the Task 379 multipart transport repair
+after the live production Story 58 generic proof had failed with Service API
+`422` responses. The reviewer did not edit production or test implementation
+files, did not commit or push, and did not mutate runtime state. The only
+intentional mutation from this pass is this retained review artifact.
+
+Additional reviewed surfaces for pass 7:
+
+- `scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py`
+- `tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`
+- `docs/backlog/tasks/task-379-retain-story-58-live-replay-closeout-proof.md`
+- `docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+- `.codex/handoff.md`
+- Referenced retained proof:
+  `build/verification/story-58-live-replay-proof-prod-current-generic-7a32/20260630T160411Z/summary.json`
+
+## Pass 7 Findings
+
+No blocking findings.
+
+The multipart transport repair is approved. The proof runner now sends
+`job_spec` as a multipart text form part via `files={"job_spec": (None, job_spec_text)}` instead of mixing a separate `data` field with multipart
+files or adding a per-part content type. That matches the live create-job route
+shape, where `job_spec` is a `Form(...)` string and the upload is an
+`UploadFile`.
+
+The current `httpx` multipart documentation confirms that a tuple with
+filename `None` is encoded as a form field rather than a file part and omits
+the per-part content-type header when no explicit content type is supplied.
+The reviewed change uses that shape for `job_spec` while preserving the
+uploaded source file's filename and content type.
+
+The focused regression is truthful for the production failure mode. It drives
+the proof-runner transport boundary through `httpx.MockTransport`, verifies
+the API key reaches the request, rejects `job_spec` parts with a filename or
+per-part `Content-Type`, and only returns `200` for the multipart body shape
+accepted by the live Service API route. This would have caught both incident
+variants: `job_spec` outside the multipart form body and `job_spec` encoded as
+a file-like part.
+
+The docs and handoff are truthful about proof scope. The retained production
+generic proof at
+`build/verification/story-58-live-replay-proof-prod-current-generic-7a32/20260630T160411Z/summary.json`
+proves readiness on revision `7a32e47857019b2c0077c0976e573c7d928aa1a9` plus
+generic `fresh_admission` followed by `strict_replay`, but its overall status
+remains `requires_governed_setup`; it is not represented as final Story 58
+matrix closeout. The retained proof scan showed only approved operational
+metadata such as job ids, idempotency state, timestamps, service revision,
+relative evidence paths, and content-safe labels.
+
+Story 58 remains open for the stale incompatible DigiExam replay proof and the
+remaining Prod/full correction matrix closeout. This approval covers the Task
+379 multipart proof-runner transport follow-up only, not final Story 58
+acceptance.
+
+## Pass 7 Verification
+
+Reviewer-run evidence:
+
+- `/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof.py tests/sir_convert_a_lot/test_story58_live_replay_proof_invariants.py tests/sir_convert_a_lot/test_story58_live_replay_proof_sensitive_headers.py tests/sir_convert_a_lot/test_story58_live_replay_proof_context.py tests/sir_convert_a_lot/test_story58_live_replay_proof_route_key.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py -q`
+  passed: `12 passed`.
+- `/opt/homebrew/bin/pdm run ruff check scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`
+  passed: `All checks passed!`.
+- `/opt/homebrew/bin/pdm run ruff format --check scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`
+  passed: `2 files already formatted`.
+- `/opt/homebrew/bin/pdm run mypy scripts/sir_convert_a_lot/devops/story58_live_replay_proof_transport.py tests/sir_convert_a_lot/test_story58_live_replay_proof_transport.py`
+  passed: `Success: no issues found in 2 source files`.
+- `rg -n "\bAny\b|cast\(|type: ignore|# noqa|RequestFileValue|job_spec" ...`
+  over the transport follow-up source and test files found no typing or lint
+  bypasses and confirmed the old `RequestFileValue` import is gone.
+- `jq` over the retained production generic proof summary confirmed
+  `overall_status = requires_governed_setup`, readiness `status = passed`,
+  service revision `7a32e47857019b2c0077c0976e573c7d928aa1a9`, and one passed
+  generic idempotency smoke case with two live requests.
+- `rg` over the retained production generic proof bundle for raw secret,
+  identity/grant, signature, private path, source-text, provider, and
+  wait-seconds markers found no forbidden retained material; matches were
+  limited to approved metadata such as idempotency fields, relative evidence
+  paths, and content-safe labels.
+
+Post-artifact validation:
+
+- `/opt/homebrew/bin/pdm run docs-sync` passed and refreshed generated docs
+  indexes.
+- `/opt/homebrew/bin/pdm run docs-validate` passed:
+  `Validated 516 backlog files` and `Validated docs=593 rules=11`.
+- `/opt/homebrew/bin/pdm run skills-validate` passed: `skills-validate: ok`.
+- `/opt/homebrew/bin/pdm run handoff-validate` passed: `handoff-validate: ok`.
+- `git diff --check` passed.
+
+## Pass 7 Decision
+
+approved
+
+## Pass 7 Response
+
+Task 379 multipart transport follow-up is approved. The proof runner now sends
+create-job `job_spec` in the Service API's live multipart form shape, the
+regression test proves the incident boundary, retained docs keep the production
+generic proof scoped as partial evidence, and no Story 58 proof-contract or
+redaction blocker was found.

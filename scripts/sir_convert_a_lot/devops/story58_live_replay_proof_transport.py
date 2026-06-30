@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import IO, TypeAlias
 
 import httpx
 
@@ -21,7 +22,10 @@ from scripts.sir_convert_a_lot.devops.story58_live_replay_proof_models import Js
 from scripts.sir_convert_a_lot.devops.story58_live_replay_proof_sensitive_inputs import (
     sensitive_request_headers,
 )
-from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import RequestFileValue
+
+ProofMultipartValue: TypeAlias = (
+    tuple[str | None, IO[bytes] | bytes | str] | tuple[str | None, IO[bytes] | bytes | str, str]
+)
 
 
 def fetch_json(
@@ -99,16 +103,17 @@ def _execute_multipart_request(
     file_content_type = (
         content_type if isinstance(content_type, str) else "application/octet-stream"
     )
+    job_spec_text = job_spec_path.read_text(encoding="utf-8")
     with file_path.open("rb") as file_handle:
-        files: dict[str, RequestFileValue] = {
-            "file": (file_path.name, file_handle, file_content_type)
+        files: dict[str, ProofMultipartValue] = {
+            "file": (file_path.name, file_handle, file_content_type),
+            "job_spec": (None, job_spec_text),
         }
         response = client.request(
             method,
             path,
             params=query,
             headers=headers,
-            data={"job_spec": job_spec_path.read_text(encoding="utf-8")},
             files=files,
         )
     return response.status_code, _json_payload(response)

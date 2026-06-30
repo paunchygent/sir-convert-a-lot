@@ -327,15 +327,21 @@ Convert replay/idempotency failure, not a File Service failure, and not a
 Skriptoteket stale-reference fallback. HuleEdu fixed the Gateway route in
 commit `f72e7c6cdb1a` and deployed it to production. Retained downstream proof
 now shows the real `ak7_lag_och_ratt_with_image.dxe` production path passing
-after the Sir Convert `e49cb9ef` deploy at
-`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T133443Z/manifest.json`.
+after the Sir Convert `7a32e47857019b2c0077c0976e573c7d928aa1a9`
+deploy at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T154502Z/manifest.redacted.json`.
 The proof uses the canonical HuleEdu browser-session Playwright helper,
 retains `service-monitoring.json` and service logs from the active
 Gateway/File/Sir Convert/Skriptoteket services, and proves AI key accept/edit
 flows, auto-next/reload state, nested replay PDF/QTI downloads `200`, Save to
-My Files `200`, PDF/QTI content inspection, and mobile files/report surfaces.
-Earlier Dev/Prod downstream bundles remain retained at `20260630T111643Z` and
-`20260630T110339Z`.
+My Files `200`, PDF/QTI content inspection, mobile files/report surfaces, and
+`409 correction_replay_artifact_reference_mismatch` for a mismatched nested
+replay artifact reference. It also retained a private request-capture manifest
+outside the repo at
+`/Users/olofs_mba/.story58-private-captures/20260630T-prod-gateway-owner-proof-rerun2/manifest.json`
+with 30 captured Gateway requests: 8 correction apply calls and 22 source-state
+issue calls. Earlier Dev/Prod downstream bundles remain retained at
+`20260630T111643Z`, `20260630T110339Z`, and `20260630T133443Z`.
 
 Final closeout for this story is a story-level gate, not the end of any single
 task. Tasks 375-378 are necessary prerequisites only. Story 58 remains open
@@ -385,6 +391,36 @@ bundles also retain log-capture files or monitoring pointers for the test
 window. These bundles prove the shared generic idempotency path remains live in
 Dev and Prod, but their `overall_status` is `requires_governed_setup` and they
 do not close the story-level DigiExam stale replay/correction replay matrix.
+Current production generic Service API proof after the proof-runner multipart
+transport follow-up is retained at
+`build/verification/story-58-live-replay-proof-prod-current-generic-7a32/20260630T160411Z/summary.json`.
+It proves deployed revision `7a32e47857019b2c0077c0976e573c7d928aa1a9`,
+`fresh_admission` followed by `strict_replay` for
+`jobv2_450466bdb3ec4c85bcaf01e87f`, and redacted
+`sir_convert_a_lot_prod` Docker log capture for the same live request window.
+Its `overall_status` remains `requires_governed_setup` because the broader
+Story 58 matrix cases were intentionally undeclared in that safe smoke run.
+
+2026-06-30 Dev correction replay Service API proof now covers the correction
+matrix rows with private signed bodies derived from the real downstream `ak7`
+DXE product proof. Duplicate retry and mismatched nested artifact evidence is
+retained at
+`build/verification/story-58-live-replay-proof-dev-service-correction-matrix/20260630T150721Z/summary.json`:
+the exact duplicate correction apply returned `200` twice and reused
+`crset_c7002ca4a1e4d63ef9ffb8fdb88b43ba`, while the nested artifact route
+returned `409 correction_replay_artifact_reference_mismatch` for a mismatched
+content hash. Distinct correction apply evidence is retained at
+`build/verification/story-58-live-replay-proof-dev-service-correction-distinct/20260630T151122Z/summary.json`:
+the baseline correction apply used `crset_c7002ca4a1e4d63ef9ffb8fdb88b43ba`
+and the changed teacher correction produced
+`crset_ae5da7ef4dac170d9e53e72858bedaf3`. Missing-source correction apply
+evidence is retained at
+`build/verification/story-58-live-replay-proof-dev-service-correction-missing-source/20260630T151411Z/summary.json`:
+a validly signed request for an unavailable source job returned
+`409 exam_authoring_correction_source_job_unavailable`. These are live Dev
+Service API rows with retained Docker log evidence, but they do not close the
+full story because Prod correction matrix and stale incompatible DigiExam replay
+proof remain separate final-closeout requirements.
 
 2026-06-30 production `ak7` idempotency lineage evidence is retained at
 `build/verification/story-58-prod-ak7-idempotency-lineage/20260630T075602Z/summary.json`.
@@ -397,6 +433,17 @@ requires retained live Service API or Gateway response evidence for the stale
 incompatible replay with `idempotency.state = service_reattempt` and
 `idempotency.reason = terminal_artifact_contract_incompatible`, plus the
 remaining compatible replay and correction replay matrix cases.
+
+2026-06-30 owner-scope discovery confirmed that API-key-only Service API calls
+cannot replay production correction requests owned by the HuleEdu browser
+identity. HuleEdu Gateway signs `InternalIdentityContextV1` with
+`source_app = skriptoteket` and the required route grants, while Sir Convert's
+owner scope derives from that signed identity context. A direct Prod Service
+API correction proof therefore requires a sanctioned HuleEdu surface that
+provides fresh owner-matching signed headers; reconstructing or self-minting
+headers from production data is not acceptable story evidence. Until such a
+surface exists, the production owner-scoped proof lane is the Gateway/browser
+route, and direct API-key runner evidence remains transport proof only.
 
 2026-06-30 proof-readiness snapshot is retained at
 `build/verification/story-58-proof-readiness/20260630T080317Z/summary.json`.
