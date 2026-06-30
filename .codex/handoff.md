@@ -118,12 +118,13 @@ durable implementation authority lives in governed docs.
   downstream formatter, source-audio replay, or Gateway rewriting is part of
   the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-  Story 58 is in progress; Tasks 375-378 are approved. Task 378 adds
-  request-scoped artifact sets, typed replay references, nested download
-  routing, duplicate reuse, request-id conflict handling, and missing/mismatch
-  fail-closed errors. Story 58 final closeout is story-level, not task-level:
-  the bounded Skriptoteket PR-0410 companion slice, deploy, dev/prod live
-  service proofs, and closeout review are still required.
+  Story 58 is in progress; Tasks 375-379 are approved. Task 379 adds
+  `pdm run proof:story58-live-replay` for redacted story-level Service API
+  replay bundles. Final closeout remains story-level: run real Dev/Prod proof
+  manifests, prove the same-owner stale incompatible production replay through
+  the product identity that owns the retained stale records, finish any bounded
+  Skriptoteket consumer proof still relevant, and retain closeout review before
+  marking complete.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -136,18 +137,14 @@ durable implementation authority lives in governed docs.
   Task 345 for source-backed formula authority, and Tasks 346-350 for specialist
   OCR/runtime evidence.
 
-Durable formula-lane findings are retained in
-`.codex/long-term-memory/entries/session-2026-06-13-handoff-trimmed-formula-history.md`.
-Active carry-forward: Task 345 owns source-backed formula authority, Task 342
-presents safe authority metadata, and Task 343 consumes it for later
-decision/performance work.
+Durable formula-lane findings are retained in `.codex/long-term-memory/entries/session-2026-06-13-handoff-trimmed-formula-history.md`; active carry-forward remains Task 345 for source-backed formula authority, Task 342 for safe authority metadata, and Task 343 for later decisioning.
 
 ## Next Actions
 
-1. Run the separate Story 58 closeout: finish Skriptoteket PR-0410, then run
-   deployment where relevant, real dev/prod live proofs for every touched
-   idempotency/replay consumer, and closeout review. Do not mark Story 58
-   complete before that evidence exists.
+1. Run the separate Story 58 closeout with
+   `docs/reference/ref-story-58-live-proof-operator-manifest-contract.md` and
+   `pdm run proof:story58-live-replay --case-manifest <manifest>` for Dev/Prod
+   service evidence plus consumer proof/review. Do not mark complete before full matrix evidence exists.
 1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated sidecar approaches without new governed evidence and explicit user approval.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
    accepted producer artifacts, and governed Gateway routes; do not revive
@@ -181,6 +178,14 @@ decision/performance work.
 - Task 378 is approved in Review 63. Red: artifact-set tests failed `4 failed, 1 warning` on missing typed references and missing request-id conflict.
   Green: focused/preservation/OpenAPI suite `45 passed, 1 warning`; OpenAPI
   `4 passed`; coverage-gate `1788 passed, 6 skipped`, coverage `95.54%`.
+- Task 379 proof-runner support is implemented and Review 64 approved; latest
+  local audit passed focused proof-runner tests `9 passed`, targeted Ruff/mypy,
+  docs/skills/handoff validation, and `git diff --check`. Partial Dev/Prod
+  generic smoke and prod `ak7` lineage are retained under `build/verification/story-58-*`;
+  full matrix still needs private Story 58 manifest inputs. Current `/readyz`:
+  Dev `be1c93ccd14eaaee8b7af8614915f4e66f315bf2` is older than Story 58
+  runtime commit `0cf2428c`; Prod is on `0cf2428c`. Do not rerun generic smoke
+  as closeout.
 - Final local gate refresh after helper return-type repairs passed:
   `format-all`, `lint-fix`, `typecheck-all`, `coverage-gate`, `docs-sync`,
   `docs-validate`, `skills-validate`, `handoff-validate`, and `git diff --check`.

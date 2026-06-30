@@ -53,4 +53,5 @@ Generated index for reference, research, review, and roadmap documents.
 | REF-review-02-qwen-ungraceful-detached-shutdown-evidence | [Review 02 Qwen Ungraceful Detached Shutdown Evidence](ref-review-02-qwen-ungraceful-detached-shutdown-evidence.md) | reference | active |
 | REF-sir-convert-gateway-cutover-caller-inventory | [Sir Convert Gateway Cutover Caller Inventory](ref-sir-convert-gateway-cutover-caller-inventory.md) | reference | active |
 | REF-sir-convert-internalidentitycontextv1-authorization-profile | [Sir Convert InternalIdentityContextV1 Authorization Profile](ref-sir-convert-internalidentitycontextv1-authorization-profile.md) | reference | active |
+| REF-story-58-live-proof-operator-manifest-contract | [Story 58 Live Proof Operator Manifest Contract](ref-story-58-live-proof-operator-manifest-contract.md) | reference | active |
 | REF-stt-proof-lanes-and-admission-operations | [STT Proof Lanes and Admission Operations](ref-stt-proof-lanes-and-admission-operations.md) | reference | active |

@@ -17,8 +17,10 @@ related:
   - docs/backlog/tasks/task-376-gate-idempotent-succeeded-replays-on-route-artifact-contract-compatibility.md
   - docs/backlog/tasks/task-377-fail-closed-when-correction-replay-source-jobs-are-unavailable.md
   - docs/backlog/tasks/task-378-bind-correction-replay-artifacts-to-request-scoped-identity.md
+  - docs/backlog/tasks/task-379-retain-story-58-live-replay-closeout-proof.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/exam-authoring-corrections-apply-contract.md
+  - docs/reference/ref-story-58-live-proof-operator-manifest-contract.md
 labels:
   - service-api-v2
   - idempotency
@@ -89,6 +91,9 @@ Sir Convert as the product-neutral producer of route artifact contracts.
    is implemented and review-ready after Review 62 missing-grant remediation.
 1. `docs/backlog/tasks/task-378-bind-correction-replay-artifacts-to-request-scoped-identity.md`
    makes replay artifact references request-scoped and non-aliasing.
+1. `docs/backlog/tasks/task-379-retain-story-58-live-replay-closeout-proof.md`
+   adds the retained Story 58 proof-runner support for live Service API replay
+   evidence without mutating production idempotency or artifact state.
 
 ## Closed Decision Ledger
 
@@ -338,6 +343,60 @@ incident is closed by the Dev/Prod evidence above; the broader stale-success
 replay acceptance remains open until the explicit stale incompatible replay
 proof is retained.
 
-Local gate refresh after task approval is green: `format-all`, `lint-fix`,
+Task 379 is implemented, repaired after Review 64 `changes_requested`, and
+approved in the Review 64 pass-2 follow-up. It adds
+`pdm run proof:story58-live-replay`, a manifest-driven runner that executes
+operator-declared safe Service API v2 requests, writes redacted evidence under
+`build/verification/story-58-live-replay-proof/<timestamp>/`, records every
+Story 58 matrix case as `passed`, `failed`, `skipped`, or
+`requires_governed_setup`, preserves only approved metadata, enforces
+code-owned Story 58 case invariants, and fails overall proof when `/readyz`
+does not prove readiness plus `service_revision`. This is proof support, not
+final proof: Story 58 remains open until the actual Dev/Prod manifests are run
+and retained for the full matrix.
+The operator manifest and private-input contract for that final proof is
+`docs/reference/ref-story-58-live-proof-operator-manifest-contract.md`.
+
+2026-06-30 current partial live Service API proof: after the proof-runner
+log-capture, sensitive-header, and dependent-request repairs, safe generic
+idempotency smoke bundles were retained for Dev and Prod:
+`build/verification/story-58-live-replay-proof-dev-current/20260630T074139Z/summary.json`
+and
+`build/verification/story-58-live-replay-proof-prod-current/20260630T074211Z/summary.json`.
+The Dev run proved revision `be1c93ccd14eaaee8b7af8614915f4e66f315bf2`; the
+Prod run proved revision `0cf2428cd4dd1c57ad0e227f96254e0724b34d06`. Both
+runs captured container-log summaries and retained per-request Service API
+responses showing generic `fresh_admission` followed by `strict_replay`
+against the same live job id. Redaction checks found no retained idempotency
+keys, source text, API keys, authorization cookies, private paths, grants, or
+signatures. These bundles prove the shared generic idempotency path remains
+live in Dev and Prod, but their `overall_status` is `requires_governed_setup`
+and they do not close the story-level DigiExam stale replay/correction replay
+matrix.
+
+2026-06-30 production `ak7` idempotency lineage evidence is retained at
+`build/verification/story-58-prod-ak7-idempotency-lineage/20260630T075602Z/summary.json`.
+It proves, from production filesystem metadata only, that the stale
+`jobv2_ee82aa292cbe4a0f9a32be439a` identity-owned `ak7` DigiExam success lacks
+`answer_key_review_state_report` while the active idempotency successor
+`jobv2_4d3f85b3252e49879ee632ce30` has that current report artifact. This is
+useful production lineage, but it is not final Story 58 proof: closeout still
+requires retained live Service API or Gateway response evidence for the stale
+incompatible replay with `idempotency.state = service_reattempt` and
+`idempotency.reason = terminal_artifact_contract_incompatible`, plus the
+remaining compatible replay and correction replay matrix cases.
+
+2026-06-30 proof-readiness snapshot is retained at
+`build/verification/story-58-proof-readiness/20260630T080317Z/summary.json`.
+It confirms Dev and Prod `/readyz` still expose the expected service revisions
+and records the current private-input gap without retaining any private values:
+this shell has the Service API key, but not the operator-private identity/grant
+headers, historical `ak7` idempotency key and source, source-state signing
+material, or prepared signed correction request bodies needed to execute the
+full matrix. The proof runner can execute prepared private JSON bodies and
+metadata-only dependent path/query/header interpolation; body interpolation is
+not part of the approved Task 379 contract.
+
+Local gate refresh after Task 378 approval is green: `format-all`, `lint-fix`,
 `typecheck-all`, `coverage-gate`, `docs-sync`, `docs-validate`,
 `skills-validate`, `handoff-validate`, and `git diff --check` all passed.

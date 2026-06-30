@@ -1,12 +1,15 @@
 """Job artifact and checkpoint HTTP routes for Sir Convert-a-Lot service API v2.
 
 Purpose:
-    Keep result/artifact retrieval and long-PDF partial/checkpoint endpoints
-    isolated from the job create/status/cancel router so the primary jobs router
-    stays lean and remains below the 500 LoC guardrail.
+    Expose owner-scoped terminal result, primary artifact, named bundle
+    artifact, and long-PDF partial/checkpoint reads without mixing retrieval
+    concerns into job admission, status, cancellation, or correction replay
+    artifact resolution.
 
 Relationships:
     - Registered by `interfaces.http_routes_jobs_v2.build_job_router_v2`.
+    - Registers the request-scoped correction replay artifact route family,
+      which owns artifact-set and content-hash guarded replay downloads.
     - Uses v2 runtime behavior in `infrastructure.runtime_engine_v2`.
     - Reads PDF checkpoint/partial artifacts produced by
       `infrastructure.v2_conversion_executor`.

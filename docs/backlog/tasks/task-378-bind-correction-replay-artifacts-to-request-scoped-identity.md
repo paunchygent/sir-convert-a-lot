@@ -206,8 +206,7 @@ fail-closed UI behavior before Story 58 final closeout.
 - `/opt/homebrew/bin/pdm run lint-fix` passed after final local gate refresh:
   `All checks passed!` and `968 files left unchanged`.
 - `/opt/homebrew/bin/pdm run typecheck-all` passed after repairing the
-  pre-existing test-helper return-type errors: `Success: no issues found in
-  919 source files`.
+  pre-existing test-helper return-type errors: `Success: no issues found in 919 source files`.
 - `/opt/homebrew/bin/pdm run docs-sync` passed and refreshed generated indexes.
 - `/opt/homebrew/bin/pdm run docs-validate` passed:
   `Validated 514 backlog files` and `Validated docs=590 rules=11`.
