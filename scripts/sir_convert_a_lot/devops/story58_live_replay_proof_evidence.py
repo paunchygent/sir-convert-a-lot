@@ -75,6 +75,9 @@ def redacted_response_payload(*, status_code: int, payload: JsonObject) -> JsonO
     route_id = _find_first_string(payload, "route_id")
     if route_id is not None:
         redacted["route_id"] = route_id
+    route_key = _find_first_string(payload, "route_key")
+    if route_key is not None:
+        redacted["route_key"] = route_key
     schema_versions = _schema_versions(payload)
     if schema_versions:
         redacted["schema_versions"] = schema_versions
@@ -152,13 +155,16 @@ def _error_summary(payload: JsonObject) -> JsonObject:
 
 def _job_summary(payload: JsonObject) -> JsonObject:
     job = payload.get("job")
-    if not isinstance(job, dict):
-        return {}
     summary: JsonObject = {}
-    for key in ("job_id", "status", "route_id", "created_at", "updated_at"):
-        value = job.get(key)
+    if isinstance(job, dict):
+        for key in ("job_id", "status", "route_id", "created_at", "updated_at"):
+            value = job.get(key)
+            if isinstance(value, str):
+                summary[key] = value
+    for key in ("job_id", "status"):
+        value = payload.get(key)
         if isinstance(value, str):
-            summary[key] = value
+            summary.setdefault(key, value)
     return summary
 
 

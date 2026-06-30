@@ -514,3 +514,166 @@ dependent live proof steps by extracting scalar metadata from redacted response
 payloads and interpolating it into later request path/query/header values,
 without retaining raw response bodies or secrets and without weakening Story 58
 case invariants.
+
+## Pass 5 Route-Key Follow-Up Review
+
+This independent follow-up reviewed the route-key support for Story 58
+proof-runner cases. The reviewer did not edit production or test
+implementation files, did not commit or push, and did not mutate runtime state.
+The only intentional mutation from this pass is this retained review artifact.
+
+Additional reviewed surfaces for pass 5:
+
+- `scripts/sir_convert_a_lot/devops/story58_live_replay_proof.py`
+- `scripts/sir_convert_a_lot/devops/story58_live_replay_proof_evidence.py`
+- `scripts/sir_convert_a_lot/devops/story58_live_replay_proof_invariants.py`
+- `tests/sir_convert_a_lot/test_story58_live_replay_proof_route_key.py`
+- `docs/reference/ref-story-58-live-proof-operator-manifest-contract.md`
+- `docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+- `.codex/handoff.md`
+
+## Pass 5 Findings
+
+### Medium: Stale reattempt route proof can still bind to `replayed_job_id`
+
+`scripts/sir_convert_a_lot/devops/story58_live_replay_proof_invariants.py:91`
+correctly starts stale incompatible proof from a `service_reattempt` response,
+and the new route-key regression test rejects a route result for
+`reattempt_of_job_id`. However `_idempotency_job_ids(...)` still adds
+`idempotency.replayed_job_id` for every idempotency state
+(`scripts/sir_convert_a_lot/devops/story58_live_replay_proof_invariants.py:176`).
+For `service_reattempt`, the proof identity must be the fresh active reattempt
+job, not any replayed/superseded job id. If a stale response includes a
+`replayed_job_id` carrying the previous job, a later v2 `/result` response for
+that previous job can satisfy `_matching_digiexam_route_proven(...)` at
+`scripts/sir_convert_a_lot/devops/story58_live_replay_proof_invariants.py:197`
+and mark `stale_incompatible_digiexam_replay` passed.
+
+Why it matters: the follow-up is meant to make stale incompatible replay proof
+decision-grade. Passing because route metadata matched a superseded job would
+recreate the false-proof path this slice is closing, especially for the
+production stale-reattempt proof still needed for Story 58.
+
+Required fix shape: make the accepted job-id set state-specific. For
+`service_reattempt`, bind route proof only to `idempotency.active_job_id` and
+the response `job.job_id` when it represents that same active job; do not accept
+`replayed_job_id`, `reattempt_of_job_id`, or `previous_attempts` as route-proof
+identities. Keep `replayed_job_id` only for `strict_replay` if it is needed
+there.
+
+Proof required: add a focused route-key regression where the service reattempt
+response has `active_job_id = jobv2_new`, `replayed_job_id = jobv2_old`, and
+`reattempt_of_job_id = jobv2_old`, while the result route metadata is fetched
+for `jobv2_old`; the case must fail. Then rerun:
+
+```bash
+/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof.py tests/sir_convert_a_lot/test_story58_live_replay_proof_sensitive_headers.py tests/sir_convert_a_lot/test_story58_live_replay_proof_route_key.py -q
+```
+
+## Pass 5 Verification
+
+Reviewer-run evidence:
+
+- `/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof_route_key.py -q`
+  passed: `2 passed`.
+- Current code review inspected the route-key redaction and route-proof
+  invariant paths listed above. The focused test proves
+  `reattempt_of_job_id` is rejected, but it does not cover the
+  `service_reattempt` plus `replayed_job_id` stale-id case.
+
+Post-artifact validation:
+
+- `/opt/homebrew/bin/pdm run docs-sync` passed and refreshed generated docs
+  indexes.
+- `/opt/homebrew/bin/pdm run docs-validate` passed:
+  `Validated 516 backlog files` and `Validated docs=593 rules=11`.
+- `/opt/homebrew/bin/pdm run handoff-validate` passed: `handoff-validate: ok`.
+- `git diff --check` passed.
+
+Validation not rerun by this reviewer before this finding:
+
+- Full `format-all`, `lint-fix`, `typecheck-all`, `coverage-gate`,
+  and `skills-validate` were not rerun because approval is blocked by the stale
+  route-proof finding above.
+
+## Pass 5 Decision
+
+changes_requested
+
+## Pass 5 Response
+
+Task 379 route-key follow-up is not approved yet. The runner now retains v2
+`route_key` evidence and rejects `reattempt_of_job_id` route proof, but the
+stale reattempt invariant still accepts `replayed_job_id` as a matching route
+identity for `service_reattempt`. Tighten the invariant to the active reattempt
+job id and add the focused stale-id regression before using this as Story 58
+stale incompatible replay proof.
+
+## Pass 6 Route-Key Remediation Review
+
+This independent follow-up reviewed the remediation for the Pass 5 stale
+reattempt route-key finding. The reviewer did not edit production or test
+implementation files, did not commit or push, and did not mutate runtime state.
+The only intentional mutation from this pass is this retained review artifact.
+
+Additional reviewed surfaces for pass 6:
+
+- `scripts/sir_convert_a_lot/devops/story58_live_replay_proof_invariants.py`
+- `tests/sir_convert_a_lot/test_story58_live_replay_proof_route_key.py`
+
+## Pass 6 Findings
+
+No blocking findings.
+
+The Pass 5 stale route-proof finding is resolved. Stale incompatible replay now
+collects route-proof identities only from `idempotency.active_job_id` on
+`service_reattempt` responses, and the stale invariant calls
+`_matching_digiexam_route_proven(...)` with `allow_state_only_match=False`.
+That keeps the proof bound to the fresh active reattempt job and prevents a v2
+result route response for a previous `replayed_job_id`, `reattempt_of_job_id`,
+or `previous_attempts` entry from satisfying the stale case.
+
+Strict replay keeps the broader id collection and state-only match path, which
+is appropriate for the existing strict replay proof shape where create-job
+responses may carry strict replay metadata directly and route metadata may
+arrive on a separate result response for the same replayed job.
+
+The focused regression is truthful: it drives the public proof-runner boundary
+with a service reattempt response containing `active_job_id = jobv2_new`,
+`replayed_job_id = jobv2_old`, and `reattempt_of_job_id = jobv2_old`, then
+supplies DigiExam `route_key` metadata only for `jobv2_old`; the case remains
+`failed`.
+
+Story 58 remains open for actual Dev/Prod live proof manifests and the full
+matrix. This approval covers the Task 379 route-key proof-runner follow-up
+only, not final Story 58 closeout.
+
+## Pass 6 Verification
+
+Reviewer-run evidence:
+
+- `/opt/homebrew/bin/pdm run pytest-root tests/sir_convert_a_lot/test_story58_live_replay_proof.py tests/sir_convert_a_lot/test_story58_live_replay_proof_sensitive_headers.py tests/sir_convert_a_lot/test_story58_live_replay_proof_route_key.py -q`
+  passed: `6 passed`.
+- `rg -n "\bAny\b|cast\(|type: ignore|# noqa" ...` over the route-key
+  follow-up source and test files found no typing or lint bypasses.
+
+Post-artifact validation:
+
+- `/opt/homebrew/bin/pdm run docs-sync` passed and refreshed generated docs
+  indexes.
+- `/opt/homebrew/bin/pdm run docs-validate` passed:
+  `Validated 516 backlog files` and `Validated docs=593 rules=11`.
+- `/opt/homebrew/bin/pdm run skills-validate` passed: `skills-validate: ok`.
+- `/opt/homebrew/bin/pdm run handoff-validate` passed: `handoff-validate: ok`.
+- `git diff --check` passed.
+
+## Pass 6 Decision
+
+approved
+
+## Pass 6 Response
+
+Task 379 route-key follow-up is approved. The proof runner now retains v2
+`route_key` result metadata without weakening code-owned invariants, and stale
+incompatible `service_reattempt` proof is bound to the active reattempt job id
+rather than any superseded job id.

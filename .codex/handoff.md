@@ -123,10 +123,10 @@ durable implementation authority lives in governed docs.
   replay bundles. Latest downstream Skriptoteket product proof passed: prod
   `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T110339Z/manifest.json`;
   Dev `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T111643Z/manifest.json`.
-  Final closeout remains story-level: run real Dev/Prod Service API proof
-  manifests, prove the same-owner stale incompatible production replay through
-  the product identity that owns the retained stale records, and retain closeout
-  review before marking complete.
+  Real-DXE Dev Service API proof now passes `compatible_strict_digiexam_replay`
+  at `build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T123203Z/summary.json`.
+  Final closeout remains story-level: prove stale incompatible Prod replay and
+  the remaining correction replay matrix before marking complete.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -181,16 +181,14 @@ Durable formula-lane findings are retained in `.codex/long-term-memory/entries/s
   Green: focused/preservation/OpenAPI suite `45 passed, 1 warning`; OpenAPI
   `4 passed`; coverage-gate `1788 passed, 6 skipped`, coverage `95.54%`.
 - Task 379 proof-runner support is implemented and Review 64 approved; latest
-  local audit passed focused proof-runner tests `9 passed`, targeted Ruff/mypy,
-  docs/skills/handoff validation, and `git diff --check`. Partial Dev/Prod
-  generic smoke and prod `ak7` lineage are retained under `build/verification/story-58-*`;
-  full matrix still needs private Story 58 manifest inputs. Current downstream
-  product proof used Sir Convert service revision
-  `ef2284b3b9d6dc7cb1f403939c0581c9ee7d7c61` in both Dev and Prod. Do not rerun
-  generic smoke as closeout.
-- Final local gate refresh after helper return-type repairs passed:
-  `format-all`, `lint-fix`, `typecheck-all`, `coverage-gate`, `docs-sync`,
-  `docs-validate`, `skills-validate`, `handoff-validate`, and `git diff --check`.
+  focused proof-runner route-key follow-up suite passed `6 passed`. Current generic
+  Dev/Prod refresh bundles prove revision `66a6da9d` at
+  `build/verification/story-58-live-replay-proof-{dev,prod}-current-refresh/20260630T115228Z/summary.json`.
+  Real-DXE Dev compatible strict replay passed at
+  `build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T123203Z/summary.json`.
+  Prod `ak7` lineage remains filesystem-only evidence; full matrix still needs private inputs.
+- Latest local gate refresh after the route-key proof-runner follow-up passed:
+  focused proof-runner route-key suite `6 passed`; `format-all` `983 files left unchanged`; `lint-fix` passed; `typecheck-all` passed over `934 source files`; `coverage-gate` `1799 passed, 6 skipped`, coverage `95.54%`.
 
 ## Stop Conditions
 

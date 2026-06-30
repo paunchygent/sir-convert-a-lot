@@ -358,23 +358,35 @@ final proof: Story 58 remains open until the actual Dev/Prod manifests are run
 and retained for the full matrix.
 The operator manifest and private-input contract for that final proof is
 `docs/reference/ref-story-58-live-proof-operator-manifest-contract.md`.
+The runner now retains v2 `route_key` metadata from result responses and
+matches it to the idempotency job id when create-job responses carry replay
+state but not route metadata.
 
 2026-06-30 current partial live Service API proof: after the proof-runner
 log-capture, sensitive-header, and dependent-request repairs, safe generic
-idempotency smoke bundles were retained for Dev and Prod:
-`build/verification/story-58-live-replay-proof-dev-current/20260630T074139Z/summary.json`
+idempotency smoke bundles were retained for Dev and Prod. The latest refresh is
+`build/verification/story-58-live-replay-proof-dev-current-refresh/20260630T115228Z/summary.json`
 and
-`build/verification/story-58-live-replay-proof-prod-current/20260630T074211Z/summary.json`.
-The Dev run proved revision `be1c93ccd14eaaee8b7af8614915f4e66f315bf2`; the
-Prod run proved revision `0cf2428cd4dd1c57ad0e227f96254e0724b34d06`. Both
-runs captured container-log summaries and retained per-request Service API
+`build/verification/story-58-live-replay-proof-prod-current-refresh/20260630T115228Z/summary.json`.
+Both refreshed runs prove service revision
+`66a6da9dfe295162674c0bddc2c1da1f4030148f` and retain per-request Service API
 responses showing generic `fresh_admission` followed by `strict_replay`
-against the same live job id. Redaction checks found no retained idempotency
-keys, source text, API keys, authorization cookies, private paths, grants, or
-signatures. These bundles prove the shared generic idempotency path remains
-live in Dev and Prod, but their `overall_status` is `requires_governed_setup`
-and they do not close the story-level DigiExam stale replay/correction replay
-matrix.
+against the same live job id. Earlier generic bundles with Docker log captures
+remain retained under `build/verification/story-58-live-replay-proof-*current*`.
+These bundles prove the shared generic idempotency path remains live in Dev and
+Prod, but their `overall_status` is `requires_governed_setup` and they do not
+close the story-level DigiExam stale replay/correction replay matrix.
+
+2026-06-30 real-DXE Dev proof is retained at
+`build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T123203Z/summary.json`.
+It uses the real `1776888013-ak7-lag-och-ratt.dxe` fixture with HuleEdu-signed
+local internal identity headers, captures `sir_convert_a_lot_dev` Docker logs
+to file, and proves `compatible_strict_digiexam_replay` passed: fresh admission
+`200`, strict replay `200` with the same job id, and result metadata `200` with
+`route_key = digiexam_dxe_to_examnet_migration_bundle`. The bundle's
+`overall_status` remains `requires_governed_setup` because the stale
+incompatible replay and correction replay matrix cases still need prepared
+private inputs.
 
 2026-06-30 production `ak7` idempotency lineage evidence is retained at
 `build/verification/story-58-prod-ak7-idempotency-lineage/20260630T075602Z/summary.json`.
@@ -399,6 +411,8 @@ full matrix. The proof runner can execute prepared private JSON bodies and
 metadata-only dependent path/query/header interpolation; body interpolation is
 not part of the approved Task 379 contract.
 
-Local gate refresh after Task 378 approval is green: `format-all`, `lint-fix`,
-`typecheck-all`, `coverage-gate`, `docs-sync`, `docs-validate`,
-`skills-validate`, `handoff-validate`, and `git diff --check` all passed.
+Latest local gate refresh after the route-key proof-runner follow-up passed:
+focused Story 58 proof-runner route-key suite `6 passed`; `format-all`
+`983 files left unchanged`; `lint-fix` passed; `typecheck-all` passed over
+`934 source files`; and `coverage-gate` passed `1799 passed, 6 skipped`,
+coverage `95.54%`.

@@ -299,6 +299,9 @@ def _expectation_result(*, redacted: JsonObject, expect: JsonObject) -> tuple[bo
     route_id = optional_string(expect.get("route_id"))
     if route_id is not None and redacted.get("route_id") != route_id:
         return False, f"route_id did not match {route_id}"
+    route_key = optional_string(expect.get("route_key"))
+    if route_key is not None and redacted.get("route_key") != route_key:
+        return False, f"route_key did not match {route_key}"
     return True, "Declared live expectation passed."
 
 

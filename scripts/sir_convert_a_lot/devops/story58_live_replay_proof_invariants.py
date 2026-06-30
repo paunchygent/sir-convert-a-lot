@@ -68,10 +68,19 @@ def readiness_result(readyz: JsonObject) -> tuple[bool, str]:
 
 
 def _strict_replay_result(requests: tuple[Story58RequestEvidence, ...]) -> tuple[bool, str]:
-    if any(
-        _idempotency_state(request.redacted_payload) == "strict_replay"
-        and _route_id(request.redacted_payload) == DIGIEXAM_ROUTE_ID
-        for request in requests
+    strict_replay_job_ids = _idempotency_job_ids(
+        requests=requests,
+        state="strict_replay",
+        reason=None,
+    )
+    if not strict_replay_job_ids:
+        return False, "No response proved DigiExam strict replay metadata."
+    if _matching_digiexam_route_proven(
+        requests=requests,
+        job_ids=strict_replay_job_ids,
+        state="strict_replay",
+        reason=None,
+        allow_state_only_match=True,
     ):
         return True, "DigiExam strict replay metadata was proven."
     return False, "No response proved DigiExam strict replay metadata."
@@ -80,11 +89,16 @@ def _strict_replay_result(requests: tuple[Story58RequestEvidence, ...]) -> tuple
 def _stale_incompatible_result(
     requests: tuple[Story58RequestEvidence, ...],
 ) -> tuple[bool, str]:
-    if any(
-        _idempotency_state(request.redacted_payload) == "service_reattempt"
-        and _idempotency_reason(request.redacted_payload) == STALE_REATTEMPT_REASON
-        and _route_id(request.redacted_payload) == DIGIEXAM_ROUTE_ID
-        for request in requests
+    reattempt_job_ids = _active_reattempt_job_ids(
+        requests=requests,
+        reason=STALE_REATTEMPT_REASON,
+    )
+    if reattempt_job_ids and _matching_digiexam_route_proven(
+        requests=requests,
+        job_ids=reattempt_job_ids,
+        state="service_reattempt",
+        reason=STALE_REATTEMPT_REASON,
+        allow_state_only_match=False,
     ):
         return True, "Stale incompatible DigiExam service reattempt was proven."
     return False, "No response proved terminal-artifact-incompatible DigiExam reattempt."
@@ -147,6 +161,72 @@ def _generic_idempotency_result(
     return False, "No safe response proved generic idempotency metadata."
 
 
+def _idempotency_job_ids(
+    *,
+    requests: tuple[Story58RequestEvidence, ...],
+    state: str,
+    reason: str | None,
+) -> frozenset[str]:
+    job_ids: set[str] = set()
+    for request in requests:
+        payload = request.redacted_payload
+        if _idempotency_state(payload) != state:
+            continue
+        if reason is not None and _idempotency_reason(payload) != reason:
+            continue
+        for candidate in (
+            _nested_string(payload, "idempotency", "active_job_id"),
+            _nested_string(payload, "idempotency", "replayed_job_id"),
+            _job_id(payload),
+        ):
+            if candidate is not None:
+                job_ids.add(candidate)
+    return frozenset(job_ids)
+
+
+def _active_reattempt_job_ids(
+    *,
+    requests: tuple[Story58RequestEvidence, ...],
+    reason: str,
+) -> frozenset[str]:
+    job_ids: set[str] = set()
+    for request in requests:
+        payload = request.redacted_payload
+        if _idempotency_state(payload) != "service_reattempt":
+            continue
+        if _idempotency_reason(payload) != reason:
+            continue
+        active_job_id = _nested_string(payload, "idempotency", "active_job_id")
+        if active_job_id is not None:
+            job_ids.add(active_job_id)
+    return frozenset(job_ids)
+
+
+def _matching_digiexam_route_proven(
+    *,
+    requests: tuple[Story58RequestEvidence, ...],
+    job_ids: frozenset[str],
+    state: str,
+    reason: str | None,
+    allow_state_only_match: bool,
+) -> bool:
+    for request in requests:
+        payload = request.redacted_payload
+        if _route_identifier(payload) != DIGIEXAM_ROUTE_ID:
+            continue
+        route_job_id = _job_id(payload)
+        if route_job_id is not None and route_job_id in job_ids:
+            return True
+        if (
+            allow_state_only_match
+            and route_job_id is None
+            and _idempotency_state(payload) == state
+            and (reason is None or _idempotency_reason(payload) == reason)
+        ):
+            return True
+    return False
+
+
 def _successful_request_identities(
     requests: tuple[Story58RequestEvidence, ...],
 ) -> list[str]:
@@ -197,9 +277,16 @@ def _error_code(payload: JsonObject) -> str | None:
     return _nested_string(payload, "error", "code")
 
 
-def _route_id(payload: JsonObject) -> str | None:
+def _route_identifier(payload: JsonObject) -> str | None:
     value = payload.get("route_id")
-    return value if isinstance(value, str) else None
+    if isinstance(value, str):
+        return value
+    route_key = payload.get("route_key")
+    return route_key if isinstance(route_key, str) else None
+
+
+def _job_id(payload: JsonObject) -> str | None:
+    return _nested_string(payload, "job", "job_id")
 
 
 def _nested_string(payload: JsonObject, parent: str, key: str) -> str | None:

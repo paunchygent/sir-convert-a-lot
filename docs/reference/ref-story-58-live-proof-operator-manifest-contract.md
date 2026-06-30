@@ -31,8 +31,8 @@ This document is not proof by itself. It is the checklist for producing proof.
 
 ## Redaction Boundary
 
-Retained evidence may include job ids, route id, replay action/reason, schema
-versions, request id, source-binding digest, source-state digest,
+Retained evidence may include job ids, route id/key, replay action/reason,
+schema versions, request id, source-binding digest, source-state digest,
 correction-request digest, artifact-set id, artifact key, content hash, HTTP
 status/error code, service revision, timestamps, and screenshots.
 
@@ -63,8 +63,8 @@ artifacts, source jobs, or signatures to manufacture proof.
 
 | Case | Required Live Response |
 |---|---|
-| `compatible_strict_digiexam_replay` | `200` response with `idempotency.state = strict_replay` and `route_id = digiexam_dxe_to_examnet_migration_bundle`. |
-| `stale_incompatible_digiexam_replay` | Fresh service admission under an existing stale scope with `idempotency.state = service_reattempt` and `idempotency.reason = terminal_artifact_contract_incompatible`. |
+| `compatible_strict_digiexam_replay` | `200` create response with `idempotency.state = strict_replay` plus matching DigiExam route metadata from `route_id` or v2 result `route_key`. |
+| `stale_incompatible_digiexam_replay` | Fresh service admission under an existing stale scope with `idempotency.state = service_reattempt`, `idempotency.reason = terminal_artifact_contract_incompatible`, and matching DigiExam route metadata. |
 | `missing_source_correction_apply_fail_closed` | `409` response with `error.code = exam_authoring_correction_source_job_unavailable`. |
 | `exact_duplicate_correction_retry_reuses_artifact_set` | Two successful correction apply responses that resolve to the same request-scoped artifact-set identity. |
 | `distinct_correction_applies_distinct_artifact_sets` | Two successful correction apply responses that resolve to distinct request-scoped artifact-set identities. |
@@ -105,10 +105,7 @@ Skeleton:
             "job_spec_file": "private/compatible-job-spec.json",
             "content_type": "application/octet-stream"
           },
-          "expect": {
-            "http_status": 200,
-            "route_id": "digiexam_dxe_to_examnet_migration_bundle"
-          }
+          "expect": { "http_status": 200 }
         },
         {
           "label": "strict replay of compatible DigiExam admission",
@@ -124,8 +121,18 @@ Skeleton:
           },
           "expect": {
             "http_status": 200,
-            "idempotency_state": "strict_replay",
-            "route_id": "digiexam_dxe_to_examnet_migration_bundle"
+            "idempotency_state": "strict_replay"
+          },
+          "extract": { "strict_job_id": "idempotency.active_job_id" }
+        },
+        {
+          "label": "result metadata for strict replayed DigiExam job",
+          "method": "GET",
+          "path": "/v2/convert/jobs/{strict_job_id}/result",
+          "headers_file_env": "STORY58_PRIVATE_HEADERS_FILE",
+          "expect": {
+            "http_status": 200,
+            "route_key": "digiexam_dxe_to_examnet_migration_bundle"
           }
         }
       ]
