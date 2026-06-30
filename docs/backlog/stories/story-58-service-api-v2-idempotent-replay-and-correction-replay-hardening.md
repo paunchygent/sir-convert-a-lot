@@ -326,14 +326,16 @@ Sir Convert's nested correction replay artifact route. This was not a Sir
 Convert replay/idempotency failure, not a File Service failure, and not a
 Skriptoteket stale-reference fallback. HuleEdu fixed the Gateway route in
 commit `f72e7c6cdb1a` and deployed it to production. Retained downstream proof
-now shows the real `ak7_lag_och_ratt_with_image.dxe` production path passing at
-`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T110339Z/manifest.json`
-and the real-DXE Dev path passing at
-`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T111643Z/manifest.json`.
-Both bundles retain `service-monitoring.json` and service logs from the active
-Gateway/File/Sir Convert/Skriptoteket services, and both prove nested replay
-PDF/QTI downloads plus Save to My Files returned `200` after PDF/QTI content
-inspection.
+now shows the real `ak7_lag_och_ratt_with_image.dxe` production path passing
+after the Sir Convert `e49cb9ef` deploy at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T133443Z/manifest.json`.
+The proof uses the canonical HuleEdu browser-session Playwright helper,
+retains `service-monitoring.json` and service logs from the active
+Gateway/File/Sir Convert/Skriptoteket services, and proves AI key accept/edit
+flows, auto-next/reload state, nested replay PDF/QTI downloads `200`, Save to
+My Files `200`, PDF/QTI content inspection, and mobile files/report surfaces.
+Earlier Dev/Prod downstream bundles remain retained at `20260630T111643Z` and
+`20260630T110339Z`.
 
 Final closeout for this story is a story-level gate, not the end of any single
 task. Tasks 375-378 are necessary prerequisites only. Story 58 remains open
@@ -362,31 +364,27 @@ The runner now retains v2 `route_key` metadata from result responses and
 matches it to the idempotency job id when create-job responses carry replay
 state but not route metadata.
 
-2026-06-30 current partial live Service API proof: after the proof-runner
-log-capture, sensitive-header, and dependent-request repairs, safe generic
-idempotency smoke bundles were retained for Dev and Prod. The latest refresh is
-`build/verification/story-58-live-replay-proof-dev-current-refresh/20260630T115228Z/summary.json`
-and
-`build/verification/story-58-live-replay-proof-prod-current-refresh/20260630T115228Z/summary.json`.
-Both refreshed runs prove service revision
-`66a6da9dfe295162674c0bddc2c1da1f4030148f` and retain per-request Service API
-responses showing generic `fresh_admission` followed by `strict_replay`
-against the same live job id. Earlier generic bundles with Docker log captures
-remain retained under `build/verification/story-58-live-replay-proof-*current*`.
-These bundles prove the shared generic idempotency path remains live in Dev and
-Prod, but their `overall_status` is `requires_governed_setup` and they do not
-close the story-level DigiExam stale replay/correction replay matrix.
-
-2026-06-30 real-DXE Dev proof is retained at
-`build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T123203Z/summary.json`.
+2026-06-30 current partial live Service API proof was refreshed after both Dev
+and Prod lanes were on `e49cb9efdf23f8202a6de155a88ad5851fa83b6e`. The
+real-DXE Dev proof is retained at
+`build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T133051Z/summary.json`.
 It uses the real `1776888013-ak7-lag-och-ratt.dxe` fixture with HuleEdu-signed
 local internal identity headers, captures `sir_convert_a_lot_dev` Docker logs
 to file, and proves `compatible_strict_digiexam_replay` passed: fresh admission
 `200`, strict replay `200` with the same job id, and result metadata `200` with
-`route_key = digiexam_dxe_to_examnet_migration_bundle`. The bundle's
-`overall_status` remains `requires_governed_setup` because the stale
-incompatible replay and correction replay matrix cases still need prepared
-private inputs.
+`route_key = digiexam_dxe_to_examnet_migration_bundle`.
+
+The safe generic idempotency smoke bundles are retained at
+`build/verification/story-58-live-replay-proof-dev-e49-generic/20260630T133156Z/summary.json`
+and
+`build/verification/story-58-live-replay-proof-prod-e49-generic/20260630T133223Z/summary.json`.
+Both runs prove deployed revision `e49cb9efdf23f8202a6de155a88ad5851fa83b6e`
+and retain per-request Service API responses showing generic `fresh_admission`
+followed by `strict_replay` against the same live job id. The Dev and Prod
+bundles also retain log-capture files or monitoring pointers for the test
+window. These bundles prove the shared generic idempotency path remains live in
+Dev and Prod, but their `overall_status` is `requires_governed_setup` and they
+do not close the story-level DigiExam stale replay/correction replay matrix.
 
 2026-06-30 production `ak7` idempotency lineage evidence is retained at
 `build/verification/story-58-prod-ak7-idempotency-lineage/20260630T075602Z/summary.json`.

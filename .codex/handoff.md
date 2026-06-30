@@ -120,13 +120,15 @@ durable implementation authority lives in governed docs.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
   Story 58 is in progress; Tasks 375-379 are approved. Task 379 adds
   `pdm run proof:story58-live-replay` for redacted story-level Service API
-  replay bundles. Latest downstream Skriptoteket product proof passed: prod
-  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T110339Z/manifest.json`;
-  Dev `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T111643Z/manifest.json`.
-  Real-DXE Dev Service API proof now passes `compatible_strict_digiexam_replay`
-  at `build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T123203Z/summary.json`.
-  Final closeout remains story-level: prove stale incompatible Prod replay and
-  the remaining correction replay matrix before marking complete.
+  replay bundles. Latest downstream Skriptoteket production proof passed at
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T133443Z/manifest.json`;
+  it used real `ak7_lag_och_ratt_with_image.dxe`, retained service logs, and
+  proved nested PDF/QTI download plus Save to My Files `200`. Current Service
+  API proof on deployed `e49cb9ef`: Dev real-DXE compatible strict replay
+  `build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T133051Z/summary.json`;
+  Dev/Prod generic `story-58-live-replay-proof-{dev,prod}-e49-generic`.
+  Final story closeout still needs stale incompatible replay and the correction
+  matrix private inputs.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -181,11 +183,9 @@ Durable formula-lane findings are retained in `.codex/long-term-memory/entries/s
   Green: focused/preservation/OpenAPI suite `45 passed, 1 warning`; OpenAPI
   `4 passed`; coverage-gate `1788 passed, 6 skipped`, coverage `95.54%`.
 - Task 379 proof-runner support is implemented and Review 64 approved; latest
-  focused proof-runner route-key follow-up suite passed `6 passed`. Current generic
-  Dev/Prod refresh bundles prove revision `66a6da9d` at
-  `build/verification/story-58-live-replay-proof-{dev,prod}-current-refresh/20260630T115228Z/summary.json`.
-  Real-DXE Dev compatible strict replay passed at
-  `build/verification/story-58-live-replay-proof-dev-digiexam-real/20260630T123203Z/summary.json`.
+  focused proof-runner route-key follow-up suite passed `6 passed`. Current
+  `e49cb9ef` partial live proof: Dev real-DXE compatible strict replay
+  `20260630T133051Z`; Dev/Prod generic `20260630T133156Z`/`20260630T133223Z`.
   Prod `ak7` lineage remains filesystem-only evidence; full matrix still needs private inputs.
 - Latest local gate refresh after the route-key proof-runner follow-up passed:
   focused proof-runner route-key suite `6 passed`; `format-all` `983 files left unchanged`; `lint-fix` passed; `typecheck-all` passed over `934 source files`; `coverage-gate` `1799 passed, 6 skipped`, coverage `95.54%`.
