@@ -422,6 +422,17 @@ Service API rows with retained Docker log evidence, but they do not close the
 full story because Prod correction matrix and stale incompatible DigiExam replay
 proof remain separate final-closeout requirements.
 
+A fresh Dev missing-source rerun on current service revision
+`7a32e47857019b2c0077c0976e573c7d928aa1a9` is retained at
+`build/verification/story-58-live-replay-proof-dev-missing-source-current/20260630T170436Z/summary.json`
+and again proves `409 exam_authoring_correction_source_job_unavailable` with
+live Docker log evidence. A current full-manifest rerun with regenerated
+internal-identity headers proved compatible strict replay, but the captured
+correction rows failed with owner access denials because those requests belong
+to the browser-owner product identity. This confirms the correction matrix
+cannot be rerun by substituting API-key-only or internal-identity authority;
+fresh browser-owner headers or a new product/Gateway capture are required.
+
 2026-06-30 production `ak7` idempotency lineage evidence is retained at
 `build/verification/story-58-prod-ak7-idempotency-lineage/20260630T075602Z/summary.json`.
 It proves, from production filesystem metadata only, that the stale
