@@ -125,7 +125,8 @@ def post_create(
     if reference_docx_file is not None:
         files.append(("reference_docx", reference_docx_file))
 
-    return client.post("/v2/convert/jobs", headers=headers, files=files)
+    response: httpx.Response = client.post("/v2/convert/jobs", headers=headers, files=files)
+    return response
 
 
 def disable_run_job_async(monkeypatch: pytest.MonkeyPatch) -> None:

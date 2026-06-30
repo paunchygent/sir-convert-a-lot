@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-29'
+last_updated: '2026-06-30'
 ---
 
 ## Purpose
@@ -118,7 +118,12 @@ durable implementation authority lives in governed docs.
   downstream formatter, source-audio replay, or Gateway rewriting is part of
   the contract.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
-- Story 57 / Task 374 are completed after the production post-accept replay regression fix. Sir Convert is deployed at `92c77bd43909b1d01407e650164836039a105ca1`; Skriptoteket is deployed at `5cfab283b741fb9076ec5213834e26576874458c`; production proof is green at `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T194902Z/manifest.redacted.json`.
+  Story 58 is in progress; Tasks 375-378 are approved. Task 378 adds
+  request-scoped artifact sets, typed replay references, nested download
+  routing, duplicate reuse, request-id conflict handling, and missing/mismatch
+  fail-closed errors. Story 58 final closeout is story-level, not task-level:
+  the bounded Skriptoteket PR-0410 companion slice, deploy, dev/prod live
+  service proofs, and closeout review are still required.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -126,30 +131,10 @@ durable implementation authority lives in governed docs.
 
 - Epic 06 is the active long-PDF reliability, progress, and throughput epic:
   `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`.
-- Task 342 owns CLI live progress, manifest, idempotent replay, and recovery
-  visibility:
-  `docs/backlog/tasks/task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md`.
-- Task 343 owns PDF conversion decision logic and GPU/CPU performance
-  attribution:
-  `docs/backlog/tasks/task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md`.
-- Task 344 owns the Docling/Granite formula VLM generation-stability root
-  cause:
-  `docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md`.
-- Task 345 owns source-layer formula authority for born-digital PDFs and must
-  align implementation with Task 342 user feedback and Task 343 conversion
-  decisioning:
-  `docs/backlog/tasks/task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md`.
-- Task 346 owns the pre-infrastructure specialist formula/OCR candidate
-  evaluation on the established Task 344 incident pages/crops and is completed:
-  `docs/backlog/tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md`.
-- Task 347 owns the Hemma runtime-enablement evidence for PaddleOCR and
-  DeepSeek-OCR-2:
-  `docs/backlog/tasks/task-347-enable-hemma-specialist-ocr-runtimes-for-task-346-candidate-replay.md`.
-- Task 348 owns the native PaddleOCR/PaddleX AMD GPU container probe for
-  formula recognition:
-  `docs/backlog/tasks/task-348-probe-paddleocr-vl-and-paddlex-amd-gpu-container-support-for-formula-recognition-on-hemma.md`.
-- Task 350 owns the governed DeepSeek-OCR-2 HF eager Task 346 replay:
-  `docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md`.
+- Formula and OCR carry-forward remains in Tasks 342-348 and 350. Preserve the
+  owner split: Task 342 for CLI/replay visibility, Task 343 for decisioning,
+  Task 345 for source-backed formula authority, and Tasks 346-350 for specialist
+  OCR/runtime evidence.
 
 Durable formula-lane findings are retained in
 `.codex/long-term-memory/entries/session-2026-06-13-handoff-trimmed-formula-history.md`.
@@ -159,9 +144,11 @@ decision/performance work.
 
 ## Next Actions
 
-1. Story 57 / Task 374 are closed; keep the production proof bundle `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260629T194902Z/manifest.redacted.json` as the retained post-accept replay evidence.
-1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated
-   sidecar approaches without new governed evidence and explicit user approval.
+1. Run the separate Story 58 closeout: finish Skriptoteket PR-0410, then run
+   deployment where relevant, real dev/prod live proofs for every touched
+   idempotency/replay consumer, and closeout review. Do not mark Story 58
+   complete before that evidence exists.
+1. Task 365 is closed; do not reopen proxy, timeout, trust-key, or dedicated sidecar approaches without new governed evidence and explicit user approval.
 1. Keep downstream transcript work on saved canonical `transcript_json`,
    accepted producer artifacts, and governed Gateway routes; do not revive
    browser-owned Sir Convert replay/download sagas.
@@ -174,20 +161,27 @@ decision/performance work.
 - Durable validation history is in the governed task/review docs. STT runtime
   acceptance is recorded in Reviews 40-43. Task 358 formatter acceptance is
   recorded in Review 44 after the `specs_v2.py` module split.
-- Task 359-362 retained red/green evidence lives in their task docs and
-  Reviews 45-47; Task 361 covers HuleEdu trust-profile consumption and Task
-  362 covers batched FasterWhisper production STT sidecar remediation.
-- Task 363 and Task 364 red/green/review evidence is retained in their task and
-  review docs; Task 363 Review 48 and Task 364 Review 49 are approved.
+- Task 359-364 retained red/green evidence lives in task docs and Reviews
+  45-49.
 - Task 365 detailed validation and native/local proof evidence is retained in
   its task doc and linked long-term entry; active warning: do not revive the
   rejected dedicated remote-proof STT sidecar.
 - Task 368 validation and live-proof evidence is retained in its task doc and
   Review 52; do not reintroduce caller-side idempotency salting or auto-rerun
   remediation.
-- Task 369/371 final validation is retained in task docs, Reviews 54, 55, and
-  57, and the public proof summary. Stabilization gates passed: Task 368
-  focused/contract tests, Task 369/371 one-submit tests, route registry,
+- Task 369/371 final validation is retained in task docs, Reviews 54, 55, 57,
+  and the public proof summary.
+- Task 376 is approved in Review 61. Red: stale/missing/drifted DigiExam
+  successes strict-replayed (`3 failed, 4 passed`). Green: `14 passed`,
+  broader `112 passed`, targeted ruff passed.
+- Task 377 is approved in Review 62. Missing-source red returned `200 OK`;
+  Review 62 missing-grant red returned `auth_missing_internal_identity_grant`;
+  remediation green focused suite passed `36 passed, 1 warning`;
+  `coverage-gate` passed `1784 passed, 6 skipped`; targeted ruff passed.
+- Task 378 is approved in Review 63. Red: artifact-set tests failed `4 failed, 1 warning` on missing typed references and missing request-id conflict.
+  Green: focused/preservation/OpenAPI suite `45 passed, 1 warning`; OpenAPI
+  `4 passed`; coverage-gate `1788 passed, 6 skipped`, coverage `95.54%`.
+- Final local gate refresh after helper return-type repairs passed:
   `format-all`, `lint-fix`, `typecheck-all`, `coverage-gate`, `docs-sync`,
   `docs-validate`, `skills-validate`, `handoff-validate`, and `git diff --check`.
 

@@ -100,21 +100,30 @@ def test_digiexam_correction_replay_pdf_downloads_with_source_labelled_options(
     assert readiness_by_target["examnet_pdf"]["export_enabled"] is True
     assert readiness_by_target["examnet_pdf"]["artifact_key"] == "correction_replay_examnet_pdf"
     assert readiness_by_target["qti_package"]["export_enabled"] is True
+    pdf_reference = readiness_by_target["examnet_pdf"]["artifact_reference"]
+    qti_reference = readiness_by_target["qti_package"]["artifact_reference"]
     review_item = apply_payload["answer_key_review_state"]["items"][0]
     assert review_item["review_state"] == "teacher_modified"
     assert review_item["current_key_origin"] == "teacher_authored"
-    assert review_item["replay_artifact_references"] == [
-        {"target": "examnet_pdf", "artifact_key": "correction_replay_examnet_pdf"},
-        {"target": "qti_package", "artifact_key": "correction_replay_qti_package"},
+    assert [
+        (reference["target"], reference["artifact_key"], reference["artifact_set_id"])
+        for reference in review_item["replay_artifact_references"]
+    ] == [
+        ("examnet_pdf", "correction_replay_examnet_pdf", pdf_reference["artifact_set_id"]),
+        ("qti_package", "correction_replay_qti_package", qti_reference["artifact_set_id"]),
     ]
 
     pdf_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/correction_replay_examnet_pdf",
+        f"/v2/convert/jobs/{job_id}/correction-replays/"
+        f"{pdf_reference['artifact_set_id']}/artifacts/{pdf_reference['artifact_key']}",
         headers=headers,
+        params={"content_sha256": pdf_reference["content_sha256"]},
     )
     qti_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/correction_replay_qti_package",
+        f"/v2/convert/jobs/{job_id}/correction-replays/"
+        f"{qti_reference['artifact_set_id']}/artifacts/{qti_reference['artifact_key']}",
         headers=headers,
+        params={"content_sha256": qti_reference["content_sha256"]},
     )
 
     assert pdf_response.status_code == 200

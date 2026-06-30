@@ -323,11 +323,12 @@ def _post_audio_job(
         ("file", ("teacher-meeting.m4a", b"audio bytes", "application/octet-stream")),
         ("job_spec", (None, json.dumps(payload))),
     ]
-    return client.post(
+    response: Response = client.post(
         "/v2/convert/jobs?wait_seconds=20",
         headers={**_headers(), "Idempotency-Key": idempotency_key},
         files=files,
     )
+    return response
 
 
 def _audio_job_spec(*, output_artifacts: tuple[str, ...]) -> dict[str, object]:

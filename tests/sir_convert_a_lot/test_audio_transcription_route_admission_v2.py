@@ -543,7 +543,8 @@ def _post_audio_job(
         ("file", (file_name, file_bytes, "application/octet-stream")),
         ("job_spec", (None, json.dumps(payload))),
     ]
-    return client.post("/v2/convert/jobs", headers=request_headers, files=files)
+    response: Response = client.post("/v2/convert/jobs", headers=request_headers, files=files)
+    return response
 
 
 def _audio_job_spec(

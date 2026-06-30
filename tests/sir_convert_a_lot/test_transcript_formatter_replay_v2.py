@@ -422,11 +422,12 @@ def _post_replay_job(
     headers = {**_headers(), "Idempotency-Key": idempotency_key}
     if correlation_id is not None:
         headers["X-Correlation-ID"] = correlation_id
-    return client.post(
+    response: Response = client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers=headers,
         files=files,
     )
+    return response
 
 
 def _replay_job_spec(

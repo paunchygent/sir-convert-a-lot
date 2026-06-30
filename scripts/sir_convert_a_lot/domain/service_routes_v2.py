@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
@@ -23,6 +23,11 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     PdfPageCssModeV2,
     SourceFormatV2,
     SourceKindV2,
+)
+
+RouteTerminalArtifactCompatibilityContractV2 = Literal["digiexam_migration_bundle_v3"]
+DIGIEXAM_MIGRATION_BUNDLE_TERMINAL_CONTRACT_V2: RouteTerminalArtifactCompatibilityContractV2 = (
+    "digiexam_migration_bundle_v3"
 )
 
 
@@ -164,6 +169,9 @@ class RoutePolicyV2:
     create_optional_identity_grant: str | None = None
     dispatches_runtime_jobs: bool = True
     unsupported_option_context: str | None = None
+    terminal_artifact_compatibility_contract: (
+        RouteTerminalArtifactCompatibilityContractV2 | None
+    ) = None
 
 
 def _generic_route_policy(
@@ -224,6 +232,7 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
         allows_artifact_language=True,
         create_required_grant="sir-convert:jobs:create",
         unsupported_option_context="DigiExam migration routes",
+        terminal_artifact_compatibility_contract=(DIGIEXAM_MIGRATION_BUNDLE_TERMINAL_CONTRACT_V2),
     ),
     RoutePolicyV2(
         key=AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,

@@ -24,6 +24,7 @@ from pydantic import ValidationError
 import scripts.sir_convert_a_lot.domain.service_routes_v2 as service_routes_v2
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
     AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
+    DIGIEXAM_MIGRATION_BUNDLE_TERMINAL_CONTRACT_V2,
     DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
     TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2,
     RouteKeyV2,
@@ -76,6 +77,21 @@ def test_create_job_registry_resolves_default_and_digiexam_handlers() -> None:
     assert isinstance(digiexam_handler, DigiExamMigrationCreateJobRouteHandlerV2)
     assert isinstance(audio_handler, AudioTranscriptionAdmissionCreateJobRouteHandlerV2)
     assert isinstance(replay_handler, TranscriptFormatterReplayCreateJobRouteHandlerV2)
+
+
+def test_route_policy_declares_terminal_artifact_contract_only_for_digiexam() -> None:
+    digiexam_policy = service_routes_v2.route_policy_for_key_v2(DIGIEXAM_MIGRATION_ROUTE_KEY_V2)
+    generic_policy = service_routes_v2.route_policy_for_key_v2(
+        RouteKeyV2(source_format=SourceFormatV2.MD, output_format=OutputFormatV2.PDF)
+    )
+
+    assert digiexam_policy is not None
+    assert generic_policy is not None
+    assert (
+        digiexam_policy.terminal_artifact_compatibility_contract
+        == DIGIEXAM_MIGRATION_BUNDLE_TERMINAL_CONTRACT_V2
+    )
+    assert generic_policy.terminal_artifact_compatibility_contract is None
 
 
 def test_create_job_registry_does_not_auto_register_supported_policy_without_handler(

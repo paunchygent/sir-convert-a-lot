@@ -22,6 +22,7 @@ from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state impo
     attach_digiexam_answer_key_review_replay_references,
 )
 from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewReplayArtifactReferenceV1,
     DigiExamAnswerKeyReviewStateV1,
     DigiExamAnswerKeyReviewTargetReadinessInput,
 )
@@ -131,6 +132,11 @@ def test_replay_reference_attachment_preserves_pending_advisory_sibling_state(
                 item_id="choice-pending",
                 sequence=2,
                 artifact_key="correction_replay_examnet_pdf",
+                artifact_reference=_review_replay_reference(
+                    artifact_key="correction_replay_examnet_pdf",
+                    target="examnet_pdf",
+                    content_sha256="sha256:pdf",
+                ),
             ),
             DigiExamAnswerKeyReviewTargetReadinessInput(
                 target="qti_package",
@@ -139,6 +145,11 @@ def test_replay_reference_attachment_preserves_pending_advisory_sibling_state(
                 item_id="choice-pending",
                 sequence=2,
                 artifact_key="correction_replay_qti_package",
+                artifact_reference=_review_replay_reference(
+                    artifact_key="correction_replay_qti_package",
+                    target="qti_package",
+                    content_sha256="sha256:qti",
+                ),
             ),
         ),
     )
@@ -156,6 +167,31 @@ def test_replay_reference_attachment_preserves_pending_advisory_sibling_state(
     accepted = items["choice-accept"]
     assert accepted.review_state == "review_complete"
     assert accepted.replay_artifact_references == ()
+
+
+def _review_replay_reference(
+    *,
+    artifact_key: str,
+    target: str,
+    content_sha256: str,
+) -> DigiExamAnswerKeyReviewReplayArtifactReferenceV1:
+    return DigiExamAnswerKeyReviewReplayArtifactReferenceV1.model_validate(
+        {
+            "schema_version": "correction_replay_artifact_reference_v1",
+            "job_id": "jobv2_review_state",
+            "artifact_set_id": "crset_review_state",
+            "artifact_key": artifact_key,
+            "target": target,
+            "content_sha256": content_sha256,
+            "request_id": "correction-request-review-state",
+            "source_binding_digest": "sha256:source-binding",
+            "source_state_sha256": "sha256:source-state",
+            "correction_payload_digest": "sha256:correction-payload",
+            "target_set_digest": "sha256:target-set",
+            "replay_profile_version": "digiexam_correction_replay_v1",
+            "created_at": "2026-06-30T00:00:00Z",
+        }
+    )
 
 
 def test_source_state_issue_returns_bounded_first_pass_advisory_candidates(

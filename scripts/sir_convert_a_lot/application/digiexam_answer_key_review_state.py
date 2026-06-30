@@ -118,7 +118,10 @@ def _item_projection(
     for row in target_rows:
         mapped_reason = _target_reason(row)
         if mapped_reason is not None:
-            if "answer_key_not_applicable" in reasons and mapped_reason == "manual_answer_key_required":
+            if (
+                "answer_key_not_applicable" in reasons
+                and mapped_reason == "manual_answer_key_required"
+            ):
                 continue
             if (
                 advisory is not None
@@ -272,9 +275,7 @@ def _review_state(
 
 def _answer_key_applicable(item: ExamAuthoringCorrectionSourceItemV1) -> bool:
     return bool(
-        item.choice_interactions
-        or item.gap_open_cloze_interactions
-        or item.matching_interactions
+        item.choice_interactions or item.gap_open_cloze_interactions or item.matching_interactions
     )
 
 
@@ -389,20 +390,9 @@ def _replay_references(
     for row in rows:
         if not row.export_enabled:
             continue
-        if row.target == "examnet_pdf" and row.artifact_key == "correction_replay_examnet_pdf":
-            references.append(
-                DigiExamAnswerKeyReviewReplayArtifactReferenceV1(
-                    target="examnet_pdf",
-                    artifact_key="correction_replay_examnet_pdf",
-                )
-            )
-        if row.target == "qti_package" and row.artifact_key == "correction_replay_qti_package":
-            references.append(
-                DigiExamAnswerKeyReviewReplayArtifactReferenceV1(
-                    target="qti_package",
-                    artifact_key="correction_replay_qti_package",
-                )
-            )
+        if row.artifact_reference is None:
+            continue
+        references.append(row.artifact_reference)
     return tuple(references)
 
 

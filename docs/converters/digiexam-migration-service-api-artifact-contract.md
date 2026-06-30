@@ -1195,6 +1195,45 @@ in `qti_validation_report.package_filename`; QTI package files such as
 `imsmanifest.xml` and `items/*.xml` remain at archive root to preserve the
 governed local QTI package profile.
 
+### Idempotent Replay Compatibility
+
+Same-key, same-fingerprint `succeeded` replay for this route is strict only
+when the persisted terminal bundle satisfies the current artifact contract.
+Service API v2 registers the `digiexam_migration_bundle_v3` terminal artifact
+compatibility contract beside the route policy for
+`digiexam_dxe -> examnet_migration_bundle`.
+
+A persisted DigiExam success is compatible when all of the following are true:
+
+- the bundle manifest is valid `digiexam_migration_bundle_v3` and its `job_id`
+  matches the persisted job;
+- every current required artifact key is present exactly once;
+- `readiness.artifact_key` is `target_readiness_report`;
+- `answer_key_review_state.artifact_key` is
+  `answer_key_review_state_report`;
+- source and effective schema versions are current:
+  `digiexam_intermediate_exam_v3` and `digiexam_effective_exam_v2`;
+- `target_readiness_report` parses as `target_readiness_report_v1` for the
+  same job;
+- `answer_key_review_state_report` parses as
+  `digiexam_answer_key_review_state_v1`;
+- every non-manifest `available` artifact entry has existing bytes whose size
+  and `sha256:<hex>` digest match the manifest entry.
+
+The `bundle_manifest` self-entry may remain size/hash exempt. `complete`,
+`partial`, `needs_review`, schema-valid `failed`, and manual-follow-up states
+remain compatible terminal workflow states when the required reports, pointers,
+schema versions, and available bytes are valid. Strict replay does not require
+all PDF/QTI target artifacts to be exportable; `target_readiness_report_v1`
+remains the export authority.
+
+When a same-key, same-fingerprint succeeded job is incompatible and the fresh
+request can be safely admitted, the service admits a fresh attempt and returns
+`idempotency.state = service_reattempt` with
+`idempotency.reason = terminal_artifact_contract_incompatible`. The stale job
+remains in `idempotency.previous_attempts`; no synthetic failed job is created,
+and no production idempotency or artifact file is edited as remediation.
+
 ### Named Artifact Endpoints
 
 Task 282, the service runtime task that implements this contract, must add named

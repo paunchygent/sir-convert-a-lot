@@ -28,9 +28,6 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
 )
-from scripts.sir_convert_a_lot.infrastructure.correction_replay_artifact_writer import (
-    resolve_exam_authoring_correction_replay_artifact,
-)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
     public_artifact_filename,
 )
@@ -65,17 +62,6 @@ def resolve_digiexam_migration_artifact(
     artifact_key: str,
 ) -> ResolvedDigiExamMigrationArtifact:
     """Resolve one available named artifact from the terminal bundle manifest."""
-
-    replay_artifact = resolve_exam_authoring_correction_replay_artifact(
-        job=job,
-        artifact_key=artifact_key,
-    )
-    if replay_artifact is not None:
-        return ResolvedDigiExamMigrationArtifact(
-            path=replay_artifact.path,
-            content_type=replay_artifact.content_type,
-            filename=replay_artifact.filename,
-        )
 
     normalized_key = _normalize_artifact_key(artifact_key)
     if normalized_key == DigiExamMigrationArtifactKey.BUNDLE_MANIFEST:

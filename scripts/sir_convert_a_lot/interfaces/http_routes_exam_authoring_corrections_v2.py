@@ -19,6 +19,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
+from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_job_policy import (
+    ExamAuthoringCorrectionSourceJobResolutionError,
+    require_resolved_correction_source_job,
+)
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_source_state_issuer import (
     ExamAuthoringCorrectionSourceStateIssueError,
 )
@@ -119,25 +123,43 @@ def build_exam_authoring_corrections_router_v2(
         source_bundle_id = request_body.source_binding.source_bundle_id
         if source_bundle_id is not None:
             runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
-            job = runtime.get_job(source_bundle_id)
-            if job is not None:
-                auth_context = auth_context_for_job_access_v2(
-                    request,
-                    service_started_at=service_started_at,
-                    job=job,
-                    required_grant="sir-convert:artifacts:read-own",
+            try:
+                source_job = runtime.get_job(source_bundle_id)
+            except ServiceError as exc:
+                if exc.code != "job_expired":
+                    raise
+                source_job = None
+            try:
+                job = require_resolved_correction_source_job(
+                    source_bundle_id=source_bundle_id,
+                    source_job=source_job,
                 )
-                job = require_job_access_v2(
-                    auth_context=auth_context,
-                    job=job,
-                    required_grant="sir-convert:artifacts:read-own",
-                    access_denied_code="exam_authoring_correction_replay_access_denied",
-                )
-                response = write_exam_authoring_correction_replay_artifacts(
-                    job=job,
-                    request_body=request_body,
-                    result=response,
-                )
+            except ExamAuthoringCorrectionSourceJobResolutionError as exc:
+                raise ServiceError(
+                    status_code=exc.status_code,
+                    code=exc.code,
+                    message=str(exc),
+                    retryable=False,
+                    details=exc.details,
+                ) from exc
+            auth_context = auth_context_for_job_access_v2(
+                request,
+                service_started_at=service_started_at,
+                job=job,
+                required_grant="sir-convert:artifacts:read-own",
+                missing_grant_code="exam_authoring_correction_replay_access_denied",
+            )
+            job = require_job_access_v2(
+                auth_context=auth_context,
+                job=job,
+                required_grant="sir-convert:artifacts:read-own",
+                access_denied_code="exam_authoring_correction_replay_access_denied",
+            )
+            response = write_exam_authoring_correction_replay_artifacts(
+                job=job,
+                request_body=request_body,
+                result=response,
+            )
         return JSONResponse(status_code=200, content=response.model_dump(mode="json"))
 
     return router

@@ -92,6 +92,9 @@ def test_corrections_apply_openapi_contract_exposes_unified_request_body_route()
     schema = build_openapi_contract_v2()
     paths = _mapping(schema["paths"])
     assert "/v2/exam-authoring/matching/manual-answer-key/apply" not in paths
+    assert (
+        "/v2/convert/jobs/{job_id}/correction-replays/{artifact_set_id}/artifacts/{artifact_key}"
+    ) in paths
     issue_route = _mapping(
         _mapping(paths["/v2/exam-authoring/corrections/source-state/issue"])["post"]
     )
@@ -124,6 +127,23 @@ def test_corrections_apply_openapi_contract_exposes_unified_request_body_route()
         "$ref": "#/components/schemas/ExamAuthoringCorrectionsApplyResultV1"
     }
 
+    replay_artifact_route = _mapping(
+        _mapping(
+            paths[
+                "/v2/convert/jobs/{job_id}/correction-replays/{artifact_set_id}/"
+                "artifacts/{artifact_key}"
+            ]
+        )["get"]
+    )
+    route_parameters = replay_artifact_route["parameters"]
+    assert isinstance(route_parameters, list)
+    assert [parameter["name"] for parameter in route_parameters] == [
+        "job_id",
+        "artifact_set_id",
+        "artifact_key",
+        "content_sha256",
+    ]
+
 
 def test_service_api_v2_consumer_components_are_published() -> None:
     schema = build_openapi_contract_v2()
@@ -153,6 +173,7 @@ def test_service_api_v2_consumer_components_are_published() -> None:
         "ExamAuthoringCorrectionSourceStateV1",
         "ExamAuthoringAnswerKeyAdvisoryCandidateV1",
         "ExamAuthoringCorrectionReportV1",
+        "ExamAuthoringCorrectionReplayArtifactReferenceV1",
         "ExamAuthoringItemTextPatchCorrectionV1",
         "ExamAuthoringItemTextPatchOperationV1",
         "ExamAuthoringPointCorrectionV1",
@@ -240,6 +261,43 @@ def test_service_api_v2_consumer_components_are_published() -> None:
         "manual_follow_up_required",
         "skipped",
     ]
+    replay_reference = _mapping(schemas["ExamAuthoringCorrectionReplayArtifactReferenceV1"])
+    replay_reference_properties = _mapping(replay_reference["properties"])
+    assert replay_reference["additionalProperties"] is False
+    assert set(replay_reference_properties) == {
+        "schema_version",
+        "job_id",
+        "artifact_set_id",
+        "artifact_key",
+        "target",
+        "content_sha256",
+        "request_id",
+        "source_binding_digest",
+        "source_state_sha256",
+        "correction_payload_digest",
+        "target_set_digest",
+        "replay_profile_version",
+        "created_at",
+    }
+    assert _mapping(replay_reference_properties["schema_version"])["const"] == (
+        "correction_replay_artifact_reference_v1"
+    )
+    readiness_row = _mapping(schemas["ExamAuthoringCorrectionTargetReadinessRowV1"])
+    readiness_properties = _mapping(readiness_row["properties"])
+    assert _mapping(readiness_properties["artifact_reference"])["anyOf"] == [
+        {"$ref": "#/components/schemas/ExamAuthoringCorrectionReplayArtifactReferenceV1"},
+        {"type": "null"},
+    ]
+    availability_row = _mapping(schemas["ExamAuthoringCorrectionArtifactAvailabilityRowV1"])
+    availability_properties = _mapping(availability_row["properties"])
+    assert _mapping(availability_properties["artifact_reference"])["anyOf"] == [
+        {"$ref": "#/components/schemas/ExamAuthoringCorrectionReplayArtifactReferenceV1"},
+        {"type": "null"},
+    ]
+    review_reference = _mapping(schemas["DigiExamAnswerKeyReviewReplayArtifactReferenceV1"])
+    review_reference_properties = _mapping(review_reference["properties"])
+    assert "artifact_set_id" in review_reference_properties
+    assert "content_sha256" in review_reference_properties
     effective_exam = _mapping(schemas["DigiExamEffectiveExamV1"])
     effective_properties = _mapping(effective_exam["properties"])
     effective_schema_version = _mapping(effective_properties["schema_version"])

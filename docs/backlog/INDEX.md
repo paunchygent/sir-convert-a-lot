@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-06-29
-last_updated: 2026-06-29
+created: 2026-06-30
+last_updated: 2026-06-30
 related: []
 labels:
   - generated
@@ -93,6 +93,10 @@ Generated index for backlog planning documents.
 | review-57-ruthless-review-of-task-369-371-closeout-stabilization | [Ruthless review of Task 369 and Task 371 closeout stabilization](reviews/review-57-ruthless-review-of-task-369-371-closeout-stabilization.md) | review | completed |
 | review-58-ruthless-review-of-task-373-compact-answer-key-review-state | [Ruthless review of Task 373 compact answer-key review state](reviews/review-58-ruthless-review-of-task-373-compact-answer-key-review-state.md) | review | completed |
 | review-59-ruthless-review-of-task-374-advisory-candidate-replay | [Ruthless review of Task 374 advisory candidate replay preservation](reviews/review-59-ruthless-review-of-task-374-advisory-candidate-replay.md) | review | completed |
+| review-60-ruthless-review-of-task-375-idempotent-replay-policy | [Ruthless review of Task 375 idempotent replay policy centralization](reviews/review-60-ruthless-review-of-task-375-idempotent-replay-policy.md) | review | completed |
+| review-61-ruthless-review-of-task-376-digiexam-artifact-compatibility | [Ruthless review of Task 376 DigiExam artifact compatibility replay gate](reviews/review-61-ruthless-review-of-task-376-digiexam-artifact-compatibility.md) | review | completed |
+| review-62-ruthless-review-of-task-377-correction-source-job-fail-closed | [Ruthless review of Task 377 correction source-job fail-closed behavior](reviews/review-62-ruthless-review-of-task-377-correction-source-job-fail-closed.md) | review | completed |
+| review-63-ruthless-review-of-task-378-correction-replay-artifact-sets | [Ruthless review of Task 378 correction replay artifact sets](reviews/review-63-ruthless-review-of-task-378-correction-replay-artifact-sets.md) | review | completed |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -153,6 +157,7 @@ Generated index for backlog planning documents.
 | story-55-gateway-and-downstream-transcript-delivery-coordination | [Gateway and downstream transcript delivery coordination](stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md) | story | completed |
 | story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json | [Transcript speaker-overlay formatter replay over canonical JSON](stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md) | story | completed |
 | story-57-cross-repo-compact-answer-key-review-state-production-proof | [Cross-repo compact answer-key review state production proof](stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md) | story | completed |
+| story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening | [Service API v2 idempotent replay and correction replay hardening](stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md) | story | in_progress |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
 | 007-prepare-docker-hemma-service-foundation | [Prepare Docker + Hemma service foundation](tasks/task-04-04-prepare-docker-hemma-service-foundation.md) | task | completed |
@@ -463,6 +468,10 @@ Generated index for backlog planning documents.
 | task-372-normalize-source-labelled-choice-options-for-examnet-pdf-replay | [Normalize source-labelled choice options for Examnet PDF replay](tasks/task-372-normalize-source-labelled-choice-options-for-examnet-pdf-replay.md) | task | completed |
 | task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket | [Project compact DigiExam answer-key review state for Skriptoteket](tasks/task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket.md) | task | completed |
 | task-374-preserve-advisory-candidates-during-correction-apply-replay | [Preserve advisory candidates during correction apply replay](tasks/task-374-preserve-advisory-candidates-during-correction-apply-replay.md) | task | completed |
+| task-375-centralize-protocol-first-idempotent-replay-policy-in-service-api-v2 | [Centralize protocol-first idempotent replay policy in Service API v2](tasks/task-375-centralize-protocol-first-idempotent-replay-policy-in-service-api-v2.md) | task | completed |
+| task-376-gate-idempotent-succeeded-replays-on-route-artifact-contract-compatibility | [Gate idempotent succeeded replays on route artifact contract compatibility](tasks/task-376-gate-idempotent-succeeded-replays-on-route-artifact-contract-compatibility.md) | task | completed |
+| task-377-fail-closed-when-correction-replay-source-jobs-are-unavailable | [Fail closed when correction replay source jobs are unavailable](tasks/task-377-fail-closed-when-correction-replay-source-jobs-are-unavailable.md) | task | completed |
+| task-378-bind-correction-replay-artifacts-to-request-scoped-identity | [Bind correction replay artifacts to request scoped identity](tasks/task-378-bind-correction-replay-artifacts-to-request-scoped-identity.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |
 | task-39-hemma-v2-conversion-smoke-verification | [Hemma v2 conversion smoke verification](tasks/task-39-hemma-v2-conversion-smoke-verification.md) | task | completed |
 | task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy | [Service API v2 contract tests + v1/v2 compatibility policy](tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md) | task | completed |

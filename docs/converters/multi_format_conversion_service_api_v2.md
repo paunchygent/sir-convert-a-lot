@@ -167,14 +167,25 @@ admission, strict replay, or service-owned reattempt:
     }
   ],
   "replayed_job_id": null,
-  "reattempt_of_job_id": "jobv2_failed"
+  "reattempt_of_job_id": "jobv2_failed",
+  "reason": "retryable_failed_terminal"
 }
 ```
 
 `fresh_admission` has `attempt_count=1` and no previous attempts.
 `strict_replay` sets `idempotent_replay=true` and `replayed_job_id` to the
 returned job. `service_reattempt` sets `reattempt_of_job_id` to the retryable
-failed attempt that was superseded.
+failed attempt that was superseded and sets a typed `reason`. Current reasons
+are:
+
+- `retryable_failed_terminal`: an old terminal failed attempt was service-owned
+  retryable.
+- `terminal_artifact_contract_incompatible`: a terminal succeeded attempt does
+  not satisfy the route's current artifact compatibility contract. Route-specific
+  enforcement is active for
+  `digiexam_dxe -> examnet_migration_bundle`, whose terminal artifact
+  requirements are governed by
+  `docs/converters/digiexam-migration-service-api-artifact-contract.md`.
 
 ## Supported Routes (Active Runtime)
 

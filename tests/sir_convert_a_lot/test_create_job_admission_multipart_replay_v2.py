@@ -84,7 +84,7 @@ def _post_audio_job(*, client: TestClient) -> httpx.Response:
         ("file", ("teacher-meeting.m4a", b"audio bytes", "application/octet-stream")),
         ("job_spec", (None, json.dumps(_audio_job_spec()))),
     ]
-    return client.post(
+    response: httpx.Response = client.post(
         "/v2/convert/jobs?wait_seconds=0",
         headers={
             "X-API-Key": _API_KEY,
@@ -93,6 +93,7 @@ def _post_audio_job(*, client: TestClient) -> httpx.Response:
         },
         files=files,
     )
+    return response
 
 
 def _audio_job_spec() -> dict[str, object]:

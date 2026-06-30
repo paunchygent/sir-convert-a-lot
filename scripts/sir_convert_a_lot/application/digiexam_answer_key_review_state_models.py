@@ -105,6 +105,7 @@ class DigiExamAnswerKeyReviewTargetReadinessInput:
     item_id: str | None = None
     sequence: int | None = None
     artifact_key: str | None = None
+    artifact_reference: DigiExamAnswerKeyReviewReplayArtifactReferenceV1 | None = None
 
 
 class DigiExamAnswerKeyReviewProvenanceDetailV1(BaseModel):
@@ -126,8 +127,19 @@ class DigiExamAnswerKeyReviewReplayArtifactReferenceV1(BaseModel):
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    target: Literal["examnet_pdf", "qti_package"]
+    schema_version: Literal["correction_replay_artifact_reference_v1"]
+    job_id: str = Field(min_length=1)
+    artifact_set_id: str = Field(min_length=1)
     artifact_key: Literal["correction_replay_examnet_pdf", "correction_replay_qti_package"]
+    target: Literal["examnet_pdf", "qti_package"]
+    content_sha256: str = Field(min_length=1)
+    request_id: str = Field(min_length=1)
+    source_binding_digest: str = Field(min_length=1)
+    source_state_sha256: str = Field(min_length=1)
+    correction_payload_digest: str = Field(min_length=1)
+    target_set_digest: str = Field(min_length=1)
+    replay_profile_version: str = Field(min_length=1)
+    created_at: str = Field(min_length=1)
 
 
 class DigiExamAnswerKeyReviewStateItemV1(BaseModel):

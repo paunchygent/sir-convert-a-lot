@@ -14,6 +14,7 @@ Relationships:
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import threading
 from collections.abc import Iterator
@@ -71,16 +72,26 @@ class IdempotencyStore:
         digest = hashlib.sha256(scope_key.encode("utf-8")).hexdigest()
         return self.dir / f"{digest}.json"
 
+    def _lock_path_for_scope(self, scope_key: str) -> Path:
+        digest = hashlib.sha256(scope_key.encode("utf-8")).hexdigest()
+        return self.dir / f"{digest}.lock"
+
     @contextmanager
     def scoped_lock(self, scope_key: str) -> Iterator[None]:
-        """Serialize admission decisions for one idempotency scope in this process."""
+        """Serialize admission decisions for one idempotency scope across processes."""
         with self._locks_guard:
             lock = self._scope_locks.get(scope_key)
             if lock is None:
                 lock = threading.RLock()
                 self._scope_locks[scope_key] = lock
         with lock:
-            yield
+            lock_path = self._lock_path_for_scope(scope_key)
+            with lock_path.open("a+", encoding="utf-8") as lock_file:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def get(self, scope_key: str) -> IdempotencyRecord | None:
         path = self._path_for_scope(scope_key)

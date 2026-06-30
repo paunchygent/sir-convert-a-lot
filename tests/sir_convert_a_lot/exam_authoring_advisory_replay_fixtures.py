@@ -25,7 +25,7 @@ from tests.sir_convert_a_lot.exam_authoring_corrections_apply_fixtures import (
 
 
 def apply_payload_with_advisory_candidates() -> dict[str, object]:
-    """Return a signed source-state apply payload with advisory siblings."""
+    """Return a signed non-artifact apply payload with advisory siblings."""
 
     payload: dict[str, object] = {
         "schema_version": "exam_authoring_corrections_apply_request_v1",
@@ -34,7 +34,6 @@ def apply_payload_with_advisory_candidates() -> dict[str, object]:
             "source_authoring_schema_version": "exam_authoring_ir_v1",
             "source_state_sha256": "sha256:placeholder",
             "source_state_signature": "hmac-sha256:placeholder",
-            "source_bundle_id": "bundle-preserve-advisory",
             "source_file_sha256": "sha256:source-file",
         },
         "source_authoring_state": {
@@ -75,7 +74,7 @@ def apply_payload_with_advisory_candidates() -> dict[str, object]:
                 "candidate_lineage": candidate_lineage(candidate_payload_digest=choice_digest([2])),
             }
         ],
-        "requested_targets": ["examnet_pdf", "qti_package"],
+        "requested_targets": [],
     }
     refresh_source_state_digest(payload)
     return payload

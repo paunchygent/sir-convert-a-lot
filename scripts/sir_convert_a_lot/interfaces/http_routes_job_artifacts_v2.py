@@ -65,6 +65,9 @@ from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 i
 from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_artifacts_v2 import (
     load_public_bundle_manifest_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_routes_correction_replay_artifacts_v2 import (
+    register_correction_replay_artifact_routes_v2,
+)
 
 
 def _content_type_for_output(output_format: OutputFormatV2) -> str:
@@ -98,6 +101,11 @@ def _terminal_without_result_details(job: StoredJobV2) -> dict[str, object]:
 
 
 def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
+    register_correction_replay_artifact_routes_v2(
+        router=router,
+        service_started_at=service_started_at,
+    )
+
     @router.get(
         "/v2/convert/jobs/{job_id}/result",
         response_model=JobResultResponseV2,

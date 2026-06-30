@@ -260,6 +260,26 @@ class ExamAuthoringCorrectionReportV1(BaseModel):
     rejected_entries: tuple[ExamAuthoringCorrectionRejectedEntryV1, ...]
 
 
+class ExamAuthoringCorrectionReplayArtifactReferenceV1(BaseModel):
+    """Request-scoped correction replay artifact reference."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    schema_version: Literal["correction_replay_artifact_reference_v1"]
+    job_id: str = Field(min_length=1)
+    artifact_set_id: str = Field(min_length=1)
+    artifact_key: str = Field(min_length=1)
+    target: ExamAuthoringCorrectionTargetV1
+    content_sha256: str = Field(min_length=1)
+    request_id: str = Field(min_length=1)
+    source_binding_digest: str = Field(min_length=1)
+    source_state_sha256: str = Field(min_length=1)
+    correction_payload_digest: str = Field(min_length=1)
+    target_set_digest: str = Field(min_length=1)
+    replay_profile_version: str = Field(min_length=1)
+    created_at: str = Field(min_length=1)
+
+
 class ExamAuthoringCorrectionTargetReadinessRowV1(BaseModel):
     """Target readiness projection for corrected authoring state."""
 
@@ -273,6 +293,7 @@ class ExamAuthoringCorrectionTargetReadinessRowV1(BaseModel):
     message_key: str = Field(min_length=1)
     item_id: str | None = Field(default=None, min_length=1)
     sequence: int | None = Field(default=None, ge=1)
+    artifact_reference: ExamAuthoringCorrectionReplayArtifactReferenceV1 | None = None
 
 
 class ExamAuthoringCorrectionTargetReadinessReportV1(BaseModel):
@@ -292,6 +313,7 @@ class ExamAuthoringCorrectionArtifactAvailabilityRowV1(BaseModel):
     artifact_key: ExamAuthoringCorrectionTargetV1
     availability: ExamAuthoringCorrectionArtifactAvailabilityV1
     unavailable_code: str | None = None
+    artifact_reference: ExamAuthoringCorrectionReplayArtifactReferenceV1 | None = None
 
 
 class ExamAuthoringCorrectionsApplyResultV1(BaseModel):

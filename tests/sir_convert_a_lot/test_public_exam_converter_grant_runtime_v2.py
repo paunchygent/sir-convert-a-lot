@@ -355,7 +355,7 @@ def _post_public_digiexam_job(
         "digiexam_migration_options": digiexam_options,
         "retention": {"pin": False},
     }
-    return client.post(
+    response: Response = client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers=headers,
         files=[
@@ -363,6 +363,7 @@ def _post_public_digiexam_job(
             ("job_spec", (None, json.dumps(spec))),
         ],
     )
+    return response
 
 
 def _public_headers(

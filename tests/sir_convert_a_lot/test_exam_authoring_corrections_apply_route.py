@@ -51,7 +51,7 @@ from tests.sir_convert_a_lot.exam_authoring_corrections_apply_fixtures import (
 )
 
 
-def test_corrections_apply_route_returns_effective_matching_state_and_readiness(
+def test_corrections_apply_route_returns_effective_matching_state_without_artifacts(
     tmp_path: Path,
 ) -> None:
     client = _client(tmp_path)
@@ -80,40 +80,8 @@ def test_corrections_apply_route_returns_effective_matching_state_and_readiness(
         "pairs": [{"source_id": "source-001", "target_id": "target-001"}],
     }
     assert effective_interaction["source_item_fingerprint"] == "sha256:item-001"
-    assert payload["target_readiness"]["targets"] == [
-        {
-            "target": "examnet_pdf",
-            "artifact_key": None,
-            "readiness": "ready",
-            "export_enabled": True,
-            "reason_code": "ready",
-            "message_key": "exam_converter.target.matching.ready",
-            "item_id": "item-001",
-            "sequence": 1,
-        },
-        {
-            "target": "qti_package",
-            "artifact_key": None,
-            "readiness": "unsupported_target_shape",
-            "export_enabled": False,
-            "reason_code": "examnet_qti_matching_import_unproven",
-            "message_key": "exam_converter.target.matching.qti_import_unproven",
-            "item_id": "item-001",
-            "sequence": 1,
-        },
-    ]
-    assert payload["artifact_availability"] == [
-        {
-            "artifact_key": "examnet_pdf",
-            "availability": "available",
-            "unavailable_code": None,
-        },
-        {
-            "artifact_key": "qti_package",
-            "availability": "unavailable",
-            "unavailable_code": "examnet_qti_matching_import_unproven",
-        },
-    ]
+    assert payload["target_readiness"]["targets"] == []
+    assert payload["artifact_availability"] == []
 
 
 def test_correction_source_state_issue_route_returns_echoable_signed_bundle(

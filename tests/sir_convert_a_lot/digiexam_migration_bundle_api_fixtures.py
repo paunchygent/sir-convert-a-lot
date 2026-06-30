@@ -238,11 +238,12 @@ def _post_digiexam_job(
         )
     if extra_files is not None:
         files.extend(extra_files)
-    return client.post(
+    response: Response = client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers=request_headers,
         files=files,
     )
+    return response
 
 
 def _wait_for_terminal_job(runtime: ServiceRuntimeV2, job_id: str) -> None:

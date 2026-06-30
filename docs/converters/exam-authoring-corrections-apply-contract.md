@@ -4,7 +4,7 @@ id: CONV-exam-authoring-corrections-apply-contract
 title: Exam Authoring Corrections Apply Contract
 status: active
 created: 2026-05-18
-updated: 2026-06-29
+updated: 2026-06-30
 owners:
   - platform
 tags:
@@ -501,6 +501,9 @@ Validation order:
 1. Validate request schema and reject unknown fields.
 1. Validate request-level source binding, canonical source-state digest, and
    signed producer-state authority.
+1. If the validated binding carries `source_bundle_id`, resolve and authorize
+   that source job before returning any success with exportable readiness,
+   available artifacts, or replay references.
 1. Validate every entry's item and nested-interaction binding.
 1. Validate entry-specific semantics.
 1. If any entry is rejected, stop before mutating effective state or projecting
@@ -508,6 +511,39 @@ Validation order:
 1. Apply accepted entries to effective state in request order.
 1. Recompute target readiness from accepted effective state.
 1. Report accepted and rejected entries without leaking raw submitted payloads.
+
+## Source-Job Fail-Closed Behavior
+
+Current DigiExam correction apply is source-bound when
+`source_binding.source_bundle_id` is present. After schema, canonical
+source-state digest, and source-state signature validation succeed, Sir Convert
+must resolve and authorize that source job before any successful response can
+advertise exportable target readiness, available artifact rows, or correction
+replay references.
+
+A missing or expired bound source job returns the standard Service API error
+envelope:
+
+```json
+{
+  "error": {
+    "code": "exam_authoring_correction_source_job_unavailable",
+    "message": "Correction replay source job is unavailable.",
+    "retryable": false
+  }
+}
+```
+
+The HTTP status is `409 Conflict`. A wrong owner or missing required artifact
+read grant remains `403 exam_authoring_correction_replay_access_denied`.
+Invalid, stale, or forged source-state bindings are still rejected before source
+job lookup so callers cannot probe job existence through bad signatures.
+
+Success without source-job lookup is reserved for an explicit non-artifact
+correction mode with no `source_bundle_id`, no requested export targets, no
+available artifact availability, and no replay references. That mode preserves
+source-state and review projection tests only; it is not a DigiExam correction
+replay artifact path.
 
 ## Response Projection
 
@@ -549,9 +585,56 @@ The route returns producer-owned effective state and reports:
   },
   "target_readiness": {
     "schema_version": "target_readiness_report_v1",
-    "targets": []
+    "targets": [
+      {
+        "target": "examnet_pdf",
+        "artifact_key": "correction_replay_examnet_pdf",
+        "readiness": "ready",
+        "export_enabled": true,
+        "reason_code": "ready",
+        "message_key": "exam_converter.target.ready",
+        "item_id": null,
+        "sequence": null,
+        "artifact_reference": {
+          "schema_version": "correction_replay_artifact_reference_v1",
+          "job_id": "bundle-123",
+          "artifact_set_id": "crset-request-scoped",
+          "artifact_key": "correction_replay_examnet_pdf",
+          "target": "examnet_pdf",
+          "content_sha256": "sha256:artifact-content",
+          "request_id": "correction-request-001",
+          "source_binding_digest": "sha256:source-binding",
+          "source_state_sha256": "sha256:source-state",
+          "correction_payload_digest": "sha256:correction-payload",
+          "target_set_digest": "sha256:target-set",
+          "replay_profile_version": "digiexam_correction_replay_v1",
+          "created_at": "2026-06-30T00:00:00Z"
+        }
+      }
+    ]
   },
-  "artifact_availability": []
+  "artifact_availability": [
+    {
+      "artifact_key": "examnet_pdf",
+      "availability": "available",
+      "unavailable_code": null,
+      "artifact_reference": {
+        "schema_version": "correction_replay_artifact_reference_v1",
+        "job_id": "bundle-123",
+        "artifact_set_id": "crset-request-scoped",
+        "artifact_key": "correction_replay_examnet_pdf",
+        "target": "examnet_pdf",
+        "content_sha256": "sha256:artifact-content",
+        "request_id": "correction-request-001",
+        "source_binding_digest": "sha256:source-binding",
+        "source_state_sha256": "sha256:source-state",
+        "correction_payload_digest": "sha256:correction-payload",
+        "target_set_digest": "sha256:target-set",
+        "replay_profile_version": "digiexam_correction_replay_v1",
+        "created_at": "2026-06-30T00:00:00Z"
+      }
+    }
+  ]
 }
 ```
 
@@ -592,6 +675,80 @@ has produced replay-scoped target artifacts such as
 `correction_replay_examnet_pdf` or `correction_replay_qti_package`. They do not
 replace `target_readiness_report_v1`, which remains the export-action
 authority.
+
+## Request-Scoped Correction Replay Artifacts
+
+Corrected replay artifacts are immutable request-scoped artifact sets. Sir
+Convert stores each set under:
+
+```text
+correction-replays/{artifact_set_id}/manifest.json
+correction-replays/{artifact_set_id}/{target-file}
+```
+
+The nested download route is:
+
+```text
+GET /v2/convert/jobs/{job_id}/correction-replays/{artifact_set_id}/artifacts/{artifact_key}?content_sha256={content_sha256}
+```
+
+The existing named-artifact route
+`/v2/convert/jobs/{job_id}/artifacts/{artifact_key}` is not correction replay
+download authority for static `correction_replay_*` keys. Consumers must use
+the typed `artifact_reference` returned by correction apply. Sir Convert never
+falls back to the latest bytes for a source job.
+
+Each `correction_replay_artifact_reference_v1` contains:
+
+- `schema_version`
+- `job_id`
+- `artifact_set_id`
+- `artifact_key`
+- `target`
+- `content_sha256`
+- `request_id`
+- `source_binding_digest`
+- `source_state_sha256`
+- `correction_payload_digest`
+- `target_set_digest`
+- `replay_profile_version`
+- `created_at`
+
+The artifact-set manifest records the same request identity plus artifact
+content hashes. Exact duplicate normalized correction requests may return the
+same verified artifact set. Reusing the same `request_id` with different
+normalized content returns
+`409 exam_authoring_correction_replay_request_conflict`.
+
+Missing artifact sets return:
+
+```json
+{
+  "error": {
+    "code": "correction_replay_artifact_set_not_found",
+    "message": "Correction replay artifact set was not found.",
+    "retryable": false
+  }
+}
+```
+
+The HTTP status is `404 Not Found`. Wrong job, artifact set, artifact key, or
+`content_sha256` returns:
+
+```json
+{
+  "error": {
+    "code": "correction_replay_artifact_reference_mismatch",
+    "message": "Correction replay artifact reference does not match the stored artifact set.",
+    "retryable": false
+  }
+}
+```
+
+The HTTP status is `409 Conflict`. Artifact references and manifests remain
+content-safe metadata only; they must not include raw source payloads, private
+filesystem paths, teacher identity data, source text, signatures, grant
+envelopes, uploaded bytes, or provider responses.
 
 ## Compatibility And Hard Cut
 

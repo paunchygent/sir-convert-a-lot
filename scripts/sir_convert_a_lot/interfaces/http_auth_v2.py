@@ -138,6 +138,7 @@ def require_internal_identity_auth_context_v2(
     *,
     service_started_at: str,
     required_grant: str,
+    missing_grant_code: str = "auth_missing_internal_identity_grant",
 ) -> AuthContextV2:
     """Authenticate transport and signed HuleEdu identity for user-originated v2 work."""
 
@@ -150,7 +151,7 @@ def require_internal_identity_auth_context_v2(
     if required_grant not in identity.grants:
         raise ServiceError(
             status_code=403,
-            code="auth_missing_internal_identity_grant",
+            code=missing_grant_code,
             message="Signed internal identity is missing the required Sir Convert grant.",
             retryable=False,
             details={"required_grant": required_grant},
@@ -169,6 +170,7 @@ def auth_context_for_job_access_v2(
     service_started_at: str,
     job: JobOwnedResourceV2 | None,
     required_grant: str,
+    missing_grant_code: str = "auth_missing_internal_identity_grant",
 ) -> AuthContextV2:
     """Resolve API-key or identity-derived auth according to persisted job ownership."""
 
@@ -179,4 +181,5 @@ def auth_context_for_job_access_v2(
         request,
         service_started_at=service_started_at,
         required_grant=required_grant,
+        missing_grant_code=missing_grant_code,
     )

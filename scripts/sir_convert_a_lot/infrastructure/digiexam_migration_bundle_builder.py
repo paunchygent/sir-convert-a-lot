@@ -440,9 +440,7 @@ def _source_state_advisory_candidates(
             schema_name=candidate.schema_name,
             schema_version=candidate.schema_version,
             prompt_template_version=candidate.prompt_template_version,
-            validation_state=_source_state_candidate_validation_state(
-                candidate.validation_state
-            ),
+            validation_state=_source_state_candidate_validation_state(candidate.validation_state),
         )
         for candidate in candidates
     )

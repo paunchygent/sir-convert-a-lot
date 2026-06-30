@@ -12,6 +12,7 @@ related:
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
   - docs/backlog/tasks/task-373-project-compact-digiexam-answer-key-review-state-for-skriptoteket.md
   - docs/backlog/tasks/task-374-preserve-advisory-candidates-during-correction-apply-replay.md
+  - docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md
   - docs/converters/digiexam-migration-service-api-artifact-contract.md
   - docs/converters/exam-authoring-corrections-apply-contract.md
   - /Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-11-cross-repo-compact-answer-key-review-state-production-proof.md
@@ -216,3 +217,11 @@ sibling advisory replay regression.
   `Granska` with advisory detail visible), replay-scoped PDF/QTI download and
   save, reload persistence, mobile detail/list/files/report screenshots with no
   horizontal overflow, no page errors, and clean PDF/QTI inspection.
+
+## Follow-up Replay Hardening
+
+After this story closed, production testing with a previously uploaded DXE file
+showed that Service API v2 could strict-replay an old `succeeded` DigiExam job
+that predated the required `answer_key_review_state_report` artifact. Story 58
+owns that separate idempotent replay and correction replay hardening; Story 57
+remains closed as the compact producer/consumer proof story.

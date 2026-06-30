@@ -23,11 +23,11 @@ from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state impo
     attach_digiexam_answer_key_review_replay_references,
 )
 from scripts.sir_convert_a_lot.application.digiexam_answer_key_review_state_models import (
+    DigiExamAnswerKeyReviewReplayArtifactReferenceV1,
     DigiExamAnswerKeyReviewTargetReadinessInput,
 )
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_replay_artifacts import (
     ExamAuthoringCorrectionReplayArtifactDefinition,
-    replay_artifact_definition_for_key,
     replay_artifact_definition_for_target,
 )
 from scripts.sir_convert_a_lot.application.exam_authoring_correction_replay_overlay import (
@@ -36,6 +36,7 @@ from scripts.sir_convert_a_lot.application.exam_authoring_correction_replay_over
 )
 from scripts.sir_convert_a_lot.application.exam_authoring_corrections_apply_models import (
     ExamAuthoringCorrectionArtifactAvailabilityRowV1,
+    ExamAuthoringCorrectionReplayArtifactReferenceV1,
     ExamAuthoringCorrectionsApplyRequestV1,
     ExamAuthoringCorrectionsApplyResultV1,
     ExamAuthoringCorrectionTargetReadinessReportV1,
@@ -53,6 +54,16 @@ from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import
     DigiExamMigrationArtifactAvailability,
     DigiExamMigrationArtifactKey,
 )
+from scripts.sir_convert_a_lot.infrastructure.correction_replay_artifact_sets import (
+    CorrectionReplayArtifactResolution,
+    CorrectionReplayRenderedArtifact,
+    artifact_set_dir,
+    build_correction_replay_artifact_set_identity,
+    find_verified_duplicate_artifact_set,
+    references_by_target_from_manifest,
+    resolve_correction_replay_artifact,
+    write_correction_replay_artifact_set_manifest,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
     artifact_path,
     json_bytes,
@@ -64,22 +75,15 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_target_artifact
     build_examnet_pdf_artifact,
     build_qti_artifacts,
 )
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 
 
 @dataclass(frozen=True)
-class ReplayArtifactResolution:
-    """Filesystem and response metadata for one replay artifact key."""
-
-    content_type: str
-    filename: str
-    path: Path
-
-
-@dataclass(frozen=True)
 class _ReplayRenderOutcome:
-    artifact_keys_by_target: dict[ExamAuthoringCorrectionTargetV1, str]
+    artifact_references_by_target: dict[
+        ExamAuthoringCorrectionTargetV1,
+        ExamAuthoringCorrectionReplayArtifactReferenceV1,
+    ]
     unavailable_codes_by_target: dict[ExamAuthoringCorrectionTargetV1, str]
 
 
@@ -102,7 +106,7 @@ def write_exam_authoring_correction_replay_artifacts(
         )
     except (CorrectionReplayOverlayBuildError, DigiExamIngestionOverlayError) as exc:
         outcome = _ReplayRenderOutcome(
-            artifact_keys_by_target={},
+            artifact_references_by_target={},
             unavailable_codes_by_target={target: exc.code for target in targets},
         )
     return _with_replay_artifact_references(result=result, outcome=outcome)
@@ -111,26 +115,17 @@ def write_exam_authoring_correction_replay_artifacts(
 def resolve_exam_authoring_correction_replay_artifact(
     *,
     job: StoredJobV2,
+    artifact_set_id: str,
     artifact_key: str,
-) -> ReplayArtifactResolution | None:
-    """Resolve one persisted correction replay artifact key for download."""
+    content_sha256: str,
+) -> CorrectionReplayArtifactResolution:
+    """Resolve one nested correction replay artifact for download."""
 
-    definition = replay_artifact_definition_for_key(artifact_key)
-    if definition is None:
-        return None
-    path = _replay_artifact_path(job=job, definition=definition)
-    if not path.exists():
-        raise ServiceError(
-            status_code=404,
-            code="digiexam_artifact_not_found",
-            message="Named correction replay artifact has not been created for this job.",
-            retryable=False,
-            details={"artifact_key": artifact_key},
-        )
-    return ReplayArtifactResolution(
-        content_type=definition.content_type,
-        filename=definition.filename,
-        path=path,
+    return resolve_correction_replay_artifact(
+        job=job,
+        artifact_set_id=artifact_set_id,
+        artifact_key=artifact_key,
+        content_sha256=content_sha256,
     )
 
 
@@ -150,6 +145,21 @@ def _render_replay_artifacts(
     request_body: ExamAuthoringCorrectionsApplyRequestV1,
     targets: tuple[ExamAuthoringCorrectionTargetV1, ...],
 ) -> _ReplayRenderOutcome:
+    identity = build_correction_replay_artifact_set_identity(
+        job=job,
+        request_body=request_body,
+        targets=targets,
+    )
+    duplicate_manifest = find_verified_duplicate_artifact_set(
+        job=job,
+        identity=identity,
+        targets=targets,
+    )
+    if duplicate_manifest is not None:
+        return _ReplayRenderOutcome(
+            artifact_references_by_target=references_by_target_from_manifest(duplicate_manifest),
+            unavailable_codes_by_target={},
+        )
     loaded_source = load_digiexam_migration_source_exam(job)
     overlay = build_correction_replay_overlay_payload(
         request_body=request_body,
@@ -164,22 +174,33 @@ def _render_replay_artifacts(
         source_exam=loaded_source.exam,
         allow_reviewed_completion=overlay.has_reviewed_completion,
     )
-    artifact_keys: dict[ExamAuthoringCorrectionTargetV1, str] = {}
+    rendered_artifacts: list[CorrectionReplayRenderedArtifact] = []
     unavailable_codes: dict[ExamAuthoringCorrectionTargetV1, str] = {}
+    set_dir = artifact_set_dir(job=job, artifact_set_id=identity.artifact_set_id)
     for target in targets:
         definition = replay_artifact_definition_for_target(target)
+        final_path = set_dir / definition.filename
         unavailable_code = _write_target_artifact(
             job=job,
             target=target,
             definition=definition,
             applied=applied,
+            final_path=final_path,
+            work_dir=set_dir / f"work-{target}",
         )
         if unavailable_code is None:
-            artifact_keys[target] = definition.artifact_key
+            rendered_artifacts.append(
+                CorrectionReplayRenderedArtifact(definition=definition, path=final_path)
+            )
         else:
             unavailable_codes[target] = unavailable_code
+    manifest = write_correction_replay_artifact_set_manifest(
+        job=job,
+        identity=identity,
+        rendered_artifacts=tuple(rendered_artifacts),
+    )
     return _ReplayRenderOutcome(
-        artifact_keys_by_target=artifact_keys,
+        artifact_references_by_target=references_by_target_from_manifest(manifest),
         unavailable_codes_by_target=unavailable_codes,
     )
 
@@ -190,10 +211,10 @@ def _write_target_artifact(
     target: ExamAuthoringCorrectionTargetV1,
     definition: ExamAuthoringCorrectionReplayArtifactDefinition,
     applied: DigiExamOverlayApplicationResult,
+    final_path: Path,
+    work_dir: Path,
 ) -> str | None:
-    work_dir = _replay_work_dir(job=job, target=target)
     work_dir.mkdir(parents=True, exist_ok=True)
-    final_path = _replay_artifact_path(job=job, definition=definition)
     final_path.parent.mkdir(parents=True, exist_ok=True)
     if target == "examnet_pdf":
         entry, _warnings = build_examnet_pdf_artifact(
@@ -244,6 +265,13 @@ def _with_replay_artifact_references(
                         item_id=row.item_id,
                         sequence=row.sequence,
                         artifact_key=row.artifact_key,
+                        artifact_reference=(
+                            DigiExamAnswerKeyReviewReplayArtifactReferenceV1.model_validate(
+                                row.artifact_reference.model_dump(mode="json")
+                            )
+                            if row.artifact_reference is not None
+                            else None
+                        ),
                     )
                     for row in target_readiness.targets
                 ),
@@ -261,9 +289,14 @@ def _readiness_with_artifact_reference(
     row: ExamAuthoringCorrectionTargetReadinessRowV1,
     outcome: _ReplayRenderOutcome,
 ) -> ExamAuthoringCorrectionTargetReadinessRowV1:
-    artifact_key = outcome.artifact_keys_by_target.get(row.target)
-    if artifact_key is not None and row.export_enabled:
-        return row.model_copy(update={"artifact_key": artifact_key})
+    artifact_reference = outcome.artifact_references_by_target.get(row.target)
+    if artifact_reference is not None and row.export_enabled:
+        return row.model_copy(
+            update={
+                "artifact_key": artifact_reference.artifact_key,
+                "artifact_reference": artifact_reference,
+            }
+        )
     unavailable_code = outcome.unavailable_codes_by_target.get(row.target)
     if unavailable_code is not None and row.export_enabled:
         return row.model_copy(
@@ -283,8 +316,15 @@ def _availability_with_rendering(
     row: ExamAuthoringCorrectionArtifactAvailabilityRowV1,
     outcome: _ReplayRenderOutcome,
 ) -> ExamAuthoringCorrectionArtifactAvailabilityRowV1:
-    if row.artifact_key in outcome.artifact_keys_by_target:
-        return row.model_copy(update={"availability": "available", "unavailable_code": None})
+    artifact_reference = outcome.artifact_references_by_target.get(row.artifact_key)
+    if artifact_reference is not None:
+        return row.model_copy(
+            update={
+                "availability": "available",
+                "unavailable_code": None,
+                "artifact_reference": artifact_reference,
+            }
+        )
     unavailable_code = outcome.unavailable_codes_by_target.get(row.artifact_key)
     if unavailable_code is not None:
         return row.model_copy(
@@ -294,19 +334,3 @@ def _availability_with_rendering(
             }
         )
     return row
-
-
-def _replay_artifact_path(
-    *,
-    job: StoredJobV2,
-    definition: ExamAuthoringCorrectionReplayArtifactDefinition,
-) -> Path:
-    return _replay_artifacts_dir(job) / definition.filename
-
-
-def _replay_work_dir(*, job: StoredJobV2, target: ExamAuthoringCorrectionTargetV1) -> Path:
-    return _replay_artifacts_dir(job) / f"work-{target}"
-
-
-def _replay_artifacts_dir(job: StoredJobV2) -> Path:
-    return job.artifact_path.parent / "correction-replay"

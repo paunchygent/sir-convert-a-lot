@@ -83,11 +83,12 @@ def post_audio_job(
         ("file", ("teacher-meeting.m4a", b"audio bytes", "application/octet-stream")),
         ("job_spec", (None, json.dumps(audio_job_spec()))),
     ]
-    return client.post(
+    response: httpx.Response = client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers={**headers(), "Idempotency-Key": idempotency_key},
         files=files,
     )
+    return response
 
 
 def stored_audio_job(tmp_path: Path, *, job_id: str = "job-v2-audio-task357") -> StoredJobV2:

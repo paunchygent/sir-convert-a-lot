@@ -923,6 +923,56 @@
             "title": "Artifact Key",
             "type": "string"
           },
+          "artifact_set_id": {
+            "minLength": 1,
+            "title": "Artifact Set Id",
+            "type": "string"
+          },
+          "content_sha256": {
+            "minLength": 1,
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "correction_payload_digest": {
+            "minLength": 1,
+            "title": "Correction Payload Digest",
+            "type": "string"
+          },
+          "created_at": {
+            "minLength": 1,
+            "title": "Created At",
+            "type": "string"
+          },
+          "job_id": {
+            "minLength": 1,
+            "title": "Job Id",
+            "type": "string"
+          },
+          "replay_profile_version": {
+            "minLength": 1,
+            "title": "Replay Profile Version",
+            "type": "string"
+          },
+          "request_id": {
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "correction_replay_artifact_reference_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_binding_digest": {
+            "minLength": 1,
+            "title": "Source Binding Digest",
+            "type": "string"
+          },
+          "source_state_sha256": {
+            "minLength": 1,
+            "title": "Source State Sha256",
+            "type": "string"
+          },
           "target": {
             "enum": [
               "examnet_pdf",
@@ -930,11 +980,27 @@
             ],
             "title": "Target",
             "type": "string"
+          },
+          "target_set_digest": {
+            "minLength": 1,
+            "title": "Target Set Digest",
+            "type": "string"
           }
         },
         "required": [
+          "schema_version",
+          "job_id",
+          "artifact_set_id",
+          "artifact_key",
           "target",
-          "artifact_key"
+          "content_sha256",
+          "request_id",
+          "source_binding_digest",
+          "source_state_sha256",
+          "correction_payload_digest",
+          "target_set_digest",
+          "replay_profile_version",
+          "created_at"
         ],
         "title": "DigiExamAnswerKeyReviewReplayArtifactReferenceV1",
         "type": "object"
@@ -3422,6 +3488,16 @@
             "title": "Artifact Key",
             "type": "string"
           },
+          "artifact_reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExamAuthoringCorrectionReplayArtifactReferenceV1"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "availability": {
             "enum": [
               "available",
@@ -3504,6 +3580,97 @@
           "retryable"
         ],
         "title": "ExamAuthoringCorrectionRejectedEntryV1",
+        "type": "object"
+      },
+      "ExamAuthoringCorrectionReplayArtifactReferenceV1": {
+        "additionalProperties": false,
+        "description": "Request-scoped correction replay artifact reference.",
+        "properties": {
+          "artifact_key": {
+            "minLength": 1,
+            "title": "Artifact Key",
+            "type": "string"
+          },
+          "artifact_set_id": {
+            "minLength": 1,
+            "title": "Artifact Set Id",
+            "type": "string"
+          },
+          "content_sha256": {
+            "minLength": 1,
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "correction_payload_digest": {
+            "minLength": 1,
+            "title": "Correction Payload Digest",
+            "type": "string"
+          },
+          "created_at": {
+            "minLength": 1,
+            "title": "Created At",
+            "type": "string"
+          },
+          "job_id": {
+            "minLength": 1,
+            "title": "Job Id",
+            "type": "string"
+          },
+          "replay_profile_version": {
+            "minLength": 1,
+            "title": "Replay Profile Version",
+            "type": "string"
+          },
+          "request_id": {
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "correction_replay_artifact_reference_v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_binding_digest": {
+            "minLength": 1,
+            "title": "Source Binding Digest",
+            "type": "string"
+          },
+          "source_state_sha256": {
+            "minLength": 1,
+            "title": "Source State Sha256",
+            "type": "string"
+          },
+          "target": {
+            "enum": [
+              "examnet_pdf",
+              "qti_package"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "target_set_digest": {
+            "minLength": 1,
+            "title": "Target Set Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "job_id",
+          "artifact_set_id",
+          "artifact_key",
+          "target",
+          "content_sha256",
+          "request_id",
+          "source_binding_digest",
+          "source_state_sha256",
+          "correction_payload_digest",
+          "target_set_digest",
+          "replay_profile_version",
+          "created_at"
+        ],
+        "title": "ExamAuthoringCorrectionReplayArtifactReferenceV1",
         "type": "object"
       },
       "ExamAuthoringCorrectionReportV1": {
@@ -3839,6 +4006,16 @@
               }
             ],
             "title": "Artifact Key"
+          },
+          "artifact_reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExamAuthoringCorrectionReplayArtifactReferenceV1"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "export_enabled": {
             "title": "Export Enabled",
@@ -5018,6 +5195,16 @@
             "title": "Previous Attempts",
             "type": "array"
           },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdempotencyReattemptReasonV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "reattempt_of_job_id": {
             "anyOf": [
               {
@@ -5059,6 +5246,15 @@
         ],
         "title": "IdempotencyMetadataV2",
         "type": "object"
+      },
+      "IdempotencyReattemptReasonV2": {
+        "description": "Typed reason for service-owned reattempt admission.",
+        "enum": [
+          "retryable_failed_terminal",
+          "terminal_artifact_contract_incompatible"
+        ],
+        "title": "IdempotencyReattemptReasonV2",
+        "type": "string"
       },
       "JobCreateResponseV2": {
         "additionalProperties": false,
@@ -7123,6 +7319,70 @@
           }
         },
         "summary": "Get Checkpoint"
+      }
+    },
+    "/v2/convert/jobs/{job_id}/correction-replays/{artifact_set_id}/artifacts/{artifact_key}": {
+      "get": {
+        "operationId": "get_correction_replay_artifact_v2_convert_jobs__job_id__correction_replays__artifact_set_id__artifacts__artifact_key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "artifact_set_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Set Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "artifact_key",
+            "required": true,
+            "schema": {
+              "title": "Artifact Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "content_sha256",
+            "required": true,
+            "schema": {
+              "title": "Content Sha256",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Correction Replay Artifact"
       }
     },
     "/v2/convert/jobs/{job_id}/events/stream": {

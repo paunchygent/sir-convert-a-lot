@@ -12,6 +12,7 @@ related:
   - docs/backlog/stories/story-47-structured-llm-provider-harness-for-answer-key-completion.md
   - docs/backlog/stories/story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion.md
   - docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md
+  - docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md
   - docs/backlog/tasks/task-293-capture-machine-marked-answer-key-completion-architecture-and-tranche-plan.md
   - docs/backlog/tasks/task-294-define-digiexam-ingestion-overlay-fingerprints-and-effective-ir-artifacts.md
   - docs/backlog/tasks/task-295-implement-teacher-overlay-application-and-effective-ir-reporting.md
@@ -125,6 +126,9 @@ review gates.
 1. `docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md`
    tracks Task 373, Skriptoteket PR-0406, and the final production browser
    proof with a tracked DXE fixture.
+1. `docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+   owns the follow-up replay/idempotency hardening after production showed that
+   stale succeeded jobs can mask current compact review-state artifacts.
 
 ## Roadmap
 
@@ -171,6 +175,10 @@ assembles review semantics from multiple producer artifacts and local UI state.
 Story 57 is the cross-repo overseer tracking surface for Task 373 plus
 Skriptoteket PR-0406. It is not a replacement for either task; it records the
 shared final state goals and the required production browser proof gate.
+Story 58 follows Story 57 without reopening it: it hardens Service API v2
+idempotent succeeded replay, route artifact compatibility, and correction replay
+artifact identity so compact review-state contracts cannot be bypassed by old
+terminal jobs.
 Task 328 is the separate proposed-decision audit slice. It keeps ADR-0002 and
 ADR-0009 status cleanup out of ADR-0011 and preserves the rule that ADR-0009
 requires its explicit Gateway acceptance path before acceptance.

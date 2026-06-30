@@ -89,8 +89,8 @@ def test_non_matching_entries_apply_and_recompute_effective_state(tmp_path: Path
             }
         ],
     }
-    assert all(row["readiness"] == "ready" for row in result["target_readiness"]["targets"])
-    assert all(row["availability"] == "available" for row in result["artifact_availability"])
+    assert result["target_readiness"]["targets"] == []
+    assert result["artifact_availability"] == []
     review_items = {item["item_id"]: item for item in result["answer_key_review_state"]["items"]}
     assert review_items["item-choice"]["review_state"] == "teacher_modified"
     assert review_items["item-choice"]["current_key_origin"] == "teacher_authored"
@@ -270,7 +270,6 @@ def _non_matching_payload(corrections: list[dict[str, object]]) -> dict[str, obj
         "source_authoring_schema_version": "exam_authoring_ir_v1",
         "source_state_sha256": "sha256:placeholder",
         "source_state_signature": "hmac-sha256:placeholder",
-        "source_bundle_id": "bundle-non-matching",
         "source_file_sha256": "sha256:source-file",
     }
     payload["corrections"] = corrections

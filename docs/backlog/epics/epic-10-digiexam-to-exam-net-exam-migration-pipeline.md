@@ -19,6 +19,7 @@ related:
   - docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md
   - docs/backlog/stories/story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md
   - docs/backlog/stories/story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md
+  - docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md
   - docs/backlog/tasks/task-267-implement-digiexam-pdf-parser-v1-fixtures-and-confidence-gate.md
   - docs/backlog/tasks/task-274-implement-digiexam-dxe-parser-fixtures-and-result-pdf-answer-enrichment-gate.md
   - docs/backlog/tasks/task-275-implement-digiexam-intermediate-exam-representation-and-manifest-schema-contract.md
@@ -179,6 +180,10 @@ fallback parser lane. Planned lanes, in dependency order:
 1. `docs/backlog/stories/story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md`
    for the governed audit and follow-up refactors where exam-converter business
    policy is entangled with implementation branch mechanics.
+1. `docs/backlog/stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+   for the Service API v2 replay/idempotency hardening that prevents stale
+   succeeded DigiExam jobs from masking current route artifact contracts and
+   makes correction replay artifacts request-scoped.
 1. Full QTI/native import lane, implemented behind the accepted API/artifact
    contracts and Task 280 validation foundation.
 1. Service API exposure and Skriptoteket adapter/UI workflow.

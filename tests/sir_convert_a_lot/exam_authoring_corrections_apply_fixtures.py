@@ -71,7 +71,6 @@ def request_payload() -> dict[str, object]:
             "source_authoring_schema_version": "exam_authoring_ir_v1",
             "source_state_sha256": "sha256:placeholder",
             "source_state_signature": "hmac-sha256:placeholder",
-            "source_bundle_id": "bundle-001",
             "source_file_sha256": "sha256:source-file",
         },
         "source_authoring_state": {
@@ -142,7 +141,7 @@ def request_payload() -> dict[str, object]:
                 "pairs": [{"source_id": "source-001", "target_id": "target-001"}],
             }
         ],
-        "requested_targets": ["examnet_pdf", "qti_package"],
+        "requested_targets": [],
     }
     refresh_source_state_digest(payload)
     return payload

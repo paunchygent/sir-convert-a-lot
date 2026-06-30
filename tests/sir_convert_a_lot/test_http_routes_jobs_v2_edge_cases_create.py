@@ -620,6 +620,7 @@ def test_retryable_failed_idempotency_replay_admits_new_attempt(
         ],
         "replayed_job_id": None,
         "reattempt_of_job_id": failed_job_id,
+        "reason": "retryable_failed_terminal",
     }
 
 

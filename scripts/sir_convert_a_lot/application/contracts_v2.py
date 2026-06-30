@@ -25,6 +25,9 @@ from scripts.sir_convert_a_lot.application.public_exam_converter_contract_v2 imp
 from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
     DigiExamMigrationBundleSchemaVersion,
 )
+from scripts.sir_convert_a_lot.domain.idempotency_replay_policy_v2 import (
+    IdempotencyReattemptReasonV2,
+)
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 
@@ -119,6 +122,7 @@ class IdempotencyMetadataV2(BaseModel):
     previous_attempts: list[IdempotencyAttemptMetadataV2] = Field(default_factory=list)
     replayed_job_id: str | None = None
     reattempt_of_job_id: str | None = None
+    reason: IdempotencyReattemptReasonV2 | None = None
 
 
 class JobCreateResponseV2(JobRecordResponseV2):
