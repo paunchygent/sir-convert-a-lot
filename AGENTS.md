@@ -40,9 +40,9 @@ reference docs, ADRs, and backlog items rather than expanding this root context.
   plain `docker build` or `docker-compose`.
 - GPU/offload work is GPU-first and decision-governed. Do not introduce silent
   CPU fallback.
-- Never commit secrets, local `.env` files, student PII, or generated model,
-  conversion, benchmark, or review artefacts unless a task explicitly promotes a
-  sanitized summary.
+- Never commit secrets, local `.env` files, or `.artifacts`. Generated model,
+  conversion, benchmark, review, and research artefacts stay ignored unless a
+  task explicitly promotes part of them.
 
 ## Session Start
 
