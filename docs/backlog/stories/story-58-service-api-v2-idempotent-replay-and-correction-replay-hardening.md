@@ -326,12 +326,14 @@ Sir Convert's nested correction replay artifact route. This was not a Sir
 Convert replay/idempotency failure, not a File Service failure, and not a
 Skriptoteket stale-reference fallback. HuleEdu fixed the Gateway route in
 commit `f72e7c6cdb1a` and deployed it to production. Retained downstream proof
-now shows the exact-file production case passing at
-`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T014512Z/manifest.redacted.json`,
-monitored production proof with Docker service logs passing at
-`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T015236Z/manifest.redacted.json`,
-and monitored Dev proof with local Docker service logs passing at
-`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T020711Z/manifest.redacted.json`.
+now shows the real `ak7_lag_och_ratt_with_image.dxe` production path passing at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T110339Z/manifest.json`
+and the real-DXE Dev path passing at
+`/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T111643Z/manifest.json`.
+Both bundles retain `service-monitoring.json` and service logs from the active
+Gateway/File/Sir Convert/Skriptoteket services, and both prove nested replay
+PDF/QTI downloads plus Save to My Files returned `200` after PDF/QTI content
+inspection.
 
 Final closeout for this story is a story-level gate, not the end of any single
 task. Tasks 375-378 are necessary prerequisites only. Story 58 remains open

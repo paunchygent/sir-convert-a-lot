@@ -120,11 +120,13 @@ durable implementation authority lives in governed docs.
 - Active exam artifact conversion/authoring lane: `docs/backlog/epics/epic-10-digiexam-to-exam-net-exam-migration-pipeline.md`.
   Story 58 is in progress; Tasks 375-379 are approved. Task 379 adds
   `pdm run proof:story58-live-replay` for redacted story-level Service API
-  replay bundles. Final closeout remains story-level: run real Dev/Prod proof
+  replay bundles. Latest downstream Skriptoteket product proof passed: prod
+  `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T110339Z/manifest.json`;
+  Dev `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/.artifacts/playwright-pr-0337-correction-session-live/20260630T111643Z/manifest.json`.
+  Final closeout remains story-level: run real Dev/Prod Service API proof
   manifests, prove the same-owner stale incompatible production replay through
-  the product identity that owns the retained stale records, finish any bounded
-  Skriptoteket consumer proof still relevant, and retain closeout review before
-  marking complete.
+  the product identity that owns the retained stale records, and retain closeout
+  review before marking complete.
 - Active public-edge recovery/follow-up tasks: `docs/backlog/tasks/task-254-harden-sir-convert-production-public-edge-recovery.md` and `docs/backlog/tasks/task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md`.
 - Active dependency-image cleanup task: `docs/backlog/tasks/task-340-prune-superseded-sir-convert-dependency-image-tags-after-successful-deps-builds.md`.
 
@@ -182,10 +184,10 @@ Durable formula-lane findings are retained in `.codex/long-term-memory/entries/s
   local audit passed focused proof-runner tests `9 passed`, targeted Ruff/mypy,
   docs/skills/handoff validation, and `git diff --check`. Partial Dev/Prod
   generic smoke and prod `ak7` lineage are retained under `build/verification/story-58-*`;
-  full matrix still needs private Story 58 manifest inputs. Current `/readyz`:
-  Dev `be1c93ccd14eaaee8b7af8614915f4e66f315bf2` is older than Story 58
-  runtime commit `0cf2428c`; Prod is on `0cf2428c`. Do not rerun generic smoke
-  as closeout.
+  full matrix still needs private Story 58 manifest inputs. Current downstream
+  product proof used Sir Convert service revision
+  `ef2284b3b9d6dc7cb1f403939c0581c9ee7d7c61` in both Dev and Prod. Do not rerun
+  generic smoke as closeout.
 - Final local gate refresh after helper return-type repairs passed:
   `format-all`, `lint-fix`, `typecheck-all`, `coverage-gate`, `docs-sync`,
   `docs-validate`, `skills-validate`, `handoff-validate`, and `git diff --check`.
