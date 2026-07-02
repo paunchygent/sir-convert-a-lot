@@ -3,7 +3,7 @@ type: agent_session_handoff
 id: sir-convert-a-lot-handoff
 status: active
 created: '2026-04-16'
-last_updated: '2026-06-30'
+last_updated: '2026-07-02'
 ---
 
 ## Purpose
@@ -19,6 +19,9 @@ durable implementation authority lives in governed docs.
   STT, formatter, and formula-lane history is compacted under
   `.codex/long-term-memory/entries/`.
 - Active DevOps story: `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`.
+- R2 job-artifact storage planning is proposed in `ADR-0014`, Story 59, Task
+  380, Review 65, and `REF-cloudflare-r2-job-artifact-storage-migration-pre-runbook`;
+  no runtime adapter, credential sync, object copy, or cleanup is authorized.
 - Active Gateway cutover lane: `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`.
 - Completed STT/idempotency history is governed in Tasks 358-371 and Reviews
   40-57. Key live-proof pointers remain Task 367

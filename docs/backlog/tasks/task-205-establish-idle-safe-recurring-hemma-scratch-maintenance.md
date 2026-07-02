@@ -5,7 +5,7 @@ type: task
 status: in_progress
 priority: high
 created: '2026-03-16'
-last_updated: '2026-03-16'
+last_updated: '2026-07-02'
 related:
   - docs/backlog/stories/story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md
   - docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md
@@ -105,6 +105,31 @@ The scheduler must therefore be conservative rather than merely aggressive:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
 1. After scratch headroom is healthy again, rerun the accumulation-`2` lane:
    `pdm run qwen-fallback-accumulation-proof launch-window --proof-id task198-20260316t185616z-accum2-a1`
+
+## Timer Restart Repair 2026-07-02
+
+Live post-migration inspection found the user-level timer enabled and active,
+but `systemctl --user list-timers` showed `NEXT=-` and the raw unit state was
+`SubState=elapsed`, `NextElapseUSecMonotonic=infinity`. The last successful
+maintenance pass was at `2026-07-02T16:35:31Z` and reported
+`status=already-healthy`, no archived paths, and no Docker prune.
+
+Root cause: the timer used `OnBootSec=15min` plus `OnUnitActiveSec=1h`.
+Restarting the timer after the next `OnUnitActiveSec` point had already passed
+left no future trigger; systemd only immediately catches up missed
+`OnBootSec`/`OnStartupSec` monotonic timers, not missed `OnUnitActiveSec`.
+
+Fix: the repo-rendered timer now also emits `OnActiveSec=1h`, preserving the
+existing cadence while ensuring any timer restart schedules a future event. The
+installed Hemma user timer was updated to match and restarted. Live proof after
+repair:
+
+- `systemctl --user show ...timer` reported `ActiveState=active`,
+  `SubState=waiting`, `UnitFileState=enabled`, and a finite
+  `NextElapseUSecMonotonic`;
+- `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer` reported
+  `timer_enabled=true`, `timer_active=true`, `lingering_enabled=true`, and
+  `NEXT=Thu 2026-07-02 19:35:06 UTC`.
 
 ## Checklist
 

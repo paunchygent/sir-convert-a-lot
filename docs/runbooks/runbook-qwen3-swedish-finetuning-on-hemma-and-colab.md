@@ -508,6 +508,11 @@ Canonical commands:
 1. Inspect timer state:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
 
+   The timer is healthy only when `systemctl --user list-timers` reports a
+   concrete `NEXT` value. If the timer is enabled/active but `NEXT=-`, refresh
+   it from the repo command surface; the rendered unit must include
+   `OnActiveSec=1h` as well as `OnBootSec=15min` and `OnUnitActiveSec=1h`.
+
 Operator rule:
 
 - do not relaunch `T197` or `T198` until the scratch audit reports enough free

@@ -3,8 +3,8 @@ type: reference
 id: REF-reference-index
 title: Reference Index
 status: active
-created: 2026-06-30
-last_updated: 2026-06-30
+created: 2026-07-02
+last_updated: 2026-07-02
 owners:
   - platform
 labels:
@@ -22,6 +22,7 @@ Generated index for reference, research, review, and roadmap documents.
 
 | ID | Title | Type | Status |
 |---|---|---|---|
+| REF-cloudflare-r2-job-artifact-storage-migration-pre-runbook | [Cloudflare R2 job artifact storage migration pre-runbook](ref-cloudflare-r2-job-artifact-storage-migration-pre-runbook.md) | reference | active |
 | REF-consumer-integration-handoff | [Consumer Integration Handoff](ref-consumer-integration-handoff.md) | reference | active |
 | REF-digiexam-exam-artifact-item-type-evidence | [DigiExam Exam Artifact Item Type Evidence](ref-digiexam-exam-artifact-item-type-evidence.md) | reference | active |
 | REF-digiexam-jspdf-export-shape-and-examnet-migration-research | [DigiExam jsPDF Export Shape And Exam.net Migration Research](ref-digiexam-jspdf-export-shape-and-examnet-migration-research.md) | reference | active |

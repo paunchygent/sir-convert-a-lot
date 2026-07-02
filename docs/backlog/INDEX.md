@@ -4,8 +4,8 @@ title: Backlog Index
 type: reference
 status: active
 priority: medium
-created: 2026-06-30
-last_updated: 2026-06-30
+created: 2026-07-02
+last_updated: 2026-07-02
 related: []
 labels:
   - generated
@@ -98,6 +98,7 @@ Generated index for backlog planning documents.
 | review-62-ruthless-review-of-task-377-correction-source-job-fail-closed | [Ruthless review of Task 377 correction source-job fail-closed behavior](reviews/review-62-ruthless-review-of-task-377-correction-source-job-fail-closed.md) | review | completed |
 | review-63-ruthless-review-of-task-378-correction-replay-artifact-sets | [Ruthless review of Task 378 correction replay artifact sets](reviews/review-63-ruthless-review-of-task-378-correction-replay-artifact-sets.md) | review | completed |
 | review-64-ruthless-review-of-task-379-story-58-live-replay-proof-runner | [Ruthless review of Task 379 Story 58 live replay proof runner](reviews/review-64-ruthless-review-of-task-379-story-58-live-replay-proof-runner.md) | review | completed |
+| review-65-review-cloudflare-r2-job-artifact-storage-decision-package | [Cloudflare R2 job artifact storage decision package](reviews/review-65-review-cloudflare-r2-job-artifact-storage-decision-package.md) | review | pending |
 | 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline | [Hemma offloaded PDF-to-Markdown conversion pipeline](stories/story-02-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | story | in_progress |
 | 003a-conversion-service-v1-contract-and-dev-experience-story | [Lock v1 contract and no-hassle local dev UX](stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md) | story | completed |
 | 003b-gpu-first-execution-and-fallback-governance-story | [GPU-first execution and fallback governance](stories/story-03-02-gpu-first-execution-and-fallback-governance.md) | story | completed |
@@ -159,6 +160,7 @@ Generated index for backlog planning documents.
 | story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json | [Transcript speaker-overlay formatter replay over canonical JSON](stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md) | story | completed |
 | story-57-cross-repo-compact-answer-key-review-state-production-proof | [Cross-repo compact answer-key review state production proof](stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md) | story | completed |
 | story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening | [Service API v2 idempotent replay and correction replay hardening](stories/story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening.md) | story | in_progress |
+| story-59-cloudflare-r2-backed-job-artifact-storage-migration-planning | [Cloudflare R2-backed job artifact storage migration planning](stories/story-59-cloudflare-r2-backed-job-artifact-storage-migration-planning.md) | story | proposed |
 | 005-bootstrap-docs-as-code-structure-under-docs | [Bootstrap docs-as-code structure under docs/](tasks/task-04-02-bootstrap-docs-as-code-structure-under-docs.md) | task | completed |
 | 006-migrate-canonical-converter-code-and-quality-gates | [Migrate canonical converter code and quality gates](tasks/task-04-03-migrate-canonical-converter-code-and-quality-gates.md) | task | completed |
 | 007-prepare-docker-hemma-service-foundation | [Prepare Docker + Hemma service foundation](tasks/task-04-04-prepare-docker-hemma-service-foundation.md) | task | completed |
@@ -475,6 +477,7 @@ Generated index for backlog planning documents.
 | task-378-bind-correction-replay-artifacts-to-request-scoped-identity | [Bind correction replay artifacts to request scoped identity](tasks/task-378-bind-correction-replay-artifacts-to-request-scoped-identity.md) | task | completed |
 | task-379-retain-story-58-live-replay-closeout-proof | [Retain Story 58 live replay closeout proof](tasks/task-379-retain-story-58-live-replay-closeout-proof.md) | task | completed |
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |
+| task-380-job-store-r2-adapter-decision-and-runtime-proof-package | [Job store R2 adapter decision and runtime proof package](tasks/task-380-job-store-r2-adapter-decision-and-runtime-proof-package.md) | task | proposed |
 | task-39-hemma-v2-conversion-smoke-verification | [Hemma v2 conversion smoke verification](tasks/task-39-hemma-v2-conversion-smoke-verification.md) | task | completed |
 | task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy | [Service API v2 contract tests + v1/v2 compatibility policy](tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md) | task | completed |
 | task-41-harden-v2-resources-zip-extraction-limits | [Harden v2 resources zip extraction limits](tasks/task-41-harden-v2-resources-zip-extraction-limits.md) | task | completed |

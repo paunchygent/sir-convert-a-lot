@@ -125,6 +125,7 @@ def render_timer_unit(settings: ScratchTimerSettings) -> str:
             "Description=Run Sir Convert-a-Lot Qwen scratch maintenance on a light schedule",
             "",
             "[Timer]",
+            f"OnActiveSec={settings.timer_on_unit_active_sec}",
             f"OnBootSec={settings.timer_on_boot_sec}",
             f"OnUnitActiveSec={settings.timer_on_unit_active_sec}",
             "Persistent=true",

@@ -82,7 +82,7 @@ Shared skills are authored in
 belong in shared-skill references or repo-local leaf skills, not in copied
 shared-skill bodies.
 
-- For any skill creation or update, use the system `skill-creator` skill first.
+- For any skill creation or update, use the global `skill-creator` skill first.
   Keep `SKILL.md` concise; route examples, rationale, and detailed procedure to
   referenced resources.
 

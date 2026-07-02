@@ -39,6 +39,7 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_runtime import (
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_timer_runtime import (
     render_service_unit,
+    render_timer_unit,
 )
 
 
@@ -231,6 +232,36 @@ def test_render_service_unit_uses_qwen_scratch_policy_maintain_command(tmp_path:
     assert "pdm run qwen-scratch-policy maintain" in rendered
     assert "--prune-docker-state" in rendered
     assert f"WorkingDirectory={settings.repo_root.as_posix()}" in rendered
+
+
+def test_render_timer_unit_keeps_future_trigger_after_timer_restart(tmp_path: Path) -> None:
+    """Hemma scratch maintenance timer should recover a future trigger after restart."""
+    settings = ScratchTimerSettings(
+        repo_root=tmp_path / "repo",
+        output_root=tmp_path / "build" / "verification",
+        unit_dir=tmp_path / "systemd",
+        service_name="service.unit",
+        timer_name="timer.unit",
+        scratch_root=Path("/srv/scratch"),
+        storage_archive_root=Path("/srv/storage/archive"),
+        runs_root=Path("/srv/scratch/runs"),
+        verification_root=Path("/srv/scratch/verification"),
+        block_file_path=Path("/srv/scratch/.block"),
+        required_free_bytes=64,
+        target_free_bytes=96,
+        candidate_min_age_hours=12.0,
+        keep_most_recent=2,
+        prune_docker_state=True,
+        timer_on_boot_sec="15min",
+        timer_on_unit_active_sec="1h",
+    )
+
+    rendered = render_timer_unit(settings)
+
+    assert "OnActiveSec=1h" in rendered
+    assert "OnBootSec=15min" in rendered
+    assert "OnUnitActiveSec=1h" in rendered
+    assert "Persistent=true" in rendered
 
 
 def test_runner_writes_maintenance_and_timer_reports(
