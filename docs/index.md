@@ -3,7 +3,7 @@ type: spec
 id: SPEC-docs-index
 title: Sir Convert-a-Lot Documentation Index
 status: active
-created: 2026-07-04
+created: 2026-07-05
 owners:
   - platform
 tags:
