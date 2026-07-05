@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -74,6 +75,8 @@ def existing_created_date(path: Path) -> str:
     value = frontmatter.get("created")
     if isinstance(value, str) and value.strip():
         return value.strip()
+    if isinstance(value, date):
+        return value.isoformat()
     return today_iso()
 
 
