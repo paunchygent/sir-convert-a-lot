@@ -117,6 +117,13 @@ indexes with `pdm run docs-sync`. Promote policy, procedure, acceptance
 criteria, and implementation doctrine to governed docs instead of burying them
 in handoff or memory.
 
+## Authority Transition Guard
+
+Terminal docs authority changes must cite the applicable shared protocol:
+`agent-planning:user-closure-gate` or
+`overseer-implementation-review-loop:approved-review-closeout`. Review verdict
+approval is reviewer-owned. Details live in `agent-docs-governance`.
+
 ## Command Policy
 
 Run commands from the repository root and prefer named `pdm run ...` scripts.

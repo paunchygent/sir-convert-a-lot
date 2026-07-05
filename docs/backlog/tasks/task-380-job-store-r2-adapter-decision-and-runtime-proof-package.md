@@ -2,11 +2,18 @@
 id: 'task-380-job-store-r2-adapter-decision-and-runtime-proof-package'
 title: 'Job store R2 adapter decision and runtime proof package'
 type: 'task'
-status: 'proposed'
+status: 'completed'
 priority: 'high'
 created: '2026-07-02'
-last_updated: '2026-07-02'
-related: []
+last_updated: '2026-07-04'
+approval_protocol: 'agent-planning:user-closure-gate'
+approval_note: 'User approval: Repair/approve the Story 59 planning closeout with the closure-gate marker.'
+related:
+  - docs/backlog/stories/story-59-cloudflare-r2-backed-job-artifact-storage-migration-planning.md
+  - docs/decisions/0014-cloudflare-r2-job-artifact-storage-boundary.md
+  - docs/reference/ref-cloudflare-r2-job-artifact-storage-migration-pre-runbook.md
+  - docs/backlog/tasks/task-381-implement-terminal-r2-artifact-adapter-and-authorized-streaming-proof.md
+  - docs/backlog/reviews/review-65-review-cloudflare-r2-job-artifact-storage-decision-package.md
 labels:
   - r2
   - object-storage
@@ -43,21 +50,36 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] Reviewed ADR/reference/story/task package.
-- [ ] Closed open-question ledger or follow-up tasks for every unresolved item.
-- [ ] First implementation task sketch with red-first tests and live proof.
-- [ ] Prod env sync checklist with secret-source labels only.
+- [x] Reviewed ADR/reference/story/task package.
+- [x] Closed open-question ledger or follow-up tasks for every unresolved item.
+- [x] First implementation task sketch with red-first tests and live proof.
+- [x] Prod env sync checklist with secret-source labels only.
 
 ## Acceptance Criteria
 
-- [ ] No implementation step assumes R2 is POSIX-compatible.
-- [ ] No implementation step routes job runtime storage through HuleEdu File
+- [x] No implementation step assumes R2 is POSIX-compatible.
+- [x] No implementation step routes job runtime storage through HuleEdu File
   Service.
-- [ ] Object key, metadata, retention, purge, migration, rollback, config, and
+- [x] Object key, metadata, retention, purge, migration, rollback, config, and
   proof obligations are explicit.
-- [ ] Future tests cover object missing, owner denial, stale/mismatched artifact
+- [x] Future tests cover object missing, owner denial, stale/mismatched artifact
   denial, purge delete, and successful terminal/named artifact reads.
-- [ ] Docs sync and validation pass.
+- [x] Docs sync and validation pass.
+
+## Decision Summary
+
+- First implementation slice: terminal/cold artifact blobs only, covering the
+  primary terminal artifact and route-owned named terminal bundle artifacts.
+- Explicit non-goals: raw uploads, resources, reference DOCX files, manifests,
+  lifecycle events, idempotency state, POSIX locks, active scratch/work dirs,
+  partials, checkpoints, logs, correction replay artifact sets, production
+  backfill, production env mutation, and raw/presigned R2 browser URLs.
+- Storage key and metadata requirements, approved env names, readiness fields,
+  retention/delete reconciliation, test backend, and live-proof obligations are
+  captured in
+  `docs/reference/ref-cloudflare-r2-job-artifact-storage-migration-pre-runbook.md`.
+- Wider migration questions are routed to named follow-up task sketches in the
+  reference instead of being left as implementer assumptions.
 
 ## Validation
 
@@ -69,6 +91,6 @@ Out of scope:
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Validation complete
-- [ ] Docs updated
+- [x] Implementation complete
+- [x] Validation complete
+- [x] Docs updated

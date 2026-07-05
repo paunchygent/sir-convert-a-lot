@@ -31,8 +31,17 @@ from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
 from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
     public_artifact_filename,
 )
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
+    ObjectStoreMissingError,
+    ObjectStoreUnavailableError,
+    TerminalArtifactStore,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
+from scripts.sir_convert_a_lot.infrastructure.terminal_artifact_json_loader_v2 import (
+    TerminalArtifactJsonInvalidError,
+    load_terminal_artifact_json_v2,
+)
 
 
 @dataclass(frozen=True)
@@ -60,6 +69,7 @@ def resolve_digiexam_migration_artifact(
     *,
     job: StoredJobV2,
     artifact_key: str,
+    object_store: TerminalArtifactStore,
 ) -> ResolvedDigiExamMigrationArtifact:
     """Resolve one available named artifact from the terminal bundle manifest."""
 
@@ -74,7 +84,7 @@ def resolve_digiexam_migration_artifact(
             ),
         )
 
-    manifest = _load_manifest(job.artifact_path)
+    manifest = _load_manifest(job=job, object_store=object_store)
     entries = manifest.get("artifacts")
     if not isinstance(entries, list):
         raise _invalid_manifest_error()
@@ -101,7 +111,7 @@ def load_digiexam_migration_result_metadata(
 ) -> DigiExamMigrationResultMetadataFields:
     """Load route-specific result metadata from the persisted bundle manifest."""
 
-    manifest = _load_manifest(job.artifact_path)
+    manifest = _load_local_manifest(job.artifact_path)
     source = _required_object(manifest, "source")
     manual_follow_up = _required_object(manifest, "manual_follow_up")
     warnings = _required_object(manifest, "warnings")
@@ -130,11 +140,64 @@ def _normalize_artifact_key(value: str) -> DigiExamMigrationArtifactKey:
         ) from exc
 
 
-def _load_manifest(path: Path) -> dict[str, object]:
+def _load_local_manifest(path: Path) -> dict[str, object]:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = path.read_text(encoding="utf-8")
+    except OSError as exc:
         raise _invalid_manifest_error() from exc
+    return _validate_manifest_object_bytes(payload.encode("utf-8"))
+
+
+def _load_manifest(
+    *,
+    job: StoredJobV2,
+    object_store: TerminalArtifactStore,
+) -> dict[str, object]:
+    try:
+        payload = load_terminal_artifact_json_v2(
+            object_store=object_store,
+            job=job,
+            artifact_key="bundle_manifest",
+            filesystem_path=job.artifact_path,
+        )
+    except ObjectStoreMissingError as exc:
+        raise ServiceError(
+            status_code=404,
+            code="artifact_not_available",
+            message="Artifact object is not available.",
+            retryable=True,
+        ) from exc
+    except ObjectStoreUnavailableError as exc:
+        raise ServiceError(
+            status_code=503,
+            code="artifact_store_unavailable",
+            message="Artifact storage is temporarily unavailable.",
+            retryable=True,
+        ) from exc
+    except TerminalArtifactJsonInvalidError as exc:
+        raise _invalid_manifest_error() from exc
+    return _validate_manifest_object(payload)
+
+
+def _validate_manifest_object_bytes(payload: bytes) -> dict[str, object]:
+    try:
+        decoded = _load_json_bytes(payload)
+    except TerminalArtifactJsonInvalidError as exc:
+        raise _invalid_manifest_error() from exc
+    return _validate_manifest_object(decoded)
+
+
+def _load_json_bytes(payload: bytes) -> dict[str, object]:
+    try:
+        decoded = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise TerminalArtifactJsonInvalidError() from exc
+    if not isinstance(decoded, dict):
+        raise TerminalArtifactJsonInvalidError()
+    return {str(key): value for key, value in decoded.items()}
+
+
+def _validate_manifest_object(payload: dict[str, object]) -> dict[str, object]:
     if not isinstance(payload, dict):
         raise _invalid_manifest_error()
     schema_version = payload.get("schema_version")
@@ -171,7 +234,7 @@ def _resolve_entry(
     if not isinstance(filename, str) or not isinstance(content_type, str):
         raise _invalid_manifest_error()
     artifact_path = job.artifact_path.parent / ARTIFACT_DEFINITIONS[artifact_key].filename
-    if not artifact_path.exists():
+    if not artifact_path.exists() and artifact_key.value not in job.terminal_artifact_object_refs:
         raise ServiceError(
             status_code=500,
             code="digiexam_target_artifact_missing",

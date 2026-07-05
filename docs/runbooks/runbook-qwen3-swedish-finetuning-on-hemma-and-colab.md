@@ -497,14 +497,18 @@ Canonical commands:
 
 1. Audit current pressure:
    `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
+
 1. Run the recurring idle-safe maintenance pass first for routine headroom
    recovery:
    `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
+
 1. Archive explicit cold artifact trees and optionally prune Docker:
    `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --source-path <scratch-path> [--source-path <scratch-path> ...] [--prune-docker-state]`
+
 1. Install the recurring timer once the maintenance policy is trusted on the
    host:
    `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
+
 1. Inspect timer state:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
 

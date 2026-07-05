@@ -11,7 +11,7 @@ Relationships:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -19,6 +19,9 @@ from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
+)
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
+    TerminalArtifactObjectRef,
 )
 
 
@@ -89,6 +92,9 @@ class StoredJobRecordV2:
     failure_retryable: bool
     failure_details: dict[str, object] | None
     structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None
+    terminal_artifact_object_refs: dict[str, TerminalArtifactObjectRef] = field(
+        default_factory=dict
+    )
 
     @property
     def expires_at(self) -> datetime | None:

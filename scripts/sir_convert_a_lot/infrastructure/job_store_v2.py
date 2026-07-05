@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import time
 from datetime import timedelta
+from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import route_dispatches_runtime_jobs_v2
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
@@ -42,7 +43,14 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobMissingV2,
     StoredJobRecordV2,
 )
+from scripts.sir_convert_a_lot.infrastructure.job_store_terminal_artifacts_v2 import (
+    persist_terminal_artifact_objects_v2,
+)
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2_core import JobStoreV2Core
+from scripts.sir_convert_a_lot.infrastructure.object_store_adapters import (
+    LocalTerminalArtifactStore,
+)
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import TerminalArtifactStore
 from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
     TIMING_KEY_CONVERSION_TOTAL_MS,
     TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
@@ -69,6 +77,29 @@ def _artifact_content_type(output_format: OutputFormatV2) -> str:
 
 class JobStoreV2(JobStoreV2Core):
     """Filesystem-backed store for v2 conversion jobs."""
+
+    def __init__(
+        self,
+        *,
+        data_root: Path,
+        raw_ttl_seconds: int,
+        artifact_ttl_seconds: int,
+        object_store: TerminalArtifactStore | None = None,
+        tombstone_ttl_seconds: int = 30 * 24 * 3600,
+        replay_horizon_seconds: int = 24 * 3600,
+    ) -> None:
+        super().__init__(
+            data_root=data_root,
+            raw_ttl_seconds=raw_ttl_seconds,
+            artifact_ttl_seconds=artifact_ttl_seconds,
+            tombstone_ttl_seconds=tombstone_ttl_seconds,
+            replay_horizon_seconds=replay_horizon_seconds,
+        )
+        self.object_store = object_store or LocalTerminalArtifactStore(
+            data_root=data_root,
+            key_prefix="local",
+            runtime_profile="job-store",
+        )
 
     def list_job_ids(self) -> list[str]:
         return sorted(path.name for path in self.jobs_dir.iterdir() if path.is_dir())
@@ -211,6 +242,26 @@ class JobStoreV2(JobStoreV2Core):
             artifact_path.write_bytes(artifact_bytes)
             sha = hashlib.sha256(artifact_bytes).hexdigest()
             content_type = _artifact_content_type(output_format)
+            owner_obj = payload.get("owner")
+            owner_api_key_scope = "service-api-key"
+            if isinstance(owner_obj, dict):
+                scope_obj = owner_obj.get("api_key_scope")
+                if isinstance(scope_obj, str) and scope_obj.strip() != "":
+                    owner_api_key_scope = scope_obj
+            source_format_obj = payload.get("source_format")
+            source_format_value = (
+                source_format_obj if isinstance(source_format_obj, str) else "unknown"
+            )
+            object_refs = persist_terminal_artifact_objects_v2(
+                object_store=self.object_store,
+                job_id=job_id,
+                owner_api_key_scope=owner_api_key_scope,
+                source_format_value=source_format_value,
+                output_format=output_format,
+                artifact_path=artifact_path,
+                primary_content_type=content_type,
+                primary_payload=artifact_bytes,
+            )
 
             now = utc_now()
             payload["status"] = JobStatus.SUCCEEDED.value
@@ -260,6 +311,10 @@ class JobStoreV2(JobStoreV2Core):
                     "content_type": content_type,
                     "size_bytes": len(artifact_bytes),
                     "sha256": sha,
+                    "object_ref": object_refs["primary"].to_json(),
+                },
+                "terminal_artifact_object_refs": {
+                    artifact_key: ref.to_json() for artifact_key, ref in object_refs.items()
                 },
                 "conversion_metadata": {
                     "pipeline_used": pipeline_used,

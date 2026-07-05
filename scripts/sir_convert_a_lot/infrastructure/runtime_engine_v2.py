@@ -40,6 +40,13 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     JobStateConflictV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2 import JobStoreV2
+from scripts.sir_convert_a_lot.infrastructure.object_store_adapters import (
+    build_terminal_artifact_store,
+)
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
+    TerminalArtifactObjectRef,
+    TerminalArtifactRead,
+)
 from scripts.sir_convert_a_lot.infrastructure.ocr_preflight_v2 import preflight_pdf_ocr_or_raise
 from scripts.sir_convert_a_lot.infrastructure.pymupdf_backend import PyMuPdfConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.runtime_capacity_telemetry_v2 import (
@@ -89,7 +96,18 @@ class ServiceRuntimeV2:
         self.telemetry_sink: RuntimeTelemetrySinkV2 | NoopRuntimeTelemetrySinkV2 = (
             telemetry_sink if telemetry_sink is not None else NoopRuntimeTelemetrySinkV2()
         )
+        self.terminal_artifact_store = build_terminal_artifact_store(
+            config=config.object_store,
+            data_root=config.data_root,
+            runtime_profile="service-api",
+        )
+        self.worker_terminal_artifact_store = build_terminal_artifact_store(
+            config=config.object_store,
+            data_root=config.data_root,
+            runtime_profile="service-worker",
+        )
         self.job_store = JobStoreV2(
+            object_store=self.terminal_artifact_store,
             data_root=config.data_root,
             raw_ttl_seconds=config.upload_ttl_seconds,
             artifact_ttl_seconds=config.result_ttl_seconds,
@@ -235,6 +253,7 @@ class ServiceRuntimeV2:
             resources_zip_path=record.resources_zip_path,
             reference_docx_path=record.reference_docx_path,
             artifact_path=record.artifact_path,
+            terminal_artifact_object_refs=dict(record.terminal_artifact_object_refs),
             status=record.status,
             created_at=record.created_at,
             updated_at=record.updated_at,
@@ -288,6 +307,13 @@ class ServiceRuntimeV2:
             failure_details=record.failure_details,
             structured_llm_admission=record.structured_llm_admission,
         )
+
+    def read_terminal_artifact(
+        self,
+        ref: TerminalArtifactObjectRef,
+    ) -> TerminalArtifactRead:
+        """Read one terminal artifact through the configured object-store adapter."""
+        return self.terminal_artifact_store.read_artifact(ref)
 
     def _safe_get_job(self, job_id: str) -> StoredJobV2 | None:
         try:

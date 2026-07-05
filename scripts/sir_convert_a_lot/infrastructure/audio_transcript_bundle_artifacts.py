@@ -121,7 +121,10 @@ def resolve_audio_transcript_artifact(
                 retryable=False,
                 details={"artifact_key": artifact_key},
             )
-        if not job.artifact_path.exists():
+        if (
+            not job.artifact_path.exists()
+            and TRANSCRIPT_JSON_ARTIFACT_KEY not in job.terminal_artifact_object_refs
+        ):
             raise ServiceError(
                 status_code=500,
                 code="audio_transcript_artifact_unavailable",
@@ -146,7 +149,7 @@ def resolve_audio_transcript_artifact(
                 details={"artifact_key": artifact_key, "availability": "unrequested"},
             )
         path = _artifact_path(job=job, filename=definition.filename)
-        if not path.exists():
+        if not path.exists() and artifact_key not in job.terminal_artifact_object_refs:
             raise ServiceError(
                 status_code=409,
                 code=_unavailable_code(job),
@@ -191,10 +194,19 @@ def _formatter_manifest_entry(
         }
     path = _artifact_path(job=job, filename=filename)
     if not path.exists():
+        ref = job.terminal_artifact_object_refs.get(artifact_key)
+        if ref is None:
+            return {
+                **base,
+                "availability": "unavailable",
+                "unavailable_code": _unavailable_code(job),
+            }
         return {
             **base,
-            "availability": "unavailable",
-            "unavailable_code": _unavailable_code(job),
+            "availability": "available",
+            "size_bytes": ref.size_bytes,
+            "sha256": ref.sha256,
+            "retrieval_path": _retrieval_path(job=job, artifact_key=artifact_key),
         }
     artifact_bytes = path.read_bytes()
     return {

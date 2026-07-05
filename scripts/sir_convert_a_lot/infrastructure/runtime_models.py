@@ -21,6 +21,9 @@ from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v
 )
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
+from scripts.sir_convert_a_lot.infrastructure.object_store_config import (
+    TerminalObjectStoreConfig,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     StructuredLLMRuntimeConfig,
     disabled_structured_llm_runtime_config,
@@ -113,6 +116,7 @@ class ServiceConfig:
     structured_llm: StructuredLLMRuntimeConfig = field(
         default_factory=disabled_structured_llm_runtime_config
     )
+    object_store: TerminalObjectStoreConfig = field(default_factory=TerminalObjectStoreConfig)
 
 
 @dataclass(frozen=True)

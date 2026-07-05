@@ -179,6 +179,8 @@ class ServiceReadinessResponse(BaseModel):
     expected_service_profile: str
     started_at: str
     data_root: str
+    local_scratch: dict[str, object] = Field(default_factory=dict)
+    object_store: dict[str, object] = Field(default_factory=dict)
     reasons: list[ServiceReadinessReason] = Field(default_factory=list)
 
 

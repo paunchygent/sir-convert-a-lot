@@ -71,6 +71,9 @@ from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_artifacts_v
 from scripts.sir_convert_a_lot.interfaces.http_routes_correction_replay_artifacts_v2 import (
     register_correction_replay_artifact_routes_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_terminal_artifact_responses_v2 import (
+    terminal_artifact_response_v2,
+)
 
 
 def _content_type_for_output(output_format: OutputFormatV2) -> str:
@@ -222,9 +225,12 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
             )
 
         content_type = _content_type_for_output(job.output_format)
-        return FileResponse(
-            path=job.artifact_path.as_posix(),
-            media_type=content_type,
+        return terminal_artifact_response_v2(
+            runtime=runtime,
+            job=job,
+            artifact_key="primary",
+            filesystem_path=job.artifact_path,
+            content_type=content_type,
             filename=_primary_artifact_filename(job),
         )
 
@@ -287,11 +293,15 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 service_started_at=service_started_at,
                 job=job,
                 verified_grant=public_grant,
+                object_store=runtime.terminal_artifact_store,
             )
             return JSONResponse(status_code=200, content=manifest)
-        return FileResponse(
-            path=job.artifact_path.as_posix(),
-            media_type="application/json",
+        return terminal_artifact_response_v2(
+            runtime=runtime,
+            job=job,
+            artifact_key="primary",
+            filesystem_path=job.artifact_path,
+            content_type="application/json",
             filename=public_artifact_filename(
                 job=job,
                 key=DigiExamMigrationArtifactKey.BUNDLE_MANIFEST,
@@ -347,15 +357,25 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
                 job=job,
                 artifact_key=artifact_key,
             )
-            return FileResponse(
-                path=resolved_audio.path.as_posix(),
-                media_type=resolved_audio.content_type,
+            return terminal_artifact_response_v2(
+                runtime=runtime,
+                job=job,
+                artifact_key=artifact_key,
+                filesystem_path=resolved_audio.path,
+                content_type=resolved_audio.content_type,
                 filename=resolved_audio.filename,
             )
-        resolved = resolve_digiexam_migration_artifact(job=job, artifact_key=artifact_key)
-        return FileResponse(
-            path=resolved.path.as_posix(),
-            media_type=resolved.content_type,
+        resolved = resolve_digiexam_migration_artifact(
+            job=job,
+            artifact_key=artifact_key,
+            object_store=runtime.terminal_artifact_store,
+        )
+        return terminal_artifact_response_v2(
+            runtime=runtime,
+            job=job,
+            artifact_key=artifact_key,
+            filesystem_path=resolved.path,
+            content_type=resolved.content_type,
             filename=resolved.filename,
         )
 

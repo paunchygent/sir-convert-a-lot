@@ -1,5 +1,5 @@
 {
-  "dependency_hash": "9fca80a72abe4af4fce0e826f84c02a61dab831676eceb0cf992fa89f59500be",
+  "dependency_hash": "32be323b4ca626d01b1233fca0a53c367d26abdda8acf1da3680f1005931960e",
   "easyocr_preload": {
     "download_enabled": true,
     "gpu": false,
@@ -9,7 +9,7 @@
     ],
     "model_storage_directory": "/opt/easyocr-models"
   },
-  "requirements_sha256": "b2dac71df565bc5d65a64b814b61e4106e3649ee54c170e397e3c9f0eecaf51b",
+  "requirements_sha256": "468bcf22c9a033d64cdf32d4351bda26a173a03b856134132e0525a6339b0bc5",
   "runtime_kind": "cpu",
   "runtime_pins": {
     "torch_version": "2.10.0",
@@ -27,6 +27,8 @@
     "anyio==4.14.1",
     "attrs==26.1.0",
     "beautifulsoup4==4.15.0",
+    "boto3==1.43.40",
+    "botocore==1.43.40",
     "brotli==1.2.0; platform_python_implementation == \"CPython\"",
     "brotlicffi==1.2.0.1; platform_python_implementation != \"CPython\"",
     "certifi==2026.6.17",
@@ -63,6 +65,7 @@
     "idna==3.18",
     "imageio==2.37.3",
     "jinja2==3.1.6",
+    "jmespath==1.1.0",
     "jsonlines==4.0.0",
     "jsonref==1.1.0",
     "jsonschema==4.26.0",
@@ -128,6 +131,7 @@
     "rich==15.0.0",
     "rpds-py==2026.5.1",
     "rtree==1.4.1",
+    "s3transfer==0.19.0",
     "safetensors[numpy]==0.8.0",
     "safetensors[torch]==0.8.0",
     "saxonche==13.0.0",

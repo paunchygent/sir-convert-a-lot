@@ -22,6 +22,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.object_store_config import (
+    TerminalObjectStoreConfig,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
@@ -42,6 +45,7 @@ def build_client(
     *,
     max_upload_bytes: int = 50 * 1024 * 1024,
     run_jobs_on_submit: bool = True,
+    object_store: TerminalObjectStoreConfig | None = None,
 ) -> tuple[TestClient, FastAPI]:
     """Build a test client and FastAPI app for v2 route edge-case tests."""
 
@@ -53,6 +57,7 @@ def build_client(
             enable_supervisor=False,
             run_jobs_on_submit=run_jobs_on_submit,
             processing_delay_seconds=0.0,
+            object_store=object_store or TerminalObjectStoreConfig(),
         )
     )
     return TestClient(app), app

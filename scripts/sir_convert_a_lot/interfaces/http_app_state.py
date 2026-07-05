@@ -220,6 +220,7 @@ def ensure_runtime_state_v2(app: FastAPI, *, utc_now_iso: str) -> ServiceRuntime
             audio_transcription_sidecar=sidecar_obj,
         )
         app.state.runtime_v2 = runtime_v2
+        app.state.worker_terminal_artifact_store = runtime_v2.worker_terminal_artifact_store
         return runtime_v2
 
 

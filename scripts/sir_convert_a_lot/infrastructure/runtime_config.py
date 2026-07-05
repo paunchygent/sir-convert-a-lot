@@ -23,6 +23,9 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.internal_identity_trust_config import (
     internal_identity_runtime_config_from_env,
 )
+from scripts.sir_convert_a_lot.infrastructure.object_store_config import (
+    terminal_object_store_config_from_env,
+)
 from scripts.sir_convert_a_lot.infrastructure.pem_public_key_config import (
     normalize_pem_text as _normalize_pem_text,
 )
@@ -378,4 +381,5 @@ def service_config_from_env() -> ServiceConfig:
             "SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET"
         ),
         structured_llm=structured_llm_runtime_config_from_env(),
+        object_store=terminal_object_store_config_from_env(),
     )

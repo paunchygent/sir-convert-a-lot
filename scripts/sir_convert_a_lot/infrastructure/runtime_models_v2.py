@@ -20,6 +20,9 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2,
 from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
     StructuredLLMAdmittedRouteSnapshot,
 )
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
+    TerminalArtifactObjectRef,
+)
 
 
 @dataclass
@@ -40,6 +43,9 @@ class StoredJobV2:
     updated_at: datetime
     expires_at: datetime | None
     progress_stage: str
+    terminal_artifact_object_refs: dict[str, TerminalArtifactObjectRef] = field(
+        default_factory=dict
+    )
     owner_api_key_scope: str = "service-api-key"
     last_heartbeat_at: datetime | None = None
     current_phase_started_at: datetime | None = None

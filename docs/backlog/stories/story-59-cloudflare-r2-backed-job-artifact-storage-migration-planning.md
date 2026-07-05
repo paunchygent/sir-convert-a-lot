@@ -2,11 +2,18 @@
 id: 'story-59-cloudflare-r2-backed-job-artifact-storage-migration-planning'
 title: 'Cloudflare R2-backed job artifact storage migration planning'
 type: 'story'
-status: 'proposed'
+status: 'completed'
 priority: 'high'
 created: '2026-07-02'
-last_updated: '2026-07-02'
-related: []
+last_updated: '2026-07-04'
+approval_protocol: 'agent-planning:user-closure-gate'
+approval_note: 'User approval: Repair/approve the Story 59 planning closeout with the closure-gate marker.'
+related:
+  - docs/decisions/0014-cloudflare-r2-job-artifact-storage-boundary.md
+  - docs/reference/ref-cloudflare-r2-job-artifact-storage-migration-pre-runbook.md
+  - docs/backlog/tasks/task-380-job-store-r2-adapter-decision-and-runtime-proof-package.md
+  - docs/backlog/tasks/task-381-implement-terminal-r2-artifact-adapter-and-authorized-streaming-proof.md
+  - docs/backlog/reviews/review-65-review-cloudflare-r2-job-artifact-storage-decision-package.md
 labels:
   - r2
   - object-storage
@@ -26,7 +33,7 @@ conversion runtime storage.
 
 In scope:
 
-- Proposed ADR for Sir Convert job/artifact storage ownership.
+- Accepted ADR for Sir Convert job/artifact storage ownership.
 - Pre-runbook reference with config, Docker, contract, migration, and proof
   requirements.
 - Task 380 planning package for the first implementation-ready slice.
@@ -41,30 +48,31 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] `ADR-0014` is reviewed and either approved or revised.
-- [ ] The pre-runbook reference names every open question that would otherwise
+- [x] `ADR-0014` is reviewed and either approved or revised.
+- [x] The pre-runbook reference names every open question that would otherwise
   become an implementation assumption.
-- [ ] The first implementation task states which artifact classes move first and
+- [x] The first implementation task states which artifact classes move first and
   which remain local scratch.
-- [ ] Route behavior remains owner/grant checked before bytes are returned.
-- [ ] Retention, pin, purge, migration, rollback, and proof requirements are
+- [x] Route behavior remains owner/grant checked before bytes are returned.
+- [x] Retention, pin, purge, migration, rollback, and proof requirements are
   explicit before code changes.
 
 ## Test Requirements
 
-- [ ] Future implementation tasks must use red-first route/runtime tests for
+- [x] Future implementation tasks must use red-first route/runtime tests for
   artifact read, named artifact read, missing object, retention delete,
   owner denial, and stale/mismatched artifact denial.
-- [ ] Future live proof must include submit, poll, terminal artifact download,
+- [x] Future live proof must include submit, poll, terminal artifact download,
   named artifact download, retention/purge evidence, and readiness evidence.
 
 ## Done Definition
 
-Done when Review 65 approves the planning package and Task 380 is ready to be
-executed without unresolved storage decisions.
+Done. Review 65 approved the planning package, and Task 380 closed or routed
+the R2 storage questions that would otherwise become implementation
+assumptions.
 
 ## Checklist
 
-- [ ] Implementation complete
-- [ ] Tests and validations complete
-- [ ] Docs synchronized
+- [x] Implementation complete
+- [x] Tests and validations complete
+- [x] Docs synchronized

@@ -27,6 +27,10 @@ from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_to_rfc3339,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import StoredJobRecordV2
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
+    TerminalArtifactObjectRef,
+    terminal_artifact_object_ref_from_json,
+)
 from scripts.sir_convert_a_lot.infrastructure.phase_timings_v2 import (
     TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS,
     normalize_phase_timings_map,
@@ -239,6 +243,7 @@ def parse_stored_job_record(
     warnings: list[str] = []
     artifact_sha256: str | None = None
     artifact_size_bytes: int | None = None
+    terminal_artifact_object_refs: dict[str, TerminalArtifactObjectRef] = {}
     pipeline_used: str | None = None
     backend_used: str | None = None
     acceleration_used: str | None = None
@@ -276,6 +281,18 @@ def parse_stored_job_record(
             size_obj = artifact_obj.get("size_bytes")
             artifact_sha256 = sha_obj if isinstance(sha_obj, str) else None
             artifact_size_bytes = size_obj if isinstance(size_obj, int) else None
+            primary_ref = terminal_artifact_object_ref_from_json(artifact_obj.get("object_ref"))
+            if primary_ref is not None:
+                terminal_artifact_object_refs["primary"] = primary_ref
+
+        refs_obj = result_obj.get("terminal_artifact_object_refs")
+        if isinstance(refs_obj, dict):
+            for raw_key, raw_ref in refs_obj.items():
+                if not isinstance(raw_key, str) or raw_key.strip() == "":
+                    continue
+                ref = terminal_artifact_object_ref_from_json(raw_ref)
+                if ref is not None:
+                    terminal_artifact_object_refs[raw_key] = ref
 
         meta_obj = result_obj.get("conversion_metadata")
         if isinstance(meta_obj, dict):
@@ -405,6 +422,7 @@ def parse_stored_job_record(
         resources_zip_path=resources_zip_path,
         reference_docx_path=reference_docx_path,
         artifact_path=artifact_path,
+        terminal_artifact_object_refs=terminal_artifact_object_refs,
         artifact_sha256=artifact_sha256,
         artifact_size_bytes=artifact_size_bytes,
         pipeline_used=pipeline_used,

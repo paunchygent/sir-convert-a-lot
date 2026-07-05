@@ -11,15 +11,22 @@ Relationships:
 
 from __future__ import annotations
 
-import json
-
 from fastapi import Request
 
 from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
     VerifiedPublicConversionGrantV2,
 )
+from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
+    ObjectStoreMissingError,
+    ObjectStoreUnavailableError,
+    TerminalArtifactStore,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
+from scripts.sir_convert_a_lot.infrastructure.terminal_artifact_json_loader_v2 import (
+    TerminalArtifactJsonInvalidError,
+    load_terminal_artifact_json_v2,
+)
 from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 import (
     issue_public_artifact_read_lease_fragment_v2,
     public_bundle_manifest_artifact_key_v2,
@@ -32,10 +39,11 @@ def load_public_bundle_manifest_v2(
     service_started_at: str,
     job: StoredJobV2,
     verified_grant: VerifiedPublicConversionGrantV2,
+    object_store: TerminalArtifactStore,
 ) -> dict[str, object]:
     """Load a public bundle manifest and attach named-artifact read leases."""
 
-    manifest = _load_manifest_object(job)
+    manifest = _load_manifest_object(job=job, object_store=object_store)
     manifest["artifacts"] = _public_artifact_entries_with_leases(
         request=request,
         service_started_at=service_started_at,
@@ -46,17 +54,36 @@ def load_public_bundle_manifest_v2(
     return manifest
 
 
-def _load_manifest_object(job: StoredJobV2) -> dict[str, object]:
+def _load_manifest_object(
+    *,
+    job: StoredJobV2,
+    object_store: TerminalArtifactStore,
+) -> dict[str, object]:
     try:
-        manifest_object = json.loads(job.artifact_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        manifest_object = load_terminal_artifact_json_v2(
+            object_store=object_store,
+            job=job,
+            artifact_key="bundle_manifest",
+            filesystem_path=job.artifact_path,
+        )
+    except ObjectStoreMissingError as exc:
+        raise ServiceError(
+            status_code=404,
+            code="artifact_not_available",
+            message="Artifact object is not available.",
+            retryable=True,
+        ) from exc
+    except ObjectStoreUnavailableError as exc:
+        raise ServiceError(
+            status_code=503,
+            code="artifact_store_unavailable",
+            message="Artifact storage is temporarily unavailable.",
+            retryable=True,
+        ) from exc
+    except TerminalArtifactJsonInvalidError as exc:
         raise _invalid_public_manifest("Public artifact manifest could not be loaded.") from exc
-    if not isinstance(manifest_object, dict):
-        raise _invalid_public_manifest("Public artifact manifest has an invalid shape.")
     manifest: dict[str, object] = {}
     for key, value in manifest_object.items():
-        if not isinstance(key, str):
-            raise _invalid_public_manifest("Public artifact manifest has an invalid key.")
         manifest[key] = value
     return manifest
 

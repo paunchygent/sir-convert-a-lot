@@ -27,6 +27,9 @@ docs:
     - priority
     - last_updated
     - system
+    - approval_protocol
+    - approval_evidence
+    - approval_note
   sections:
     - name: spec
       folder: docs
