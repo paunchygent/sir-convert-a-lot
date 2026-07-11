@@ -248,7 +248,6 @@ distribution = false
 "new-rule" = "python -m scripts.docs_as_code.new_rule"
 "validate-tasks" = "python -m scripts.docs_as_code.validate_tasks"
 "validate-docs" = "python -m scripts.docs_as_code.validate_docs"
-"authority-transition-guard" = "/usr/bin/python3 ../skill-repository/scripts/docs_as_code/authority_transition_guard.py"
 "docs-validate" = "python -m scripts.docs_as_code.docs_validate"
 "index-tasks" = "python -m scripts.docs_as_code.index_tasks"
 "index-docs" = "python -m scripts.docs_as_code.index_docs"
