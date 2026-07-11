@@ -20,8 +20,13 @@ from pathlib import Path
 from scripts.docs_as_code import validate_docs, validate_tasks
 from scripts.docs_as_code.common import BACKLOG_DIR, ROOT
 
-AUTHORITY_GUARD_PATH = (
-    ROOT.parent / "skill-repository" / "scripts" / "docs_as_code" / "authority_transition_guard.py"
+AUTHORITY_LAUNCHER = (
+    Path.home()
+    / ".codex"
+    / "skill-repository"
+    / "scripts"
+    / "docs_as_code"
+    / "run_authority_transition_guard.sh"
 )
 
 
@@ -39,7 +44,7 @@ def _run_aggregate_validation() -> int:
         [
             [sys.executable, "-m", "scripts.docs_as_code.validate_tasks"],
             [sys.executable, "-m", "scripts.docs_as_code.validate_docs"],
-            ["/usr/bin/python3", str(AUTHORITY_GUARD_PATH)],
+            [str(AUTHORITY_LAUNCHER), "--repo-root", str(ROOT)],
         ]
     )
 
@@ -59,8 +64,9 @@ def _run_scoped_validation(paths: Sequence[Path]) -> int:
         failures += _run_commands(
             [
                 [
-                    "/usr/bin/python3",
-                    str(AUTHORITY_GUARD_PATH),
+                    str(AUTHORITY_LAUNCHER),
+                    "--repo-root",
+                    str(ROOT),
                     *[_repo_relative(path) for path in markdown_paths],
                 ]
             ]
