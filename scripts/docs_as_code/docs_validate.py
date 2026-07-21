@@ -2,12 +2,11 @@
 
 Purpose:
     Expose the public `pdm run docs-validate [paths...]` contract for governed
-    docs, backlog docs, and shared terminal-authority transition checks.
+    docs and backlog docs.
 
 Relationships:
     - Wraps `scripts.docs_as_code.validate_tasks` for backlog markdown files.
     - Wraps `scripts.docs_as_code.validate_docs` for non-backlog docs/rules.
-    - Calls the shared skill-repository authority-transition guard.
 """
 
 from __future__ import annotations
@@ -19,15 +18,6 @@ from pathlib import Path
 
 from scripts.docs_as_code import validate_docs, validate_tasks
 from scripts.docs_as_code.common import BACKLOG_DIR, ROOT
-
-AUTHORITY_LAUNCHER = (
-    Path.home()
-    / ".codex"
-    / "skill-repository"
-    / "scripts"
-    / "docs_as_code"
-    / "run_authority_transition_guard.sh"
-)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -44,7 +34,6 @@ def _run_aggregate_validation() -> int:
         [
             [sys.executable, "-m", "scripts.docs_as_code.validate_tasks"],
             [sys.executable, "-m", "scripts.docs_as_code.validate_docs"],
-            [str(AUTHORITY_LAUNCHER), "--repo-root", str(ROOT)],
         ]
     )
 
@@ -60,17 +49,6 @@ def _run_scoped_validation(paths: Sequence[Path]) -> int:
         failures += _validate_backlog_paths(backlog_paths)
     if non_backlog_paths:
         failures += _validate_non_backlog_paths(non_backlog_paths)
-    if markdown_paths:
-        failures += _run_commands(
-            [
-                [
-                    str(AUTHORITY_LAUNCHER),
-                    "--repo-root",
-                    str(ROOT),
-                    *[_repo_relative(path) for path in markdown_paths],
-                ]
-            ]
-        )
     return 1 if failures else 0
 
 

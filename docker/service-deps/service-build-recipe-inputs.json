@@ -18,7 +18,7 @@
       "RUN mkdir -p /opt/easyocr-models && python -c 'import easyocr; easyocr.Reader([\"sv\", \"en\"], gpu=False, model_storage_directory=\"/opt/easyocr-models\", download_enabled=True, verbose=False)'",
       "RUN mkdir -p /opt/easyocr-models && python -c 'import easyocr; easyocr.Reader([\"sv\", \"en\"], gpu=False, model_storage_directory=\"/opt/easyocr-models\", download_enabled=True, verbose=False)'"
     ],
-    "python_image": "python:3.11-slim",
+    "python_image": "python:3.12-slim",
     "syntax": "# syntax=docker/dockerfile:1",
     "system_packages": [
       "bat",
@@ -67,11 +67,11 @@
     "install_torch": "python -m pip install --upgrade torch torchvision torchaudio",
     "upgrade_pip": "python -m pip install --upgrade pip"
   },
-  "recipe_hash": "de2ff24a14d2039df9c6096f99a264ba40b615c7e7edb02fd89173075178683e",
+  "recipe_hash": "bd885bd24eb294c55699ad6527184cec63e69d51e4560effc4f71a0abbd42500",
   "recipe_source_files": {
-    "Dockerfile.deps": "1fb1ee6c8c19e703630c04c2dd55556c7b5a1bce563156b08a23d33cdda1ec9c",
-    "scripts/devops/service-deps-image.sh": "5d30119712abefd1d7ef3c63bdda52a0120bd231dd146cdc3e3a58c9c0a6c21a",
-    "scripts/sir_convert_a_lot/devops/service_dependency_inputs.py": "04cbed7b206d7cc1dbabbd4b8854e892fad1107ad0b11cb8be4a17a03c9d3201"
+    "Dockerfile.deps": "c247dbc69c02d3ac42df2079a1466f5c5f88f23852afd4acff630b2526dc6d2a",
+    "scripts/devops/service-deps-image.sh": "04b44cc391d6e000c1c5e64f003696c8f06428b7bc9bbd5cc660f259bdbe965a",
+    "scripts/sir_convert_a_lot/devops/service_dependency_inputs.py": "97aa331395b1c21f85535818a52f444017802fab7d4f506877156aa7565228a9"
   },
   "schema_version": 1
 }

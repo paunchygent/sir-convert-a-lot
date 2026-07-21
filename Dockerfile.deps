@@ -10,7 +10,7 @@
 #   - Keeps ROCm/CPU torch installs and EasyOCR preload out of app-only builds.
 #
 
-ARG PYTHON_IMAGE=python:3.11-slim
+ARG PYTHON_IMAGE=python:3.12-slim
 ARG DEV_YQ_VERSION=4.53.2
 
 FROM ${PYTHON_IMAGE} AS runtime-base

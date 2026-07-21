@@ -5,7 +5,7 @@ type: reference
 status: active
 priority: medium
 created: 2026-07-04
-last_updated: 2026-07-05
+last_updated: 2026-07-21
 related: []
 labels:
   - generated
@@ -480,6 +480,8 @@ Generated index for backlog planning documents.
 | task-38-service-v2-route-md-docx-via-html-intermediary | [Service v2 route: md -> docx via html intermediary](tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md) | task | completed |
 | task-380-job-store-r2-adapter-decision-and-runtime-proof-package | [Job store R2 adapter decision and runtime proof package](tasks/task-380-job-store-r2-adapter-decision-and-runtime-proof-package.md) | task | completed |
 | task-381-implement-terminal-r2-artifact-adapter-and-authorized-streaming-proof | [Implement terminal R2 artifact adapter and authorized streaming proof](tasks/task-381-implement-terminal-r2-artifact-adapter-and-authorized-streaming-proof.md) | task | completed |
+| task-382-standardize-sir-convert-a-lot-python-runtime-on-3-12 | [Standardize Sir Convert-a-Lot Python runtime on 3.12](tasks/task-382-standardize-sir-convert-a-lot-python-runtime-on-3-12.md) | task | in_progress |
+| task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project | [Isolate Qwen research dependencies in a nested PDM project](tasks/task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project.md) | task | ready |
 | task-39-hemma-v2-conversion-smoke-verification | [Hemma v2 conversion smoke verification](tasks/task-39-hemma-v2-conversion-smoke-verification.md) | task | completed |
 | task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy | [Service API v2 contract tests + v1/v2 compatibility policy](tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md) | task | completed |
 | task-41-harden-v2-resources-zip-extraction-limits | [Harden v2 resources zip extraction limits](tasks/task-41-harden-v2-resources-zip-extraction-limits.md) | task | completed |
