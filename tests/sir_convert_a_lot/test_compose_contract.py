@@ -537,6 +537,24 @@ def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None
     )
 
 
+def test_dockerignore_includes_qwen_training_image_inputs() -> None:
+    """The Qwen Dockerfile inputs must survive the root build-context filter."""
+    dockerignore_rules = _load_dockerignore_rules()
+
+    required_paths = {
+        "containers",
+        "containers/qwen-finetune-hemma",
+        "containers/qwen-finetune-hemma/requirements.txt",
+        "scripts/sir_convert_a_lot/ml",
+        "scripts/sir_convert_a_lot/ml/**",
+        "scripts/devops",
+        "scripts/devops/qwen_finetuning_patches",
+        "scripts/devops/qwen_finetuning_patches/**",
+    }
+    for path in required_paths:
+        assert f"!{path}" in dockerignore_rules
+
+
 def test_compose_declares_only_prod_named_volume() -> None:
     compose = _load_compose()
     volumes_obj = compose.get("volumes")
