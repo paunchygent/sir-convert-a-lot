@@ -2,10 +2,10 @@
 id: 'task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project'
 title: 'Isolate Qwen research dependencies in a nested PDM project'
 type: 'task'
-status: 'ready'
+status: 'in_progress'
 priority: 'high'
 created: '2026-07-21'
-last_updated: '2026-07-21'
+last_updated: '2026-07-22'
 approval_note: 'User confirmed the reviewed Qwen isolation process and requested this local task on 2026-07-21.'
 related:
   - docs/backlog/tasks/task-382-standardize-sir-convert-a-lot-python-runtime-on-3-12.md
@@ -17,6 +17,7 @@ labels:
   - runtime
   - maintenance
 ---
+
 PR-sized execution unit; may be linked to a story or standalone.
 
 ## Context
@@ -45,6 +46,9 @@ baseline and must not be widened.
 | QISO-005 | closed | Prove the nested project first in a clean local Python 3.12 environment, then in the independent Linux/ROCm Qwen runtime on Hemma. | macOS dependency resolution does not establish Linux, ROCm, GPU, or container readiness. | User-approved isolation process, 2026-07-21 |
 | QISO-006 | closed | TASK-382 must settle the root Python 3.12 lock before this task changes root dependency ownership. | Concurrent root-lock regeneration would make either task's proof ambiguous. | TASK-382 boundary; user-approved separate authority, 2026-07-21 |
 | QISO-007 | closed | Do not change model behavior, training recipes, public conversion APIs, or sidecar route contracts. | This task repairs dependency and test isolation only. | User-approved isolation process, 2026-07-21 |
+| QISO-008 | closed | Which Qwen-named tests move to the nested project? | Move only `tests/sir_convert_a_lot/ml/qwen/`. Keep the root-owned provider-build and Docker bind-root contract tests in the root suite because they do not require Qwen ML dependencies. | User-approved plan review, 2026-07-22 |
+| QISO-009 | closed | How is Qwen type-check ownership transferred? | Remove root Qwen source and test paths from root mypy ownership only after the nested project owns an explicit type-check command covering the Qwen CLI, source, runtime patches, and nested tests. | User-approved plan review, 2026-07-22 |
+| QISO-010 | closed | How does the Hemma requirements export preserve ROCm Torch? | Generate the container requirements from the Qwen-owned lock without exporting Torch-family packages installed separately from the governed ROCm index. Prove the resulting image retains the accepted ROCm Torch build before `qwen-smoke`. | User-approved plan review, 2026-07-22 |
 
 ## Objective
 
@@ -58,6 +62,8 @@ current named Qwen operator commands.
   `qwen/.venv`, and `qwen/tests/` as one Python 3.12-owned project boundary.
 - Move the existing Qwen test tree out of root product collection and make the
   nested project its sole test owner.
+- Keep root-owned Qwen provider-build and Docker bind-root contract tests in
+  the root product suite.
 - Move Qwen-only dependency declarations from the root project into the nested
   project and regenerate each affected lock through its owning PDM project.
 - Preserve the canonical Qwen source modules under
@@ -81,58 +87,70 @@ Out of scope:
 
 ## Deliverables
 
-- [ ] Nested `qwen/` PDM project with Python 3.12 metadata, independent lock,
-      ignored `.venv`, and Qwen-only dependencies.
-- [ ] Qwen-owned test root excluded from root product collection.
-- [ ] Root product metadata and lock without Qwen-only dependencies or
-      Qwen-specific NumPy constraints.
-- [ ] Existing named Qwen commands execute through the nested environment and
-      fail clearly when that environment is missing or stale.
-- [ ] Qwen container/runtime and operator documentation consume the nested
-      dependency boundary.
+- [x] Nested `qwen/` PDM project with Python 3.12 metadata, independent lock,
+  ignored `.venv`, and Qwen-only dependencies.
+- [x] Qwen-owned test root excluded from root product collection.
+- [x] Root product metadata and lock without Qwen-only dependencies or
+  Qwen-specific NumPy constraints.
+- [x] Existing named Qwen commands execute through the nested environment and
+  fail clearly when that environment is missing or stale.
+- [x] Nested test and type-check commands own Qwen tests, CLI modules, source
+  modules, and runtime patches without relying on root-installed packages.
+- [x] Qwen container/runtime and operator documentation consume the nested
+  dependency boundary.
 - [ ] Clean local and Linux/ROCm proof with retained commands and results.
 
 ## Acceptance Criteria
 
-- [ ] Root product installation and test collection do not install or import
-      Qwen-TTS, Librosa, Numba, or other Qwen-only dependencies.
-- [ ] The nested lock installs cleanly under Python 3.12 and dependency
-      validation reports no incompatible packages.
-- [ ] The patched dataset import and complete Qwen test collection succeed from
-      the nested environment without relying on the root `.venv`.
-- [ ] Root product tests do not collect `qwen/tests/`; the explicit nested Qwen
-      test command collects and runs that suite.
-- [ ] Existing public `pdm run qwen-*` commands retain their meaning and use
-      the nested environment rather than the product environment.
+- [x] Root product installation and test collection do not install or import
+  Qwen-TTS, Librosa, Numba, or other Qwen-only dependencies.
+- [x] The nested lock installs cleanly under Python 3.12 and dependency
+  validation reports no incompatible packages.
+- [x] The patched dataset import and complete Qwen test collection succeed from
+  the nested environment without relying on the root `.venv`.
+- [x] Root product tests do not collect `qwen/tests/`; the explicit nested Qwen
+  test command collects and runs that suite.
+- [x] Existing public `pdm run qwen-*` commands retain their meaning and use
+  the nested environment rather than the product environment.
+- [x] Qwen source and tests retain explicit nested-project type-check coverage
+  after root mypy stops owning those paths.
 - [ ] The Hemma Linux/ROCm Qwen runtime resolves from the Qwen-owned dependency
-      boundary and passes the governed `qwen-smoke` proof.
-- [ ] No global NumPy pin, copied lock, fallback environment, or second active
-      Qwen dependency declaration remains.
+  boundary and passes the governed `qwen-smoke` proof.
+- [x] The generated Hemma requirements do not declare the separately installed
+  ROCm Torch-family wheels.
+- [x] No global NumPy pin, copied lock, fallback environment, or second active
+  Qwen dependency declaration remains.
 
 ## Checklist
 
-- [ ] Implementation complete
+- [x] Local implementation complete
 - [ ] Validation complete
-- [ ] Docs updated
+- [x] Docs updated
 
 ## Implementation Plan
 
 1. Confirm TASK-382 has settled the root Python 3.12 metadata and lock. Record
    the product and Qwen dependency inventories before changing either owner.
-2. Verify the current supported PDM project-selection and synchronization
-   commands through official documentation before writing command bindings.
-3. Create the nested `qwen/` project and resolve its lock in a fresh Python
+1. Verify the current supported PDM project-selection and synchronization
+   commands through official documentation and the installed runtime before
+   writing command bindings. PDM 2.26.9 uses subcommand-local project selection,
+   such as `pdm run -p qwen` and `pdm lock -p qwen`.
+1. Create the nested `qwen/` project and resolve its lock in a fresh Python
    3.12 environment. Keep Qwen-specific compatibility constraints local.
-4. Move the Qwen tests into `qwen/tests/`, configure the nested test root, and
-   prove root product collection excludes them.
-5. Remove the root `qwen-preprocessing` dependency group and regenerate the
+1. Move the Qwen tests into `qwen/tests/`, configure the nested test root, and
+   prove root product collection excludes them while retaining the root-owned
+   provider-build and Docker bind-root tests.
+1. Remove the root `qwen-preprocessing` dependency group and regenerate the
    root lock only from the settled TASK-382 baseline.
-6. Route the existing named Qwen commands through one nested-project execution
+1. Transfer Qwen type-check ownership to the nested project, then route the
+   existing named Qwen commands through one nested-project execution
    mechanism. Do not duplicate command implementations or silently fall back
    to the product environment.
-7. Update the Qwen container inputs, runbook, and repo-local Qwen skill to use
-   the nested project and lock.
-8. Run clean local proof, then the real Hemma Linux/ROCm smoke. Record the exact
+1. Generate the Qwen container requirements from the nested lock without the
+   Torch-family packages installed separately from the ROCm index. Update the
+   Qwen container inputs, runbook, and repo-local Qwen skill to use that
+   boundary.
+1. Run clean local proof, then the real Hemma Linux/ROCm smoke. Record the exact
    environment, commands, results, and remaining limitations.
 
 ## Proof
@@ -158,6 +176,7 @@ Out of scope:
 ## Validation
 
 - Focused nested-project dependency, import, collection, and test commands.
+- Nested-project Qwen type-check command.
 - Focused root product collection and non-ML suite.
 - `pdm lock --check` in each owning project.
 - `pdm run format-all`
@@ -170,6 +189,29 @@ Out of scope:
 - `pdm run skills-validate`
 - `pdm run handoff-validate`
 - `git diff --check`
+
+### Local Evidence — 2026-07-22
+
+- Root and nested lock checks passed with `pdm lock --check` and
+  `pdm lock -p qwen --check`.
+- Root and nested dependency validation passed with `uv pip check`; the root
+  environment contains 158 compatible packages and the nested environment
+  contains 159 compatible packages.
+- `pdm run -p qwen test -q --tb=short` passed all `397` nested tests.
+- `pdm run -p qwen typecheck` passed across `317` source files.
+- Root collection contained `1432` tests and did not collect `qwen/tests/`.
+  The full root run passed `1419` tests and skipped `6`; seven sandbox-denied
+  socket/process cases were rerun through their two owning files with the
+  required permissions and passed `37/37`.
+- `pdm run typecheck-all`, nested and root Ruff checks, docs validation, skill
+  validation, handoff validation, and `git diff --check` passed.
+- `pdm run qwen-smoke --help` reached the preserved public command through the
+  nested project, and regenerating the container requirements from
+  `qwen/pdm.lock` produced no Torch, Triton, CUDA, or NVIDIA requirement.
+- Remaining proof: publish the implementation to the revision available on
+  Hemma, build the Qwen image from that revision, verify the installed Torch is
+  the governed ROCm build, and run
+  `pdm run run-hemma -- pdm run qwen-smoke`.
 
 ## Stop Conditions
 
@@ -196,4 +238,5 @@ Out of scope:
   process was already reviewed and approved.
 - Permitted next step: begin implementation only after TASK-382 settles the
   root lock boundary.
-- Status: `ready`.
+- Status transition: implementation started on 2026-07-22 after the user
+  accepted the reviewed plan corrections; current status is `in_progress`.

@@ -184,6 +184,23 @@ Canonical commands:
 
 ## Dependency Baseline
 
+Qwen research dependencies are owned by the non-distributable nested project
+under `qwen/`:
+
+- `qwen/pyproject.toml` declares the Python 3.12 dependency boundary.
+- `qwen/pdm.lock` is the authoritative Qwen research lock.
+- install or refresh the isolated environment with
+  `pdm install -p qwen -G dev`.
+- verify the boundary with `pdm run -p qwen test` and
+  `pdm run -p qwen typecheck`.
+- continue to invoke operational commands through their stable root surfaces,
+  such as `pdm run qwen-preprocess` and `pdm run qwen-train`.
+
+The Hemma requirement set is derived from the nested lock. Regenerate it with
+`pdm run -p qwen export-container-requirements`. The export excludes generic
+Torch, Triton, CUDA, and NVIDIA runtime packages because the image installs its
+governed ROCm-compatible Torch and Triton stack separately.
+
 Qwen training image baseline:
 
 - `qwen_tts`
@@ -233,7 +250,7 @@ Preprocessing/eval baseline:
 
 Canonical repo surface for the preprocessing lane:
 
-- install: `pdm install -G qwen-preprocessing`
+- install: `pdm install -p qwen -G dev`
 - run: `pdm run qwen-preprocess`
 - runner: `scripts/sir_convert_a_lot/cli/ml/qwen_preprocess.py`
 

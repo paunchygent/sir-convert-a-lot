@@ -37,25 +37,6 @@ dev = [
     "types-pyyaml>=6.0.12.20250915",
     "mdformat-frontmatter>=2.0.10",
 ]
-qwen-preprocessing = [
-    "accelerate==1.12.0",
-    "datasets>=4.1.1",
-    "huggingface-hub==0.34.4",
-    "jiwer>=4.0.0",
-    "librosa==0.11.0",
-    "onnxruntime==1.23.1",
-    "qwen-tts==0.1.1",
-    "safetensors==0.5.3",
-    "sentencepiece==0.2.1",
-    "soundfile==0.13.1",
-    "sox==1.5.0",
-    "torch>=2.10.0",
-    "torchaudio>=2.10.0",
-    "transformers==4.57.3",
-    "pyarrow==23.0.1",
-    "mlflow>=3.10.1",
-]
-
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -83,6 +64,10 @@ warn_return_any = true
 check_untyped_defs = true
 ignore_missing_imports = true
 explicit_package_bases = true
+exclude = [
+    "^scripts/sir_convert_a_lot/cli/ml/",
+    "^scripts/sir_convert_a_lot/ml/qwen/",
+]
 files = [
     "scripts/sir_convert_a_lot",
     "scripts/docs_as_code",
@@ -160,34 +145,34 @@ distribution = false
 "proof:remote-proof-audio-transcript" = "python -m scripts.sir_convert_a_lot.devops.remote_proof_audio_transcript_evidence"
 "proof:story58-live-replay" = "python -m scripts.sir_convert_a_lot.devops.run_story58_live_replay_proof"
 "diagnose:stt-sidecar-diarization-access" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_diarization_access"
-"qwen-acquire" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_acquire"
-"qwen-batch-plan" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_batch_plan"
-"qwen-containerized-preprocessing" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_containerized_preprocessing"
-"qwen-detached-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_detached_proof"
-"qwen-codebook-fusion-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_codebook_fusion_proof"
-"qwen-codebook-fusion-proof-detached" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_codebook_fusion_proof_detached"
-"qwen-docker-bind-roots" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_docker_bind_roots"
-"qwen-finalization-benchmark" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_finalization_benchmark"
-"qwen-isolated-stages" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_isolated_stages"
-"qwen-preprocess" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_preprocess"
-"qwen-ref-mel-cache-comparison" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_ref_mel_cache_comparison"
-"qwen-resume-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_resume_proof"
-"qwen-scratch-policy" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_scratch_policy"
-"qwen-fallback-eval-detached" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_fallback_eval_detached_cli"
-"qwen-freshstart-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_freshstart_proof_cli"
-"qwen-backward-lineage" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_backward_lineage_cli"
-"qwen-stability-lab" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_stability_lab_cli"
-"qwen-parity-probe" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_parity_probe_cli"
-"qwen-historical-pilot-control" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_historical_pilot_control"
-"qwen-fallback-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_fallback_proof"
-"qwen-fallback-accumulation-proof" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_fallback_accumulation_proof"
-"qwen-token-span-audit" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_token_span_audit"
-"qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_rixvox_train_staging"
-"qwen-llama-provider-build" = "bash scripts/devops/qwen-llama-provider-build.sh"
+"qwen-acquire" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-acquire"
+"qwen-batch-plan" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-batch-plan"
+"qwen-containerized-preprocessing" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-containerized-preprocessing"
+"qwen-detached-proof" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-detached-proof"
+"qwen-codebook-fusion-proof" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-codebook-fusion-proof"
+"qwen-codebook-fusion-proof-detached" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-codebook-fusion-proof-detached"
+"qwen-docker-bind-roots" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-docker-bind-roots"
+"qwen-finalization-benchmark" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-finalization-benchmark"
+"qwen-isolated-stages" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-isolated-stages"
+"qwen-preprocess" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-preprocess"
+"qwen-ref-mel-cache-comparison" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-ref-mel-cache-comparison"
+"qwen-resume-proof" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-resume-proof"
+"qwen-scratch-policy" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-scratch-policy"
+"qwen-fallback-eval-detached" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-fallback-eval-detached"
+"qwen-freshstart-proof" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-freshstart-proof"
+"qwen-backward-lineage" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-backward-lineage"
+"qwen-stability-lab" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-stability-lab"
+"qwen-parity-probe" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-parity-probe"
+"qwen-historical-pilot-control" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-historical-pilot-control"
+"qwen-fallback-proof" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-fallback-proof"
+"qwen-fallback-accumulation-proof" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-fallback-accumulation-proof"
+"qwen-token-span-audit" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-token-span-audit"
+"qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-rixvox-train-staging"
+"qwen-llama-provider-build" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-llama-provider-build"
 "answer-key-provider-env" = "python -m scripts.sir_convert_a_lot.devops.render_answer_key_provider_env"
-"qwen-smoke" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_smoke"
-"qwen-train" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_train"
-"qwen-pilot-bundle" = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_bundle"
+"qwen-smoke" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-smoke"
+"qwen-train" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-train"
+"qwen-pilot-bundle" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-pilot-bundle"
 "hemma-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_storage_remediation"
 "hemma-docker-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_docker_storage_remediation"
 "hemma-docker-storage-detached" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_docker_storage_detached"
@@ -276,9 +261,7 @@ distribution = false
 ] }
 "typecheck" = "mypy --no-incremental --config-file pyproject.toml"
 "typecheck-all" = "mypy --no-incremental --config-file pyproject.toml"
-"typecheck-ml" = "mypy --no-incremental --config-file pyproject.toml scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches tests/sir_convert_a_lot/ml/qwen"
 "test" = "pytest -s"
-"test-ml" = "pytest -s --import-mode=importlib tests/sir_convert_a_lot/ml/qwen"
 "pytest-root" = "pytest -s"
 "coverage-gate" = "pytest -s --cov=scripts.sir_convert_a_lot.application.contracts_v2 --cov=scripts.sir_convert_a_lot.domain.specs_v2 --cov=scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 --cov=scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor --cov=scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 --cov=scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 --cov-branch --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml"
 

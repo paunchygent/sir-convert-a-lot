@@ -1,5 +1,5 @@
 {
-  "dependency_hash": "4c4065bbb6a7ff778355a19d9434ab6320d20e9bcc1d89aac0473836df273f05",
+  "dependency_hash": "dfcec127417288ece2b3043604ff6f702e94c732d1883f03f10547dab95e08ab",
   "easyocr_preload": {
     "download_enabled": true,
     "gpu": false,
@@ -9,7 +9,7 @@
     ],
     "model_storage_directory": "/opt/easyocr-models"
   },
-  "requirements_sha256": "066ae8fee0857c2de765a57d19967d949390d9925c61f0fdbf03c57ff5324c8c",
+  "requirements_sha256": "764b583114344f486396c583dc3b69c6dabea52f6de5fc275dc4db4207ccb9f5",
   "runtime_kind": "rocm",
   "runtime_pins": {
     "torch_index_url": "https://download.pytorch.org/whl/rocm7.1",
@@ -28,8 +28,8 @@
     "anyio==4.14.2",
     "attrs==26.1.0",
     "beautifulsoup4==4.15.0",
-    "boto3==1.43.52",
-    "botocore==1.43.52",
+    "boto3==1.43.53",
+    "botocore==1.43.53",
     "brotli==1.2.0; platform_python_implementation == \"CPython\"",
     "brotlicffi==1.2.0.1; platform_python_implementation != \"CPython\"",
     "certifi==2026.6.17",
@@ -40,7 +40,7 @@
     "colorlog==6.11.0",
     "cryptography==49.0.0",
     "cssselect2==0.9.0",
-    "cuda-pathfinder==1.5.6; platform_system == \"Linux\" and python_version < \"3.15\"",
+    "cuda-pathfinder==1.6.0; platform_system == \"Linux\" and python_version < \"3.15\"",
     "cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.3.0; platform_system == \"Linux\"",
     "defusedxml==0.7.1",
     "dill==0.4.1; python_version >= \"3.11\"",
@@ -54,7 +54,7 @@
     "et-xmlfile==2.0.0",
     "faker==40.32.0",
     "fastapi==0.139.2",
-    "filelock==3.31.2",
+    "filelock==3.32.0",
     "filetype==1.2.0",
     "fonttools[woff]==4.63.0",
     "fsspec==2026.6.0",
@@ -145,7 +145,7 @@
     "shapely==2.1.2",
     "shellingham==1.5.4",
     "six==1.17.0",
-    "soupsieve==2.9",
+    "soupsieve==2.9.1",
     "starlette==1.3.1",
     "sympy==1.14.0",
     "tabulate==0.10.0",

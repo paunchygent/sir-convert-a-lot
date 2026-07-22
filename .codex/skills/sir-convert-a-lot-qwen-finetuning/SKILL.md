@@ -84,6 +84,19 @@ Before proposing anything, classify the request into one of these lanes:
 If the user says "general Swedish support," always choose lane 3 unless they
 explicitly narrow the scope.
 
+## Dependency Environment
+
+- Qwen research dependencies, tests, typing, and lock ownership live under the
+  non-distributable Python 3.12 project in `qwen/`.
+- Install or refresh it with `pdm install -p qwen -G dev`.
+- Run its complete local proof with `pdm run -p qwen test` and
+  `pdm run -p qwen typecheck`.
+- Use the stable root `pdm run qwen-*` surfaces for operator workflows; they
+  validate and enter the nested environment before running the command.
+- Regenerate the Hemma requirements with
+  `pdm run -p qwen export-container-requirements`. The result is lock-derived
+  but excludes generic GPU runtime packages owned by the image's ROCm lane.
+
 ## Core Project Position
 
 - The main project target is full fine-tuning of the `1.7B` base model.

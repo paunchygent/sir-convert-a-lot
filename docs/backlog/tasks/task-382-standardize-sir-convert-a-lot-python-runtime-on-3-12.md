@@ -37,7 +37,7 @@ and let PDM resolve the dependency lock under that target.
 ## Acceptance Criteria
 
 - [x] `pyproject.toml`, dependency-image defaults, and lock metadata identify
-      Python 3.12 as the lower-bound runtime.
+  Python 3.12 as the lower-bound runtime.
 - [x] PDM resolves dependencies successfully and writes the updated lockfile.
 - [x] Focused validation passes without changing unrelated work.
 
