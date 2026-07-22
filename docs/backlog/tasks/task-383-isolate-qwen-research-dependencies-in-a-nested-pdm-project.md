@@ -98,7 +98,7 @@ Out of scope:
   modules, and runtime patches without relying on root-installed packages.
 - [x] Qwen container/runtime and operator documentation consume the nested
   dependency boundary.
-- [ ] Clean local and Linux/ROCm proof with retained commands and results.
+- [x] Clean local and Linux/ROCm proof with retained commands and results.
 
 ## Acceptance Criteria
 
@@ -114,7 +114,7 @@ Out of scope:
   the nested environment rather than the product environment.
 - [x] Qwen source and tests retain explicit nested-project type-check coverage
   after root mypy stops owning those paths.
-- [ ] The Hemma Linux/ROCm Qwen runtime resolves from the Qwen-owned dependency
+- [x] The Hemma Linux/ROCm Qwen runtime resolves from the Qwen-owned dependency
   boundary and passes the governed `qwen-smoke` proof.
 - [x] The generated Hemma requirements do not declare the separately installed
   ROCm Torch-family wheels.
@@ -124,7 +124,7 @@ Out of scope:
 ## Checklist
 
 - [x] Local implementation complete
-- [ ] Validation complete
+- [x] Validation complete
 - [x] Docs updated
 
 ## Implementation Plan
@@ -208,10 +208,37 @@ Out of scope:
 - `pdm run qwen-smoke --help` reached the preserved public command through the
   nested project, and regenerating the container requirements from
   `qwen/pdm.lock` produced no Torch, Triton, CUDA, or NVIDIA requirement.
-- Remaining proof: publish the implementation to the revision available on
-  Hemma, build the Qwen image from that revision, verify the installed Torch is
-  the governed ROCm build, and run
-  `pdm run run-hemma -- pdm run qwen-smoke`.
+- The independent QC lane confirmed clean `HEAD == origin/main`, `11` focused
+  root boundary tests, all `397` nested tests, root and nested lint/typecheck,
+  both lock checks, and the docs, skills, handoff, and diff gates. Its separate
+  Hemma read was unavailable because its sandbox could not resolve the
+  Tailscale hostname; parent live evidence below owns that boundary.
+- Independent ruthless review returned `APPROVED` after the public command
+  guard was hardened to reject missing, extra, or wrong-version nested
+  distributions and evaluate lock markers with the exact nested interpreter.
+
+### Hemma Linux/ROCm Evidence — 2026-07-22
+
+- Canonical Hemma checkout was clean and matched `origin/main` at
+  `b96e25e5b27ab1608fefd5cbedc12588ae560662`.
+- The public Qwen command accepted the installed nested environment only after
+  lock freshness, installed-distribution equality, and nested-interpreter
+  marker checks passed.
+- The governed detached `pdm run qwen-smoke` completed at
+  `2026-07-22T09:45:15Z` and wrote
+  `build/verification/qwen-training-smoke/report.json` plus `report.md`.
+- Built image:
+  `sir-convert-a-lot-qwen-finetune-hemma:latest` at
+  `sha256:12462d1596a8c32d477329bd7601d8ffe26ab779e2b0246cb64024cfb2bf9b95`.
+- In-container proof resolved the Qwen model and config with model type
+  `qwen3_tts`; Torch and Torchaudio were `2.10.0+rocm7.1`, HIP was
+  `7.1.25424`, GPU availability was true with two devices, and flash-attention
+  `2.8.4` imported and initialized the model successfully.
+- A separate image probe confirmed governed Triton `3.5.1`; the lock-derived
+  requirements did not replace the separately installed ROCm GPU runtime.
+- The smoke probe uses an ephemeral `docker run --rm` verification container;
+  the retained deliverable is the built image and deterministic report, not a
+  long-running Qwen service container.
 
 ## Stop Conditions
 
@@ -240,3 +267,6 @@ Out of scope:
   root lock boundary.
 - Status transition: implementation started on 2026-07-22 after the user
   accepted the reviewed plan corrections; current status is `in_progress`.
+- Closure readiness: implementation, local validation, independent review, and
+  live Hemma proof are complete. Terminal task closure remains pending the
+  explicit user closure gate.
