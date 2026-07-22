@@ -2,12 +2,14 @@
 id: 'task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project'
 title: 'Isolate Qwen research dependencies in a nested PDM project'
 type: 'task'
-status: 'in_progress'
+status: 'completed'
 priority: 'high'
 created: '2026-07-21'
 last_updated: '2026-07-22'
-approval_note: 'User confirmed the reviewed Qwen isolation process and requested this local task on 2026-07-21.'
+approval_protocol: 'agent-planning:user-closure-gate'
+approval_note: 'User approval on 2026-07-22: "Mark it done with a close-out and ensure the correct runbooks/skills are updated as needed."'
 related:
+  - docs/backlog/stories/story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md
   - docs/backlog/tasks/task-382-standardize-sir-convert-a-lot-python-runtime-on-3-12.md
   - docs/decisions/0006-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md
   - docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md
@@ -266,7 +268,7 @@ Out of scope:
 - Permitted next step: begin implementation only after TASK-382 settles the
   root lock boundary.
 - Status transition: implementation started on 2026-07-22 after the user
-  accepted the reviewed plan corrections; current status is `in_progress`.
-- Closure readiness: implementation, local validation, independent review, and
-  live Hemma proof are complete. Terminal task closure remains pending the
-  explicit user closure gate.
+  accepted the reviewed plan corrections.
+- Closeout: implementation, local validation, independent `APPROVED` review,
+  and live Hemma proof are complete. The user authorized terminal closure on
+  2026-07-22 through `agent-planning:user-closure-gate`.
