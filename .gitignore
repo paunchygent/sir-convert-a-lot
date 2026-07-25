@@ -21,3 +21,6 @@ docs/reference/artifacts/
 docs/reference/benchmark-pdf-md-scientific-corpus-hemma.json
 docs/reference/benchmark-story-003b-gpu-governance-local.json
 docs/reference/ref-production-pdf-md-scientific-corpus-validation.md
+
+# Retained agent context runtime
+.orchestration/context/
