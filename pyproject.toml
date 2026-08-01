@@ -37,6 +37,23 @@ dev = [
     "types-pyyaml>=6.0.12.20250915",
     "mdformat-frontmatter>=2.0.10",
 ]
+tooling = [
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@3cc4803f0838353e69c7adf159f3adeeade8818c#subdirectory=packages/repository_governance",
+]
+
+[tool.repository-governance]
+schema-version = 3
+repository = "sir-convert-a-lot"
+
+[tool.repository-governance.owners]
+service = ["sir-convert-a-lot"]
+
+[tool.repository-governance.setup]
+projects = [
+    { path = ".", groups = ["default", "tooling", "dev"] },
+    { path = "qwen", groups = ["default", "dev"] },
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -109,6 +126,32 @@ precision = 1
 distribution = false
 
 [tool.pdm.scripts]
+# repository-governance:bindings:start
+setup = "pdm run --project ${HOME}/.codex/repository-governance-runtime cross-repo-worktree-bootstrap --repo-root ${PDM_PROJECT_ROOT}"
+new-worktree = "pdm run --project ${HOME}/.codex/repository-governance-runtime cross-repo-worktree-create --repo-root ${PDM_PROJECT_ROOT}"
+format = "repository-governance-routine format --repo-root ${PDM_PROJECT_ROOT}"
+lint = "repository-governance-routine lint --repo-root ${PDM_PROJECT_ROOT}"
+typecheck = "repository-governance-routine typecheck --repo-root ${PDM_PROJECT_ROOT}"
+test = "repository-governance-routine test --repo-root ${PDM_PROJECT_ROOT}"
+check = "repository-governance-routine check --repo-root ${PDM_PROJECT_ROOT}"
+new-doc = "repository-governance-new-doc"
+new-epic = "new-epic"
+new-story = "new-story"
+new-task = "new-task"
+new-review = "new-review"
+docs-sync = "repository-governance-docs-sync"
+docs-validate = "repository-governance-docs-validate"
+format-md = "format-md"
+check-md = "check-md"
+format-md-all = "format-md-all"
+check-md-all = "check-md-all"
+# repository-governance:bindings:end
+# repository-governance:auxiliary-bindings:start
+run-hemma = "repository-governance-run-hemma --repo-root ${PDM_PROJECT_ROOT}"
+staleness-audit = "repository-governance-staleness-audit --repo-root ${PDM_PROJECT_ROOT}"
+publish-main = "repository-governance-publish-main --repository-root ${PDM_PROJECT_ROOT}"
+verify-main-publication = "repository-governance-verify-main-publication --repository-root ${PDM_PROJECT_ROOT}"
+# repository-governance:auxiliary-bindings:end
 "serve:sir-convert-a-lot" = "uvicorn scripts.sir_convert_a_lot.service:app --host 0.0.0.0 --port 8085"
 "convert-a-lot" = "python -m scripts.sir_convert_a_lot.interfaces.cli_app"
 "sir-convert-a-lot" = "python -m scripts.sir_convert_a_lot.interfaces.cli_app"
@@ -182,7 +225,6 @@ distribution = false
 "benchmark:scientific-corpus" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"
 "run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
-"run-hemma" = "bash scripts/devops/run-hemma.sh"
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
 "hemma-deploy-and-verify" = "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify"
 "hemma-verify-v2-conversions" = "bash scripts/devops/verify-hemma-v2-conversions.sh"
@@ -223,45 +265,23 @@ distribution = false
 "hemma-command-monitor" = "bash scripts/devops/hemma-command-monitor.sh"
 "hemma-public-edge-default-host-remediate" = "bash scripts/devops/hemma-public-edge-default-host-remediate.sh"
 "openapi-export-v2" = "python -m scripts.sir_convert_a_lot.openapi_export_v2"
-"new-task" = "python -m scripts.docs_as_code.new_task"
 "new-programme" = "python -m scripts.docs_as_code.new_task --type programme"
-"new-epic" = "python -m scripts.docs_as_code.new_task --type epic"
-"new-story" = "python -m scripts.docs_as_code.new_task --type story"
-"new-review" = "python -m scripts.docs_as_code.new_task --type review"
 "new-fix" = "python -m scripts.docs_as_code.new_task --type fix"
-"new-doc" = "python -m scripts.docs_as_code.new_doc"
 "new-rule" = "python -m scripts.docs_as_code.new_rule"
-"validate-tasks" = "python -m scripts.docs_as_code.validate_tasks"
-"validate-docs" = "python -m scripts.docs_as_code.validate_docs"
-"docs-validate" = "python -m scripts.docs_as_code.docs_validate"
 "index-tasks" = "python -m scripts.docs_as_code.index_tasks"
 "index-docs" = "python -m scripts.docs_as_code.index_docs"
-"docs-sync" = { composite = ["index-docs"] }
 "skills-validate" = "python -m scripts.docs_as_code.validate_skills"
 "handoff-validate" = "python -m scripts.docs_as_code.validate_handoff"
-"format" = "ruff format ."
-"format-md" = "mdformat --extensions frontmatter README.md AGENTS.md docs .codex"
 "format-all" = { composite = [
     "ruff format .",
     "mdformat --extensions frontmatter README.md AGENTS.md docs .codex",
-] }
-"lint" = { composite = [
-    "ruff format --check --diff .",
-    "ruff check .",
-    "mdformat --check --extensions frontmatter README.md AGENTS.md docs .codex",
-    "python -m scripts.docs_as_code.validate_docs",
-    "python -m scripts.docs_as_code.validate_tasks",
 ] }
 "lint-fix" = { composite = [
     "ruff check --fix --unsafe-fixes .",
     "ruff format .",
     "mdformat --extensions frontmatter README.md AGENTS.md docs .codex",
-    "python -m scripts.docs_as_code.validate_docs",
-    "python -m scripts.docs_as_code.validate_tasks",
 ] }
-"typecheck" = "mypy --no-incremental --config-file pyproject.toml"
 "typecheck-all" = "mypy --no-incremental --config-file pyproject.toml"
-"test" = "pytest -s"
 "pytest-root" = "pytest -s"
 "coverage-gate" = "pytest -s --cov=scripts.sir_convert_a_lot.application.contracts_v2 --cov=scripts.sir_convert_a_lot.domain.specs_v2 --cov=scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_config_v2 --cov=scripts.sir_convert_a_lot.infrastructure.runtime_heartbeat_v2 --cov=scripts.sir_convert_a_lot.infrastructure.v2_conversion_executor --cov=scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 --cov=scripts.sir_convert_a_lot.interfaces.http_routes_jobs_v2 --cov-branch --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml"
 
