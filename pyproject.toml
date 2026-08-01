@@ -38,7 +38,7 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
 ]
 tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@3cc4803f0838353e69c7adf159f3adeeade8818c#subdirectory=packages/repository_governance",
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@ffc78145e8ef4d5cb8b9fb146412a75907ad4785#subdirectory=packages/repository_governance",
 ]
 
 [tool.repository-governance]
@@ -53,6 +53,9 @@ projects = [
     { path = ".", groups = ["default", "tooling", "dev"] },
     { path = "qwen", groups = ["default", "dev"] },
 ]
+
+[tool.repository-governance.quality]
+projects = []
 
 [tool.ruff]
 line-length = 100
