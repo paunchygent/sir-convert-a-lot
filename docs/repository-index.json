@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "b879cd48bf1a7a68361ecdf7d63f0edc2a56da2480b89dab62511bd1be1ada80",
+  "source_set_digest": "651c8385c26aeab7d8077a4c71d857fa7f975043f431fd21121af8bb52d72de9",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3137,7 +3137,7 @@
       "type": "task",
       "title": "Migrate the current governed corpus to the shared contract",
       "path": "docs/backlog/tasks/task-sircon-rep-0001-migrate-the-current-governed-corpus-to-the-shared-contract.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3155,7 +3155,11 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-reviewer",
+        "decided_at": "2026-08-02T17:30:30+0200",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Final bounded implementation review approved with no blocking findings"
       }
     },
     {

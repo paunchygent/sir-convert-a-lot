@@ -5,7 +5,7 @@
 ## Counts
 
 - total | epic=10 | story=62 | task=384 | review=66
-- open | epic=6 | story=30 | task=97
+- open | epic=6 | story=30 | task=96
 
 ## Lookup
 
@@ -601,7 +601,6 @@
 - TASK-SIRCON-08-01-02 | [Live-validate Granite answer-key completion on versioned DigiExam DXE corpus](tasks/task-sircon-08-01-02-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md) | stories=[ST-SIRCON-08-01](stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md) | depends_on=0 | dependents=0
 - TASK-SIRCON-08-01-05 | [Add OpenAI Responses provider and hot-swappable operator routing for answer-key completion](tasks/task-sircon-08-01-05-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md) | stories=[ST-SIRCON-08-01](stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md) | depends_on=0 | dependents=0
 - TASK-SIRCON-08-01-06 | [Run OpenAI mini/nano answer-key evaluation gate before provider promotion](tasks/task-sircon-08-01-06-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md) | stories=[ST-SIRCON-08-01](stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md) | depends_on=0 | dependents=0
-- TASK-SIRCON-REP-0001 | [Migrate the current governed corpus to the shared contract](tasks/task-sircon-rep-0001-migrate-the-current-governed-corpus-to-the-shared-contract.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0003 | [Add resumable row-processing for Qwen preprocessing runs](tasks/task-sircon-rep-0003-add-resumable-row-processing-for-qwen-preprocessing-runs.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0007 | [Refactor Qwen training metadata module into bounded control-plane modules without compatibility shims](tasks/task-sircon-rep-0007-refactor-qwen-training-metadata-module-into-bounded-control-plane-modules-without-compatibility-shims.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0013 | [Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker](tasks/task-sircon-rep-0013-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker.md) | stories=none | depends_on=0 | dependents=0
