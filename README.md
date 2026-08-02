@@ -78,23 +78,25 @@ checking the hostname, repo root, and shared skill repository path. Set
 `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when you deliberately need the
 SSH path from an environment that otherwise looks like Hemma.
 
-**Docs-as-code Governance:**
+**Docs-as-code:**
 
-- `pdm run new-[task|epic|story|doc|rule]`
-- `pdm run validate-tasks`
-- `pdm run validate-docs`
+- `pdm run new-task "<title>"`
+- `pdm run new-story "<title>"`
+- `pdm run new-epic "<title>"`
+- `pdm run new-doc --type <type> --title "<title>"`
+- `pdm run docs-sync`
+- `pdm run docs-validate`
 
 ## Documentation & Contracts
 
 **Architecture:**
 
-- [Service API v2](docs/converters/multi_format_conversion_service_api_v2.md)
-- [Downstream Integration Contract](docs/converters/downstream_integration_contract_v2.md)
-- [Async Push Extension](docs/converters/multi_format_conversion_service_api_v2_async_push.md)
+- [Service API v2](docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md)
+- [Downstream Integration Contract](docs/reference/ref-sircon-general-downstream-integration-contract-v2-downstream-integration-contract-v2.md)
+- [Async Push Extension](docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-async-push-contract-multi-format-conversion-service-api-v2-async-push-contract.md)
 
 **Governance:**
 
-- System rules: `.codex/rules/`
 - Active backlog: `docs/backlog/`
 - Docs contract: `docs/_meta/docs-contract.yaml`
 

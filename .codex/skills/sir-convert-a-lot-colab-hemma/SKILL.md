@@ -21,7 +21,7 @@ Use this skill together with:
 
 - `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`
 - `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
-- `docs/runbooks/runbook-qwen3-swedish-finetuning-on-hemma-and-colab.md`
+- `docs/runbooks/run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md`
 
 ## Core Rule
 

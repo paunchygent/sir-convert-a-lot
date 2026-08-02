@@ -7,7 +7,7 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-08-02'
-status: ready
+status: done
 readiness_review:
   record: inline
   status: approved
@@ -17,7 +17,11 @@ readiness_review:
   approval_evidence: User-approved SIR-001 through SIR-004L authority and inline Plan Document Review follow-up approval at f77f5d78.
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-08-02T17:30:30+0200'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: Final bounded implementation review approved with no blocking findings
 task_kind: repository
 acceptance_criteria:
   - All 231 current authored governance surfaces, including legacy Task 385, receive one explicit current-contract disposition; the already-current TASK-SIRCON-REP-0001 remains the migration authority rather than a migration source.
@@ -245,4 +249,20 @@ parent may apply the separate `proposed -> ready` transition.
 
 ## Closeout
 
-Not started.
+The 209-document package batch applied and reports `complete` with unchanged
+plan digest `15834b066cd61e4b83fe40e0c4e0889a6995a51ec8d36e44baec2dfd84296a12`
+and seal `9456b3ed01693a4cabe2b2ee5b41b8ef33757b4b2a89420fc76e903fd8093b66`.
+All 22 non-CLI dispositions are complete: `.codex/rules` and local docs-governance
+authority are removed, unique Qwen guidance is routed through the local skill,
+and operator procedure is routed through runbooks. The 395 historical and
+terminal documents retain their verified byte hashes and remain outside current
+authority.
+
+The cutover advanced to immutable `repository-governance` 0.9.15 at peeled
+revision `2d34dc09a2990f964cce313a12bac6b4732eefb5`. Sealed migration validation,
+the complete report, ordinary `docs-sync`, ordinary `docs-validate`, skill and
+handoff validation, binding and lock checks, historical hashes, path/rules
+audits, and `git diff --check` passed. The independent final reviewer approved
+the bounded implementation with no findings. No product behavior, quality
+topology, broad repository suite, deployment, database, container, or browser
+test was in scope or run.

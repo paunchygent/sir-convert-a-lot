@@ -5,14 +5,13 @@ LLM-friendly PDF, DOCX, Markdown, HTML, and exam-migration workflows. It is a
 Python/PDM repository with Hemma offload, GPU-first runtime governance, and
 docs-as-code as planning and contract truth.
 
-This file is a thin router. Keep durable procedure in skills, rules, runbooks,
-reference docs, ADRs, and backlog items rather than expanding root context.
+This file is a thin router. Keep durable procedure in skills and runbooks, and
+keep product facts in references, ADRs, and backlog items.
 
 ## Repo Invariants
 
 - Production behavior changes need backlog authority under `docs/backlog/`.
   Externally visible contracts need ADR/API/reference authority.
-- Follow `.codex/rules/000-rule-index.md` for targeted repo rules.
 - Keep command context explicit: local development uses
   `pdm run run-local-pdm ...`; Hemma work uses the environment-aware
   `pdm run run-hemma -- ...` wrapper or a committed command surface.
@@ -23,13 +22,11 @@ reference docs, ADRs, and backlog items rather than expanding root context.
 ## Session Start
 
 1. Check `.codex/handoff.md` for current-state pointers.
-1. Load `.codex/rules/000-rule-index.md` only when repo rules are needed, then
-   open the specific rule files the task requires.
 1. Use `.codex/handoff.md` for active planning pointers and `docs/index.md` as
    the generated durable docs doorway.
-1. Use `docs/DOCS_STRUCTURE_SPEC.md`, `docs/backlog/README.md`, and
-   `docs/_meta/docs-contract.yaml` for durable docs topology and validation
-   rules.
+1. Use the shared `agent-docs-governance` route for docs topology and lifecycle.
+   `docs/_meta/docs-contract.yaml` contains repository facts consumed by the
+   shared package.
 
 ## Repo-Specific Routes
 
@@ -48,15 +45,12 @@ product workflow, or command-wrapper context.
 | Speech-model fine-tuning beyond Qwen-specific guidance | `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md` |
 | Colab/Hemma notebook orchestration | `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md` |
 
-Shared skills are authored in
-`/Users/olofs_mba/Documents/Repos/skill-repository/skills/` first. Repo facts
-belong in shared-skill references or repo-local leaf skills, not copied
-shared-skill bodies.
+Shared workflows come from the central package. Repo facts belong in shared-skill
+references or repo-local leaf skills, not copied shared-skill bodies.
 
 ## Agent Surface
 
 - `.codex/skills/`: truly Sir Convert-specific workflow/domain skills only.
-- `.codex/rules/`: targeted repo invariants and discovery rules.
 - `.codex/handoff.md`: current-state handoff.
 - `.codex/long-term-memory/index.md`: durable session-history doorway.
 - `.codex/repomix_packages/`: ignored generated AI-review packages.
@@ -65,14 +59,10 @@ shared-skill bodies.
 
 - Generated docs doorway: `docs/index.md`
 - Active planning pointer: `.codex/handoff.md`
-- Backlog guide and hierarchy: `docs/backlog/README.md`
-- Docs topology: `docs/DOCS_STRUCTURE_SPEC.md`
 - Docs contract: `docs/_meta/docs-contract.yaml`
-- Converter/API contracts: `docs/converters/`
 - ADRs and decisions: `docs/decisions/`
-- Product direction: `docs/pdr/`
 - Runbooks: `docs/runbooks/`
-- References, research, reviews, and roadmaps: `docs/reference/`
+- References, contracts, research, and roadmaps: `docs/reference/`
 
 When a backlog item, ADR, reference, runbook, or active decision changes, update
 the governing docs and `.codex/handoff.md` as needed.
