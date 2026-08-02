@@ -7,7 +7,7 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-03'
-status: ready
+status: in_progress
 readiness_review:
   record: inline
   status: approved
@@ -144,9 +144,9 @@ identity, `TASK-SIRCON-REP-0021`; the archived task remains unchanged.
 ## Readiness
 
 The ledger is closed from ST-SKILL-08-07, retained Sir quality discovery, and
-the user's explicit approval to proceed with the recommended next slice. The
-task remains proposed pending independent plan review. Implementation is not
-authorized yet.
+the user's explicit approval to proceed with the recommended next slice.
+Independent plan review approved the boundary, and the later user instruction
+to proceed authorized implementation.
 
 Residual risk is limited to a small number of test-support imports and
 path-sensitive assertions that may need test-only correction during moves.
@@ -190,4 +190,25 @@ path-sensitive assertions that may need test-only correction during moves.
 
 ## Closeout
 
-Not started.
+Implementation is complete pending independent closeout review.
+
+- The flat root test corpus now lives under the seven accepted first-level
+  behavior directories: `service`, `conversion`, `exam`, `speech`,
+  `operations`, `research`, and `repository`.
+- The initial pre-move collection exposed two stale module-level lookups for
+  terminal backlog documents that had correctly moved to `.archive`. Per the
+  accepted historical-validator-off contract, three prose-pinning assertions
+  and their now-unused backlog-path helper were removed. The remaining
+  executable tests produced the clean topology baseline of 1,444 collected
+  tests.
+- Post-move collection completed with the same 1,444 tests and no collection
+  errors. The seven selected representative files passed 97 tests.
+- Move-caused changes are limited to test-support imports, repository-root and
+  fixture path depth, and import ordering.
+- Under the user-activated Boy Scout Rule, two touched speech tests were
+  corrected from the retired `docs/converters` path and fenced-JSON assumption
+  to the active `docs/reference` contract and its inline JSON shape. Their
+  combined focused scope passed 42 tests.
+- No production code, Qwen project, dependency, lock, quality fact, Docker,
+  Hemma, GPU, deployment, or product behavior changed. No broad root aggregate
+  or Qwen suite ran.
