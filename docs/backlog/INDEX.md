@@ -560,6 +560,10 @@
 - ST-SIRCON-08-01 | [Structured LLM provider harness for answer-key completion](stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md) | epic=[EPIC-SIRCON-08](epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md) | tasks=in_progress=3, proposed=3 | depends_on=0 | dependents=0
 - ST-SIRCON-08-04 | [Service API v2 idempotent replay and correction replay hardening](stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md) | epic=[EPIC-SIRCON-08](epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md) | tasks=none | depends_on=0 | dependents=0
 
+### ready
+
+- TASK-SIRCON-REP-0020 | [Archive terminal and superseded governed records after cutover](tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md) | stories=none | depends_on=0 | dependents=0
+
 ### in_progress
 
 - TASK-SIRCON-01-01-01 | [Scientific-paper workload evidence harness + Hemma tunnel acceptance report (10/10 corpus)](tasks/task-sircon-01-01-01-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md) | stories=[ST-SIRCON-01-01](stories/st-sircon-01-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md) | depends_on=0 | dependents=0
@@ -676,7 +680,6 @@
 - TASK-SIRCON-REP-0012 | [Finish or retire Task 200 Qwen metadata scaffolds](tasks/task-sircon-rep-0012-finish-or-retire-task-200-qwen-metadata-scaffolds.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0016 | [Bootstrap shared governance package facts and walking skeleton](tasks/task-sircon-rep-0016-bootstrap-shared-governance-package-facts-and-walking-skeleton.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md) | stories=none | depends_on=0 | dependents=0
-- TASK-SIRCON-REP-0020 | [Archive terminal and superseded governed records after cutover](tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md) | stories=none | depends_on=0 | dependents=0
 
 ## Dependency Graph
 
