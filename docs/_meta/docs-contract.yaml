@@ -1,166 +1,324 @@
+---
 version: 1
 
-docs:
-  include_globs:
-    - "docs/*.md"
-    - "docs/_meta/*.md"
-    - "docs/backlog/**/*.md"
-    - "docs/converters/*.md"
-    - "docs/decisions/*.md"
-    - "docs/pdr/*.md"
-    - "docs/reference/*.md"
-    - "docs/runbooks/*.md"
-  frontmatter_exempt: []
+markdown:
+  include:
+    - "**/*.md"
+  exclude:
+    - docs/backlog/INDEX.md
+    - docs/decisions/INDEX.md
+    - docs/index.md
+    - docs/reference/INDEX.md
+    - docs/runbooks/INDEX.md
+    - docs/_generated/**
+    - .artifacts/**
+    - .codex/long-term-memory/**
+    - .codex/repomix_packages/**
+    - .orchestration/**
+    - evidence/**
+    - build/**
+    - dist/**
+    - "**/.cache/**"
+    - "**/.git/**"
+    - "**/.mypy_cache/**"
+    - "**/.pdm-build/**"
+    - "**/.pytest_cache/**"
+    - "**/.ruff_cache/**"
+    - "**/.tox/**"
+    - "**/.venv/**"
+    - "**/__pypackages__/**"
+    - "**/__pycache__/**"
+    - "**/data/**"
+    - "**/htmlcov/**"
+    - "**/node_modules/**"
+    - "**/output/**"
+    - "**/runs/**"
+    - "**/tmp/**"
+
+# Current shared lanes plus retained Sir legacy directories.
+allowed_top_level:
+  - decisions
+  - backlog
+  - reference
+  - runbooks
+  - templates
+  - _meta
+  - converters
+  - pdr
+
+frontmatter_exempt:
+  - docs/_meta/docs-contract.yaml
+  - docs/_meta/README.md
+  - docs/backlog/INDEX.md
+  - docs/decisions/INDEX.md
+  - docs/index.md
+  - docs/reference/INDEX.md
+  - docs/runbooks/INDEX.md
+
+frontmatter:
+  delimiters: ["---", "---"]
   common_required:
     - type
     - id
     - title
     - status
+    - owners
     - created
   common_optional:
     - updated
-    - owners
     - tags
     - links
-    - related
-    - labels
-    - priority
-    - last_updated
-    - system
     - approval_protocol
     - approval_evidence
     - approval_note
-  sections:
-    - name: spec
-      folder: docs
-      filename_regex: "^[A-Za-z0-9_.-]+\\.md$"
-      type: spec
-      status_allowed: [draft, active, deprecated]
-      required: [owners]
-      optional: []
+  structured_optional:
+    links:
+      type: mapping
+      description: >-
+        Canonical structured relationship block for machine-owned link edges.
+      rules:
+        - >-
+          Body markdown links are informational prose unless the contract says
+          otherwise.
+        - >-
+          Canonical relationship edges must not be duplicated as manually
+          maintained reverse metadata on both sides.
+        - >-
+          Relationship links route progressive discovery; they do not authorize
+          copying reference facts into runbooks or runbook procedures into
+          references.
+        - >-
+          Backlog-to-reference and backlog-to-runbook relations are canonically
+          owned by backlog items.
+        - >-
+          Reverse visibility belongs in generated indexes, not authored source
+          document backlink sections.
 
-    - name: converter
-      folder: docs/converters
-      filename_regex: "^[a-z0-9_-]+\\.md$"
-      type: converter
-      id_regex: "^CONV-[a-z0-9-]+$"
-      status_allowed: [draft, active, deprecated]
-      required: [owners]
-      optional: []
+governed_documents:
+  line_limit:
+    physical_lines: 500
+    rule: >-
+      Every governed root and part remains at or below the hard limit. Move one
+      coherent responsibility into an ordered part before adding content would
+      exceed the limit; never shave lines or compress evidence to satisfy it.
+  proximity_warning:
+    command: docs-lint
+    physical_lines: 450
+    selection: changed_or_explicit_governed_files
+    severity: advisory
+    exit_status: unchanged
+    aggregation: logical_root
+    required_fields:
+      - root
+      - path
+      - current_physical_lines
+      - warning_threshold
+      - hard_limit
+      - scaffolding_route
+      - next_action
+  multipart:
+    identity: "<root-id>-PART-<two-digit-order>"
+    root_responsibilities:
+      - canonical_identity
+      - lifecycle
+      - classification
+      - relationships
+      - review_authority
+      - required_sections
+      - concise_summary
+      - ordered_part_navigation
+    part_responsibilities:
+      - coherent_subordinate_content
+      - structural_metadata
+    part_fields:
+      - type
+      - id
+      - title
+      - repository
+      - owners
+      - created
+      - root
+      - part
+    relationship_rules:
+      - >-
+        A part copies the root's exact type, repository, ordered owners, lane,
+        and filename stem.
+      - >-
+        Part identifiers and filenames use one contiguous sequence beginning
+        at 01.
+      - >-
+        Parts own no lifecycle, classification, relationship, label, readiness,
+        closeout, or review decision.
+      - >-
+        Human lifecycle indexes retain one root row; repository snapshots may
+        retain structural part records carrying root and part.
+      - >-
+        Historical governed documents retain the forward-only migration route
+        before current multipart scaffolding.
 
-    - name: decision
-      folder: docs/decisions
-      filename_regex: "^\\d{4}-[a-z0-9-]+\\.md$"
-      type: decision
-      id_regex: "^ADR-\\d{4}$"
-      status_allowed: [proposed, accepted, superseded, deprecated]
-      required: [owners]
-      optional: []
+indexes:
+  philosophy: derived-only
+  audience: llm_agents_only
+  human_readability_required: false
+  objectives:
+    - efficient_lookup
+    - fast_lookup
+    - reliable_lookup
+    - workflow_navigation
+  allowed_additions:
+    - grouping
+    - ordering
+    - summaries
+    - stable_links
+    - derived_warnings
+  forbidden:
+    - manual frontmatter restatement
+    - hand-maintained status registries
+    - second metadata stores
+  required_generated:
+    - docs/backlog/INDEX.md
+    - docs/index.md
+    - docs/reference/INDEX.md
+    - docs/runbooks/INDEX.md
+  optional_entrypoints:
+    - docs/decisions/INDEX.md
+  rules:
+    - >-
+      Generated indexes are derived views over frontmatter and document
+      relationships.
+    - >-
+      Generated indexes must not become an independent source of truth for
+      document metadata.
+    - >-
+      Deterministic sync commands may maintain generated index surfaces before
+      validation, provided validation remains read-only and verifies freshness.
+    - >-
+      Generated doorway docs should link only to existing authoritative or
+      generated file targets.
+    - >-
+      Future reference and runbook lane indexes should stay lane-local
+      generated surfaces rather than expanding the minimal root doorway into a
+      second knowledge registry.
 
-    - name: pdr
-      folder: docs/pdr
-      filename_regex: "^pdr-[a-z0-9-]+-v\\d+\\.\\d+(?:\\.\\d+)?\\.md$"
-      type: pdr
-      id_regex: "^PDR-[a-z0-9-]+-v\\d+\\.\\d+(?:\\.\\d+)?$"
-      status_allowed: [draft, active, superseded]
-      required: [owners]
-      optional: []
+backlog_transition_contract:
+  epic:
+    transition_targets: [ready, active, done]
+    ordered_sections:
+      - "## Scope"
+      - "## Epic Contract"
+      - "## Contract Inputs"
+      - "## Stories"
+      - "## Epic Verification Plan"
+      - "## Exceptions And Follow-Ups"
+      - "## Risks"
+      - "## Notes"
+      - "## Decision And Assumption Ledger"
+      - "## Plan Document Review"
+      - "## Epic Closeout Review"
+  story:
+    transition_targets: [ready, active, done]
+    ordered_sections:
+      - "## Context"
+      - "## Epic Contract Slice"
+      - "## Contract Inputs"
+      - "## Live Verification Plan"
+      - "## Non-Goals"
+      - "## Notes"
+      - "## Decision And Assumption Ledger"
+      - "## Plan Document Review"
+      - "## Story Closeout Review"
+  task:
+    transition_targets: [ready, active, in_progress, done]
+    ordered_sections:
+      - "## Context"
+      - "## Decision And Assumption Ledger"
+      - "## Story Contract Slice"
+      - "## Contract Inputs"
+      - "## Plan"
+      - "## Implementation Steps"
+      - "## Proof"
+      - "## Validation"
+      - "## Stop Conditions"
+      - "## Lessons Learned"
+      - "## Notes"
+      - "## Plan Document Review"
+      - "## Implementation Review"
 
-    - name: runbook
-      folder: docs/runbooks
-      filename_regex: "^(runbook-[a-z0-9-]+|INDEX)\\.md$"
-      type: runbook
-      id_regex: "^RUN-[a-z0-9-]+$"
-      status_allowed: [draft, active, deprecated]
-      required: [owners, system]
-      optional: []
+types:
+  meta:
+    folder: docs/_meta
+    filename_regex: "^[A-Za-z0-9_.-]+\\.(md|yaml)$"
+    id_regex: "^META-[a-z0-9-]+$"
+    status_allowed: [active, deprecated]
+    required: []
+    optional: []
 
-    - name: reference
-      folder: docs/reference
-      filename_regex: "^(ref-[a-z0-9-]+|INDEX)\\.md$"
-      type: reference
-      id_regex: "^REF-[a-z0-9-]+$"
-      status_allowed: [draft, active, deprecated]
-      required: [owners]
-      optional: []
+  template:
+    folder: docs/templates
+    filename_regex: "^template-[a-z0-9-]+\\.md$"
+    id_regex: "^TPL-[a-z0-9-]+$"
+    status_allowed: [active, deprecated]
+    required: [for_type]
+    optional: []
 
-    - name: backlog-programme
-      folder: docs/backlog/programmes
-      filename_regex: "^programme-[a-z0-9-]+\\.md$"
-      type: programme
-      id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
-      required: [priority, last_updated]
-      optional: []
+  adr:
+    folder: docs/decisions
+    filename_regex: "^adr-\\d{4}-[a-z0-9-]+\\.md$"
+    id_regex: "^ADR-\\d{4}$"
+    status_allowed: [proposed, accepted, superseded, deprecated]
+    required: [deciders]
+    optional: [links]
 
-    - name: backlog-epic
-      folder: docs/backlog/epics
-      filename_regex: "^epic-[a-z0-9-]+\\.md$"
-      type: epic
-      id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
-      required: [priority, last_updated]
-      optional: []
+  epic:
+    folder: docs/backlog/epics
+    filename_regex: "^epic-\\d{2}-[a-z0-9-]+\\.md$"
+    id_regex: "^EPIC-\\d{2}$"
+    status_allowed: [proposed, ready, active, done, dropped]
+    required: [outcome]
+    optional: [dependencies, risks]
+    canonical_link_keys: [references, runbooks]
 
-    - name: backlog-story
-      folder: docs/backlog/stories
-      filename_regex: "^story-[a-z0-9-]+\\.md$"
-      type: story
-      id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
-      required: [priority, last_updated]
-      optional: []
+  story:
+    folder: docs/backlog/stories
+    filename_regex: "^story-\\d{2}-\\d{2}-[a-z0-9-]+\\.md$"
+    id_regex: "^ST-\\d{2}-\\d{2}$"
+    status_allowed: [proposed, active, ready, done, blocked, canceled]
+    required: [epic, acceptance_criteria]
+    optional: [dependencies, ui_impact, data_impact, risks]
+    canonical_link_keys: [references, runbooks]
 
-    - name: backlog-task
-      folder: docs/backlog/tasks
-      filename_regex: "^(task|fix)-[a-z0-9-]+\\.md$"
-      type_one_of: [task, fix]
-      id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
-      required: [priority, last_updated]
-      optional: []
+  task:
+    folder: docs/backlog/tasks
+    filename_regex: "^task-\\d{4}-[a-z0-9-]+\\.md$"
+    id_regex: "^TASK-\\d{4}$"
+    status_allowed: [proposed, active, ready, in_progress, done, blocked, canceled]
+    required: [stories, acceptance_criteria]
+    optional: [dependencies]
+    canonical_link_keys: [references, runbooks]
 
-    - name: backlog-review
-      folder: docs/backlog/reviews
-      filename_regex: "^review-[a-z0-9-]+\\.md$"
-      type: review
-      id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [pending, responded, completed]
-      required: [priority, last_updated]
-      optional: []
+  review:
+    folder: docs/backlog/reviews
+    filename_regex: "^review-[a-z0-9-]+\\.md$"
+    id_regex: "^REV-(EPIC-\\d{2}|ST-\\d{2}-\\d{2}|TASK-\\d{4})$"
+    status_allowed: [pending, approved, changes_requested, blocked]
+    required: [reviewer]
+    optional: [epic, stories, tasks, adrs]
+    canonical_link_keys: [references, runbooks]
 
-    - name: backlog-meta
-      folder: docs/backlog
-      filename_regex: "^(README|INDEX)\\.md$"
-      type: reference
-      id_regex: "^[a-z0-9][a-z0-9._-]*$"
-      status_allowed: [proposed, in_progress, completed, active, draft, blocked, canceled, ready, done, pending, approved, changes_requested, rejected]
-      required: [priority, last_updated]
-      optional: []
+  reference:
+    folder: docs/reference
+    filename_regex: "^ref-[a-z0-9-]+\\.md$"
+    id_regex: "^REF-[a-z0-9-]+$"
+    status_allowed: [active, deprecated, draft]
+    required: [topic, summary]
+    optional: []
+    canonical_link_keys: [references, runbooks]
 
-    - name: meta
-      folder: docs/_meta
-      filename_regex: "^[A-Za-z0-9_.-]+\\.md$"
-      type: meta
-      id_regex: "^META-[a-z0-9-]+$"
-      status_allowed: [active, deprecated]
-      required: [owners]
-      optional: []
-
-rules:
-  include_globs:
-    - ".codex/rules/*.md"
-  frontmatter_exempt: []
-  required:
-    - trigger
-    - rule_id
-    - title
-    - status
-    - owners
-    - created
-  optional:
-    - updated
-    - tags
-    - scope
-  status_allowed: [draft, active, deprecated]
-  rule_id_regex: "^RULE-[0-9A-Z-]+$"
+  runbook:
+    folder: docs/runbooks
+    filename_regex: "^runbook-[a-z0-9-]+\\.md$"
+    id_regex: "^RUN-[a-z0-9-]+$"
+    status_allowed: [draft, active, deprecated]
+    required: [system, summary]
+    optional: []
+    canonical_link_keys: [references, runbooks]

@@ -1,0 +1,235 @@
+version: 1
+legacy_lanes:
+  - source_type: programme
+    target_type: reference
+    identifier:
+      operation: allocate_current_id
+    fields:
+      reference_kind:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: require_disposition
+          source: status
+      summary:
+        - operation: require_disposition
+          source: title
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+  - source_type: epic
+    target_type: epic
+    identifier:
+      operation: allocate_current_id
+    fields:
+      outcome:
+        - operation: require_disposition
+          source: title
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: require_disposition
+          source: status
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+  - source_type: story
+    target_type: story
+    identifier:
+      operation: allocate_current_id
+    fields:
+      acceptance_criteria:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: require_disposition
+          source: status
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      epic:
+        - operation: require_disposition
+          source: id
+      repository:
+        - operation: current_repository
+  - source_type: task
+    target_type: task
+    identifier:
+      operation: allocate_current_id
+    fields:
+      acceptance_criteria:
+        - operation: require_disposition
+          source: title
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: require_disposition
+          source: status
+      task_kind:
+        - operation: require_disposition
+          source: id
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+      story:
+        - operation: require_disposition
+          source: id
+  - source_type: review
+    target_type: review
+    identifier:
+      operation: allocate_current_id
+    fields:
+      decided_at:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      reviewer:
+        - operation: require_disposition
+          source: id
+      status:
+        - operation: require_disposition
+          source: status
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      gate:
+        - operation: require_disposition
+          source: id
+      repository:
+        - operation: current_repository
+      target:
+        - operation: require_disposition
+          source: id
+  - source_type: converter
+    target_type: reference
+    identifier:
+      operation: allocate_current_id
+    fields:
+      reference_kind:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: copy
+          source: status
+      summary:
+        - operation: require_disposition
+          source: title
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+  - source_type: decision
+    target_type: adr
+    identifier:
+      operation: allocate_current_id
+    fields:
+      deciders:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: copy
+          source: status
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+  - source_type: pdr
+    target_type: reference
+    identifier:
+      operation: allocate_current_id
+    fields:
+      reference_kind:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: copy
+          source: status
+      summary:
+        - operation: require_disposition
+          source: title
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+  - source_type: reference
+    target_type: reference
+    identifier:
+      operation: allocate_current_id
+    fields:
+      reference_kind:
+        - operation: require_disposition
+          source: id
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: copy
+          source: status
+      summary:
+        - operation: require_disposition
+          source: title
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
+  - source_type: runbook
+    target_type: runbook
+    identifier:
+      operation: allocate_current_id
+    fields:
+      retired_ids:
+        - operation: append_source_id
+          source: id
+      status:
+        - operation: copy
+          source: status
+      summary:
+        - operation: require_disposition
+          source: title
+      system:
+        - operation: require_disposition
+          source: id
+      title:
+        - operation: copy
+          source: title
+    relationships:
+      repository:
+        - operation: current_repository
