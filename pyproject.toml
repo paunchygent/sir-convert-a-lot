@@ -38,7 +38,7 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
 ]
 tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@2d34dc09a2990f964cce313a12bac6b4732eefb5#subdirectory=packages/repository_governance",
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@94e5d0c6952f4656e3c8b7e44a040472c4ad4f3d#subdirectory=packages/repository_governance",
 ]
 
 [tool.repository-governance]
@@ -150,6 +150,7 @@ format-md-all = "format-md-all"
 check-md-all = "check-md-all"
 # repository-governance:bindings:end
 # repository-governance:auxiliary-bindings:start
+archive-documents = "repository-governance-archive-documents"
 run-hemma = "repository-governance-run-hemma --repo-root ${PDM_PROJECT_ROOT}"
 staleness-audit = "repository-governance-staleness-audit --repo-root ${PDM_PROJECT_ROOT}"
 publish-main = "repository-governance-publish-main --repository-root ${PDM_PROJECT_ROOT}"

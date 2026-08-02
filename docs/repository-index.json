@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "9b0e8355af280b4946bf45e72c79b629be62c916ca4c8099ee9eef6759091dfc",
+  "source_set_digest": "3c4ed97df6430c4e2dc059def1c33ceeec4bbb928904c50aaade9a98f4b425d7",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3133,36 +3133,6 @@
       }
     },
     {
-      "id": "TASK-SIRCON-REP-0001",
-      "type": "task",
-      "title": "Migrate the current governed corpus to the shared contract",
-      "path": "docs/backlog/tasks/task-sircon-rep-0001-migrate-the-current-governed-corpus-to-the-shared-contract.md",
-      "status": "done",
-      "task_kind": "repository",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "readiness_review": {
-        "record": "inline",
-        "status": "approved",
-        "reviewer": "plan-document-reviewer",
-        "decided_at": "2026-08-02T10:51:16+0200",
-        "approval_protocol": "agent-planning:user-closure-gate",
-        "approval_evidence": "User-approved SIR-001 through SIR-004L authority and inline Plan Document Review follow-up approval at f77f5d78."
-      },
-      "closeout_review": {
-        "record": "inline",
-        "status": "approved",
-        "reviewer": "ruthless-reviewer",
-        "decided_at": "2026-08-02T17:30:30+0200",
-        "approval_protocol": "agent-overseer:approved-review-closeout",
-        "approval_evidence": "Final bounded implementation review approved with no blocking findings"
-      }
-    },
-    {
       "id": "TASK-SIRCON-REP-0002",
       "type": "task",
       "title": "Flatten backlog review docs into single-file review artifacts",
@@ -3617,7 +3587,7 @@
       "type": "task",
       "title": "Archive terminal and superseded governed records after cutover",
       "path": "docs/backlog/tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "repository",
       "owners": [
         {
