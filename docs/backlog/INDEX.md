@@ -5,7 +5,7 @@
 ## Counts
 
 - total | epic=9 | story=30 | task=97 | review=1
-- open | epic=6 | story=30 | task=97
+- open | epic=6 | story=30 | task=96
 
 ## Lookup
 
@@ -222,7 +222,6 @@
 - TASK-SIRCON-REP-0015 | [Resolve Hemma STT sidecar live proof backend blockers](tasks/task-sircon-rep-0015-resolve-hemma-stt-sidecar-live-proof-backend-blockers.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0017 | [Restore docx output after pandoc sandbox hardening](tasks/task-sircon-rep-0017-restore-docx-output-after-pandoc-sandbox-hardening.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0019 | [Add English reference-clone lane to Chatterbox Hemma benchmark](tasks/task-sircon-rep-0019-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark.md) | stories=none | depends_on=0 | dependents=0
-- TASK-SIRCON-REP-0020 | [Archive terminal and superseded governed records after cutover](tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md) | stories=none | depends_on=0 | dependents=0
 
 ### proposed
 

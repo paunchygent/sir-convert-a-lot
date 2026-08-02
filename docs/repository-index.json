@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "3c4ed97df6430c4e2dc059def1c33ceeec4bbb928904c50aaade9a98f4b425d7",
+  "source_set_digest": "b207d01432af5b3392e95f0660fd552d7d6246e036d37f91a3da10d28ab6032f",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3587,7 +3587,7 @@
       "type": "task",
       "title": "Archive terminal and superseded governed records after cutover",
       "path": "docs/backlog/tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3605,7 +3605,11 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-reviewer",
+        "decided_at": "2026-08-02T19:32:37+0200",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Exact candidate 34758ae8 approved with no blocking findings."
       }
     },
     {

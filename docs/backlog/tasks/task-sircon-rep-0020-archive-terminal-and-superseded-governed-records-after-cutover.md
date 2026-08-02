@@ -7,7 +7,7 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-02'
-status: in_progress
+status: done
 readiness_review:
   record: inline
   status: approved
@@ -17,7 +17,11 @@ readiness_review:
   approval_evidence: Inline Plan Document Review approved TASK-SIRCON-REP-0020 for readiness.
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-08-02T19:32:37+0200'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: Exact candidate 34758ae8 approved with no blocking findings.
 task_kind: repository
 acceptance_criteria:
 - Every terminal, canceled, deprecated, and superseded document is moved from live
@@ -137,4 +141,15 @@ risk is limited to consumer-local relationship blockers reported by preflight.
 
 ## Closeout
 
-Pending implementation and independent closeout review.
+Exact candidate `34758ae8` moved 389 governed records as canonical 100%
+byte-identical renames, preserved all eight retained-memory files, and passed
+the selected docs/governance proof. Independent ruthless review approved with
+no findings. After the authorized `done` transition is committed, the shared
+command archives this governing task itself.
+
+## Implementation Review
+
+- Decision: `approved`; findings: none.
+- Reviewer: `ruthless-reviewer`; recorded `2026-08-02T19:32:37+0200`.
+- Permitted next step: apply closeout, transition to `done`, commit that exact
+  terminal state, then rerun `archive-documents` for the governing task.
