@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "b207d01432af5b3392e95f0660fd552d7d6246e036d37f91a3da10d28ab6032f",
+  "source_set_digest": "07e789dbdfda11c7dc96bb31b0bf5b8f293b9b31c07d7b79646aa2976fc8d6f2",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3580,36 +3580,6 @@
       "closeout_review": {
         "record": "inline",
         "status": "not_started"
-      }
-    },
-    {
-      "id": "TASK-SIRCON-REP-0020",
-      "type": "task",
-      "title": "Archive terminal and superseded governed records after cutover",
-      "path": "docs/backlog/tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md",
-      "status": "done",
-      "task_kind": "repository",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "readiness_review": {
-        "record": "inline",
-        "status": "approved",
-        "reviewer": "plan-document-reviewer",
-        "decided_at": "2026-08-02T19:05:51+0200",
-        "approval_protocol": "agent-planning:user-closure-gate",
-        "approval_evidence": "Inline Plan Document Review approved TASK-SIRCON-REP-0020 for readiness."
-      },
-      "closeout_review": {
-        "record": "inline",
-        "status": "approved",
-        "reviewer": "ruthless-reviewer",
-        "decided_at": "2026-08-02T19:32:37+0200",
-        "approval_protocol": "agent-overseer:approved-review-closeout",
-        "approval_evidence": "Exact candidate 34758ae8 approved with no blocking findings."
       }
     },
     {
