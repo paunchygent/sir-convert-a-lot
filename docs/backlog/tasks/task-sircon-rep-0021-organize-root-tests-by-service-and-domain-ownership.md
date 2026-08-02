@@ -7,7 +7,7 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-03'
-status: in_progress
+status: done
 readiness_review:
   record: inline
   status: approved
@@ -194,7 +194,7 @@ path-sensitive assertions that may need test-only correction during moves.
 
 ## Closeout
 
-Implementation is complete pending independent closeout review.
+Implementation is complete and independently approved.
 
 - The flat root test corpus now lives under the seven accepted first-level
   behavior directories: `service`, `conversion`, `exam`, `speech`,
