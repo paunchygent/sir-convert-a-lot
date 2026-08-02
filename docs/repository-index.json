@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "e8ee17f2283844f454021c81fb6575de3b4a65f0b1d1881db5ac446dc385f67d",
+  "source_set_digest": "79d83792367ba416053b2b397a1c84061b2c286d79f372b95f48f50864280e8a",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3597,7 +3597,11 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "plan-document-reviewer",
+        "decided_at": "2026-08-03T00:20:55+0200",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User-approved SIR test-topology decisions and inline Plan Document Review approval at 21bbb31a."
       },
       "closeout_review": {
         "record": "inline",

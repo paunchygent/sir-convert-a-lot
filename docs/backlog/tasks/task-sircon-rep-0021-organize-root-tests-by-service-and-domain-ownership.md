@@ -10,7 +10,11 @@ created: '2026-08-03'
 status: proposed
 readiness_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: plan-document-reviewer
+  decided_at: '2026-08-03T00:20:55+0200'
+  approval_protocol: agent-planning:user-closure-gate
+  approval_evidence: User-approved SIR test-topology decisions and inline Plan Document Review approval at 21bbb31a.
 closeout_review:
   record: inline
   status: not_started
@@ -146,6 +150,43 @@ authorized yet.
 
 Residual risk is limited to a small number of test-support imports and
 path-sensitive assertions that may need test-only correction during moves.
+
+## Plan Document Review
+
+- Timestamp: `2026-08-03T00:20:55+0200`.
+- Reviewer: independent `plan-document-reviewer`.
+- Decision: `approved`.
+- Reviewed scope: TASK-SIRCON-REP-0021 at exact committed planning head
+  `21bbb31a508f42cc2185c7eb514308e320b29d92`; ready ST-SKILL-08-07, especially
+  SIR-004F, SIR-004H, its protected boundary, and repository-bounded slice 3;
+  retained Sir quality-topology and derived-scope discovery; completed
+  TASK-SIRCON-REP-0001 and TASK-SIRCON-REP-0020 authority; the current Sir
+  repository-task contract; and the shared ledger, proof-selection, and Scope
+  Derivation Gate contracts.
+- Governing authority: the user's approved seven-directory behavior topology,
+  domain/service-derived checks, Qwen separation, behavior preservation,
+  prohibition on a selector matrix and broad root aggregate gate, and
+  anti-overengineering direction.
+- Findings: none. The seven first-level directories are the smallest topology
+  that covers the accepted behavior ownership and supplies mechanically
+  derivable paths for the next serial quality slice. Equal error-free
+  collection before and after plus one exact representative file from each
+  directory is honest behavior-preserving structural proof; it does not claim
+  broad behavioral-suite equivalence. The ledger, implementation boundary,
+  exclusions, proof, and stop conditions leave no material product, behavior,
+  quality-facts, Qwen, operations, or taxonomy decision for implementation.
+- Permitted next step: the parent may apply the separate `proposed -> ready`
+  transition. Implementation admission remains separate and must stop for
+  parent classification if a module cannot be assigned by primary behavior.
+- Validation not run: no test move, pre- or post-move Pytest collection,
+  representative test file, format, lint, typecheck, root aggregate, Qwen,
+  Docker, Hemma, GPU, or remote command ran. The supplied passing
+  `docs-validate`, `skills-validate`, `handoff-validate`, and `git diff --check`
+  planning evidence was accepted without duplication.
+- Residual risk: test-support imports and path-sensitive expectations may need
+  bounded test-only correction, and an honestly ambiguous module may trigger
+  the existing classification stop. Broad aggregate execution, Qwen, product,
+  quality-facts, and operations changes remain excluded.
 
 ## Closeout
 
