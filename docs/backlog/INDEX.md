@@ -4,8 +4,8 @@
 
 ## Counts
 
-- total | epic=10 | story=62 | task=384 | review=66
-- open | epic=6 | story=30 | task=96
+- total | epic=10 | story=62 | task=385 | review=66
+- open | epic=6 | story=30 | task=97
 
 ## Lookup
 
@@ -181,6 +181,7 @@
 - task | TASK-SIRCON-REP-0017 | [Restore docx output after pandoc sandbox hardening](tasks/task-sircon-rep-0017-restore-docx-output-after-pandoc-sandbox-hardening.md)
 - task | TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md)
 - task | TASK-SIRCON-REP-0019 | [Add English reference-clone lane to Chatterbox Hemma benchmark](tasks/task-sircon-rep-0019-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark.md)
+- task | TASK-SIRCON-REP-0020 | [Archive terminal and superseded governed records after cutover](tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md)
 - task | task-05-enforce-gpu-first-lock-and-benchmark-evidence-for-story-003b | [Enforce GPU-first lock and benchmark evidence for Story 003b](tasks/task-05-enforce-gpu-first-lock-and-benchmark-evidence-for-story-003b.md)
 - task | task-06-define-thin-adapter-contract-and-conformance-harness-for-consumer-integration | [Define thin adapter contract and conformance harness for Story 003c](tasks/task-06-define-thin-adapter-contract-and-conformance-harness-for-story-003c.md)
 - task | task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-consumer-integration | [Establish Sir Convert-a-Lot Hemma deployment readiness and tunnel smoke evidence for Story 003c](tasks/task-07-establish-sir-convert-a-lot-hemma-deployment-readiness-and-tunnel-smoke-evidence-for-story-003c.md)
@@ -675,6 +676,7 @@
 - TASK-SIRCON-REP-0012 | [Finish or retire Task 200 Qwen metadata scaffolds](tasks/task-sircon-rep-0012-finish-or-retire-task-200-qwen-metadata-scaffolds.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0016 | [Bootstrap shared governance package facts and walking skeleton](tasks/task-sircon-rep-0016-bootstrap-shared-governance-package-facts-and-walking-skeleton.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md) | stories=none | depends_on=0 | dependents=0
+- TASK-SIRCON-REP-0020 | [Archive terminal and superseded governed records after cutover](tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md) | stories=none | depends_on=0 | dependents=0
 
 ## Dependency Graph
 
