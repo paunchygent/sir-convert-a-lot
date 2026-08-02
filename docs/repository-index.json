@@ -1,0 +1,5005 @@
+{
+  "schema_version": 1,
+  "repository": "sir-convert-a-lot",
+  "source_set_digest": "b879cd48bf1a7a68361ecdf7d63f0edc2a56da2480b89dab62511bd1be1ada80",
+  "documents": [
+    {
+      "id": "EPIC-SIRCON-01",
+      "type": "epic",
+      "title": "Unified conversion service (Hemma-first, multi-format, cross-repo)",
+      "path": "docs/backlog/epics/epic-sircon-01-unified-conversion-service-hemma-first-multi-format-cross-repo.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "003-unified-conversion-service-epic"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-02",
+      "type": "epic",
+      "title": "Converter suite parity with html_to_pdf_handout_templates",
+      "path": "docs/backlog/epics/epic-sircon-02-converter-suite-parity-with-html-to-pdf-handout-templates.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-04-converter-suite-parity-with-html-to-pdf-handout-templates"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-03",
+      "type": "epic",
+      "title": "Long PDF conversion reliability progress and throughput scaling",
+      "path": "docs/backlog/epics/epic-sircon-03-long-pdf-conversion-reliability-progress-and-throughput-scaling.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-04",
+      "type": "epic",
+      "title": "Hemma sidecar TTS audio artifact delivery",
+      "path": "docs/backlog/epics/epic-sircon-04-hemma-sidecar-tts-audio-artifact-delivery.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-07-hemma-sidecar-tts-audio-artifact-delivery"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-05",
+      "type": "epic",
+      "title": "Qwen3-TTS Swedish language expansion fine-tuning on Hemma and Colab",
+      "path": "docs/backlog/epics/epic-sircon-05-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-08-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-06",
+      "type": "epic",
+      "title": "Gateway cutover and internal access contract for Sir Convert-a-Lot",
+      "path": "docs/backlog/epics/epic-sircon-06-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md",
+      "status": "proposed",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-07",
+      "type": "epic",
+      "title": "Exam artifact conversion and authoring to Exam.net-compatible targets",
+      "path": "docs/backlog/epics/epic-sircon-07-exam-artifact-conversion-and-authoring-to-exam-net-compatible-targets.md",
+      "status": "proposed",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-10-digiexam-to-exam-net-exam-migration-pipeline"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-08",
+      "type": "epic",
+      "title": "Machine-marked answer-key completion for exam conversion",
+      "path": "docs/backlog/epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md",
+      "status": "proposed",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-11-machine-marked-answer-key-completion-for-exam-conversion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "EPIC-SIRCON-09",
+      "type": "epic",
+      "title": "Speech-to-text audio ingestion and transcript delivery",
+      "path": "docs/backlog/epics/epic-sircon-09-speech-to-text-audio-ingestion-and-transcript-delivery.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "epic-12-speech-to-text-audio-ingestion-and-transcript-delivery"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "REV-SIRCON-ST-08-02-CLOSEOUT",
+      "type": "review",
+      "title": "Ruthless review of Story 48 DigiExam overlay and effective IR contract",
+      "path": "docs/backlog/reviews/rev-sircon-st-08-02-closeout-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract.md",
+      "status": "changes_requested",
+      "target": "ST-SIRCON-08-02",
+      "gate": "closeout",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "review-15-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract"
+      ]
+    },
+    {
+      "id": "ST-SIRCON-01-01",
+      "type": "story",
+      "title": "Hemma offloaded PDF-to-Markdown conversion pipeline",
+      "path": "docs/backlog/stories/st-sircon-01-01-hemma-offloaded-pdf-to-markdown-conversion-pipeline.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "002-hemma-offloaded-pdf-to-markdown-conversion-pipeline"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-01-02",
+      "type": "story",
+      "title": "Internal backend integration for HuleEdu and Skriptoteket",
+      "path": "docs/backlog/stories/st-sircon-01-02-internal-backend-integration-for-huleedu-and-skriptoteket.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "003c-huledu-skriptoteket-internal-integration-story"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-01-03",
+      "type": "story",
+      "title": "Consolidate html/pdf/md/docx/xlsx/csv conversion capabilities",
+      "path": "docs/backlog/stories/st-sircon-01-03-consolidate-html-pdf-md-docx-xlsx-csv-conversion-capabilities.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "003d-multi-format-converter-consolidation-story"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-01-04",
+      "type": "story",
+      "title": "Quality, performance, and reliability validation gates",
+      "path": "docs/backlog/stories/st-sircon-01-04-quality-performance-and-reliability-validation-gates.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "003e-quality-performance-and-reliability-validation-story"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-01-05",
+      "type": "story",
+      "title": "Dockerized service hardening with robust persistence",
+      "path": "docs/backlog/stories/st-sircon-01-05-dockerized-service-hardening-with-robust-persistence.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-05-dockerized-service-hardening-with-robust-persistence"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-02-01",
+      "type": "story",
+      "title": "Pandoc/WeasyPrint document converters parity (md<->pdf/docx/txt)",
+      "path": "docs/backlog/stories/st-sircon-02-01-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-02-02",
+      "type": "story",
+      "title": "Auxiliary converters parity (image OCR extract + text-to-speech)",
+      "path": "docs/backlog/stories/st-sircon-02-02-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-02-03",
+      "type": "story",
+      "title": "Template-driven HTML conversions (handout builder parity)",
+      "path": "docs/backlog/stories/st-sircon-02-03-template-driven-html-conversions-handout-builder-parity.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-09-template-driven-html-conversions-handout-builder-parity"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-02-04",
+      "type": "story",
+      "title": "Student feedback export bundles (manifest + md->html->pdf/docx)",
+      "path": "docs/backlog/stories/st-sircon-02-04-student-feedback-export-bundles-manifest-md-html-pdf-docx.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-03-01",
+      "type": "story",
+      "title": "Parallel execution and bottleneck elimination for PDF OCR",
+      "path": "docs/backlog/stories/st-sircon-03-01-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-03-02",
+      "type": "story",
+      "title": "Harden and align PDF OCR path with dirty real-data performance gate",
+      "path": "docs/backlog/stories/st-sircon-03-02-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-04-01",
+      "type": "story",
+      "title": "Hemma sidecar TTS audio artifact delivery",
+      "path": "docs/backlog/stories/st-sircon-04-01-hemma-sidecar-tts-audio-artifact-delivery.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-22-hemma-sidecar-tts-audio-artifact-delivery"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-04-02",
+      "type": "story",
+      "title": "Swedish-capable cloning TTS benchmark matrix on Hemma",
+      "path": "docs/backlog/stories/st-sircon-04-02-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-05-01",
+      "type": "story",
+      "title": "Swedish multi-speaker corpus, preprocessing, and evaluation for Qwen3-TTS",
+      "path": "docs/backlog/stories/st-sircon-05-01-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-24-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-05-02",
+      "type": "story",
+      "title": "Containerized Qwen3-TTS Swedish full-finetune baseline on Hemma and Colab",
+      "path": "docs/backlog/stories/st-sircon-05-02-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-05-03",
+      "type": "story",
+      "title": "Drive Qwen training observability throughput and GPU saturation on Hemma",
+      "path": "docs/backlog/stories/st-sircon-05-03-drive-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-05-04",
+      "type": "story",
+      "title": "Transition to Domain-Centric ML Pipeline Structure",
+      "path": "docs/backlog/stories/st-sircon-05-04-transition-to-domain-centric-ml-pipeline-structure.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-27-transition-to-domain-centric-ml-pipeline-structure"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-05-05",
+      "type": "story",
+      "title": "Counteract Task 101 codec-span text-pad instability and gate the next clean restart",
+      "path": "docs/backlog/stories/st-sircon-05-05-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-05-06",
+      "type": "story",
+      "title": "Recover a stable fresh-start Task 101 bundle-learning recipe through talker-core stabilization",
+      "path": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-06-01",
+      "type": "story",
+      "title": "Sir Convert gateway-fronted public access and internal lane migration",
+      "path": "docs/backlog/stories/st-sircon-06-01-sir-convert-gateway-fronted-public-access-and-internal-lane-migration.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-33-sir-convert-gateway-fronted-public-access-and-internal-lane-migration"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-06-02",
+      "type": "story",
+      "title": "ADR and contract authority for Sir Convert gateway cutover",
+      "path": "docs/backlog/stories/st-sircon-06-02-adr-and-contract-authority-for-sir-convert-gateway-cutover.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-34-adr-and-contract-authority-for-sir-convert-gateway-cutover"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-06-03",
+      "type": "story",
+      "title": "Preserve internal service and local operator Sir Convert lanes",
+      "path": "docs/backlog/stories/st-sircon-06-03-preserve-internal-service-and-local-operator-sir-convert-lanes.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-35-preserve-internal-service-and-local-operator-sir-convert-lanes"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-06-04",
+      "type": "story",
+      "title": "Sir Convert internal auth and metadata hardening before cutover",
+      "path": "docs/backlog/stories/st-sircon-06-04-sir-convert-internal-auth-and-metadata-hardening-before-cutover.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-07-01",
+      "type": "story",
+      "title": "Exam.net artifact authoring bundle for QTI and editable DOCX",
+      "path": "docs/backlog/stories/st-sircon-07-01-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-07",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-07-02",
+      "type": "story",
+      "title": "Service source simplification and active surface truth cleanup before Exam.net runtime",
+      "path": "docs/backlog/stories/st-sircon-07-02-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-07",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-07-03",
+      "type": "story",
+      "title": "SOLID domain coupling audit for exam converter implementation boundaries",
+      "path": "docs/backlog/stories/st-sircon-07-03-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-07",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-08-01",
+      "type": "story",
+      "title": "Structured LLM provider harness for answer-key completion",
+      "path": "docs/backlog/stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-08",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-47-structured-llm-provider-harness-for-answer-key-completion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-08-02",
+      "type": "story",
+      "title": "DigiExam overlay and effective IR contract for answer-key completion",
+      "path": "docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-08",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-08-03",
+      "type": "story",
+      "title": "Skriptoteket teacher review workflow for answer-key completion",
+      "path": "docs/backlog/stories/st-sircon-08-03-skriptoteket-teacher-review-workflow-for-answer-key-completion.md",
+      "status": "proposed",
+      "epic": "EPIC-SIRCON-08",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-49-skriptoteket-teacher-review-workflow-for-answer-key-completion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-08-04",
+      "type": "story",
+      "title": "Service API v2 idempotent replay and correction replay hardening",
+      "path": "docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-08",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
+      },
+      "retired_ids": [
+        "story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-01-01",
+      "type": "task",
+      "title": "Scientific-paper workload evidence harness + Hemma tunnel acceptance report (10/10 corpus)",
+      "path": "docs/backlog/tasks/task-sircon-01-01-01-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-01-02",
+      "type": "task",
+      "title": "Heavier default conversion profile and exam-question ordering normalization",
+      "path": "docs/backlog/tasks/task-sircon-01-01-02-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-01-03",
+      "type": "task",
+      "title": "Docling form cluster ordering source patch with deterministic quality gate and fallback",
+      "path": "docs/backlog/tasks/task-sircon-01-01-03-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-02-01",
+      "type": "task",
+      "title": "Adopt Story 003c thin adapter in HuleEdu and validate demanding scientific PDF workload",
+      "path": "docs/backlog/tasks/task-sircon-01-02-01-adopt-story-003c-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-08-adopt-consumer-integration-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-05-01",
+      "type": "task",
+      "title": "Durable persistence layout retention and recovery for containerized runtime",
+      "path": "docs/backlog/tasks/task-sircon-01-05-01-durable-persistence-layout-retention-and-recovery-for-containerized-runtime.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-23-durable-persistence-layout-retention-and-recovery-for-containerized-runtime"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-05-02",
+      "type": "task",
+      "title": "Container operations runbook and Hemma deployment verification for dockerized service",
+      "path": "docs/backlog/tasks/task-sircon-01-05-02-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-24-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-05-03",
+      "type": "task",
+      "title": "Harden Sir Convert production public edge recovery",
+      "path": "docs/backlog/tasks/task-sircon-01-05-03-harden-sir-convert-production-public-edge-recovery.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-254-harden-sir-convert-production-public-edge-recovery"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-05-04",
+      "type": "task",
+      "title": "Bound Hemma production startup to API revision and GPU readiness",
+      "path": "docs/backlog/tasks/task-sircon-01-05-04-bound-hemma-production-startup-to-api-revision-and-gpu-readiness.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-384-bound-hemma-production-startup-to-api-revision-and-gpu-readiness"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-03-01-01",
+      "type": "task",
+      "title": "Investigate PDF conversion decision logic and GPU CPU performance attribution",
+      "path": "docs/backlog/tasks/task-sircon-03-01-01-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-03-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-03-01-02",
+      "type": "task",
+      "title": "Diagnose and harden PDF page-window unit-of-work head-of-line blocking",
+      "path": "docs/backlog/tasks/task-sircon-03-01-02-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-03-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-03-01-03",
+      "type": "task",
+      "title": "Run throughput benchmark and publish performance tuning report",
+      "path": "docs/backlog/tasks/task-sircon-03-01-03-run-throughput-benchmark-and-publish-performance-tuning-report.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-03-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-74-run-throughput-benchmark-and-publish-performance-tuning-report"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-03-02-01",
+      "type": "task",
+      "title": "Add formula-aware final pass and linked PDF/image artifacts for dirty PDF OCR outputs",
+      "path": "docs/backlog/tasks/task-sircon-03-02-01-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-03-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-03-02-02",
+      "type": "task",
+      "title": "Run chunk-size 8 production baseline tuning proof with warm-up and GPU sampling",
+      "path": "docs/backlog/tasks/task-sircon-03-02-02-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-03-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-03-02-03",
+      "type": "task",
+      "title": "Make source-layer formula evidence authoritative for born-digital PDFs",
+      "path": "docs/backlog/tasks/task-sircon-03-02-03-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-03-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-01-01",
+      "type": "task",
+      "title": "Benchmark Hemma TTS sidecar compatibility and audio formats on R9700",
+      "path": "docs/backlog/tasks/task-sircon-04-01-01-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-01-02",
+      "type": "task",
+      "title": "Promote Chatterbox sidecar to Hemma production candidate and mark experimental sidecars explicitly",
+      "path": "docs/backlog/tasks/task-sircon-04-01-02-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-01",
+      "type": "task",
+      "title": "Benchmark XTTS-v2 as the comparison cloning sidecar on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-01-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-02",
+      "type": "task",
+      "title": "Benchmark MMS Swedish as the direct-pronunciation control on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-02-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-03",
+      "type": "task",
+      "title": "Benchmark F5-TTS Swedish cloning sidecar on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-03-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-04",
+      "type": "task",
+      "title": "Benchmark Chatterbox Multilingual Swedish cloning sidecar on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-04-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-05",
+      "type": "task",
+      "title": "Run Chatterbox multilingual tuning sweep on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-05-run-chatterbox-multilingual-tuning-sweep-on-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-06",
+      "type": "task",
+      "title": "Research eSpeak NG phoneme support for Swedish Chatterbox integration",
+      "path": "docs/backlog/tasks/task-sircon-04-02-06-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-07",
+      "type": "task",
+      "title": "Implement speech-aware Chatterbox stitching and tail cleanup on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-07-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-91-implement-speech-aware-chatterbox-stitching-and-tail-cleanup-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-04-02-08",
+      "type": "task",
+      "title": "Expose F5 tuning controls and exact voice-tag support on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-04-02-08-expose-f5-tuning-controls-and-exact-voice-tag-support-on-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-04-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-95-expose-f5-tuning-controls-and-exact-voice-tag-support-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-01",
+      "type": "task",
+      "title": "Run the optional Colab H100 fallback lane and publish the Swedish Qwen3-TTS comparison",
+      "path": "docs/backlog/tasks/task-sircon-05-01-01-run-the-optional-colab-h100-fallback-lane-and-publish-the-swedish-qwen3-tts-comparison.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-02",
+      "type": "task",
+      "title": "Split Qwen preprocessing into disk-backed row processing and finalization",
+      "path": "docs/backlog/tasks/task-sircon-05-01-02-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-03",
+      "type": "task",
+      "title": "Add ASR-backed transcript relabeling with provenance for Qwen corpus candidates",
+      "path": "docs/backlog/tasks/task-sircon-05-01-03-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-04",
+      "type": "task",
+      "title": "Expand RixVox staging and run a sustained detached row-processing window for the bounded Hemma pilot",
+      "path": "docs/backlog/tasks/task-sircon-05-01-04-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-05",
+      "type": "task",
+      "title": "Stream RixVox source selection and make preflight status truthful",
+      "path": "docs/backlog/tasks/task-sircon-05-01-05-stream-rixvox-source-selection-and-make-preflight-status-truthful.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-119-stream-rixvox-source-selection-and-make-preflight-status-truthful"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-06",
+      "type": "task",
+      "title": "Add portable Colab slice-based Qwen preprocessing lane",
+      "path": "docs/backlog/tasks/task-sircon-05-01-06-add-portable-colab-slice-based-qwen-preprocessing-lane.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-121-add-portable-colab-slice-based-qwen-preprocessing-lane"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-07",
+      "type": "task",
+      "title": "Run the first live Colab GPU portable-slice Qwen row-processing proof",
+      "path": "docs/backlog/tasks/task-sircon-05-01-07-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-01-08",
+      "type": "task",
+      "title": "Add a Hemma Drive-ingestion lane for Colab Qwen preprocessing run roots",
+      "path": "docs/backlog/tasks/task-sircon-05-01-08-add-a-hemma-drive-ingestion-lane-for-colab-qwen-preprocessing-run-roots.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-176-add-a-hemma-drive-ingestion-lane-for-colab-qwen-preprocessing-run-roots"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-02-01",
+      "type": "task",
+      "title": "Profile the Qwen finetuning dataloader and decide whether to precompute ref mels",
+      "path": "docs/backlog/tasks/task-sircon-05-02-01-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-02-02",
+      "type": "task",
+      "title": "Activate the Colab H100 Qwen training lane with a CUDA Dockerfile",
+      "path": "docs/backlog/tasks/task-sircon-05-02-02-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-02-03",
+      "type": "task",
+      "title": "repair task101 container output-root bind fallback for hemma",
+      "path": "docs/backlog/tasks/task-sircon-05-02-03-repair-task101-container-output-root-bind-fallback-for-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-151-repair-task101-container-output-root-bind-fallback-for-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-02-04",
+      "type": "task",
+      "title": "Enable Triton flash attention for the Qwen Hemma sidecar benchmark",
+      "path": "docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-01",
+      "type": "task",
+      "title": "Add ref-mel caching and a promotion decision for precomputed Qwen reference mels",
+      "path": "docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-qwen-reference-mels.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-161-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-task-101-qwen-reference-mels"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-02",
+      "type": "task",
+      "title": "Define saturation-oriented Qwen launch profiles and acceptance gates on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and-acceptance-gates-on-hemma.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-03",
+      "type": "task",
+      "title": "Persist precomputed Qwen reference mels in the pilot bundle and training manifest contract",
+      "path": "docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-04",
+      "type": "task",
+      "title": "Triage and remediate MIOpen workspace warnings in the Task 101 ROCm Qwen training lane",
+      "path": "docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-05",
+      "type": "task",
+      "title": "Eliminate Task 101 per-step host synchronization overhead and add finite-loss guards",
+      "path": "docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-06",
+      "type": "task",
+      "title": "Increase Task 101 per-launch GPU work via bucketed batching and vectorized codebook fusion",
+      "path": "docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-07",
+      "type": "task",
+      "title": "Persist bundle-level precomputed ref-mel or speaker-embedding inputs for Task 101",
+      "path": "docs/backlog/tasks/task-sircon-05-03-07-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-08",
+      "type": "task",
+      "title": "Rebuild the Task 101 bundle on the T173 contract and remove legacy-bundle fallbacks after stable throughput proof",
+      "path": "docs/backlog/tasks/task-sircon-05-03-08-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-09",
+      "type": "task",
+      "title": "Close the remaining Task 101 throughput truth gaps from the review alignment",
+      "path": "docs/backlog/tasks/task-sircon-05-03-09-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-10",
+      "type": "task",
+      "title": "Bound the rebuilt-bundle Task 101 non-finite loss window before retrying saturation proof",
+      "path": "docs/backlog/tasks/task-sircon-05-03-10-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-11",
+      "type": "task",
+      "title": "Add real in-training held-out eval loop to Qwen training",
+      "path": "docs/backlog/tasks/task-sircon-05-03-11-add-real-in-training-held-out-eval-loop-to-qwen-training.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-181-add-real-in-training-held-out-eval-loop-to-task-101-qwen-training"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-12",
+      "type": "task",
+      "title": "Add standalone eval and scheduled train-stop-resume control for Qwen training",
+      "path": "docs/backlog/tasks/task-sircon-05-03-12-add-standalone-eval-and-scheduled-train-stop-resume-control-for-qwen-training.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-13",
+      "type": "task",
+      "title": "Restore the upstream Qwen fine-tune graph and add clip-boundary forensics",
+      "path": "docs/backlog/tasks/task-sircon-05-03-13-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-03-14",
+      "type": "task",
+      "title": "Debug the Task 101 pre-clip text-embedding gradient failure at step 1405",
+      "path": "docs/backlog/tasks/task-sircon-05-03-14-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-04-01",
+      "type": "task",
+      "title": "Migrate Qwen Preprocessing Logic to Domain-Centric Modules",
+      "path": "docs/backlog/tasks/task-sircon-05-04-01-migrate-qwen-preprocessing-logic-to-domain-centric-modules.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-167-migrate-qwen-preprocessing-logic-to-domain-centric-modules"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-04-02",
+      "type": "task",
+      "title": "Migrate Qwen Training and Detached Orchestration to Domain-Centric Modules",
+      "path": "docs/backlog/tasks/task-sircon-05-04-02-migrate-qwen-training-and-detached-orchestration-to-domain-centric-modules.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-168-migrate-qwen-training-and-detached-orchestration-to-domain-centric-modules"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-04-03",
+      "type": "task",
+      "title": "Rebuild ML CLI Entrypoints as Thin Domain-Centric Wrappers",
+      "path": "docs/backlog/tasks/task-sircon-05-04-03-rebuild-ml-cli-entrypoints-as-thin-domain-centric-wrappers.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-169-rebuild-ml-cli-entrypoints-as-thin-domain-centric-wrappers"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-04-04",
+      "type": "task",
+      "title": "Align Dockerfiles Runbooks and Backlog to Domain-Centric Structure",
+      "path": "docs/backlog/tasks/task-sircon-05-04-04-align-dockerfiles-runbooks-and-backlog-to-domain-centric-structure.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-170-align-dockerfiles-runbooks-and-backlog-to-domain-centric-structure"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-05-01",
+      "type": "task",
+      "title": "Launch the first clean base restart after the bounded stability gate",
+      "path": "docs/backlog/tasks/task-sircon-05-05-01-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-05-02",
+      "type": "task",
+      "title": "Restore Story 29 scratch headroom and establish cold-artifact demotion policy on Hemma",
+      "path": "docs/backlog/tasks/task-sircon-05-05-02-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-05-03",
+      "type": "task",
+      "title": "Establish idle-safe recurring Hemma scratch maintenance",
+      "path": "docs/backlog/tasks/task-sircon-05-05-03-establish-idle-safe-recurring-hemma-scratch-maintenance.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-205-establish-idle-safe-recurring-hemma-scratch-maintenance"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-05-04",
+      "type": "task",
+      "title": "Prove the true Task 101 text-token span contract and set the final post-fix restart rule",
+      "path": "docs/backlog/tasks/task-sircon-05-05-04-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-06-01",
+      "type": "task",
+      "title": "Run the first fresh-start governed Hemma proof for the talker-core stabilization lane",
+      "path": "docs/backlog/tasks/task-sircon-05-06-01-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-06-02",
+      "type": "task",
+      "title": "Trace and remediate the first verified finite-to-non-finite divergence before resuming Story 31 stabilizer candidates",
+      "path": "docs/backlog/tasks/task-sircon-05-06-02-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-05-06-03",
+      "type": "task",
+      "title": "Split the post-T245 fp32-scaled layer15 output result from the final emitted tensor before any new stabilizer family",
+      "path": "docs/backlog/tasks/task-sircon-05-06-03-split-the-post-t245-fp32-scaled-layer15-output-result-from-the-final-emitted-tensor-before-any-new-stabilizer-family.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-05-06",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-246-split-the-post-t245-fp32-scaled-layer15-output-result-from-the-final-emitted-tensor-before-any-new-stabilizer-family"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-06-01-01",
+      "type": "task",
+      "title": "Restrict convert.hule.education public edge after gateway cutover",
+      "path": "docs/backlog/tasks/task-sircon-06-01-01-restrict-convert-hule-education-public-edge-after-gateway-cutover.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-262-restrict-convert-hule-education-public-edge-after-gateway-cutover"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-06-01-02",
+      "type": "task",
+      "title": "Run Sir Convert gateway cutover proof and security review",
+      "path": "docs/backlog/tasks/task-sircon-06-01-02-run-sir-convert-gateway-cutover-proof-and-security-review.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-263-run-sir-convert-gateway-cutover-proof-and-security-review"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-06-01-03",
+      "type": "task",
+      "title": "Cut over HuleEdu and Skriptoteket Sir Convert consumers",
+      "path": "docs/backlog/tasks/task-sircon-06-01-03-cut-over-huleedu-and-skriptoteket-sir-convert-consumers.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-264-cut-over-huleedu-and-skriptoteket-sir-convert-consumers"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-06-02-01",
+      "type": "task",
+      "title": "Publish ADR-0009 for Gateway-fronted Sir Convert access",
+      "path": "docs/backlog/tasks/task-sircon-06-02-01-publish-adr-0009-for-gateway-fronted-sir-convert-access.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-257-publish-adr-0009-for-gateway-fronted-sir-convert-access"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-06-03-01",
+      "type": "task",
+      "title": "Preserve local operator tunnel lane for GPU-backed conversions",
+      "path": "docs/backlog/tasks/task-sircon-06-03-01-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-261-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-06-04-01",
+      "type": "task",
+      "title": "Remediate unauthenticated Sir Convert API failures and prod metadata exposure",
+      "path": "docs/backlog/tasks/task-sircon-06-04-01-remediate-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-258-fix-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-07-02-01",
+      "type": "task",
+      "title": "Generate and validate compact service onboarding map",
+      "path": "docs/backlog/tasks/task-sircon-07-02-01-generate-and-validate-compact-service-onboarding-map.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-07-02",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-290-generate-and-validate-compact-service-onboarding-map"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-07-03-01",
+      "type": "task",
+      "title": "Extract target readiness policy decisions from artifact availability and target string branches",
+      "path": "docs/backlog/tasks/task-sircon-07-03-01-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-07-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-316-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-07-03-02",
+      "type": "task",
+      "title": "Unify answer-key eligibility and source-evidence mapping decisions across manifests and adapters",
+      "path": "docs/backlog/tasks/task-sircon-07-03-02-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-07-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-317-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-01-01",
+      "type": "task",
+      "title": "Benchmark local model shortlist for answer-key completion",
+      "path": "docs/backlog/tasks/task-sircon-08-01-01-benchmark-local-model-shortlist-for-answer-key-completion.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-300-benchmark-local-llama-cpp-model-shortlist-for-answer-key-completion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-01-02",
+      "type": "task",
+      "title": "Live-validate Granite answer-key completion on versioned DigiExam DXE corpus",
+      "path": "docs/backlog/tasks/task-sircon-08-01-02-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-01-03",
+      "type": "task",
+      "title": "Add validation-only force-eval mode for source-keyed answer-key live validation",
+      "path": "docs/backlog/tasks/task-sircon-08-01-03-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-01-04",
+      "type": "task",
+      "title": "Run service-backed auth-public-edge mirror validation for answer-key completion",
+      "path": "docs/backlog/tasks/task-sircon-08-01-04-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-01-05",
+      "type": "task",
+      "title": "Add OpenAI Responses provider and hot-swappable operator routing for answer-key completion",
+      "path": "docs/backlog/tasks/task-sircon-08-01-05-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-01-06",
+      "type": "task",
+      "title": "Run OpenAI mini/nano answer-key evaluation gate before provider promotion",
+      "path": "docs/backlog/tasks/task-sircon-08-01-06-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-03-01",
+      "type": "task",
+      "title": "Publish cross-repo Skriptoteket and HuleEdu answer-key completion handoff",
+      "path": "docs/backlog/tasks/task-sircon-08-03-01-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-08-03-02",
+      "type": "task",
+      "title": "Implement matching-capable source-state producer for unified corrections",
+      "path": "docs/backlog/tasks/task-sircon-08-03-02-implement-matching-capable-source-state-producer-for-unified-corrections.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-03",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-332-implement-matching-capable-source-state-producer-for-unified-corrections"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0001",
+      "type": "task",
+      "title": "Migrate the current governed corpus to the shared contract",
+      "path": "docs/backlog/tasks/task-sircon-rep-0001-migrate-the-current-governed-corpus-to-the-shared-contract.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "approved",
+        "reviewer": "plan-document-reviewer",
+        "decided_at": "2026-08-02T10:51:16+0200",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User-approved SIR-001 through SIR-004L authority and inline Plan Document Review follow-up approval at f77f5d78."
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0002",
+      "type": "task",
+      "title": "Flatten backlog review docs into single-file review artifacts",
+      "path": "docs/backlog/tasks/task-sircon-rep-0002-flatten-backlog-review-docs-into-single-file-review-artifacts.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-120-flatten-backlog-review-docs-into-single-file-review-artifacts"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0003",
+      "type": "task",
+      "title": "Add resumable row-processing for Qwen preprocessing runs",
+      "path": "docs/backlog/tasks/task-sircon-rep-0003-add-resumable-row-processing-for-qwen-preprocessing-runs.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-123-add-resumable-row-processing-for-qwen-preprocessing-runs"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0004",
+      "type": "task",
+      "title": "Refresh existing Colab repo checkout before portable bundle lookup",
+      "path": "docs/backlog/tasks/task-sircon-rep-0004-refresh-existing-colab-repo-checkout-before-portable-bundle-lookup.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-130-refresh-existing-colab-repo-checkout-before-portable-bundle-lookup"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0005",
+      "type": "task",
+      "title": "Freeze canonical qwen pilot dataset and enforce conflict exclusions in shard allocation",
+      "path": "docs/backlog/tasks/task-sircon-rep-0005-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0006",
+      "type": "task",
+      "title": "Repair the Hemma HWE 6.17 package state in an idle window with DKMS evidence and stop rules",
+      "path": "docs/backlog/tasks/task-sircon-rep-0006-repair-the-hemma-hwe-6-17-package-state-in-an-idle-window-with-dkms-evidence-and-stop-rules.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-177-repair-the-hemma-hwe-6-17-package-state-in-an-idle-window-with-dkms-evidence-and-stop-rules"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0007",
+      "type": "task",
+      "title": "Refactor Qwen training metadata module into bounded control-plane modules without compatibility shims",
+      "path": "docs/backlog/tasks/task-sircon-rep-0007-refactor-qwen-training-metadata-module-into-bounded-control-plane-modules-without-compatibility-shims.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-200-refactor-qwen-training-metadata-module-into-bounded-control-plane-modules-without-compatibility-shims"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0008",
+      "type": "task",
+      "title": "Repair Exam.net DOCX paragraph fidelity in docx-to-markdown v2 route",
+      "path": "docs/backlog/tasks/task-sircon-rep-0008-repair-exam-net-docx-paragraph-fidelity-in-docx-to-markdown-v2-route.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-238-repair-exam-net-docx-paragraph-fidelity-in-docx-to-markdown-v2-route"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0009",
+      "type": "task",
+      "title": "Add a CPU-only local Docker dev profile for MacBook service debugging",
+      "path": "docs/backlog/tasks/task-sircon-rep-0009-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0010",
+      "type": "task",
+      "title": "Add auth-aware public-edge access evidence for Sir Convert cutover",
+      "path": "docs/backlog/tasks/task-sircon-rep-0010-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-266-add-auth-aware-public-edge-access-evidence-for-sir-convert-cutover"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0011",
+      "type": "task",
+      "title": "Demote experiment lanes behind an active command matrix",
+      "path": "docs/backlog/tasks/task-sircon-rep-0011-demote-experiment-lanes-behind-an-active-command-matrix.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-288-demote-experiment-lanes-behind-an-active-command-matrix"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0012",
+      "type": "task",
+      "title": "Finish or retire Task 200 Qwen metadata scaffolds",
+      "path": "docs/backlog/tasks/task-sircon-rep-0012-finish-or-retire-task-200-qwen-metadata-scaffolds.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-289-finish-or-retire-task-200-qwen-metadata-scaffolds"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0013",
+      "type": "task",
+      "title": "Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker",
+      "path": "docs/backlog/tasks/task-sircon-rep-0013-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0014",
+      "type": "task",
+      "title": "Harden batch CLI live progress and idempotent replay visibility for long conversions",
+      "path": "docs/backlog/tasks/task-sircon-rep-0014-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0015",
+      "type": "task",
+      "title": "Resolve Hemma STT sidecar live proof backend blockers",
+      "path": "docs/backlog/tasks/task-sircon-rep-0015-resolve-hemma-stt-sidecar-live-proof-backend-blockers.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-353-resolve-hemma-stt-sidecar-live-proof-backend-blockers"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0016",
+      "type": "task",
+      "title": "Bootstrap shared governance package facts and walking skeleton",
+      "path": "docs/backlog/tasks/task-sircon-rep-0016-bootstrap-shared-governance-package-facts-and-walking-skeleton.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-385-bootstrap-shared-governance-package-facts-and-walking-skeleton"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0017",
+      "type": "task",
+      "title": "Restore docx output after pandoc sandbox hardening",
+      "path": "docs/backlog/tasks/task-sircon-rep-0017-restore-docx-output-after-pandoc-sandbox-hardening.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-62-fix-docx-output-regression-after-pandoc-sandbox-hardening"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0018",
+      "type": "task",
+      "title": "Extract YouTube reference audio for Chatterbox pipeline",
+      "path": "docs/backlog/tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-94-extract-youtube-reference-audio-for-chatterbox-pipeline"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0019",
+      "type": "task",
+      "title": "Add English reference-clone lane to Chatterbox Hemma benchmark",
+      "path": "docs/backlog/tasks/task-sircon-rep-0019-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "task-96-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark"
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ADR-SIRCON-0001",
+      "type": "adr",
+      "title": "PDF-to-MD Service v1 Contract and Phase 0 Decisions",
+      "path": "docs/decisions/adr-sircon-0001-pdf-to-md-service-v1-contract-and-phase-0-decisions.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0001"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0002",
+      "type": "adr",
+      "title": "V2 Async Push Delivery with SSE Webhooks and Polling Fallback",
+      "path": "docs/decisions/adr-sircon-0002-v2-async-push-delivery-with-sse-webhooks-and-polling-fallback.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0003"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0003",
+      "type": "adr",
+      "title": "V2 PDF Layout Presets, Preview Rendition, and DOCX to PDF",
+      "path": "docs/decisions/adr-sircon-0003-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0004"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0004",
+      "type": "adr",
+      "title": "V2 Long-Job Progress, Checkpoints, Partials, Cancel-with-Save, Resume, and Retention",
+      "path": "docs/decisions/adr-sircon-0004-v2-long-job-progress-checkpoints-partials-cancel-with-save-resume-and-retention.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0005"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0005",
+      "type": "adr",
+      "title": "Hemma Sidecar TTS Architecture and Non-PDF GPU Governance",
+      "path": "docs/decisions/adr-sircon-0005-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0006"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0006",
+      "type": "adr",
+      "title": "Reusable Multi-Backend TTS Sidecar Capability Contract",
+      "path": "docs/decisions/adr-sircon-0006-reusable-multi-backend-tts-sidecar-capability-contract.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0007"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0007",
+      "type": "adr",
+      "title": "Curated App-Owned PDF Exports Stay Out of Sir Convert V2",
+      "path": "docs/decisions/adr-sircon-0007-curated-app-owned-pdf-exports-stay-out-of-sir-convert-v2.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0008"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0008",
+      "type": "adr",
+      "title": "Gateway-Fronted Sir Convert Public Access and Internal Service Boundary",
+      "path": "docs/decisions/adr-sircon-0008-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md",
+      "status": "proposed",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0009"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0009",
+      "type": "adr",
+      "title": "Hot-swappable Structured Answer-key Provider Routing",
+      "path": "docs/decisions/adr-sircon-0009-hot-swappable-structured-answer-key-provider-routing.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0010"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0010",
+      "type": "adr",
+      "title": "Source-neutral Exam Authoring Correction Apply Contract",
+      "path": "docs/decisions/adr-sircon-0010-source-neutral-exam-authoring-correction-apply-contract.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0011"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0011",
+      "type": "adr",
+      "title": "Service API v2 Current-State Authority and Extension Boundary",
+      "path": "docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0012"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0012",
+      "type": "adr",
+      "title": "Speech-to-Text Sidecar and Audio Ingestion Governance",
+      "path": "docs/decisions/adr-sircon-0012-speech-to-text-sidecar-and-audio-ingestion-governance.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0013"
+      ]
+    },
+    {
+      "id": "ADR-SIRCON-0013",
+      "type": "adr",
+      "title": "Cloudflare R2 job artifact storage boundary",
+      "path": "docs/decisions/adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      },
+      "retired_ids": [
+        "ADR-0014"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-DECISIONS-qwen3-tts-swedish-corpus-curation-policy",
+      "type": "reference",
+      "title": "Qwen3-TTS Swedish Corpus Curation Policy",
+      "path": "docs/reference/ref-sircon-decisions-qwen3-tts-swedish-corpus-curation-policy-qwen3-tts-swedish-corpus-curation-policy.md",
+      "status": "active",
+      "reference_kind": "decisions",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen3-tts-swedish-corpus-curation-policy"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-audio-transcription-service-api-artifact-contract",
+      "type": "reference",
+      "title": "Audio Transcription Service API Artifact Contract",
+      "path": "docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract-audio-transcription-service-api-artifact-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-audio-transcription-service-api-artifact-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-consumer-integration-handoff",
+      "type": "reference",
+      "title": "Consumer Integration Handoff",
+      "path": "docs/reference/ref-sircon-general-consumer-integration-handoff-consumer-integration-handoff.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-consumer-integration-handoff"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-digiexam-intermediate-exam-representation-contract",
+      "type": "reference",
+      "title": "DigiExam Intermediate Exam Representation Contract",
+      "path": "docs/reference/ref-sircon-general-digiexam-intermediate-exam-representation-contract-digiexam-intermediate-exam-representation-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-digiexam-intermediate-exam-representation-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-digiexam-machine-marked-answer-key-completion-architecture",
+      "type": "reference",
+      "title": "DigiExam Machine-marked Answer-key Completion Architecture",
+      "path": "docs/reference/ref-sircon-general-digiexam-machine-marked-answer-key-completion-architecture-digiexam-machine-marked-answer-key-completion-architecture.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-digiexam-machine-marked-answer-key-completion-architecture"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-digiexam-migration-service-api-artifact-contract",
+      "type": "reference",
+      "title": "DigiExam Migration Service API Artifact Contract",
+      "path": "docs/reference/ref-sircon-general-digiexam-migration-service-api-artifact-contract-digiexam-migration-service-api-artifact-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-digiexam-migration-service-api-artifact-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-docx-template-catalog-contract-v2",
+      "type": "reference",
+      "title": "DOCX Template Catalog Contract v2",
+      "path": "docs/reference/ref-sircon-general-docx-template-catalog-contract-v2-docx-template-catalog-contract-v2.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-docx-template-catalog-contract-v2"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-downstream-integration-contract-v2",
+      "type": "reference",
+      "title": "Downstream Integration Contract v2",
+      "path": "docs/reference/ref-sircon-general-downstream-integration-contract-v2-downstream-integration-contract-v2.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-downstream-integration-contract-v2"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-exam-authoring-corrections-apply-contract",
+      "type": "reference",
+      "title": "Exam Authoring Corrections Apply Contract",
+      "path": "docs/reference/ref-sircon-general-exam-authoring-corrections-apply-contract-exam-authoring-corrections-apply-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-exam-authoring-corrections-apply-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-exam-net-artifact-authoring-service-api-artifact-contract",
+      "type": "reference",
+      "title": "Exam.net Artifact Authoring Service API Artifact Contract",
+      "path": "docs/reference/ref-sircon-general-exam-net-artifact-authoring-service-api-artifact-contract-exam-net-artifact-authoring-service-api-artifact-contract.md",
+      "status": "draft",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-examnet-artifact-authoring-service-api-artifact-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-exam-net-pdf-to-exam-swedish-renderer-profile",
+      "type": "reference",
+      "title": "Exam.net PDF-to-Exam Swedish Renderer Profile",
+      "path": "docs/reference/ref-sircon-general-exam-net-pdf-to-exam-swedish-renderer-profile-exam-net-pdf-to-exam-swedish-renderer-profile.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-examnet-pdf-to-exam-swedish-renderer-profile"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-exam-net-qti-import-contract-and-validation-strategy",
+      "type": "reference",
+      "title": "Exam.net QTI Import Contract And Validation Strategy",
+      "path": "docs/reference/ref-sircon-general-exam-net-qti-import-contract-and-validation-strategy-exam-net-qti-import-contract-and-validation-strategy.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-examnet-qti-import-contract-and-validation-strategy"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-examauthoringir-v1-contract",
+      "type": "reference",
+      "title": "ExamAuthoringIR v1 Contract",
+      "path": "docs/reference/ref-sircon-general-examauthoringir-v1-contract-examauthoringir-v1-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-exam-authoring-ir-v1-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-internal-adapter-contract-v2",
+      "type": "reference",
+      "title": "Internal Adapter Contract v2",
+      "path": "docs/reference/ref-sircon-general-internal-adapter-contract-v2-internal-adapter-contract-v2.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-internal-adapter-contract-v2"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-multi-format-conversion-service-api-v2-async-push-contract",
+      "type": "reference",
+      "title": "Multi-format Conversion Service API v2 Async Push Contract",
+      "path": "docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-async-push-contract-multi-format-conversion-service-api-v2-async-push-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-multi-format-conversion-service-api-v2-async-push"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-multi-format-conversion-service-api-v2-errors",
+      "type": "reference",
+      "title": "Multi-format Conversion Service API v2 Errors",
+      "path": "docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-errors-multi-format-conversion-service-api-v2-errors.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-multi-format-conversion-service-api-v2-errors"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-multi-format-conversion-service-api-v2",
+      "type": "reference",
+      "title": "Multi-format Conversion Service API v2",
+      "path": "docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-multi-format-conversion-service-api-v2"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-pdf-to-markdown-service-api-v1",
+      "type": "reference",
+      "title": "PDF to Markdown Service API v1",
+      "path": "docs/reference/ref-sircon-general-pdf-to-markdown-service-api-v1-pdf-to-markdown-service-api-v1.md",
+      "status": "draft",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-pdf-to-md-service-api-v1"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-qwen3-tts-swedish-finetuning-guide-for-general-language-support",
+      "type": "reference",
+      "title": "Qwen3-TTS Swedish Finetuning Guide for General Language Support",
+      "path": "docs/reference/ref-sircon-general-qwen3-tts-swedish-finetuning-guide-for-general-language-support-qwen3-tts-swedish-finetuning-guide-for-general-language-support.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen3-tts-swedish-finetuning-guide"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-qwen3-tts-swedish-preprocessing-and-manifest-specification",
+      "type": "reference",
+      "title": "Qwen3-TTS Swedish Preprocessing and Manifest Specification",
+      "path": "docs/reference/ref-sircon-general-qwen3-tts-swedish-preprocessing-and-manifest-specification-qwen3-tts-swedish-preprocessing-and-manifest-specification.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen3-tts-swedish-preprocessing-and-manifest-spec"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-service-api-v1-v2-compatibility-policy",
+      "type": "reference",
+      "title": "Service API v1/v2 Compatibility Policy",
+      "path": "docs/reference/ref-sircon-general-service-api-v1-v2-compatibility-policy-service-api-v1-v2-compatibility-policy.md",
+      "status": "draft",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-service-api-v1-v2-compatibility-policy"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-sir-convert-a-lot-cli-and-service-usage",
+      "type": "reference",
+      "title": "Sir Convert-a-Lot CLI and Service Usage",
+      "path": "docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "CONV-sir-convert-a-lot"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-sir-convert-internalidentitycontextv1-authorization-profile",
+      "type": "reference",
+      "title": "Sir Convert InternalIdentityContextV1 Authorization Profile",
+      "path": "docs/reference/ref-sircon-general-sir-convert-internalidentitycontextv1-authorization-profile-sir-convert-internalidentitycontextv1-authorization-profile.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-sir-convert-internalidentitycontextv1-authorization-profile"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-story-58-live-proof-operator-manifest-contract",
+      "type": "reference",
+      "title": "Story 58 Live Proof Operator Manifest Contract",
+      "path": "docs/reference/ref-sircon-general-story-58-live-proof-operator-manifest-contract-story-58-live-proof-operator-manifest-contract.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-story-58-live-proof-operator-manifest-contract"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-stt-proof-lanes-and-admission-operations",
+      "type": "reference",
+      "title": "STT Proof Lanes and Admission Operations",
+      "path": "docs/reference/ref-sircon-general-stt-proof-lanes-and-admission-operations-stt-proof-lanes-and-admission-operations.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-stt-proof-lanes-and-admission-operations"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-cloudflare-r2-job-artifact-storage-migration-pre-runbook",
+      "type": "reference",
+      "title": "Cloudflare R2 job artifact storage migration pre-runbook",
+      "path": "docs/reference/ref-sircon-plan-cloudflare-r2-job-artifact-storage-migration-pre-runbook-cloudflare-r2-job-artifact-storage-migration-pre-runbook.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-cloudflare-r2-job-artifact-storage-migration-pre-runbook"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-hemma-sidecar-tts-md-to-wav-contract-outline",
+      "type": "reference",
+      "title": "Hemma Sidecar TTS md to wav Contract Outline",
+      "path": "docs/reference/ref-sircon-plan-hemma-sidecar-tts-md-to-wav-contract-outline-hemma-sidecar-tts-md-to-wav-contract-outline.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-hemma-sidecar-tts-md-to-wav-contract-outline"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-local-model-answer-key-completion-runtime-and-benchmark-plan",
+      "type": "reference",
+      "title": "Local Model Answer-key Completion Runtime And Benchmark Plan",
+      "path": "docs/reference/ref-sircon-plan-local-model-answer-key-completion-runtime-and-benchmark-plan-local-model-answer-key-completion-runtime-and-benchmark-plan.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-machine-marked-answer-key-completion-implementation-roadmap",
+      "type": "reference",
+      "title": "Machine-marked Answer-key Completion Implementation Roadmap",
+      "path": "docs/reference/ref-sircon-plan-machine-marked-answer-key-completion-implementation-roadmap-machine-marked-answer-key-completion-implementation-roadmap.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-machine-marked-answer-key-completion-implementation-roadmap"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-qwen3-tts-colab-portable-slice-preprocessing-reference",
+      "type": "reference",
+      "title": "Qwen3-TTS Colab Portable Slice Preprocessing Reference",
+      "path": "docs/reference/ref-sircon-plan-qwen3-tts-colab-portable-slice-preprocessing-reference-qwen3-tts-colab-portable-slice-preprocessing-reference.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen3-tts-colab-portable-slice-preprocessing"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-repository-roadmap-and-future-plans",
+      "type": "reference",
+      "title": "Repository Roadmap and Future Plans",
+      "path": "docs/reference/ref-sircon-plan-repository-roadmap-and-future-plans-repository-roadmap-and-future-plans.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-repository-roadmap-and-future-plans"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PLAN-sir-convert-a-lot-platform-foundation",
+      "type": "reference",
+      "title": "Sir Convert-a-Lot platform foundation",
+      "path": "docs/reference/ref-sircon-plan-sir-convert-a-lot-platform-foundation-sir-convert-a-lot-platform-foundation.md",
+      "status": "active",
+      "reference_kind": "plan",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "001-sir-convert-a-lot-platform-foundation-programme"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-PRD-sir-convert-a-lot-product-description-v1-0",
+      "type": "reference",
+      "title": "Sir Convert-a-Lot Product Description v1.0",
+      "path": "docs/reference/ref-sircon-prd-sir-convert-a-lot-product-description-v1-0-sir-convert-a-lot-product-description-v1-0.md",
+      "status": "draft",
+      "reference_kind": "prd",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "PDR-sir-convert-a-lot-v1.0"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-bug-report-docling-form-extraction-ordering-regression-on-exam-pdf",
+      "type": "reference",
+      "title": "Bug report: Docling form extraction ordering regression on exam PDF",
+      "path": "docs/reference/ref-sircon-research-bug-report-docling-form-extraction-ordering-regression-on-exam-pdf-bug-report-docling-form-extraction-ordering-regression-on-exam-pdf.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-docling-form-ordering-exam-pdf-2026-02-16"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-digiexam-exam-artifact-item-type-evidence",
+      "type": "reference",
+      "title": "DigiExam Exam Artifact Item Type Evidence",
+      "path": "docs/reference/ref-sircon-research-digiexam-exam-artifact-item-type-evidence-digiexam-exam-artifact-item-type-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-digiexam-exam-artifact-item-type-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-digiexam-jspdf-export-shape-and-exam-net-migration-research",
+      "type": "reference",
+      "title": "DigiExam jsPDF Export Shape And Exam.net Migration Research",
+      "path": "docs/reference/ref-sircon-research-digiexam-jspdf-export-shape-and-exam-net-migration-research-digiexam-jspdf-export-shape-and-exam-net-migration-research.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-digiexam-jspdf-export-shape-and-examnet-migration-research"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-espeak-ng-swedish-phoneme-integration-research-for-chatterbox",
+      "type": "reference",
+      "title": "eSpeak NG Swedish Phoneme Integration Research for Chatterbox",
+      "path": "docs/reference/ref-sircon-research-espeak-ng-swedish-phoneme-integration-research-for-chatterbox-espeak-ng-swedish-phoneme-integration-research-for-chatterbox.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-espeak-ng-swedish-phoneme-integration-for-chatterbox"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-exam-converter-solid-domain-coupling-audit",
+      "type": "reference",
+      "title": "Exam Converter SOLID Domain Coupling Audit",
+      "path": "docs/reference/ref-sircon-research-exam-converter-solid-domain-coupling-audit-exam-converter-solid-domain-coupling-audit.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-exam-converter-solid-domain-coupling-audit"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-gpu-governance-benchmark-evidence",
+      "type": "reference",
+      "title": "GPU Governance Benchmark Evidence",
+      "path": "docs/reference/ref-sircon-research-gpu-governance-benchmark-evidence-gpu-governance-benchmark-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-gpu-governance-benchmark-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-html-to-pdf-handout-templates-conversion-capability-matrix",
+      "type": "reference",
+      "title": "html_to_pdf_handout_templates conversion capability matrix",
+      "path": "docs/reference/ref-sircon-research-html-to-pdf-handout-templates-conversion-capability-matrix-html-to-pdf-handout-templates-conversion-capability-matrix.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-html-to-pdf-handout-templates-conversion-capability-matrix-2026-02-18"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-pdf-parallel-throughput-evidence",
+      "type": "reference",
+      "title": "PDF Parallel Throughput Evidence",
+      "path": "docs/reference/ref-sircon-research-pdf-parallel-throughput-evidence-pdf-parallel-throughput-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-pdf-parallel-throughput-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-pdf-telemetry-overhead-evidence",
+      "type": "reference",
+      "title": "PDF Telemetry Overhead Evidence",
+      "path": "docs/reference/ref-sircon-research-pdf-telemetry-overhead-evidence-pdf-telemetry-overhead-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-pdf-telemetry-overhead-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-qwen-live-training-pipeline-analysis-and-monitoring-evidence-2026-03-13",
+      "type": "reference",
+      "title": "Qwen Live Training Pipeline Analysis and Monitoring Evidence (2026-03-13)",
+      "path": "docs/reference/ref-sircon-research-qwen-live-training-pipeline-analysis-and-monitoring-evidence-2026-03-13-qwen-live-training-pipeline-analysis-and-monitoring-evidence-2026-03-13.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen-live-training-pipeline-analysis-2026-03-13"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-qwen-training-eval-pilot-progress-ledger-2026-03-15",
+      "type": "reference",
+      "title": "Qwen Training/Eval Pilot Progress Ledger (2026-03-15)",
+      "path": "docs/reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15-qwen-training-eval-pilot-progress-ledger-2026-03-15.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen-training-eval-pilot-progress-2026-03-15"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-reference-dockerized-hemma-gpu-passthrough-gap-2026-02-16",
+      "type": "reference",
+      "title": "Reference: Dockerized Hemma GPU passthrough gap (2026-02-16)",
+      "path": "docs/reference/ref-sircon-research-reference-dockerized-hemma-gpu-passthrough-gap-2026-02-16-reference-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-dockerized-hemma-gpu-passthrough-gap-2026-02-16"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-reference-qwen3-tts-swedish-finetuning-research-map-2026-03-08",
+      "type": "reference",
+      "title": "Reference: Qwen3-TTS Swedish finetuning research map (2026-03-08)",
+      "path": "docs/reference/ref-sircon-research-reference-qwen3-tts-swedish-finetuning-research-map-2026-03-08-reference-qwen3-tts-swedish-finetuning-research-map-2026-03-08.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-qwen3-tts-swedish-finetuning-research-map-2026-03-08"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-review-02-qwen-dataloader-i-o-bottleneck-evidence",
+      "type": "reference",
+      "title": "Review 02 Qwen Dataloader I/O Bottleneck Evidence",
+      "path": "docs/reference/ref-sircon-research-review-02-qwen-dataloader-i-o-bottleneck-evidence-review-02-qwen-dataloader-i-o-bottleneck-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-review-02-qwen-dataloader-io-bottleneck-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-review-02-qwen-rocm-only-image-evidence",
+      "type": "reference",
+      "title": "Review 02 Qwen ROCm-Only Image Evidence",
+      "path": "docs/reference/ref-sircon-research-review-02-qwen-rocm-only-image-evidence-review-02-qwen-rocm-only-image-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-review-02-qwen-rocm-only-image-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-review-02-qwen-synchronous-cache-copy-evidence",
+      "type": "reference",
+      "title": "Review 02 Qwen Synchronous Cache Copy Evidence",
+      "path": "docs/reference/ref-sircon-research-review-02-qwen-synchronous-cache-copy-evidence-review-02-qwen-synchronous-cache-copy-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-review-02-qwen-synchronous-cache-copy-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-review-02-qwen-ungraceful-detached-shutdown-evidence",
+      "type": "reference",
+      "title": "Review 02 Qwen Ungraceful Detached Shutdown Evidence",
+      "path": "docs/reference/ref-sircon-research-review-02-qwen-ungraceful-detached-shutdown-evidence-review-02-qwen-ungraceful-detached-shutdown-evidence.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-review-02-qwen-ungraceful-detached-shutdown-evidence"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-RESEARCH-sir-convert-gateway-cutover-caller-inventory",
+      "type": "reference",
+      "title": "Sir Convert Gateway Cutover Caller Inventory",
+      "path": "docs/reference/ref-sircon-research-sir-convert-gateway-cutover-caller-inventory-sir-convert-gateway-cutover-caller-inventory.md",
+      "status": "active",
+      "reference_kind": "research",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "REF-sir-convert-gateway-cutover-caller-inventory"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-answer-key-local-model-operator-guide",
+      "type": "runbook",
+      "title": "Answer-Key Local Model Operator Guide",
+      "path": "docs/runbooks/run-sircon-answer-key-local-model-operator-guide-answer-key-local-model-operator-guide.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-answer-key-local-model-operator-guide"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-chatterbox-multilingual-tuning-runbook-for-hemma",
+      "type": "runbook",
+      "title": "Chatterbox Multilingual Tuning Runbook for Hemma",
+      "path": "docs/runbooks/run-sircon-chatterbox-multilingual-tuning-runbook-for-hemma-chatterbox-multilingual-tuning-runbook-for-hemma.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-chatterbox-multilingual-tuning-on-hemma"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot",
+      "type": "runbook",
+      "title": "Hemma Conversion Benchmark Runbook for Sir Convert-a-Lot",
+      "path": "docs/runbooks/run-sircon-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-hemma-conversion-benchmarks"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot",
+      "type": "runbook",
+      "title": "Hemma DevOps and GPU Runbook for Sir Convert-a-Lot",
+      "path": "docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-hemma-devops-and-gpu"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-hemma-gpu-runtime-runbook-for-sir-convert-a-lot",
+      "type": "runbook",
+      "title": "Hemma GPU Runtime Runbook for Sir Convert-a-Lot",
+      "path": "docs/runbooks/run-sircon-hemma-gpu-runtime-runbook-for-sir-convert-a-lot-hemma-gpu-runtime-runbook-for-sir-convert-a-lot.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-hemma-gpu-runtime"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-hemma-service-operations-runbook-for-sir-convert-a-lot",
+      "type": "runbook",
+      "title": "Hemma Service Operations Runbook for Sir Convert-a-Lot",
+      "path": "docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot-hemma-service-operations-runbook-for-sir-convert-a-lot.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-hemma-service-ops"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot",
+      "type": "runbook",
+      "title": "Hemma TTS Sidecar Benchmark Runbook for Sir Convert-a-Lot",
+      "path": "docs/runbooks/run-sircon-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-hemma-tts-sidecar-benchmarks"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab",
+      "type": "runbook",
+      "title": "Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab",
+      "path": "docs/runbooks/run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-qwen3-swedish-finetuning-on-hemma-and-colab"
+      ]
+    },
+    {
+      "id": "RUN-SIRCON-v2-async-push-delivery-runbook",
+      "type": "runbook",
+      "title": "V2 Async Push Delivery Runbook",
+      "path": "docs/runbooks/run-sircon-v2-async-push-delivery-runbook-v2-async-push-delivery-runbook.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "retired_ids": [
+        "RUN-v2-async-push-delivery"
+      ]
+    }
+  ],
+  "decision_index": {
+    "decisions": [
+      {
+        "id": "ADR-SIRCON-0001",
+        "title": "PDF-to-MD Service v1 Contract and Phase 0 Decisions",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0001-pdf-to-md-service-v1-contract-and-phase-0-decisions.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0002",
+        "title": "V2 Async Push Delivery with SSE Webhooks and Polling Fallback",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0002-v2-async-push-delivery-with-sse-webhooks-and-polling-fallback.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0003",
+        "title": "V2 PDF Layout Presets, Preview Rendition, and DOCX to PDF",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0003-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0004",
+        "title": "V2 Long-Job Progress, Checkpoints, Partials, Cancel-with-Save, Resume, and Retention",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0004-v2-long-job-progress-checkpoints-partials-cancel-with-save-resume-and-retention.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0005",
+        "title": "Hemma Sidecar TTS Architecture and Non-PDF GPU Governance",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0005-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0006",
+        "title": "Reusable Multi-Backend TTS Sidecar Capability Contract",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0006-reusable-multi-backend-tts-sidecar-capability-contract.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0007",
+        "title": "Curated App-Owned PDF Exports Stay Out of Sir Convert V2",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0007-curated-app-owned-pdf-exports-stay-out-of-sir-convert-v2.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0008",
+        "title": "Gateway-Fronted Sir Convert Public Access and Internal Service Boundary",
+        "status": "proposed",
+        "path": "docs/decisions/adr-sircon-0008-gateway-fronted-sir-convert-public-access-and-internal-service-boundary.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0009",
+        "title": "Hot-swappable Structured Answer-key Provider Routing",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0009-hot-swappable-structured-answer-key-provider-routing.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0010",
+        "title": "Source-neutral Exam Authoring Correction Apply Contract",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0010-source-neutral-exam-authoring-correction-apply-contract.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0011",
+        "title": "Service API v2 Current-State Authority and Extension Boundary",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0012",
+        "title": "Speech-to-Text Sidecar and Audio Ingestion Governance",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0012-speech-to-text-sidecar-and-audio-ingestion-governance.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0013",
+        "title": "Cloudflare R2 job artifact storage boundary",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      }
+    ],
+    "historical_coverage_debt": []
+  }
+}

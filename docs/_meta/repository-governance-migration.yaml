@@ -63,7 +63,7 @@ legacy_lanes:
     relationships:
       epic:
         - operation: require_disposition
-          source: id
+          source: title
       repository:
         - operation: current_repository
   - source_type: task
@@ -73,7 +73,7 @@ legacy_lanes:
     fields:
       acceptance_criteria:
         - operation: require_disposition
-          source: title
+          source: id
       retired_ids:
         - operation: append_source_id
           source: id
@@ -82,7 +82,7 @@ legacy_lanes:
           source: status
       task_kind:
         - operation: require_disposition
-          source: id
+          source: title
       title:
         - operation: copy
           source: title
@@ -90,22 +90,24 @@ legacy_lanes:
       repository:
         - operation: current_repository
       story:
-        - operation: require_disposition
-          source: id
+        - operation: optional_disposition
+          source: created
   - source_type: review
     target_type: review
     identifier:
       operation: allocate_current_id
     fields:
       decided_at:
-        - operation: require_disposition
-          source: id
+        - operation: copy_first_nonblank
+          sources:
+            - decided_at
+            - created
       retired_ids:
         - operation: append_source_id
           source: id
       reviewer:
         - operation: require_disposition
-          source: id
+          source: created
       status:
         - operation: require_disposition
           source: status
@@ -115,7 +117,7 @@ legacy_lanes:
     relationships:
       gate:
         - operation: require_disposition
-          source: id
+          source: title
       repository:
         - operation: current_repository
       target:
