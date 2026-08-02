@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "5c9b70a1c075de75f53efbd280997ff1b1b5c939f2a4f2d2757cf9146483febc",
+  "source_set_digest": "9b0e8355af280b4946bf45e72c79b629be62c916ca4c8099ee9eef6759091dfc",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3617,7 +3617,7 @@
       "type": "task",
       "title": "Archive terminal and superseded governed records after cutover",
       "path": "docs/backlog/tasks/task-sircon-rep-0020-archive-terminal-and-superseded-governed-records-after-cutover.md",
-      "status": "proposed",
+      "status": "ready",
       "task_kind": "repository",
       "owners": [
         {
@@ -3627,7 +3627,11 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "plan-document-reviewer",
+        "decided_at": "2026-08-02T19:05:51+0200",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "Inline Plan Document Review approved TASK-SIRCON-REP-0020 for readiness."
       },
       "closeout_review": {
         "record": "inline",
