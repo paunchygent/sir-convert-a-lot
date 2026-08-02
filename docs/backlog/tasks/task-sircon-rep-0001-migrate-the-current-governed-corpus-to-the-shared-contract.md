@@ -10,7 +10,9 @@ created: '2026-08-02'
 status: proposed
 readiness_review:
   record: inline
-  status: not_started
+  status: changes_requested
+  reviewer: plan-document-reviewer
+  decided_at: '2026-08-02T10:47:30+0200'
 closeout_review:
   record: inline
   status: not_started
@@ -144,12 +146,63 @@ creator still emitted the current task contract, `git diff --check` passed, and
 the proposed scaffold was published from clean current main. This exception
 ends when this task's migrated shared docs gate passes.
 
+## Plan Document Review
+
+- Timestamp: `2026-08-02T10:47:30+0200`.
+- Reviewer: independent `plan-document-reviewer`.
+- Decision: `changes_requested`.
+- Reviewed scope: this task at exact committed planning head `23a01520`; ready
+  ST-SKILL-08-07 and its user-approved SIR-001 through SIR-004L ledger; retained
+  current-corpus refresh `0001`; the shared migration workflow and runbook;
+  Sir's docs-governance routes and completed bootstrap boundary; the current
+  proof-selection contract; and the HuleEdu and Skriptoteket current-corpus
+  precedents needed to check the manifest and assignment boundary.
+- Governing authority: the accepted current-corpus slice; the user's directions
+  to include Task 385, keep one simple workload/completeness manifest, preserve
+  all terminal history, keep historical validation off and read-only, avoid
+  same-repository absolute paths, retain rolling package identity as execution
+  evidence, and use the maximum eight documentation specialists; and the Scope
+  Derivation Gate.
+- Finding 1 (high): the acceptance criterion and SIR-COR-003, SIR-COR-005, and
+  SIR-COR-006 require one 231-row workload manifest and eight disjoint
+  documentation-specialist assignments covering the complete 209 CLI plus 22
+  non-CLI cohort exactly once. Implementation steps 5-6 freeze and dispatch the
+  package assignments, but the package can inventory only the 209 `docs/`
+  sources; step 8 then moves the 22 non-CLI surfaces into a separate
+  parent-owned edit after those assignments. The implementer would have to
+  invent whether the 22 paths join the eight work orders, remain parent-owned
+  exceptions, or require a second assignment artifact, and `manifest.yaml`
+  cannot accept those paths under the current package contract. Repair the plan
+  by distinguishing the simple 231-row workload/completeness manifest from the
+  package's sealed 209-source run manifest, defining their exact subset and
+  reconciliation invariant, and stating how all 22 non-CLI dispositions enter
+  the same eight disjoint work orders without transferring semantic decisions
+  or shared writes from the parent. If a shared non-CLI surface must instead
+  remain outside specialist ownership, return that conflict to planning or the
+  user rather than silently weakening the complete-workload criterion.
+- Permitted next step: repair only the manifest/assignment boundary above and
+  return this changed task to the same readiness reviewer. No `proposed ->
+  ready` transition or implementation is permitted.
+- Validation not run: no migration phase, package/runtime identity check,
+  corpus mutation, specialist assignment, docs synchronization, validator
+  execution, product test, or broad repository check ran. The supplied clean
+  `git diff --check` result and the documented legacy-contract `docs-sync`
+  exception were accepted without duplication.
+- Residual risk: the exact execution-time immutable package tuple and
+  current-main cohort can still drift and must stop implementation under the
+  existing plan. Lane mappings, the 395-file exclusion boundary, Task 385
+  inclusion, rolling package-repair policy, validator isolation, selected
+  contract proof, path policy, and the prohibition on product, quality,
+  operations, compatibility, package-freeze, and broad-test expansion otherwise
+  align with accepted authority.
+
 ## Readiness
 
-SIR-COR-001 through SIR-COR-010 are closed by the accepted story ledger, the
-user's explicit cutover instructions, and refreshed repository facts.
-Implementation remains blocked until independent plan review approves this
-task and the parent applies the separate `proposed -> ready` transition.
+SIR-COR-001 through SIR-COR-010 state the accepted scope, but the execution plan
+does not yet reconcile the 231-row workload contract with the package's
+209-source sealed assignment contract. Decision: `changes_requested`. The task
+remains `proposed`; only the bounded plan repair and same-reviewer re-review are
+permitted.
 
 ## Closeout
 
