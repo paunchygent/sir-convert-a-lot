@@ -1,0 +1,517 @@
+"""Contract tests for v2 cancel-with-save and resume-from-checkpoint (PDF routes).
+
+Purpose:
+    Lock ADR-0005 semantics for:
+      - cancel-with-save stopping further chunk processing, and
+      - resume creating a new job id that continues from persisted checkpoints.
+
+Relationships:
+    - Exercises `scripts.sir_convert_a_lot.interfaces.http_api.create_app`.
+    - Exercises checkpointed PDF execution in `infrastructure.v2_pdf_checkpointed_executor`.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import threading
+import time
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
+from scripts.sir_convert_a_lot.domain.specs import JobStatus, TableMode
+from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
+from scripts.sir_convert_a_lot.interfaces.http_api import create_app
+from tests.sir_convert_a_lot.service.test_api_contract_v2 import (
+    _job_spec_v2,
+    _post_create,
+)
+
+
+class _JobCompletionSignal:
+    """Condition-backed completion signal for background runtime jobs in tests."""
+
+    def __init__(self) -> None:
+        self._condition = threading.Condition()
+        self._completed_job_ids: set[str] = set()
+
+    def mark_completed(self, job_id: str) -> None:
+        with self._condition:
+            self._completed_job_ids.add(job_id)
+            self._condition.notify_all()
+
+    def wait_for(self, job_id: str, *, timeout_seconds: float) -> None:
+        deadline = time.monotonic() + timeout_seconds
+        with self._condition:
+            while job_id not in self._completed_job_ids:
+                remaining_seconds = deadline - time.monotonic()
+                if remaining_seconds <= 0:
+                    raise AssertionError(f"Job did not complete before timeout: {job_id}")
+                self._condition.wait(timeout=remaining_seconds)
+
+
+def _install_job_completion_signal(monkeypatch) -> _JobCompletionSignal:
+    from scripts.sir_convert_a_lot.infrastructure.runtime_engine_v2 import ServiceRuntimeV2
+
+    completion_signal = _JobCompletionSignal()
+    original_run_job = ServiceRuntimeV2._run_job
+
+    def _run_job_with_completion_signal(self: ServiceRuntimeV2, job_id: str) -> None:
+        try:
+            original_run_job(self, job_id)
+        finally:
+            completion_signal.mark_completed(job_id)
+
+    monkeypatch.setattr(ServiceRuntimeV2, "_run_job", _run_job_with_completion_signal)
+    return completion_signal
+
+
+def _wait_for_signal(
+    signal: threading.Event,
+    *,
+    timeout_seconds: float,
+    failure_message: str,
+) -> None:
+    if signal.wait(timeout=timeout_seconds):
+        return
+    raise AssertionError(failure_message)
+
+
+def _build_pdf_bytes(*, pages: int) -> bytes:
+    import pymupdf
+
+    doc = pymupdf.open()
+    try:
+        for index in range(pages):
+            page = doc.new_page()
+            if page is None:
+                raise RuntimeError("PyMuPDF returned no page for new_page()")
+            page.insert_text((72, 72), f"page {index + 1}", fontsize=12)
+        return bytes(doc.tobytes())
+    finally:
+        doc.close()
+
+
+def _wait_for_terminal_no_sleep(client: TestClient, api_key: str, job_id: str) -> str:
+    for _ in range(2000):
+        response = client.get(f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": api_key})
+        payload = response.json()
+        job_payload = payload["job"]
+        if not isinstance(job_payload, dict):
+            raise AssertionError("Job payload is not an object.")
+        status = job_payload["status"]
+        if not isinstance(status, str):
+            raise AssertionError("Job status is not a string.")
+        if status in {
+            JobStatus.SUCCEEDED.value,
+            JobStatus.FAILED.value,
+            JobStatus.CANCELED.value,
+        }:
+            return status
+    raise AssertionError("Job never reached a terminal state.")
+
+
+def test_cancel_with_save_and_resume_from_checkpoint_produces_deterministic_final_artifact(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
+    from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import PdfCheckpointV2
+
+    execute_calls: list[str] = []
+
+    def _stub_execute_job_conversion(
+        *,
+        spec,
+        source_filename: str,
+        source_bytes: bytes,
+        gpu_available: bool,
+        gpu_runtime_probe,
+        docling_backend,
+        pymupdf_backend,
+        ocr_engine=None,
+        ocr_languages=(),
+        ocr_use_gpu=None,
+    ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
+        del (
+            spec,
+            source_filename,
+            gpu_available,
+            gpu_runtime_probe,
+            docling_backend,
+            pymupdf_backend,
+            ocr_engine,
+            ocr_languages,
+            ocr_use_gpu,
+        )
+        import pymupdf
+
+        chunk_doc = pymupdf.open(stream=source_bytes, filetype="pdf")
+        try:
+            texts: list[str] = []
+            for page_index in range(chunk_doc.page_count):
+                page = chunk_doc.load_page(page_index)
+                if page is None:
+                    raise RuntimeError("PyMuPDF returned no page for load_page().")
+                texts.append(page.get_text("text"))
+            digest = hashlib.sha256("".join(texts).encode("utf-8")).hexdigest()
+        finally:
+            chunk_doc.close()
+        execute_calls.append(digest)
+        return (
+            f"# chunk {digest}\n",
+            ConversionMetadata(
+                backend_used="stubbed",
+                acceleration_used="cpu",
+                ocr_enabled=False,
+                table_mode=TableMode.FAST,
+                options_fingerprint="sha256:stubbed",
+            ),
+            [],
+            {},
+        )
+
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor, "execute_job_conversion", _stub_execute_job_conversion
+    )
+
+    app = create_app(
+        ServiceConfig(
+            api_key="secret-key",
+            data_root=tmp_path / "service_data",
+            gpu_available=False,
+            allow_cpu_only=True,
+            allow_cpu_fallback=False,
+            enable_supervisor=False,
+            processing_delay_seconds=0.0,
+        )
+    )
+    client = TestClient(app)
+
+    pdf_bytes = _build_pdf_bytes(pages=61)
+    spec = _job_spec_v2(
+        filename="paper.pdf",
+        source_format=SourceFormatV2.PDF,
+        output_format=OutputFormatV2.MD,
+    )
+    spec["pdf_options"] = {
+        "backend_strategy": "auto",
+        "ocr_mode": "off",
+        "table_mode": "fast",
+        "normalize": "standard",
+    }
+    spec["execution"] = {
+        "acceleration_policy": "cpu_only",
+        "priority": "normal",
+        "document_timeout_seconds": 1800,
+    }
+
+    baseline = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem_baseline",
+        file_name="paper.pdf",
+        file_bytes=pdf_bytes,
+        spec=spec,
+    )
+    baseline_job_id = baseline.json()["job"]["job_id"]
+    assert _wait_for_terminal_no_sleep(client, "secret-key", baseline_job_id) == JobStatus.SUCCEEDED
+    baseline_artifact = client.get(
+        f"/v2/convert/jobs/{baseline_job_id}/artifact",
+        headers={"X-API-Key": "secret-key"},
+    )
+    assert baseline_artifact.status_code == 200
+    baseline_bytes = baseline_artifact.content
+
+    checkpoint_ready = threading.Event()
+    source_worker_can_continue = threading.Event()
+    checkpoint_gate_lock = threading.Lock()
+    checkpoint_gate_used = False
+    original_persist_pdf_checkpoint = v2_pdf_checkpointed_executor.persist_pdf_checkpoint
+
+    def _persist_pdf_checkpoint_with_cancel_gate(
+        *,
+        upload_path: Path,
+        checkpoint: PdfCheckpointV2,
+    ) -> None:
+        nonlocal checkpoint_gate_used
+        original_persist_pdf_checkpoint(upload_path=upload_path, checkpoint=checkpoint)
+
+        should_hold_source_worker = False
+        with checkpoint_gate_lock:
+            if not checkpoint_gate_used and checkpoint.processed_pages > 0:
+                checkpoint_gate_used = True
+                should_hold_source_worker = True
+
+        if not should_hold_source_worker:
+            return
+        checkpoint_ready.set()
+        _wait_for_signal(
+            source_worker_can_continue,
+            timeout_seconds=10.0,
+            failure_message="Source worker was not released after checkpoint gate.",
+        )
+
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor,
+        "persist_pdf_checkpoint",
+        _persist_pdf_checkpoint_with_cancel_gate,
+    )
+
+    create = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem_cancel_resume",
+        file_name="paper.pdf",
+        file_bytes=pdf_bytes,
+        spec=spec,
+    )
+    job_id = create.json()["job"]["job_id"]
+
+    _wait_for_signal(
+        checkpoint_ready,
+        timeout_seconds=10.0,
+        failure_message="Checkpoint was not persisted before cancellation.",
+    )
+    checkpoint_response = client.get(
+        f"/v2/convert/jobs/{job_id}/checkpoint", headers={"X-API-Key": "secret-key"}
+    )
+    assert checkpoint_response.status_code == 200
+    checkpoint = checkpoint_response.json()
+    assert checkpoint is not None
+    assert checkpoint["processed_pages"] > 0
+
+    try:
+        cancel = client.post(
+            f"/v2/convert/jobs/{job_id}/cancel",
+            headers={"X-API-Key": "secret-key"},
+        )
+        assert cancel.status_code in {200, 202}
+    finally:
+        source_worker_can_continue.set()
+
+    partial = None
+    for _ in range(200):
+        response = client.get(
+            f"/v2/convert/jobs/{job_id}/artifact/partial", headers={"X-API-Key": "secret-key"}
+        )
+        if response.status_code == 200:
+            partial = response.text
+            break
+    assert partial is not None
+    assert "sir-convert-a-lot:partial" in partial
+
+    resume = client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={"X-API-Key": "secret-key", "Idempotency-Key": "idem_resume_1"},
+    )
+    assert resume.status_code in {200, 202}
+    resumed_job_id = resume.json()["job"]["job_id"]
+    assert resumed_job_id != job_id
+
+    assert _wait_for_terminal_no_sleep(client, "secret-key", resumed_job_id) == JobStatus.SUCCEEDED
+    resumed_artifact = client.get(
+        f"/v2/convert/jobs/{resumed_job_id}/artifact",
+        headers={"X-API-Key": "secret-key"},
+    )
+    assert resumed_artifact.status_code == 200
+    assert resumed_artifact.content == baseline_bytes
+
+
+def test_resume_idempotency_replay_survives_public_key_rotation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
+    from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import PdfCheckpointV2
+
+    completion_signal = _install_job_completion_signal(monkeypatch)
+    checkpoint_ready = threading.Event()
+    source_worker_can_continue = threading.Event()
+    checkpoint_gate_lock = threading.Lock()
+    checkpoint_gate_used = False
+    original_persist_pdf_checkpoint = v2_pdf_checkpointed_executor.persist_pdf_checkpoint
+
+    def _persist_pdf_checkpoint_with_source_gate(
+        *,
+        upload_path: Path,
+        checkpoint: PdfCheckpointV2,
+    ) -> None:
+        nonlocal checkpoint_gate_used
+        original_persist_pdf_checkpoint(upload_path=upload_path, checkpoint=checkpoint)
+
+        should_hold_source_worker = False
+        with checkpoint_gate_lock:
+            if not checkpoint_gate_used and checkpoint.processed_pages > 0:
+                checkpoint_gate_used = True
+                should_hold_source_worker = True
+
+        if not should_hold_source_worker:
+            return
+        checkpoint_ready.set()
+        _wait_for_signal(
+            source_worker_can_continue,
+            timeout_seconds=10.0,
+            failure_message="Source worker was not released after checkpoint gate.",
+        )
+
+    def _stub_execute_job_conversion(
+        *,
+        spec,
+        source_filename: str,
+        source_bytes: bytes,
+        gpu_available: bool,
+        gpu_runtime_probe,
+        docling_backend,
+        pymupdf_backend,
+        ocr_engine=None,
+        ocr_languages=(),
+        ocr_use_gpu=None,
+    ) -> tuple[str, ConversionMetadata, list[str], dict[str, int]]:
+        del (
+            spec,
+            source_filename,
+            gpu_available,
+            gpu_runtime_probe,
+            docling_backend,
+            pymupdf_backend,
+            ocr_engine,
+            ocr_languages,
+            ocr_use_gpu,
+        )
+        import pymupdf
+
+        chunk_doc = pymupdf.open(stream=source_bytes, filetype="pdf")
+        try:
+            texts: list[str] = []
+            for page_index in range(chunk_doc.page_count):
+                page = chunk_doc.load_page(page_index)
+                if page is None:
+                    raise RuntimeError("PyMuPDF returned no page for load_page().")
+                texts.append(page.get_text("text"))
+            chunk_digest = hashlib.sha256("".join(texts).encode("utf-8")).hexdigest()
+        finally:
+            chunk_doc.close()
+        return (
+            f"# chunk {chunk_digest}\n",
+            ConversionMetadata(
+                backend_used="stubbed",
+                acceleration_used="cpu",
+                ocr_enabled=False,
+                table_mode=TableMode.FAST,
+                options_fingerprint="sha256:stubbed",
+            ),
+            [],
+            {},
+        )
+
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor, "execute_job_conversion", _stub_execute_job_conversion
+    )
+    monkeypatch.setattr(
+        v2_pdf_checkpointed_executor,
+        "persist_pdf_checkpoint",
+        _persist_pdf_checkpoint_with_source_gate,
+    )
+
+    base_config = ServiceConfig(
+        api_key="secret-key",
+        data_root=tmp_path / "service_data_rotation_resume",
+        gpu_available=False,
+        allow_cpu_only=True,
+        allow_cpu_fallback=False,
+        enable_supervisor=False,
+        processing_delay_seconds=0.0,
+    )
+    client = TestClient(create_app(base_config))
+
+    pdf_bytes = _build_pdf_bytes(pages=61)
+    spec = _job_spec_v2(
+        filename="paper.pdf",
+        source_format=SourceFormatV2.PDF,
+        output_format=OutputFormatV2.MD,
+    )
+    spec["pdf_options"] = {
+        "backend_strategy": "auto",
+        "ocr_mode": "off",
+        "table_mode": "fast",
+        "normalize": "standard",
+    }
+    spec["execution"] = {
+        "acceleration_policy": "cpu_only",
+        "priority": "normal",
+        "document_timeout_seconds": 1800,
+    }
+
+    create = _post_create(
+        client,
+        api_key="secret-key",
+        idempotency_key="idem_resume_rotation_source",
+        file_name="paper.pdf",
+        file_bytes=pdf_bytes,
+        spec=spec,
+    )
+    assert create.status_code in {200, 202}
+    job_id = create.json()["job"]["job_id"]
+
+    _wait_for_signal(
+        checkpoint_ready,
+        timeout_seconds=10.0,
+        failure_message="Checkpoint never became available before cancel.",
+    )
+    try:
+        status = client.get(
+            f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"}
+        ).json()["job"]["status"]
+        assert status == JobStatus.RUNNING.value
+
+        checkpoint = client.get(
+            f"/v2/convert/jobs/{job_id}/checkpoint", headers={"X-API-Key": "secret-key"}
+        )
+        assert checkpoint.status_code == 200
+        assert int(checkpoint.json().get("processed_pages", 0)) > 0
+
+        cancel = client.post(
+            f"/v2/convert/jobs/{job_id}/cancel",
+            headers={"X-API-Key": "secret-key"},
+        )
+        assert cancel.status_code in {200, 202}
+    finally:
+        source_worker_can_continue.set()
+
+    completion_signal.wait_for(job_id, timeout_seconds=10.0)
+
+    first_resume = client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={"X-API-Key": "secret-key", "Idempotency-Key": "idem_resume_rotation"},
+    )
+    assert first_resume.status_code in {200, 202}
+    resumed_job_id = first_resume.json()["job"]["job_id"]
+
+    rotated_client = TestClient(
+        create_app(
+            ServiceConfig(
+                api_key="rotated-public-key",
+                data_root=base_config.data_root,
+                gpu_available=False,
+                allow_cpu_only=True,
+                allow_cpu_fallback=False,
+                enable_supervisor=False,
+                processing_delay_seconds=0.0,
+            )
+        )
+    )
+    replay_resume = rotated_client.post(
+        f"/v2/convert/jobs/{job_id}/resume",
+        headers={
+            "X-API-Key": "rotated-public-key",
+            "Idempotency-Key": "idem_resume_rotation",
+        },
+    )
+
+    assert replay_resume.status_code in {200, 202}
+    assert replay_resume.headers["X-Idempotent-Replay"] == "true"
+    assert replay_resume.json()["job"]["job_id"] == resumed_job_id
+    completion_signal.wait_for(resumed_job_id, timeout_seconds=10.0)
