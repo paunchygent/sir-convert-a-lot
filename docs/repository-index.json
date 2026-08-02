@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "79d83792367ba416053b2b397a1c84061b2c286d79f372b95f48f50864280e8a",
+  "source_set_digest": "98ae3fc3f8a012f641b67996986b3f25e26500b636c4ea429cce730299fac9b6",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3587,7 +3587,7 @@
       "type": "task",
       "title": "Organize root tests by service and domain ownership",
       "path": "docs/backlog/tasks/task-sircon-rep-0021-organize-root-tests-by-service-and-domain-ownership.md",
-      "status": "proposed",
+      "status": "ready",
       "task_kind": "repository",
       "owners": [
         {
