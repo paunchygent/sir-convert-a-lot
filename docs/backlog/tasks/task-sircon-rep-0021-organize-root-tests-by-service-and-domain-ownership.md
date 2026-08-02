@@ -17,7 +17,11 @@ readiness_review:
   approval_evidence: User-approved SIR test-topology decisions and inline Plan Document Review approval at 21bbb31a.
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-code-review
+  decided_at: '2026-08-03T01:03:36+0200'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: Exact implementation head 2606610b approved with no findings.
 task_kind: repository
 acceptance_criteria:
 - "Root tests are organized under seven existing behavior-owned directories: service, conversion, exam, speech, operations, research, and repository."
@@ -212,3 +216,40 @@ Implementation is complete pending independent closeout review.
 - No production code, Qwen project, dependency, lock, quality fact, Docker,
   Hemma, GPU, deployment, or product behavior changed. No broad root aggregate
   or Qwen suite ran.
+
+## Implementation Review
+
+- Timestamp: `2026-08-03T01:03:36+0200`.
+- Reviewer: independent `ruthless-code-review`.
+- Decision: `approved`.
+- Reviewed scope and governing authority: exact implementation head
+  `2606610b4fd4a680adb43629fbe80930c32125b9` against base
+  `d85af8a423ee13105d4263f08a8e6ea343268c43`; TASK-SIRCON-REP-0021,
+  especially SIR-TOP-001 through SIR-TOP-008; ready ST-SKILL-08-07,
+  especially SIR-004F, SIR-004H, its protected product and operations
+  boundary, and repository-bounded slice 3; the user-authorized
+  historical-validator-off removal and Boy Scout correction; and the shared
+  proof-selection, forbidden-pattern, Scope Derivation Gate, and review
+  persistence contracts.
+- Findings: none. All 223 former flat root Python test and support modules now
+  reside in exactly the seven accepted first-level behavior directories, with
+  support imports and path depth adjusted where the move requires it. The
+  three removed assertions pinned historical backlog prose rather than current
+  executable behavior, and their sole helper became unused. The two touched
+  speech tests now read the active `docs/reference` contract and its actual
+  inline JSON shape. The diff changes no production, Qwen-project,
+  dependency/lock, quality-facts, Docker/Hemma/GPU/deployment, or product
+  behavior surface and adds no selector manifest, compatibility surface,
+  fallback, degraded state, or broad-suite requirement.
+- Permitted next step: the parent may preserve this approval, transition
+  TASK-SIRCON-REP-0021 from `in_progress` to `done` in a separate closeout
+  patch, and integrate the reviewed implementation into local `main`.
+- Residual risk: collection equality and the selected focused executions do
+  not claim that every one of the 1,444 collected tests executed. The accepted
+  contract deliberately excludes that broad aggregate; the unchanged
+  collection count, no collection errors, 97 representative passes, and 42
+  speech-scope passes provide the selected behavior-preserving proof.
+- Validation not run: the reviewer did not duplicate the supplied passing
+  collection, representative-test, speech-test, Ruff, mypy, docs-validation,
+  handoff-validation, or whitespace gates. No broad root aggregate, coverage
+  aggregate, Qwen suite, Docker, Hemma, GPU, deployment, or remote command ran.

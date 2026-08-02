@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "08dfc7d78881a20f37544f7e79fb71360a8dcfe49257674532a57ac7199495ed",
+  "source_set_digest": "db0b091b1fea90e58847129504f89558145b646da3c95eb6733bf148da24111b",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3605,7 +3605,11 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-code-review",
+        "decided_at": "2026-08-03T01:03:36+0200",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Exact implementation head 2606610b approved with no findings."
       }
     },
     {
