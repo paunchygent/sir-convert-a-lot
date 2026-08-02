@@ -14,6 +14,10 @@ durable implementation authority lives in governed docs.
 
 ## Current State
 
+- TASK-SIRCON-REP-0021 is the proposed next ST-SKILL-08-07 slice. It organizes
+  root tests into seven behavior-owned directories before the separate derived
+  quality task; no product, Qwen, quality-facts, or broad-suite change belongs
+  to this task.
 - Generated docs doorway is `docs/index.md`; durable session history starts at
   `.codex/long-term-memory/entries/session-2026-06-05-handoff-compaction.md`.
   STT, formatter, and formula-lane history is compacted under
