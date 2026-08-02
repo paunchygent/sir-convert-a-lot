@@ -10,9 +10,11 @@ created: '2026-08-02'
 status: proposed
 readiness_review:
   record: inline
-  status: changes_requested
+  status: approved
   reviewer: plan-document-reviewer
-  decided_at: '2026-08-02T10:47:30+0200'
+  decided_at: '2026-08-02T10:51:16+0200'
+  approval_protocol: agent-planning:user-closure-gate
+  approval_evidence: User-approved SIR-001 through SIR-004L authority and inline Plan Document Review follow-up approval at f77f5d78.
 closeout_review:
   record: inline
   status: not_started
@@ -205,13 +207,41 @@ ends when this task's migrated shared docs gate passes.
   operations, compatibility, package-freeze, and broad-test expansion otherwise
   align with accepted authority.
 
+The same independent reviewer re-reviewed only the bounded manifest and
+assignment repair at exact head `f77f5d78` on
+`2026-08-02T10:51:16+0200`.
+
+- Decision: `approved`.
+- Reviewed scope: only the changes since prior reviewed head `23a01520` that
+  repair Finding 1 in SIR-COR-003, SIR-COR-005, SIR-COR-006, Plan, Non-CLI
+  Workload Rows, implementation steps 3 and 5-6, post-change proof, and stop
+  conditions. The prior authority and all unchanged plan decisions were reused.
+- Findings: none. The repair defines one authored simple 231-row exact-path
+  workload/completeness manifest, lists all 22 non-CLI paths, derives the
+  package's sealed 209-source `docs/` run manifest mechanically from that
+  authored subset, and forms eight combined work orders whose disjoint union
+  must equal all 231 rows exactly once. Semantic decisions, shared writes,
+  apply/recovery, generated indexes, and Git remain parent-owned. No product,
+  quality-topology, operations, package-freeze, compatibility, or broad-test
+  scope was added.
+- Permitted next step: the parent may transition TASK-SIRCON-REP-0001 from
+  `proposed` to `ready` in a separate lifecycle patch. Implementation may begin
+  only after that transition through the ordinary governed task/worktree lane.
+- Validation not run: no migration phase, package/runtime identity check,
+  corpus mutation, specialist assignment, docs synchronization, validator
+  execution, product test, or broad repository check ran. `git diff --check`
+  passed for the committed repair; the documented legacy-contract `docs-sync`
+  exception remains applicable until migration installs the shared contract.
+- Residual risk: the execution-time immutable package tuple, current-main
+  231/209/22 cohort split, and 395 exclusion hashes remain implementation-time
+  facts. The existing stop conditions require a halt if any of them drift or if
+  the combined work-order and package-subset invariants fail.
+
 ## Readiness
 
-SIR-COR-001 through SIR-COR-010 state the accepted scope, but the execution plan
-does not yet reconcile the 231-row workload contract with the package's
-209-source sealed assignment contract. Decision: `changes_requested`. The task
-remains `proposed`; only the bounded plan repair and same-reviewer re-review are
-permitted.
+SIR-COR-001 through SIR-COR-010 are closed, and the bounded repair resolves the
+only readiness finding. Decision: `approved`. The task remains `proposed`; the
+parent may apply the separate `proposed -> ready` transition.
 
 ## Closeout
 
