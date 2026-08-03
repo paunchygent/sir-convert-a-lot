@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "7122e50ac1080cde72331a45a9c454d2e50a297aef3613b8f5a9ce135acb36c1",
+  "source_set_digest": "ca51fe28d1f43bd5170f8d540d91940b3fdb8e080acdb1f9ecc6a984047973dc",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3706,6 +3706,32 @@
       "readiness_review": {
         "record": "inline",
         "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0026",
+      "type": "task",
+      "title": "Publish the Sir Convert-a-Lot platform discovery overview",
+      "path": "docs/backlog/tasks/task-sircon-rep-0026-publish-the-sir-convert-a-lot-platform-discovery-overview.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "approved",
+        "reviewer": "user",
+        "decided_at": "2026-08-03T10:00:00+02:00",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User directive of 2026-08-03 ordered the three remaining ST-SKILL-08-09 conformance slices; every ledger row derives from that accepted parent story (CON-003, CON-004, CON-005) and its Notes on the deferred markdown gate. No independent plan-document-reviewer ran in this session."
       },
       "closeout_review": {
         "record": "inline",

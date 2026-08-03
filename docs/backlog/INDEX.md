@@ -4,8 +4,8 @@
 
 ## Counts
 
-- total | epic=9 | story=30 | task=101 | review=1
-- open | epic=6 | story=30 | task=98
+- total | epic=9 | story=30 | task=102 | review=1
+- open | epic=6 | story=30 | task=99
 
 ## Lookup
 
@@ -149,6 +149,7 @@
 - task | TASK-SIRCON-REP-0023 | [Repair the check-md markdown gate gfm extension](tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md)
 - task | TASK-SIRCON-REP-0024 | [Derive service and domain quality checks from behavior-owned tests](tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md)
 - task | TASK-SIRCON-REP-0025 | [Complete operations handoff and parity-gated governance retirement](tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
+- task | TASK-SIRCON-REP-0026 | [Publish the Sir Convert-a-Lot platform discovery overview](tasks/task-sircon-rep-0026-publish-the-sir-convert-a-lot-platform-discovery-overview.md)
 - review | REV-SIRCON-ST-08-02-CLOSEOUT | [Ruthless review of Story 48 DigiExam overlay and effective IR contract](reviews/rev-sircon-st-08-02-closeout-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract.md) | target=[ST-SIRCON-08-02](stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md)
 
 ## Active Lane
@@ -226,6 +227,7 @@
 - TASK-SIRCON-REP-0015 | [Resolve Hemma STT sidecar live proof backend blockers](tasks/task-sircon-rep-0015-resolve-hemma-stt-sidecar-live-proof-backend-blockers.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0017 | [Restore docx output after pandoc sandbox hardening](tasks/task-sircon-rep-0017-restore-docx-output-after-pandoc-sandbox-hardening.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0019 | [Add English reference-clone lane to Chatterbox Hemma benchmark](tasks/task-sircon-rep-0019-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark.md) | stories=none | depends_on=0 | dependents=0
+- TASK-SIRCON-REP-0026 | [Publish the Sir Convert-a-Lot platform discovery overview](tasks/task-sircon-rep-0026-publish-the-sir-convert-a-lot-platform-discovery-overview.md) | stories=none | depends_on=0 | dependents=0
 
 ### proposed
 

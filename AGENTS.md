@@ -35,6 +35,7 @@ product workflow, or command-wrapper context.
 
 | Context | Repo-Specific Route |
 |---|---|
+| Repository topology, layer boundaries, where a concern lives | `.codex/skills/repo-code-map/SKILL.md` |
 | Docs-as-code, backlog contracts, scaffolding, governed docs | `agent-docs-governance` plus its Sir Convert-a-Lot reference |
 | Planning, decomposition, tranche sequencing | `agent-planning` plus its Sir Convert-a-Lot reference |
 | Next-session or developer handoff messages | `agent-session-handoff` plus its Sir Convert-a-Lot reference |
