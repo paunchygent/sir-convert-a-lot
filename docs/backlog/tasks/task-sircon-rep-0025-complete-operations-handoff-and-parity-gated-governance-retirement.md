@@ -46,15 +46,16 @@ dependencies, and historical archive records are excluded.
 Every material implementation choice must be closed by an accepted source before
 the task becomes ready.
 
-| ID     | Type       | Status | Question/Assumption                              | Recommendation/Decision                                                                                                                                                                                                         | Source                                                                             |
-| ------ | ---------- | ------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| FC-001 | handoff    | closed | Which handoff contract remains?                  | Replace `.codex/handoff.md` with the shared concise root `handoff.md` shape and update live routes.                                                                                                                             | ST-SKILL-08-07; HuleEdu/Skriptoteket precedent; retained discovery                 |
-| FC-002 | retirement | closed | Which local governance implementation retires?   | Remove `scripts/docs_as_code`, its local contract and completed migration profile, legacy auxiliary PDM commands, and the sole local implementation test. Current public scaffolding/index/validation already uses the package. | Current binding blocks; successful corpus migration and repeated shared docs proof |
-| FC-003 | validators | closed | How are skill and handoff checks exposed?        | Bind `skills-validate` and `handoff-validate` directly to their package entrypoints. Historical validation receives no local public route.                                                                                      | Package 0.9.17 entrypoints; user historical-validator-off decision                 |
-| FC-004 | operations | closed | Does `run-hemma` retire?                         | No. Preserve the Sir product wrapper and all Hemma/product/Qwen commands because exact transport parity is absent.                                                                                                              | Retained Explorer comparison; ST-SKILL-08-07                                       |
-| FC-005 | history    | closed | Are stale historical command mentions rewritten? | No. Preserve `.archive` and terminal historical evidence unchanged; audit only live routes.                                                                                                                                     | User archive/history decision                                                      |
-| FC-006 | proof      | closed | What proof is sufficient?                        | Shared docs, skills, handoff, staleness, active-route grep, one read-only local-wrapper Hemma transport probe, and diff checks. No broad root suite.                                                                            | ST-SKILL-08-07 accepted proof boundary                                             |
-| FC-007 | package    | closed | May the shared package advance during cutover?   | Yes. Roll the immutable governance pin and tooling lock whenever consumer proof discovers a required shared repair; do not freeze a package version in backlog prose.                                                           | Direct user decision                                                               |
+| ID     | Type        | Status | Question/Assumption                              | Recommendation/Decision                                                                                                                                                                                                         | Source                                                                             |
+| ------ | ----------- | ------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| FC-001 | handoff     | closed | Which handoff contract remains?                  | Replace `.codex/handoff.md` with the shared concise root `handoff.md` shape and update live routes.                                                                                                                             | ST-SKILL-08-07; HuleEdu/Skriptoteket precedent; retained discovery                 |
+| FC-002 | retirement  | closed | Which local governance implementation retires?   | Remove `scripts/docs_as_code`, its local contract and completed migration profile, legacy auxiliary PDM commands, and the sole local implementation test. Current public scaffolding/index/validation already uses the package. | Current binding blocks; successful corpus migration and repeated shared docs proof |
+| FC-003 | validators  | closed | How are skill and handoff checks exposed?        | Bind `skills-validate` and `handoff-validate` directly to their package entrypoints. Historical validation receives no local public route.                                                                                      | Package 0.9.17 entrypoints; user historical-validator-off decision                 |
+| FC-004 | operations  | closed | Does `run-hemma` retire?                         | No. Preserve the Sir product wrapper and all Hemma/product/Qwen commands because exact transport parity is absent.                                                                                                              | Retained Explorer comparison; ST-SKILL-08-07                                       |
+| FC-005 | history     | closed | Are stale historical command mentions rewritten? | No. Preserve `.archive` and terminal historical evidence unchanged; audit only live routes.                                                                                                                                     | User archive/history decision                                                      |
+| FC-006 | proof       | closed | What proof is sufficient?                        | Shared docs, skills, handoff, staleness, active-route grep, one read-only local-wrapper Hemma transport probe, and diff checks. No broad root suite.                                                                            | ST-SKILL-08-07 accepted proof boundary                                             |
+| FC-007 | package     | closed | May the shared package advance during cutover?   | Yes. Roll the immutable governance pin and tooling lock whenever consumer proof discovers a required shared repair; do not freeze a package version in backlog prose.                                                           | Direct user decision                                                               |
+| FC-008 | publication | closed | What closes package-owned publication parity?    | Synchronize Sir's declared tooling environment, prove the installed 0.9.20 executable, and invoke the real bound `pdm run publish-main` command on clean current `main`.                                                        | Post-closeout defect report and direct user instruction                            |
 
 ## Plan
 
@@ -88,6 +89,7 @@ contract artifacts. Preserve every product-owned surface.
 - `pdm run docs-validate`
 - `pdm run skills-validate`
 - `pdm run handoff-validate`
+- `pdm run publish-main`
 - deterministic `pdm run staleness-audit` at the integration candidate
 - active-route `git grep` excluding `.archive` and terminal historical evidence
 - `pdm run run-hemma -- hostname`
@@ -112,7 +114,7 @@ version or planning SHA.
 
 ## Readiness
 
-FC-001 through FC-007 are closed by the accepted story, direct user decisions,
+FC-001 through FC-008 are closed by the accepted story, direct user decisions,
 and current repository/package evidence. Implementation may begin.
 
 ## Closeout
@@ -135,3 +137,15 @@ validation, deterministic staleness audit, active-route audit, and
 35 repository tests plus named validators; execution passed. No broad root,
 Qwen, product-service, Docker, GPU, deployment, conversion, or training suite
 ran.
+
+Post-closeout publication proof found Sir's primary PDM environment still on
+repository-governance 0.9.18 even though `pyproject.toml` and `pdm.lock`
+declared 0.9.20. That stale installation lacked the bound
+`repository-governance-publish-main` executable, so the earlier integrations
+used direct pushes. `pdm sync -G tooling` synchronized the existing declared
+environment without changing tracked files. The installed package then
+reported 0.9.20, the executable resolved, and the real
+`pdm run publish-main` command returned `publication: published_without_ci` for
+clean current SHA `f40b66a38ceb4a68489f05326c112124250a7489`. Sir declares no
+required publication workflows. This closes the final public-entrypoint parity
+gap without a new command, wrapper, schema, or product change.
