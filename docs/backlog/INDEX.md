@@ -5,7 +5,7 @@
 ## Counts
 
 - total | epic=9 | story=30 | task=100 | review=1
-- open | epic=6 | story=30 | task=98
+- open | epic=6 | story=30 | task=97
 
 ## Lookup
 
@@ -293,7 +293,6 @@
 - TASK-SIRCON-REP-0016 | [Bootstrap shared governance package facts and walking skeleton](tasks/task-sircon-rep-0016-bootstrap-shared-governance-package-facts-and-walking-skeleton.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0023 | [Repair the check-md markdown gate gfm extension](tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md) | stories=none | depends_on=0 | dependents=0
-- TASK-SIRCON-REP-0024 | [Derive service and domain quality checks from behavior-owned tests](tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md) | stories=none | depends_on=0 | dependents=0
 
 ## Dependency Graph
 

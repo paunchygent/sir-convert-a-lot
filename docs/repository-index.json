@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "5aaf921bab5a419f69af854c2368547006a47174527dbe53dca0716e3f3610c4",
+  "source_set_digest": "ce15ce46c5279cd8a1bf96b4ef58a7c652ea0d686af206870bdf80d658243f68",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3669,7 +3669,7 @@
       "type": "task",
       "title": "Derive service and domain quality checks from behavior-owned tests",
       "path": "docs/backlog/tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md",
-      "status": "proposed",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3679,11 +3679,15 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User directed reuse of HuleEdu's Git-derived service/domain design, prohibited a broad root test gate, and authorized this task to proceed without added ceremony on 2026-08-03."
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User directed this bounded derived-configuration task to keep moving without needless review ceremony; exact command-boundary proof passed on 2026-08-03."
       }
     },
     {

@@ -55,7 +55,27 @@ projects = [
 ]
 
 [tool.repository-governance.quality]
-projects = []
+projects = [
+    { path = ".", format = ["scripts", "tests"], lint = ["scripts", "tests"], typecheck-diagnostic-producer = "root-typecheck", test-diagnostic-producer = "root-test" },
+]
+producers = [
+    { name = "root-typecheck", intent = "typecheck", project = ".", command = "typecheck-all", arguments = [] },
+    { name = "root-test", intent = "test", project = ".", command = "pytest-root", arguments = [] },
+]
+
+[[tool.repository-governance.quality.cohorts]]
+name = "behavior"
+kind = "component-root"
+root = "tests/sir_convert_a_lot"
+test-target = "component"
+typecheck = "root-typecheck"
+test = "root-test"
+
+[[tool.repository-governance.quality.validators]]
+name = "docs-validate"
+project = "."
+command = "docs-validate"
+arguments = []
 
 [tool.ruff]
 line-length = 100
