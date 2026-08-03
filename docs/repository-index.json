@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "32111c7b0237db38ad88bd9ad746c889aab5e03fd3e154c60dd24da172315d35",
+  "source_set_digest": "9819e256e21a9b329a2ee6846dd79facb6f4245dd8161a82fd0725c0e0607443",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3587,7 +3587,7 @@
       "type": "task",
       "title": "Organize root tests by service and domain ownership",
       "path": "docs/backlog/tasks/task-sircon-rep-0021-organize-root-tests-by-service-and-domain-ownership.md",
-      "status": "ready",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3605,7 +3605,11 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-code-review",
+        "decided_at": "2026-08-03T01:03:36+0200",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Exact implementation head 2606610b approved with no findings."
       }
     },
     {

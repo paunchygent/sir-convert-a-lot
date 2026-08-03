@@ -5,7 +5,7 @@
 ## Counts
 
 - total | epic=9 | story=30 | task=99 | review=1
-- open | epic=6 | story=30 | task=98
+- open | epic=6 | story=30 | task=97
 
 ## Lookup
 
@@ -174,10 +174,6 @@
 - ST-SIRCON-07-03 | [SOLID domain coupling audit for exam converter implementation boundaries](stories/st-sircon-07-03-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md) | epic=[EPIC-SIRCON-07](epics/epic-sircon-07-exam-artifact-conversion-and-authoring-to-exam-net-compatible-targets.md) | tasks=proposed=2 | depends_on=0 | dependents=0
 - ST-SIRCON-08-01 | [Structured LLM provider harness for answer-key completion](stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md) | epic=[EPIC-SIRCON-08](epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md) | tasks=in_progress=3, proposed=3 | depends_on=0 | dependents=0
 - ST-SIRCON-08-04 | [Service API v2 idempotent replay and correction replay hardening](stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md) | epic=[EPIC-SIRCON-08](epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md) | tasks=none | depends_on=0 | dependents=0
-
-### ready
-
-- TASK-SIRCON-REP-0021 | [Organize root tests by service and domain ownership](tasks/task-sircon-rep-0021-organize-root-tests-by-service-and-domain-ownership.md) | stories=none | depends_on=0 | dependents=0
 
 ### in_progress
 

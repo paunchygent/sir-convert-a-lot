@@ -7,7 +7,7 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-03'
-status: ready
+status: done
 readiness_review:
   record: inline
   status: approved
@@ -17,7 +17,11 @@ readiness_review:
   approval_evidence: User-approved SIR test-topology decisions and inline Plan Document Review approval at 21bbb31a.
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-code-review
+  decided_at: '2026-08-03T01:03:36+0200'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: Exact implementation head 2606610b approved with no findings.
 task_kind: repository
 acceptance_criteria:
 - "Root tests are organized under seven existing behavior-owned directories: service, conversion, exam, speech, operations, research, and repository."
@@ -144,9 +148,9 @@ identity, `TASK-SIRCON-REP-0021`; the archived task remains unchanged.
 ## Readiness
 
 The ledger is closed from ST-SKILL-08-07, retained Sir quality discovery, and
-the user's explicit approval to proceed with the recommended next slice. The
-task remains proposed pending independent plan review. Implementation is not
-authorized yet.
+the user's explicit approval to proceed with the recommended next slice.
+Independent plan review approved the boundary, and the later user instruction
+to proceed authorized implementation.
 
 Residual risk is limited to a small number of test-support imports and
 path-sensitive assertions that may need test-only correction during moves.
@@ -190,4 +194,62 @@ path-sensitive assertions that may need test-only correction during moves.
 
 ## Closeout
 
-Not started.
+Implementation is complete and independently approved.
+
+- The flat root test corpus now lives under the seven accepted first-level
+  behavior directories: `service`, `conversion`, `exam`, `speech`,
+  `operations`, `research`, and `repository`.
+- The initial pre-move collection exposed two stale module-level lookups for
+  terminal backlog documents that had correctly moved to `.archive`. Per the
+  accepted historical-validator-off contract, three prose-pinning assertions
+  and their now-unused backlog-path helper were removed. The remaining
+  executable tests produced the clean topology baseline of 1,444 collected
+  tests.
+- Post-move collection completed with the same 1,444 tests and no collection
+  errors. The seven selected representative files passed 97 tests.
+- Move-caused changes are limited to test-support imports, repository-root and
+  fixture path depth, and import ordering.
+- Under the user-activated Boy Scout Rule, two touched speech tests were
+  corrected from the retired `docs/converters` path and fenced-JSON assumption
+  to the active `docs/reference` contract and its inline JSON shape. Their
+  combined focused scope passed 42 tests.
+- No production code, Qwen project, dependency, lock, quality fact, Docker,
+  Hemma, GPU, deployment, or product behavior changed. No broad root aggregate
+  or Qwen suite ran.
+
+## Implementation Review
+
+- Timestamp: `2026-08-03T01:03:36+0200`.
+- Reviewer: independent `ruthless-code-review`.
+- Decision: `approved`.
+- Reviewed scope and governing authority: exact implementation head
+  `2606610b4fd4a680adb43629fbe80930c32125b9` against base
+  `d85af8a423ee13105d4263f08a8e6ea343268c43`; TASK-SIRCON-REP-0021,
+  especially SIR-TOP-001 through SIR-TOP-008; ready ST-SKILL-08-07,
+  especially SIR-004F, SIR-004H, its protected product and operations
+  boundary, and repository-bounded slice 3; the user-authorized
+  historical-validator-off removal and Boy Scout correction; and the shared
+  proof-selection, forbidden-pattern, Scope Derivation Gate, and review
+  persistence contracts.
+- Findings: none. All 223 former flat root Python test and support modules now
+  reside in exactly the seven accepted first-level behavior directories, with
+  support imports and path depth adjusted where the move requires it. The
+  three removed assertions pinned historical backlog prose rather than current
+  executable behavior, and their sole helper became unused. The two touched
+  speech tests now read the active `docs/reference` contract and its actual
+  inline JSON shape. The diff changes no production, Qwen-project,
+  dependency/lock, quality-facts, Docker/Hemma/GPU/deployment, or product
+  behavior surface and adds no selector manifest, compatibility surface,
+  fallback, degraded state, or broad-suite requirement.
+- Permitted next step: the parent may preserve this approval, transition
+  TASK-SIRCON-REP-0021 from `in_progress` to `done` in a separate closeout
+  patch, and integrate the reviewed implementation into local `main`.
+- Residual risk: collection equality and the selected focused executions do
+  not claim that every one of the 1,444 collected tests executed. The accepted
+  contract deliberately excludes that broad aggregate; the unchanged
+  collection count, no collection errors, 97 representative passes, and 42
+  speech-scope passes provide the selected behavior-preserving proof.
+- Validation not run: the reviewer did not duplicate the supplied passing
+  collection, representative-test, speech-test, Ruff, mypy, docs-validation,
+  handoff-validation, or whitespace gates. No broad root aggregate, coverage
+  aggregate, Qwen suite, Docker, Hemma, GPU, deployment, or remote command ran.
