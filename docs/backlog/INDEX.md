@@ -4,8 +4,8 @@
 
 ## Counts
 
-- total | epic=9 | story=30 | task=97 | review=1
-- open | epic=6 | story=30 | task=97
+- total | epic=9 | story=30 | task=99 | review=1
+- open | epic=6 | story=30 | task=98
 
 ## Lookup
 
@@ -145,6 +145,8 @@
 - task | TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md)
 - task | TASK-SIRCON-REP-0019 | [Add English reference-clone lane to Chatterbox Hemma benchmark](tasks/task-sircon-rep-0019-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark.md)
 - task | TASK-SIRCON-REP-0021 | [Organize root tests by service and domain ownership](tasks/task-sircon-rep-0021-organize-root-tests-by-service-and-domain-ownership.md)
+- task | TASK-SIRCON-REP-0022 | [Expose local codex skills to the Claude harness via claude skills symlink](tasks/task-sircon-rep-0022-expose-local-codex-skills-to-the-claude-harness-via-claude-skills-symlink.md)
+- task | TASK-SIRCON-REP-0023 | [Repair the check-md markdown gate gfm extension](tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md)
 - review | REV-SIRCON-ST-08-02-CLOSEOUT | [Ruthless review of Story 48 DigiExam overlay and effective IR contract](reviews/rev-sircon-st-08-02-closeout-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract.md) | target=[ST-SIRCON-08-02](stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md)
 
 ## Active Lane
@@ -293,6 +295,7 @@
 - TASK-SIRCON-REP-0012 | [Finish or retire Task 200 Qwen metadata scaffolds](tasks/task-sircon-rep-0012-finish-or-retire-task-200-qwen-metadata-scaffolds.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0016 | [Bootstrap shared governance package facts and walking skeleton](tasks/task-sircon-rep-0016-bootstrap-shared-governance-package-facts-and-walking-skeleton.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md) | stories=none | depends_on=0 | dependents=0
+- TASK-SIRCON-REP-0023 | [Repair the check-md markdown gate gfm extension](tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md) | stories=none | depends_on=0 | dependents=0
 
 ## Dependency Graph
 

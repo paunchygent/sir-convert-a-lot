@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "98ae3fc3f8a012f641b67996986b3f25e26500b636c4ea429cce730299fac9b6",
+  "source_set_digest": "32111c7b0237db38ad88bd9ad746c889aab5e03fd3e154c60dd24da172315d35",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3602,6 +3602,58 @@
         "decided_at": "2026-08-03T00:20:55+0200",
         "approval_protocol": "agent-planning:user-closure-gate",
         "approval_evidence": "User-approved SIR test-topology decisions and inline Plan Document Review approval at 21bbb31a."
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0022",
+      "type": "task",
+      "title": "Expose local codex skills to the Claude harness via claude skills symlink",
+      "path": "docs/backlog/tasks/task-sircon-rep-0022-expose-local-codex-skills-to-the-claude-harness-via-claude-skills-symlink.md",
+      "status": "done",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "approved",
+        "reviewer": "plan-document-reviewer",
+        "decided_at": "2026-08-03T01:00:23+02:00",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User opened the symlink lane on 2026-08-03; independent plan-document-reviewer subagent approved in round 3 after the markdown-gate deferral was made truthful and unconditional."
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "approved",
+        "reviewer": "ruthless-code-review",
+        "decided_at": "2026-08-03T01:58:29+02:00",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Independent closeout subagent (not the implementer) verified the symlink resolution, all four SKILL.md reads, the deferred markdown gate, and scope; approved with zero blocking findings."
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0023",
+      "type": "task",
+      "title": "Repair the check-md markdown gate gfm extension",
+      "path": "docs/backlog/tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
       },
       "closeout_review": {
         "record": "inline",
