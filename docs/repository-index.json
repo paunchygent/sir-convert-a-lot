@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "ca51fe28d1f43bd5170f8d540d91940b3fdb8e080acdb1f9ecc6a984047973dc",
+  "source_set_digest": "c64f090dbe854aa0da82947f9cf71399a9a9d158889d19047e76c5eef21a70d4",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3695,7 +3695,7 @@
       "type": "task",
       "title": "Complete operations handoff and parity-gated governance retirement",
       "path": "docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md",
-      "status": "proposed",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3705,11 +3705,15 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User approved ST-SKILL-08-07's operations and parity-gated retirement slice and directed execution to proceed without needless ceremony on 2026-08-03."
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User directed the final cutover to proceed without additional ceremony and approved rolling shared-package repairs on 2026-08-03."
       }
     },
     {
