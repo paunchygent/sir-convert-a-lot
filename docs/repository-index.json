@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "dca91e4679e1970d93502e424d2d36be2a090bea72216622dd2f2d46c174ce76",
+  "source_set_digest": "1061f1fe74d8e484a41d6657d536083b2bda9d223d0e33ace094f66f16c4da54",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3695,7 +3695,7 @@
       "type": "task",
       "title": "Complete operations handoff and parity-gated governance retirement",
       "path": "docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md",
-      "status": "ready",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3711,7 +3711,9 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User directed the final cutover to proceed without additional ceremony and approved rolling shared-package repairs on 2026-08-03."
       }
     },
     {

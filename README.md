@@ -98,6 +98,6 @@ SSH path from an environment that otherwise looks like Hemma.
 **Governance:**
 
 - Active backlog: `docs/backlog/`
-- Docs contract: `docs/_meta/docs-contract.yaml`
+- Governed documentation: `docs/index.md`
 
 Before operating, consult [`AGENTS.md`](AGENTS.md) and execute quality gates.

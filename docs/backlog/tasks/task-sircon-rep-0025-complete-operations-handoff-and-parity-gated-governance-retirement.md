@@ -7,7 +7,7 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-08-03'
-status: ready
+status: done
 readiness_review:
   record: inline
   status: not_required
@@ -15,7 +15,9 @@ readiness_review:
   approval_evidence: User approved ST-SKILL-08-07's operations and parity-gated retirement slice and directed execution to proceed without needless ceremony on 2026-08-03.
 closeout_review:
   record: inline
-  status: not_started
+  status: not_required
+  approval_protocol: agent-planning:user-closure-gate
+  approval_evidence: User directed the final cutover to proceed without additional ceremony and approved rolling shared-package repairs on 2026-08-03.
 task_kind: repository
 acceptance_criteria:
   - Read-only operations, staleness, root-handoff, and active-route proof passes without deployment, restart, conversion, GPU, training, or remote mutation
@@ -34,10 +36,10 @@ routes.
 ## Impact And Escalation
 
 The write set is the root handoff and live entrypoint references,
-`pyproject.toml`, obsolete local Docs-as-Code files and their implementation
-test, this task, and generated indexes. Product code and commands, Qwen, Docker,
-deployment, conversion, GPU, training, dependencies, locks, and historical
-archive records are excluded.
+`pyproject.toml`, its tooling lock entry, obsolete local Docs-as-Code files and
+their implementation test, this task, and generated indexes. Product code and
+commands, Qwen, Docker, deployment, conversion, GPU, training, product
+dependencies, and historical archive records are excluded.
 
 ## Decision And Assumption Ledger
 
@@ -52,6 +54,7 @@ the task becomes ready.
 | FC-004 | operations | closed | Does `run-hemma` retire?                         | No. Preserve the Sir product wrapper and all Hemma/product/Qwen commands because exact transport parity is absent.                                                                                                              | Retained Explorer comparison; ST-SKILL-08-07                                       |
 | FC-005 | history    | closed | Are stale historical command mentions rewritten? | No. Preserve `.archive` and terminal historical evidence unchanged; audit only live routes.                                                                                                                                     | User archive/history decision                                                      |
 | FC-006 | proof      | closed | What proof is sufficient?                        | Shared docs, skills, handoff, staleness, active-route grep, one read-only local-wrapper Hemma transport probe, and diff checks. No broad root suite.                                                                            | ST-SKILL-08-07 accepted proof boundary                                             |
+| FC-007 | package    | closed | May the shared package advance during cutover?   | Yes. Roll the immutable governance pin and tooling lock whenever consumer proof discovers a required shared repair; do not freeze a package version in backlog prose.                                                           | Direct user decision                                                               |
 
 ## Plan
 
@@ -109,9 +112,26 @@ version or planning SHA.
 
 ## Readiness
 
-FC-001 through FC-006 are closed by the accepted story, direct user decisions,
+FC-001 through FC-007 are closed by the accepted story, direct user decisions,
 and current repository/package evidence. Implementation may begin.
 
 ## Closeout
 
-Pending implementation.
+The root handoff and every live route now use the shared contract. The obsolete
+local contract, migration profile, implementation, commands, and implementation
+test are removed; historical validation has no public route. Product-owned
+`run-hemma` remains local and returned `paunchygent-server` through the real
+read-only transport; its 12 focused tests pass.
+
+The cutover exposed two shared current-only defects. TASK-SKILL-REP-0079 made
+`run-hemma` ownership derive from declared Hemma facts. TASK-SKILL-REP-0080 made
+current-only docs commands reuse committed retired identities and moved the
+authored Markdown policy into the package. Sir consumes immutable 0.9.20 at
+`ad642130e887f4a829e3579346f714c41e1e41cd`.
+
+`docs-sync`, `docs-validate`, `skills-validate`, `handoff-validate`, binding
+validation, deterministic staleness audit, active-route audit, and
+`git diff --check` pass. The derived `repository` check plan selected only its
+35 repository tests plus named validators; execution passed. No broad root,
+Qwen, product-service, Docker, GPU, deployment, conversion, or training suite
+ran.
