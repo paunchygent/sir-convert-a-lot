@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "7122e50ac1080cde72331a45a9c454d2e50a297aef3613b8f5a9ce135acb36c1",
+  "source_set_digest": "dca91e4679e1970d93502e424d2d36be2a090bea72216622dd2f2d46c174ce76",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3695,7 +3695,7 @@
       "type": "task",
       "title": "Complete operations handoff and parity-gated governance retirement",
       "path": "docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md",
-      "status": "proposed",
+      "status": "ready",
       "task_kind": "repository",
       "owners": [
         {
@@ -3705,7 +3705,9 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User approved ST-SKILL-08-07's operations and parity-gated retirement slice and directed execution to proceed without needless ceremony on 2026-08-03."
       },
       "closeout_review": {
         "record": "inline",
