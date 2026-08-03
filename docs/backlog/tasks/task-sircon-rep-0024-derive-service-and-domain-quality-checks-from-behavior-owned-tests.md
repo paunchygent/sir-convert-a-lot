@@ -4,10 +4,10 @@ id: TASK-SIRCON-REP-0024
 title: Derive service and domain quality checks from behavior-owned tests
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-03'
-status: ready
+status: done
 readiness_review:
   record: inline
   status: not_required
@@ -15,15 +15,14 @@ readiness_review:
   approval_evidence: User directed reuse of HuleEdu's Git-derived service/domain design, prohibited a broad root test gate, and authorized this task to proceed without added ceremony on 2026-08-03.
 closeout_review:
   record: inline
-  status: not_started
+  status: not_required
+  approval_protocol: agent-planning:user-closure-gate
+  approval_evidence: User directed this bounded derived-configuration task to keep moving without needless review ceremony; exact command-boundary proof passed on 2026-08-03.
 task_kind: repository
 acceptance_criteria:
-- Repository quality projects are derived from the seven behavior-owned root test
-  directories without a selector manifest
-- Named service and domain checks run only their owned scopes while Qwen remains a
-  separate PDM project
-- Focused configuration and command-boundary proof passes without running the broad
-  root aggregate
+  - Repository quality projects are derived from the seven behavior-owned root test directories without a selector manifest
+  - Named service and domain checks run only their owned scopes while Qwen remains a separate PDM project
+  - Focused configuration and command-boundary proof passes without running the broad root aggregate
 ---
 
 ## Context
@@ -48,13 +47,13 @@ command names, and broad-suite policy are unchanged.
 Every material implementation choice must be closed by an accepted source before
 the task becomes ready.
 
-| ID | Type | Status | Question/Assumption | Recommendation/Decision | Source |
-| --- | --- | --- | --- | --- | --- |
-| DQ-001 | topology | closed | How are scopes declared? | Declare one `component-root` cohort at `tests/sir_convert_a_lot`; Git-tracked immediate children derive the seven scopes. Add no selector manifest. | User direction; HuleEdu design; retained Explorer discovery |
-| DQ-002 | execution | closed | How are tests targeted? | Set `test-target = "component"` and dispatch through the existing root `pytest-root` producer. Each named scope receives only its directory. | Package 0.9.17 contract; TASK-SKILL-REP-0062 |
-| DQ-003 | typing | closed | How is the matching type check selected? | Dispatch the selected directory through the existing `typecheck-all` producer. | Existing Sir command; retained Explorer discovery |
-| DQ-004 | isolation | closed | Does Qwen join the routine root aggregate? | No. Qwen remains a separate setup project and receives no quality project, cohort, producer, or aggregate in this task. | User direction; current repository topology |
-| DQ-005 | proof | closed | Is the broad root suite required? | No. Prove the generated plan and one representative named scope at the command boundary, plus configuration/docs checks. | User direction |
+| ID     | Type      | Status | Question/Assumption                        | Recommendation/Decision                                                                                                                             | Source                                                      |
+| ------ | --------- | ------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| DQ-001 | topology  | closed | How are scopes declared?                   | Declare one `component-root` cohort at `tests/sir_convert_a_lot`; Git-tracked immediate children derive the seven scopes. Add no selector manifest. | User direction; HuleEdu design; retained Explorer discovery |
+| DQ-002 | execution | closed | How are tests targeted?                    | Set `test-target = "component"` and dispatch through the existing root `pytest-root` producer. Each named scope receives only its directory.        | Package 0.9.17 contract; TASK-SKILL-REP-0062                |
+| DQ-003 | typing    | closed | How is the matching type check selected?   | Dispatch the selected directory through the existing `typecheck-all` producer.                                                                      | Existing Sir command; retained Explorer discovery           |
+| DQ-004 | isolation | closed | Does Qwen join the routine root aggregate? | No. Qwen remains a separate setup project and receives no quality project, cohort, producer, or aggregate in this task.                             | User direction; current repository topology                 |
+| DQ-005 | proof     | closed | Is the broad root suite required?          | No. Prove the generated plan and one representative named scope at the command boundary, plus configuration/docs checks.                            | User direction                                              |
 
 ## Plan
 
@@ -112,4 +111,25 @@ additional review ceremony. Implementation may begin.
 
 ## Closeout
 
-Pending implementation.
+Implemented the root quality project, existing-command producers, one
+Git-derived behavior cohort, and the normal docs validator. The plan derives
+exactly `conversion`, `exam`, `operations`, `repository`, `research`, `service`,
+and `speech`. The representative `service` plan targets only
+`tests/sir_convert_a_lot/service` for both mypy and pytest; Qwen is absent.
+
+Proof:
+
+- Pre-change `pdm run check --plan service` failed with no valid named scopes.
+- Post-change `pdm run check --plan service` returned the seven derived
+  components and the focused service command vectors.
+- `pdm run check service` passed after formatting the new task record. It ran the
+  focused typecheck/test selections, docs validation, and diff check without the
+  broad root suite.
+- No product code, tests, Qwen facts, shared-package code, coverage command, or
+  selector manifest changed.
+
+Independent closeout review is waived under the user's explicit instruction to
+reuse the accepted HuleEdu/package pattern and avoid additional ceremony for
+this bounded consumer-facts change. Residual risk is limited to the other six
+derived scopes not being executed in this task; their exact command vectors are
+visible in the successful plan and will run when selected by their owners.

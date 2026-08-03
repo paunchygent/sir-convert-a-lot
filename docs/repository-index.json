@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "bee87901e91bd7d142d3ea4ca2dd5b30ee9b64aa9a583e6ee907d688af47ea10",
+  "source_set_digest": "ce15ce46c5279cd8a1bf96b4ef58a7c652ea0d686af206870bdf80d658243f68",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3669,7 +3669,7 @@
       "type": "task",
       "title": "Derive service and domain quality checks from behavior-owned tests",
       "path": "docs/backlog/tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md",
-      "status": "ready",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3685,7 +3685,9 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User directed this bounded derived-configuration task to keep moving without needless review ceremony; exact command-boundary proof passed on 2026-08-03."
       }
     },
     {
