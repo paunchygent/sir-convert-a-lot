@@ -1,7 +1,7 @@
 ## Current
 
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
-  is completing the shared-governance cutover. Product, Hemma, GPU, conversion,
+  completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
 - Root quality has seven Git-derived scopes: `service`, `conversion`, `exam`,
   `speech`, `operations`, `research`, and `repository`. Select the owning scope;
