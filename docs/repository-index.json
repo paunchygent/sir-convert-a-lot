@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "9819e256e21a9b329a2ee6846dd79facb6f4245dd8161a82fd0725c0e0607443",
+  "source_set_digest": "5aaf921bab5a419f69af854c2368547006a47174527dbe53dca0716e3f3610c4",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3647,6 +3647,28 @@
       "type": "task",
       "title": "Repair the check-md markdown gate gfm extension",
       "path": "docs/backlog/tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0024",
+      "type": "task",
+      "title": "Derive service and domain quality checks from behavior-owned tests",
+      "path": "docs/backlog/tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md",
       "status": "proposed",
       "task_kind": "repository",
       "owners": [
