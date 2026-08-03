@@ -4,8 +4,8 @@
 
 ## Counts
 
-- total | epic=9 | story=30 | task=100 | review=1
-- open | epic=6 | story=30 | task=97
+- total | epic=9 | story=30 | task=101 | review=1
+- open | epic=6 | story=30 | task=98
 
 ## Lookup
 
@@ -148,6 +148,7 @@
 - task | TASK-SIRCON-REP-0022 | [Expose local codex skills to the Claude harness via claude skills symlink](tasks/task-sircon-rep-0022-expose-local-codex-skills-to-the-claude-harness-via-claude-skills-symlink.md)
 - task | TASK-SIRCON-REP-0023 | [Repair the check-md markdown gate gfm extension](tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md)
 - task | TASK-SIRCON-REP-0024 | [Derive service and domain quality checks from behavior-owned tests](tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md)
+- task | TASK-SIRCON-REP-0025 | [Complete operations handoff and parity-gated governance retirement](tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
 - review | REV-SIRCON-ST-08-02-CLOSEOUT | [Ruthless review of Story 48 DigiExam overlay and effective IR contract](reviews/rev-sircon-st-08-02-closeout-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract.md) | target=[ST-SIRCON-08-02](stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md)
 
 ## Active Lane
@@ -293,6 +294,7 @@
 - TASK-SIRCON-REP-0016 | [Bootstrap shared governance package facts and walking skeleton](tasks/task-sircon-rep-0016-bootstrap-shared-governance-package-facts-and-walking-skeleton.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0018 | [Extract YouTube reference audio for Chatterbox pipeline](tasks/task-sircon-rep-0018-extract-youtube-reference-audio-for-chatterbox-pipeline.md) | stories=none | depends_on=0 | dependents=0
 - TASK-SIRCON-REP-0023 | [Repair the check-md markdown gate gfm extension](tasks/task-sircon-rep-0023-repair-the-check-md-markdown-gate-gfm-extension.md) | stories=none | depends_on=0 | dependents=0
+- TASK-SIRCON-REP-0025 | [Complete operations handoff and parity-gated governance retirement](tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md) | stories=none | depends_on=0 | dependents=0
 
 ## Dependency Graph
 

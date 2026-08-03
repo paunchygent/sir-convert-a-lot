@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "ce15ce46c5279cd8a1bf96b4ef58a7c652ea0d686af206870bdf80d658243f68",
+  "source_set_digest": "7122e50ac1080cde72331a45a9c454d2e50a297aef3613b8f5a9ce135acb36c1",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3688,6 +3688,28 @@
         "status": "not_required",
         "approval_protocol": "agent-planning:user-closure-gate",
         "approval_evidence": "User directed this bounded derived-configuration task to keep moving without needless review ceremony; exact command-boundary proof passed on 2026-08-03."
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0025",
+      "type": "task",
+      "title": "Complete operations handoff and parity-gated governance retirement",
+      "path": "docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "readiness_review": {
+        "record": "inline",
+        "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {
