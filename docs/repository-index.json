@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "9c1088164f2944006b4fcc31e0213ce55b1d89a1b5593d5efef6520a98d0f9d2",
+  "source_set_digest": "82d4c79462a8137f892d70baef8a5250aa47bd79e5d974354412d62b0f67b941",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -262,6 +262,21 @@
       ],
       "retired_ids": [
         "review-15-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract"
+      ]
+    },
+    {
+      "id": "REV-SIRCON-TASK-REP-0026-CLOSEOUT",
+      "type": "review",
+      "title": "TASK-SIRCON-REP-0026 closeout review",
+      "path": "docs/backlog/reviews/rev-sircon-task-rep-0026-closeout-task-sircon-rep-0026-closeout-review.md",
+      "status": "approved",
+      "target": "TASK-SIRCON-REP-0026",
+      "gate": "closeout",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
       ]
     },
     {
@@ -3735,11 +3750,12 @@
         "reviewer": "user",
         "decided_at": "2026-08-03T10:00:00+02:00",
         "approval_protocol": "agent-planning:user-closure-gate",
-        "approval_evidence": "User directive of 2026-08-03 ordered the three remaining ST-SKILL-08-09 conformance slices; every ledger row derives from that accepted parent story (CON-003, CON-004, CON-005) and its Notes on the deferred markdown gate. No independent plan-document-reviewer ran in this session."
+        "approval_evidence": "User directive of 2026-08-03 ordered the three remaining ST-SKILL-08-09 conformance slices; every decided term derives from that accepted parent story (CON-003, CON-004, CON-005) and its note on the deferred markdown gate. No independent plan-document-reviewer ran in that session."
       },
       "closeout_review": {
-        "record": "inline",
-        "status": "not_started"
+        "record": "REV-SIRCON-TASK-REP-0026-CLOSEOUT",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "REV-SIRCON-TASK-REP-0026-CLOSEOUT"
       }
     },
     {
