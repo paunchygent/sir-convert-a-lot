@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "82d4c79462a8137f892d70baef8a5250aa47bd79e5d974354412d62b0f67b941",
+  "source_set_digest": "b3401db15b8501d1e2f4c33b7041055e8b38a39db274de30b6755c70424e7661",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3736,7 +3736,7 @@
       "type": "task",
       "title": "Publish the Sir Convert-a-Lot platform discovery overview",
       "path": "docs/backlog/tasks/task-sircon-rep-0026-publish-the-sir-convert-a-lot-platform-discovery-overview.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
