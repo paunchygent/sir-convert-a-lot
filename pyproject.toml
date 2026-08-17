@@ -38,7 +38,7 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
 ]
 tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@251df10d02160e911fd6ea449967307e25ff8be5#subdirectory=packages/repository_governance",
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@de4faadfd70c7ff8268377640f5ad048f68039ed#subdirectory=packages/repository_governance",
 ]
 
 [tool.repository-governance]
@@ -161,8 +161,8 @@ distribution = false
 
 [tool.pdm.scripts]
 # repository-governance:bindings:start
-setup = "pdm run --project ${HOME}/.codex/repository-governance-runtime cross-repo-worktree-bootstrap --repo-root ${PDM_PROJECT_ROOT}"
-new-worktree = "pdm run --project ${HOME}/.codex/repository-governance-runtime cross-repo-worktree-create --repo-root ${PDM_PROJECT_ROOT}"
+setup = "/usr/bin/env -u PYTHONPATH -u PEP582_PACKAGES pdm run --project ${HOME}/.codex/repository-governance-runtime cross-repo-worktree-bootstrap --repo-root ${PDM_PROJECT_ROOT}"
+new-worktree = "/usr/bin/env -u PYTHONPATH -u PEP582_PACKAGES pdm run --project ${HOME}/.codex/repository-governance-runtime cross-repo-worktree-create --repo-root ${PDM_PROJECT_ROOT}"
 format = "repository-governance-routine format --repo-root ${PDM_PROJECT_ROOT}"
 lint = "repository-governance-routine lint --repo-root ${PDM_PROJECT_ROOT}"
 typecheck = "repository-governance-routine typecheck --repo-root ${PDM_PROJECT_ROOT}"
