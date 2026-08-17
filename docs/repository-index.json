@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "b4bb80b4bb68aeac06a4ac300c67233cdf1c5f1fa7de8fad0b5c4e0a6378975e",
+  "source_set_digest": "1f0416fa9f61c5b59a99ef07a89e1d69eebee974f9cf1420a853f4289d8b2646",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3781,7 +3781,7 @@
       "type": "task",
       "title": "Adopt the repository-governance live authority resolution repair",
       "path": "docs/backlog/tasks/task-sircon-rep-0028-adopt-the-repository-governance-live-authority-resolution-repair.md",
-      "status": "proposed",
+      "status": "ready",
       "task_kind": "repository",
       "owners": [
         {
