@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "a3b651a7521e597339d878c681e382b11136bda5adb0a79206cf08f09a53204a",
+  "source_set_digest": "b4bb80b4bb68aeac06a4ac300c67233cdf1c5f1fa7de8fad0b5c4e0a6378975e",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3764,6 +3764,24 @@
       "title": "Adopt the repository-governance binding durability repair",
       "path": "docs/backlog/tasks/task-sircon-rep-0027-adopt-the-repository-governance-binding-durability-repair.md",
       "status": "ready",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0028",
+      "type": "task",
+      "title": "Adopt the repository-governance live authority resolution repair",
+      "path": "docs/backlog/tasks/task-sircon-rep-0028-adopt-the-repository-governance-live-authority-resolution-repair.md",
+      "status": "proposed",
       "task_kind": "repository",
       "owners": [
         {
