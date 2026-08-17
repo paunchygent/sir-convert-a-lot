@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "b3401db15b8501d1e2f4c33b7041055e8b38a39db274de30b6755c70424e7661",
+  "source_set_digest": "58fdf24bc4e485414905c166e9773911298f86e04767fdc21c1de0d7b72d68f5",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3756,6 +3756,24 @@
         "record": "REV-SIRCON-TASK-REP-0026-CLOSEOUT",
         "approval_protocol": "agent-overseer:approved-review-closeout",
         "approval_evidence": "REV-SIRCON-TASK-REP-0026-CLOSEOUT"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0027",
+      "type": "task",
+      "title": "Adopt the repository-governance binding durability repair",
+      "path": "docs/backlog/tasks/task-sircon-rep-0027-adopt-the-repository-governance-binding-durability-repair.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {
