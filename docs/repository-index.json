@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "1f0416fa9f61c5b59a99ef07a89e1d69eebee974f9cf1420a853f4289d8b2646",
+  "source_set_digest": "bfae7d0fe43dc3914eb3bb86864f02310452f0a4eeb5ad966476552817ad396a",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3763,7 +3763,7 @@
       "type": "task",
       "title": "Adopt the repository-governance binding durability repair",
       "path": "docs/backlog/tasks/task-sircon-rep-0027-adopt-the-repository-governance-binding-durability-repair.md",
-      "status": "ready",
+      "status": "canceled",
       "task_kind": "repository",
       "owners": [
         {
@@ -3773,7 +3773,9 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User-directed supersession under TASK-SKILL-REP-0123 on 2026-08-20 after the direct Sir Convert-a-Lot cutover to repository-governance 0.11.10; the former 0.11.4 adoption scope owns no implementation closeout."
       }
     },
     {
@@ -3781,7 +3783,7 @@
       "type": "task",
       "title": "Adopt the repository-governance live authority resolution repair",
       "path": "docs/backlog/tasks/task-sircon-rep-0028-adopt-the-repository-governance-live-authority-resolution-repair.md",
-      "status": "ready",
+      "status": "canceled",
       "task_kind": "repository",
       "owners": [
         {
@@ -3791,7 +3793,9 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "User-directed supersession under TASK-SKILL-REP-0123 on 2026-08-20 after the direct Sir Convert-a-Lot cutover to repository-governance 0.11.10; the former 0.11.6 adoption scope owns no implementation closeout."
       }
     },
     {

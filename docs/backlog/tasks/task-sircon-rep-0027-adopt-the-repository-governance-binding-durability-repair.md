@@ -7,16 +7,27 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-08-17'
-status: ready
+status: canceled
 closeout_review:
   record: inline
-  status: not_started
+  status: not_required
+  approval_protocol: agent-planning:user-closure-gate
+  approval_evidence: User-directed supersession under TASK-SKILL-REP-0123 on 2026-08-20 after the direct Sir Convert-a-Lot cutover to repository-governance 0.11.10; the former 0.11.4 adoption scope owns no implementation closeout.
 task_kind: repository
 acceptance_criteria:
   - Sir Convert-a-Lot pins and locks repository-governance 0.11.4 and regenerates the reserved binding block that version validates
   - A worktree whose governing authority is archived keeps resolving that authority and its declared setup groups
 backlog_document_profile: contract-derived
 ---
+
+## Cancellation And Supersession
+
+This task is canceled as superseded. The direct consumer cutover under
+`TASK-SKILL-REP-0123` published repository-governance `0.11.10` at revision
+`3f9aaffe1363f02f16888290da3c08a59bc555dd`; Sir Convert-a-Lot main records the
+cutover in `74db9664472247e98ff9c286eec17baf1641a5c5`. The former `0.11.4`
+contract below remains historical context and owns no further implementation,
+lock, setup, or validation work.
 
 ## Implementation Contract
 
