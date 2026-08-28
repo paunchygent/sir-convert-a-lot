@@ -248,7 +248,46 @@ def _validate_contract_rules(
             continue
         errors.extend(_positive_mapping_errors(name, root))
         errors.extend(_scoring_shape_errors(name, root))
+        errors.extend(_prompt_placement_errors(name, root))
     return tuple(errors)
+
+
+def _prompt_placement_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:
+    body = root.find(f"{{{QTI_NAMESPACE}}}itemBody")
+    if body is None:
+        return ()
+    interaction_tags = tuple(
+        f"{{{QTI_NAMESPACE}}}{tag}"
+        for tag in ("choiceInteraction", "matchInteraction", "extendedTextInteraction")
+    )
+    interactions = tuple(child for child in body.iter() if child.tag in interaction_tags)
+    if not interactions:
+        return ()
+    errors: list[str] = []
+    for interaction in interactions:
+        local_tag = interaction.tag.removeprefix(f"{{{QTI_NAMESPACE}}}")
+        prompt = interaction.find(f"{{{QTI_NAMESPACE}}}prompt")
+        if prompt is None or not _prompt_has_content(prompt):
+            errors.append(f"{name} {local_tag} must carry a non-empty prompt.")
+    children = tuple(body)
+    interaction_index = next(
+        (index for index, child in enumerate(children) if child.tag in interaction_tags),
+        None,
+    )
+    if interaction_index is not None:
+        for child in children[:interaction_index]:
+            child_tag = child.tag.removeprefix(f"{{{QTI_NAMESPACE}}}")
+            errors.append(
+                f"{name} has sibling body content ({child_tag}) before the interaction; "
+                "the stem belongs inside the interaction prompt."
+            )
+    return tuple(errors)
+
+
+def _prompt_has_content(prompt: ElementTree.Element) -> bool:
+    if "".join(prompt.itertext()).strip():
+        return True
+    return next(iter(prompt), None) is not None
 
 
 def _positive_mapping_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:

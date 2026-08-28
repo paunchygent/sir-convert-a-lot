@@ -139,6 +139,15 @@ def test_choice_packages_encode_single_and_multiple_cardinality(tmp_path: Path) 
         "http://www.imsglobal.org/question/qti_v2p1/rptemplates/map_response"
     )
     assert _response_processing_template(multiple_item) == MAP_RESPONSE_TEMPLATE
+    assert next(iter(_choice_interaction(single_item))).tag == f"{{{QTI_NAMESPACE}}}prompt"
+    assert (_interaction_prompt(single_item, "choiceInteraction").text or "").startswith(
+        "Vilket svar kopplar"
+    )
+    assert (_interaction_prompt(multiple_item, "choiceInteraction").text or "").startswith(
+        "Vilka drag stärker"
+    )
+    assert _item_body_paragraphs(single_item) == []
+    assert _item_body_paragraphs(multiple_item) == []
 
 
 def test_gap_fill_package_encodes_text_entries_and_accepted_values(tmp_path: Path) -> None:
@@ -257,6 +266,13 @@ def test_export_only_matching_sample_preserves_visible_content_as_manual_free_te
     assert item.find(f".//{{{QTI_NAMESPACE}}}correctResponse") is None
     assert item.find(f".//{{{QTI_NAMESPACE}}}mapping") is None
     assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
+    prompt = _interaction_prompt(item, "extendedTextInteraction")
+    prompt_lines = [paragraph.text for paragraph in prompt.findall(f"{{{QTI_NAMESPACE}}}p")]
+    assert prompt_lines[:2] == [
+        "Para ihop varje begrepp med rätt förklaring.",
+        "Vänster kolumn:",
+    ]
+    assert _item_body_paragraphs(item) == []
     assert "Vänster kolumn:" in _item_xml(sample_dir / "qti-package.zip")
     assert _json_string(report, "examnet_proof_status") == (
         ExamNetQtiExamNetProofStatus.VENDOR_REPORTED_UNPROVEN
@@ -276,7 +292,8 @@ def test_free_text_package_uses_extended_text_without_answer_key(tmp_path: Path)
     }
     assert _map_entry_pairs(item) == [("CRITERION_FULL", "9")]
     assert _response_processing_template(item) == MAP_RESPONSE_TEMPLATE
-    assert "Resonera kring" in _item_xml(sample_dir / "qti-package.zip")
+    assert "Resonera kring" in (_interaction_prompt(item, "extendedTextInteraction").text or "")
+    assert _item_body_paragraphs(item) == []
 
 
 def test_image_packages_include_manifest_hrefs_and_resolved_item_images(tmp_path: Path) -> None:
@@ -293,6 +310,12 @@ def test_image_packages_include_manifest_hrefs_and_resolved_item_images(tmp_path
         assert '<file href="resources/item_001-image_001.png"' in manifest
         assert 'src="../resources/item_001-image_001.png"' in item_xml
         assert 'src="resources/item_001-image_001.png"' not in item_xml
+        item = ElementTree.fromstring(item_xml)
+        prompt_images = item.findall(f".//{{{QTI_NAMESPACE}}}prompt/{{{QTI_NAMESPACE}}}img")
+        assert [image.attrib["src"] for image in prompt_images] == [
+            "../resources/item_001-image_001.png"
+        ]
+        assert _item_body_paragraphs(item) == []
         report = _read_report(sample_dir / "qti-validation-report.json")
         assert _json_string(report, "package_sha256") == _sha256(sample_dir / "qti-package.zip")
 
@@ -324,6 +347,11 @@ def test_matching_package_is_valid_but_examnet_proof_gated(tmp_path: Path) -> No
         ("left_004 right_004", "1"),
     ]
     assert _response_processing_template(item) == MAP_RESPONSE_TEMPLATE
+    assert next(iter(match_interaction)).tag == f"{{{QTI_NAMESPACE}}}prompt"
+    assert (_interaction_prompt(item, "matchInteraction").text or "").startswith(
+        "Para ihop varje cellstruktur"
+    )
+    assert _item_body_paragraphs(item) == []
     assert _json_string(report, "target_support_status") == (
         ExamNetQtiTargetSupportStatus.PROOF_GATED
     )
@@ -694,6 +722,18 @@ def _choice_interaction(item: ElementTree.Element) -> ElementTree.Element:
     interaction = item.find(f".//{{{QTI_NAMESPACE}}}choiceInteraction")
     assert interaction is not None
     return interaction
+
+
+def _interaction_prompt(item: ElementTree.Element, tag: str) -> ElementTree.Element:
+    interaction = item.find(f".//{{{QTI_NAMESPACE}}}{tag}")
+    assert interaction is not None
+    prompt = interaction.find(f"{{{QTI_NAMESPACE}}}prompt")
+    assert prompt is not None
+    return prompt
+
+
+def _item_body_paragraphs(item: ElementTree.Element) -> list[ElementTree.Element]:
+    return item.findall(f"{{{QTI_NAMESPACE}}}itemBody/{{{QTI_NAMESPACE}}}p")
 
 
 def _mapping(item: ElementTree.Element) -> ElementTree.Element:

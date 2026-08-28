@@ -55,6 +55,14 @@ Cross-cutting importer behavior (confirmed):
   nesting, titles, and section-level `rubricBlock` content are discarded.
   Sibling and rubric content inside one item stays attached to that item as
   visible blocks; candidate and scorer views render alike.
+- The question stem must live inside the interaction's own `<prompt>` element
+  (first interaction child) for choice, matching, and free-text items; images
+  for those items go inside the prompt after the stem text (P048). Stem text
+  emitted as sibling body content instead splits into a parent information
+  block with the interaction nested under it as a promptless sub-question
+  that Exam.net flags with a missing-prompt warning (P006; live-confirmed on
+  a production package 2026-08-29). Sibling attachment is for genuinely
+  supplementary content only, never the stem.
 - `correctResponse` supplies the visible answer key for keyed choice and
   matching items. Positive `mapping` entries (with `map_response`) supply
   scoring rules and totals. A mapping without `correctResponse` on a keyed
@@ -112,6 +120,10 @@ Writer obligations derived from this contract (enforced by
 `examnet_qti_validation.py` content validators and the regression fixtures):
 
 - Always emit the `assessmentTest` resource with complete dependency wiring.
+- Choice, matching, and free-text items carry a non-empty `<prompt>` as the
+  interaction's first child holding the stem (and any images); no block
+  sibling precedes the interaction in `itemBody`. Gap items keep their
+  inline gap text as the body.
 - Keyed choice and matching items always emit `correctResponse`, positive
   mappings, and `map_response`; never `match_correct`.
 - Never emit negative mapped values, mappings without `correctResponse` on

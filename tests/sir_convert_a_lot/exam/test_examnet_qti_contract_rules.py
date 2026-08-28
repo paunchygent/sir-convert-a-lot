@@ -192,6 +192,38 @@ def test_unreferenced_item_resource_fails_preflight() -> None:
     assert "not referenced by an assessmentItemRef" in report.errors[0]
 
 
+def test_missing_interaction_prompt_fails_preflight() -> None:
+    plan = _sample_plan("single-choice-mcq")
+    package_bytes = _mutated_zip_bytes(
+        plan,
+        "items/item_001.xml",
+        lambda xml: _regex_removed(xml, r"\s*<prompt>.*?</prompt>"),
+    )
+
+    report = _preflight(plan, package_bytes)
+
+    assert report.package_status == ExamNetQtiPackageStatus.FAILED
+    assert "choiceInteraction must carry a non-empty prompt" in report.errors[0]
+
+
+def test_sibling_body_content_before_interaction_fails_preflight() -> None:
+    plan = _sample_plan("single-choice-mcq")
+    package_bytes = _mutated_zip_bytes(
+        plan,
+        "items/item_001.xml",
+        lambda xml: _replaced(
+            xml,
+            "<itemBody>",
+            "<itemBody><p>[STRAY] sibling stem before the interaction</p>",
+        ),
+    )
+
+    report = _preflight(plan, package_bytes)
+
+    assert report.package_status == ExamNetQtiPackageStatus.FAILED
+    assert "sibling body content (p) before the interaction" in report.errors[0]
+
+
 def _sample_plan(sample_name: str) -> ExamNetQtiPackagePlan:
     samples = {sample.name: sample for sample in examnet_qti_keyed_samples()}
     sample = samples[sample_name]
