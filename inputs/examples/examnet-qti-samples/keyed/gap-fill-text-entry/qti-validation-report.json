@@ -4,7 +4,7 @@
   "generator_version": "examnet_qti_2_1_v1",
   "manual_follow_ups": [],
   "package_filename": "qti-package.zip",
-  "package_sha256": "5a40db19c38aa75a8751574edc9934c598bf94633d99c08f74e1677cb4c1a795",
+  "package_sha256": "f37465070f0d531d843eae060a9fa9ca7f21574e90716e9aff4102de43584c79",
   "package_status": "passed",
   "profile_id": "examnet_qti_2_1_v1",
   "qti_version": "2.1",
@@ -13,14 +13,14 @@
   "validator_results": [
     {
       "layer": "package_xml_preflight",
-      "message": "Package files, XML documents, manifest hrefs, and image references passed.",
+      "message": "Package files, XML documents, manifest hrefs, assessment-test wiring, contract rules, and image references passed.",
       "name": "sir-convert-local-qti-package-preflight",
       "status": "passed",
       "version": "examnet_qti_2_1_v1"
     },
     {
       "layer": "official_qti_validation",
-      "message": "Official 1EdTech validation is recorded as an external dependency for this local Exam.net QTI gate.",
+      "message": "Official 1EdTech validation is recorded as an external dependency for this local keyed QTI gate.",
       "name": "1EdTech QTI validator",
       "status": "external_validator_unavailable",
       "version": "external"

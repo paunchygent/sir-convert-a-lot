@@ -1,15 +1,22 @@
 ## Current
 
 - [TASK-SIRCON-REP-0029](docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md)
-  is `proposed`: repair the Exam.net QTI export (emit `assessmentTest`, emit
-  only empirically confirmed lanes, promote the diagnostic probe ledger to a
-  governed reference, turn probes into regression fixtures). Contract derives
-  from retained planning session `01a048d5-69f7-7394-93dd-8ff91af608cd`
-  (`evidence/planning/TASK-SIRCON-REP-0029/plan.md`), which absorbed the
-  Exam.net diagnostic session `01a0474c-158e-7bf1-85ae-6adb4198c143` and its
-  validated boundary ledger.
+  is `in_progress` with the writer repair implemented: packages now emit an
+  `assessmentTest` (`imsqti_test_xmlv2p1`) with manifest dependency wiring;
+  choice/matching items emit `correctResponse` plus positive exact-sum
+  mappings and `map_response` (no `match_correct`, no `shuffle`); gap items
+  split the item score per gap; keyed free text emits one full-score
+  criterion mapping; five content validators and the probe-derived
+  `test_examnet_qti_contract_rules.py` fixtures enforce the contract.
+  `pdm run check exam` passes with no failed phases; sample packages are
+  regenerated. The empirical contract is governed as
+  `REF-SIRCON-GENERAL-exam-net-qti-import-contract-empirical-observations`,
+  superseding the vendor-reported strategy reference. Remaining acceptance
+  gate: live Exam.net import proof of a regenerated package. Planning
+  session `01a048d5-69f7-7394-93dd-8ff91af608cd` absorbed diagnostic session
+  `01a0474c-158e-7bf1-85ae-6adb4198c143` and its validated boundary ledger.
 - [TASK-SIRCON-08-01-07](docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md)
-  is `proposed`: exam-lane answer-key completion moves to a GPT-5.6 Luna
+  is `ready`: exam-lane answer-key completion moves to a GPT-5.6 Luna
   low-effort default with GLM-5.3-flash (OpenRouter) failover-only backup and
   a 5,000,000 token/day non-refundable lease (UTC-midnight reset, fail-closed
   exhaustion).

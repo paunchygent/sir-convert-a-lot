@@ -16,11 +16,15 @@ from __future__ import annotations
 
 import hashlib
 import io
+import posixpath
 import zipfile
 from dataclasses import asdict
 from enum import StrEnum
 from xml.etree import ElementTree
 
+from scripts.sir_convert_a_lot.domain.examnet_qti_assessment_test_xml import (
+    EXAMNET_QTI_TEST_RESOURCE_TYPE,
+)
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     EXAMNET_QTI_GENERATOR_VERSION,
     EXAMNET_QTI_VALIDATION_REPORT_SCHEMA_VERSION,
@@ -35,6 +39,8 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_package import IMSCP_NAMESPACE
 from scripts.sir_convert_a_lot.domain.examnet_qti_xml import QTI_NAMESPACE
 
 _FORBIDDEN_PACKAGE_SUFFIXES = (".mp3", ".wav", ".m4a", ".pdf", ".ggb")
+_ITEM_RESOURCE_TYPE = "imsqti_item_xmlv2p1"
+_MATCH_CORRECT_TEMPLATE = "http://www.imsglobal.org/question/qti_v2p1/rptemplates/match_correct"
 
 
 def build_examnet_qti_validation_report(
@@ -116,7 +122,10 @@ def _local_validation_result(
         version=EXAMNET_QTI_GENERATOR_VERSION,
         layer="package_xml_preflight",
         status=ExamNetQtiValidationStatus.PASSED,
-        message="Package files, XML documents, manifest hrefs, and image references passed.",
+        message=(
+            "Package files, XML documents, manifest hrefs, assessment-test wiring, "
+            "contract rules, and image references passed."
+        ),
     )
 
 
@@ -127,7 +136,9 @@ def _validate_package_bytes(package_bytes: bytes) -> tuple[str, ...]:
             names = tuple(archive.namelist())
             errors.extend(_validate_package_names(names))
             errors.extend(_validate_manifest(archive, names))
+            errors.extend(_validate_assessment_test(archive, names))
             errors.extend(_validate_item_image_references(archive, names))
+            errors.extend(_validate_contract_rules(archive, names))
     except zipfile.BadZipFile:
         errors.append("Package is not a readable zip archive.")
     return tuple(errors)
@@ -163,6 +174,207 @@ def _validate_manifest(archive: zipfile.ZipFile, names: tuple[str, ...]) -> tupl
     return tuple(errors)
 
 
+def _validate_assessment_test(
+    archive: zipfile.ZipFile,
+    names: tuple[str, ...],
+) -> tuple[str, ...]:
+    if "imsmanifest.xml" not in names:
+        return ()
+    manifest_root = _parse_or_none(archive.read("imsmanifest.xml"))
+    if manifest_root is None:
+        return ()
+    errors: list[str] = []
+    resources = manifest_root.findall(f".//{{{IMSCP_NAMESPACE}}}resource")
+    test_resources = tuple(
+        resource
+        for resource in resources
+        if resource.attrib.get("type") == EXAMNET_QTI_TEST_RESOURCE_TYPE
+    )
+    if len(test_resources) != 1:
+        return (f"Manifest must declare exactly one {EXAMNET_QTI_TEST_RESOURCE_TYPE} resource.",)
+    test_resource = test_resources[0]
+    item_identifiers = {
+        resource.attrib.get("identifier", "")
+        for resource in resources
+        if resource.attrib.get("type") == _ITEM_RESOURCE_TYPE
+    }
+    dependency_refs = {
+        dependency.attrib.get("identifierref", "")
+        for dependency in test_resource.findall(f"{{{IMSCP_NAMESPACE}}}dependency")
+    }
+    missing_refs = sorted(item_identifiers - dependency_refs)
+    if missing_refs:
+        errors.append(
+            "Assessment test resource is missing dependencies on item resources: "
+            + ", ".join(missing_refs)
+            + "."
+        )
+    href = test_resource.attrib.get("href")
+    if href is None or href not in names:
+        errors.append("Assessment test href does not resolve inside the package.")
+        return tuple(errors)
+    test_root = _parse_xml(archive.read(href), href, errors)
+    if test_root is None:
+        return tuple(errors)
+    if test_root.tag != f"{{{QTI_NAMESPACE}}}assessmentTest":
+        errors.append(f"{href} root is not a QTI assessmentTest.")
+    ref_hrefs: set[str] = set()
+    for item_ref in test_root.findall(f".//{{{QTI_NAMESPACE}}}assessmentItemRef"):
+        ref_href = item_ref.attrib.get("href")
+        if ref_href is None or ref_href not in names:
+            errors.append(f"assessmentItemRef href {ref_href} does not resolve inside the package.")
+        if ref_href is not None:
+            ref_hrefs.add(ref_href)
+    item_hrefs = {
+        resource.attrib["href"]
+        for resource in resources
+        if resource.attrib.get("type") == _ITEM_RESOURCE_TYPE and "href" in resource.attrib
+    }
+    for item_href in sorted(item_hrefs - ref_hrefs):
+        errors.append(f"Item resource href {item_href} is not referenced by an assessmentItemRef.")
+    return tuple(errors)
+
+
+def _validate_contract_rules(
+    archive: zipfile.ZipFile,
+    names: tuple[str, ...],
+) -> tuple[str, ...]:
+    errors: list[str] = []
+    for name in names:
+        if not name.endswith(".xml"):
+            continue
+        root = _parse_or_none(archive.read(name))
+        if root is None:
+            continue
+        errors.extend(_positive_mapping_errors(name, root))
+        errors.extend(_scoring_shape_errors(name, root))
+        errors.extend(_prompt_placement_errors(name, root))
+    return tuple(errors)
+
+
+def _prompt_placement_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:
+    body = root.find(f"{{{QTI_NAMESPACE}}}itemBody")
+    if body is None:
+        return ()
+    interaction_tags = tuple(
+        f"{{{QTI_NAMESPACE}}}{tag}"
+        for tag in ("choiceInteraction", "matchInteraction", "extendedTextInteraction")
+    )
+    interactions = tuple(child for child in body.iter() if child.tag in interaction_tags)
+    if not interactions:
+        return ()
+    errors: list[str] = []
+    for interaction in interactions:
+        local_tag = interaction.tag.removeprefix(f"{{{QTI_NAMESPACE}}}")
+        prompt = interaction.find(f"{{{QTI_NAMESPACE}}}prompt")
+        if prompt is None or not _prompt_has_content(prompt):
+            errors.append(f"{name} {local_tag} must carry a non-empty prompt.")
+    children = tuple(body)
+    interaction_index = next(
+        (index for index, child in enumerate(children) if child.tag in interaction_tags),
+        None,
+    )
+    if interaction_index is not None:
+        for child in children[:interaction_index]:
+            child_tag = child.tag.removeprefix(f"{{{QTI_NAMESPACE}}}")
+            errors.append(
+                f"{name} has sibling body content ({child_tag}) before the interaction; "
+                "the stem belongs inside the interaction prompt."
+            )
+    return tuple(errors)
+
+
+def _prompt_has_content(prompt: ElementTree.Element) -> bool:
+    if "".join(prompt.itertext()).strip():
+        return True
+    return next(iter(prompt), None) is not None
+
+
+def _positive_mapping_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:
+    errors: list[str] = []
+    for entry in root.iter(f"{{{QTI_NAMESPACE}}}mapEntry"):
+        raw_value = entry.attrib.get("mappedValue")
+        if raw_value is None or not _is_positive_number(raw_value):
+            errors.append(f"{name} mapEntry mappedValue {raw_value!r} must be a positive number.")
+    return tuple(errors)
+
+
+def _scoring_shape_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:
+    errors: list[str] = []
+    declarations = {
+        declaration.attrib.get("identifier", ""): declaration
+        for declaration in root.findall(f"{{{QTI_NAMESPACE}}}responseDeclaration")
+    }
+    for tag in ("choiceInteraction", "matchInteraction"):
+        for interaction in root.iter(f"{{{QTI_NAMESPACE}}}{tag}"):
+            if "shuffle" in interaction.attrib:
+                errors.append(f"{name} {tag} must not carry a shuffle attribute.")
+            declaration = declarations.get(interaction.attrib.get("responseIdentifier", ""))
+            if declaration is None:
+                continue
+            has_mapping = declaration.find(f"{{{QTI_NAMESPACE}}}mapping") is not None
+            has_correct = declaration.find(f"{{{QTI_NAMESPACE}}}correctResponse") is not None
+            if has_mapping and not has_correct:
+                errors.append(f"{name} {tag} has a mapping without correctResponse.")
+    errors.extend(_match_correct_template_errors(name, root))
+    for interaction in root.iter(f"{{{QTI_NAMESPACE}}}matchInteraction"):
+        errors.extend(_matching_left_coverage_errors(name, interaction, declarations))
+    return tuple(errors)
+
+
+def _match_correct_template_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:
+    has_choice_or_match = any(
+        root.find(f".//{{{QTI_NAMESPACE}}}{tag}") is not None
+        for tag in ("choiceInteraction", "matchInteraction")
+    )
+    if not has_choice_or_match:
+        return ()
+    return tuple(
+        f"{name} must not use the match_correct responseProcessing template."
+        for processing in root.findall(f"{{{QTI_NAMESPACE}}}responseProcessing")
+        if processing.attrib.get("template") == _MATCH_CORRECT_TEMPLATE
+    )
+
+
+def _matching_left_coverage_errors(
+    name: str,
+    interaction: ElementTree.Element,
+    declarations: dict[str, ElementTree.Element],
+) -> tuple[str, ...]:
+    match_sets = interaction.findall(f"{{{QTI_NAMESPACE}}}simpleMatchSet")
+    if not match_sets:
+        return ()
+    covered: set[str] = set()
+    declaration = declarations.get(interaction.attrib.get("responseIdentifier", ""))
+    if declaration is not None:
+        for value in declaration.findall(
+            f"{{{QTI_NAMESPACE}}}correctResponse/{{{QTI_NAMESPACE}}}value"
+        ):
+            pair = (value.text or "").split()
+            if pair:
+                covered.add(pair[0])
+    return tuple(
+        f"{name} matching left choice {choice.attrib.get('identifier', '')} "
+        "has no correct association."
+        for choice in match_sets[0].findall(f"{{{QTI_NAMESPACE}}}simpleAssociableChoice")
+        if choice.attrib.get("identifier", "") not in covered
+    )
+
+
+def _is_positive_number(raw_value: str) -> bool:
+    try:
+        return float(raw_value) > 0
+    except ValueError:
+        return False
+
+
+def _parse_or_none(payload: bytes) -> ElementTree.Element | None:
+    try:
+        return ElementTree.fromstring(payload)
+    except ElementTree.ParseError:
+        return None
+
+
 def _validate_item_image_references(
     archive: zipfile.ZipFile,
     names: tuple[str, ...],
@@ -180,7 +392,14 @@ def _validate_item_image_references(
             image_src = image.attrib.get("src")
             if image_src is None:
                 errors.append(f"{name} contains an image without src.")
-            elif image_src not in names:
+                continue
+            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), image_src))
+            if resolved.startswith("items/resources/"):
+                errors.append(
+                    f"{name} image src {image_src} uses the refuted package-root style; "
+                    "item XML must reference ../resources/."
+                )
+            elif resolved not in names:
                 errors.append(f"{name} image src {image_src} does not resolve inside package.")
     return tuple(errors)
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "f717190a7b8155d566ff2439e439d9ecf13fe85117eabba72b2e8f0e4e185f06",
+  "source_set_digest": "9a1e39813302f0dee51676871c5902d1ce3ff646af95a9fa4951b178e2be428d",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4299,6 +4299,20 @@
       ],
       "retired_ids": [
         "REF-examnet-qti-import-contract-and-validation-strategy"
+      ]
+    },
+    {
+      "id": "REF-SIRCON-GENERAL-exam-net-qti-import-contract-empirical-observations",
+      "type": "reference",
+      "title": "Exam.net QTI import contract empirical observations",
+      "path": "docs/reference/ref-sircon-general-exam-net-qti-import-contract-empirical-observations-exam-net-qti-import-contract-empirical-observations.md",
+      "status": "active",
+      "reference_kind": "general",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
       ]
     },
     {
