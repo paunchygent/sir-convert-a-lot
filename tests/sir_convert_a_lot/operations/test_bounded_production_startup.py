@@ -248,6 +248,29 @@ def test_readiness_accepts_exact_200_payload(monkeypatch: pytest.MonkeyPatch) ->
     assert seen_urls == ["http://127.0.0.1:28085/readyz"]
 
 
+def test_readiness_retries_transient_connection_reset(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = _Runner(deadline=10.0, api_port="127.0.0.1:28085\n")
+    responses: list[OSError | _Response] = [
+        ConnectionResetError(104, "Connection reset by peer"),
+        _Response(status=200, body=_ready_payload()),
+    ]
+
+    def urlopen(url: str, *, timeout: float) -> _Response:
+        del url, timeout
+        response = responses.pop(0)
+        if isinstance(response, OSError):
+            raise response
+        return response
+
+    monkeypatch.setattr(startup.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(startup.time, "monotonic", lambda: 0.0)
+    monkeypatch.setattr(startup.time, "sleep", lambda seconds: None)
+
+    startup._poll_ready(runner, head=HEAD)
+
+    assert responses == []
+
+
 @pytest.mark.parametrize(
     ("status", "payload"),
     [

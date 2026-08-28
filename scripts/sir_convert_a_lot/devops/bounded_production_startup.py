@@ -271,8 +271,8 @@ def _poll_ready(runner: CommandRunner, *, head: str) -> None:
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
             last_diagnostic = f"HTTP {exc.code}: {body}"
-        except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
-            last_diagnostic = str(exc)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            last_diagnostic = f"{type(exc).__name__}: {exc}"
         if runner.deadline - time.monotonic() <= 0:
             raise StartupFailure(
                 f"API readiness timed out; last diagnostic: {last_diagnostic}",
