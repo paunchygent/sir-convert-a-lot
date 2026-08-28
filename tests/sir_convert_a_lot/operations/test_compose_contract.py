@@ -380,6 +380,7 @@ def test_prod_compose_helper_targets_production_compose_surface() -> None:
     script_text = PROD_COMPOSE_SCRIPT.read_text(encoding="utf-8")
     assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"' in script_text
     assert 'SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"' in script_text
+    assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
 
 
 def test_prod_pdm_scripts_expose_dependency_image_lane() -> None:
