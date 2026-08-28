@@ -11,8 +11,16 @@
 #
 
 ARG DEPS_IMAGE=sir-convert-a-lot-deps-rocm:local
+ARG SERVICE_REVISION
+ARG SIR_CONVERT_A_LOT_DEPENDENCY_IMAGE_HASH
 
 FROM ${DEPS_IMAGE} AS runtime
+
+ARG SERVICE_REVISION
+ARG SIR_CONVERT_A_LOT_DEPENDENCY_IMAGE_HASH
+
+LABEL org.opencontainers.image.revision="${SERVICE_REVISION}" \
+      sir-convert-a-lot.dependency-image-hash="${SIR_CONVERT_A_LOT_DEPENDENCY_IMAGE_HASH}"
 
 COPY scripts/__init__.py ./scripts/__init__.py
 COPY scripts/sir_convert_a_lot/__init__.py ./scripts/sir_convert_a_lot/__init__.py
