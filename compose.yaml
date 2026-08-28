@@ -1,3 +1,4 @@
+---
 services:
   sir_convert_a_lot_prod:
     image: sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}
@@ -5,9 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DEPS_IMAGE: ${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}
+        DEPS_IMAGE:
+          "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:\
+          local}"
     container_name: sir_convert_a_lot_prod
-    restart: unless-stopped
+    restart: "no"
     environment:
       - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}
       - SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET=${SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET:-}
@@ -52,7 +55,10 @@ services:
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - SIR_CONVERT_A_LOT_OPENAI_API_KEY=${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
-      - HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON=${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?Set sanitized HuleEdu hemma-production internal identity trust profile JSON}
+      - "HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON=\
+        ${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:\
+        ?Set sanitized \
+        HuleEdu hemma-production internal identity trust profile JSON}"
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.service:app
@@ -76,7 +82,8 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8085/readyz')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:\
+          8085/readyz')",
         ]
       interval: 30s
       timeout: 10s
@@ -89,9 +96,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DEPS_IMAGE: ${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}
+        DEPS_IMAGE:
+          "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:\
+          local}"
     container_name: sir_convert_a_lot_gpu_worker
-    restart: unless-stopped
+    restart: "no"
     environment:
       - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}
       - SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET=${SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET:-}
@@ -132,7 +141,10 @@ services:
       - SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH=${SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH:-/srv/scratch/sir-convert-a-lot/build/verification/answer-key-qwen-provider/vision-assets}
       - SIR_CONVERT_A_LOT_OPENAI_API_KEY=${SIR_CONVERT_A_LOT_OPENAI_API_KEY:-}
       - HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH=/run/secrets/huleedu-gateway-internal-identity-public-key.pem
-      - HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON=${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:?Set sanitized HuleEdu hemma-production internal identity trust profile JSON}
+      - "HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON=\
+        ${HULEEDU_INTERNAL_IDENTITY_TRUST_PROFILE_JSON:\
+        ?Set sanitized \
+        HuleEdu hemma-production internal identity trust profile JSON}"
     command:
       - uvicorn
       - scripts.sir_convert_a_lot.service:app
@@ -165,7 +177,8 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8085/readyz')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:\
+          8085/readyz')",
         ]
       interval: 30s
       timeout: 10s
@@ -173,12 +186,16 @@ services:
       start_period: 15s
 
   sir_convert_a_lot_stt_sidecar:
-    image: sir-convert-a-lot-stt-sidecar:${SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG:-local}
+    image:
+      "sir-convert-a-lot-stt-sidecar:${SIR_CONVERT_A_LOT_\
+      STT_SIDECAR_IMAGE_TAG:-local}"
     build:
       context: .
       dockerfile: containers/stt-sidecar-benchmark/Dockerfile
       args:
-        BASE_IMAGE: ${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}
+        BASE_IMAGE:
+          "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:\
+          local}"
     container_name: sir_convert_a_lot_stt_sidecar
     restart: unless-stopped
     environment:
@@ -230,12 +247,16 @@ services:
   sir_convert_qwen_answer_key:
     profiles:
       - qwen-answer-key
-    image: sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}
+    image:
+      "sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_\
+      QWEN_PROVIDER_IMAGE_TAG:-local}"
     build:
       context: .
       dockerfile: Dockerfile.qwen-provider
       args:
-        QWEN_PROVIDER_BASE_IMAGE: ${SIR_CONVERT_A_LOT_QWEN_PROVIDER_BASE_IMAGE:-rocm/vllm:rocm7.12.0_gfx120X-all_ubuntu24.04_py3.12_pytorch_2.9.1_vllm_0.16.0}
+        QWEN_PROVIDER_BASE_IMAGE:
+          "${SIR_CONVERT_A_LOT_QWEN_PROVIDER_BASE_IMAGE:-rocm/vllm:\
+          rocm7.12.0_gfx120X-all_ubuntu24.04_py3.12_pytorch_2.9.1_vllm_0.16.0}"
     container_name: sir_convert_qwen_answer_key
     restart: unless-stopped
     environment:
@@ -299,7 +320,8 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8082/v1/models')",
+          "import urllib.request; urllib.request.urlopen('http://localhost:\
+          8082/v1/models')",
         ]
       interval: 30s
       timeout: 10s

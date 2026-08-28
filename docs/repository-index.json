@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "2905cda4a24a9232349029fc885f36145f2f5b36b6e69630302c9f3d4f46e0f3",
+  "source_set_digest": "de64b8e4b536b58673a395b3b35ce23ffa280be4e6bae7fce6d4fdd08e32aac6",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -1306,7 +1306,7 @@
       "type": "task",
       "title": "Bound Hemma production startup to API revision and GPU readiness",
       "path": "docs/backlog/tasks/task-sircon-01-05-04-bound-hemma-production-startup-to-api-revision-and-gpu-readiness.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "story",
       "story": "ST-SIRCON-01-05",
       "owners": [

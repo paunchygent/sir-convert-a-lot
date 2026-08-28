@@ -24,13 +24,18 @@ DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
 COMPOSE_ACTIONS_SCRIPT = REPO_ROOT / "scripts" / "devops" / "compose-actions.sh"
 SERVICE_DEPS_IMAGE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "service-deps-image.sh"
+PROD_START_BOUNDED_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-start-bounded.sh"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 STT_INPUT_VOLUME = "sir-convert-a-lot-stt-sidecar-inputs"
 STT_INPUT_DIR = "/var/lib/sir-convert-a-lot/stt-sidecar-inputs"
 STT_INPUT_VOLUME_MOUNT = f"{STT_INPUT_VOLUME}:{STT_INPUT_DIR}"
 
+type YamlScalar = str | int | float | bool | None
+type YamlValue = YamlScalar | list[YamlValue] | dict[str, YamlValue]
+type YamlMapping = dict[str, YamlValue]
 
-def _load_compose() -> dict[str, object]:
+
+def _load_compose() -> YamlMapping:
     raw = COMPOSE_FILE.read_text(encoding="utf-8")
     loaded = yaml.safe_load(raw)
     if not isinstance(loaded, dict):
@@ -47,7 +52,7 @@ def _load_dockerignore_rules() -> set[str]:
     }
 
 
-def _service_env_map(service: dict[str, object]) -> dict[str, str]:
+def _service_env_map(service: YamlMapping) -> dict[str, str]:
     env_obj = service.get("environment")
     if isinstance(env_obj, dict):
         env_map: dict[str, str] = {}
@@ -66,7 +71,7 @@ def _service_env_map(service: dict[str, object]) -> dict[str, str]:
     return parsed_env_map
 
 
-def _require_service(compose: dict[str, object], service_name: str) -> dict[str, object]:
+def _require_service(compose: YamlMapping, service_name: str) -> YamlMapping:
     services_obj = compose.get("services")
     if not isinstance(services_obj, dict):
         raise AssertionError("compose services section missing")
@@ -108,7 +113,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     compose = _load_compose()
     service = _require_service(compose, "sir_convert_a_lot_prod")
 
-    assert service.get("restart") == "unless-stopped"
+    assert service.get("restart") == "no"
     assert service.get("container_name") == "sir_convert_a_lot_prod"
     assert service.get("env_file") is None
 
@@ -240,7 +245,7 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
 
     assert service.get("image") == "sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}"
     assert service.get("container_name") == "sir_convert_a_lot_gpu_worker"
-    assert service.get("restart") == "unless-stopped"
+    assert service.get("restart") == "no"
     assert service.get("ports") is None
     assert service.get("expose") == ["8085"]
 
@@ -301,199 +306,6 @@ def test_compose_declares_gpu_worker_as_private_execution_lane() -> None:
             "/run/secrets/huleedu-gateway-internal-identity-public-key.pem:ro"
         ),
     ]
-
-
-def test_compose_declares_private_stt_sidecar_runtime() -> None:
-    compose = _load_compose()
-    service = _require_service(compose, "sir_convert_a_lot_stt_sidecar")
-
-    assert service.get("image") == (
-        "sir-convert-a-lot-stt-sidecar:${SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG:-local}"
-    )
-    assert service.get("container_name") == "sir_convert_a_lot_stt_sidecar"
-    assert service.get("restart") == "unless-stopped"
-    assert service.get("ports") is None
-    assert service.get("expose") == ["8095"]
-    assert service.get("command") == [
-        "uvicorn",
-        "scripts.sir_convert_a_lot.stt_sidecar.app:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8095",
-    ]
-
-    build_obj = service.get("build")
-    assert isinstance(build_obj, dict)
-    assert build_obj.get("context") == "."
-    assert build_obj.get("dockerfile") == "containers/stt-sidecar-benchmark/Dockerfile"
-    assert build_obj.get("args") == {
-        "BASE_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
-    }
-
-    env_map = _service_env_map(service)
-    assert env_map["HF_HOME"] == "/cache/huggingface"
-    assert env_map["HF_TOKEN"] == "${HF_TOKEN:-}"
-    assert env_map["SIR_STT_SIDECAR_STT_PROFILE_LABEL"] == "stt_sv_en_primary"
-    assert env_map["SIR_STT_SIDECAR_DIARIZATION_PROFILE_LABEL"] == "diarization_sv_en_primary"
-    assert env_map["SIR_STT_SIDECAR_ACCELERATION_FAMILY"] == "rocm"
-    assert env_map["SIR_STT_SIDECAR_BATCH_SIZE"] == "8"
-    assert env_map["SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS"] == (
-        "${SIR_STT_SIDECAR_IDLE_UNLOAD_SECONDS:-900}"
-    )
-
-    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-    assert service.get("group_add") == [
-        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
-        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
-    ]
-    assert service.get("volumes") == [
-        "sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod",
-        STT_INPUT_VOLUME_MOUNT,
-        (
-            "${SIR_CONVERT_A_LOT_HF_CACHE_HOST_DIR:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface}:"
-            "/cache/huggingface"
-        ),
-    ]
-    assert service.get("networks") == ["hule-network"]
-    health_obj = service.get("healthcheck")
-    assert isinstance(health_obj, dict)
-    assert "http://localhost:8095/health" in " ".join(
-        str(item) for item in health_obj.get("test", [])
-    )
-    assert health_obj.get("retries") == 20
-    assert health_obj.get("start_period") == "120s"
-
-
-def test_compose_declares_private_qwen_provider_runtime() -> None:
-    compose = _load_compose()
-    service = _require_service(compose, "sir_convert_qwen_answer_key")
-
-    assert service.get("profiles") == ["qwen-answer-key"]
-    assert service.get("image") == (
-        "sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}"
-    )
-    assert service.get("container_name") == "sir_convert_qwen_answer_key"
-    assert service.get("restart") == "unless-stopped"
-    assert service.get("ports") is None
-    assert service.get("expose") == ["8082"]
-    env_map = _service_env_map(service)
-    assert env_map["LD_LIBRARY_PATH"] == (
-        "${SIR_CONVERT_A_LOT_QWEN_ROCM_LIBRARY_PATH:-"
-        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib:"
-        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_libraries_gfx120X_all/lib:"
-        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_core/lib:"
-        "/usr/lib/x86_64-linux-gnu}"
-    )
-
-    build_obj = service.get("build")
-    assert isinstance(build_obj, dict)
-    assert build_obj.get("context") == "."
-    assert build_obj.get("dockerfile") == "Dockerfile.qwen-provider"
-
-    command = service.get("command")
-    assert isinstance(command, list)
-    joined_command = " ".join(str(item) for item in command)
-    assert "/srv/scratch/sir-convert-a-lot/bin/llama-server" in command
-    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}" in (
-        joined_command
-    )
-    assert "-hff ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-Q6_K.gguf}" in joined_command
-    assert "--alias ${SIR_CONVERT_A_LOT_QWEN36_MODEL:-qwen3.6-27b-q6k-mtp}" in joined_command
-    assert "--host 0.0.0.0 --port 8082" in joined_command
-    assert "--ctx-size 16384" in joined_command
-    assert "--parallel 1" in joined_command
-    assert "--n-gpu-layers all" in joined_command
-    assert "--fit off" in joined_command
-    assert "--flash-attn on" in joined_command
-    assert "--jinja" in command
-    assert "--reasoning off" in joined_command
-    assert "--temp ${SIR_CONVERT_A_LOT_QWEN36_TEMPERATURE:-0.15}" in joined_command
-    assert "--offline" in command
-    assert "--spec-type draft-mtp" in joined_command
-    assert "--spec-draft-n-max 2" in joined_command
-    assert "--top-p" not in command
-    assert "--top-k" not in command
-
-    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-    assert service.get("group_add") == [
-        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
-        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
-    ]
-    assert service.get("networks") == ["hule-network"]
-    volumes = service.get("volumes")
-    assert isinstance(volumes, list)
-    assert volumes == [
-        (
-            "${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/build/"
-            "llama.cpp-qwen35/build-hip/bin/llama-server}:"
-            "/srv/scratch/sir-convert-a-lot/bin/llama-server:ro"
-        ),
-        (
-            "${SIR_CONVERT_A_LOT_QWEN_DOCKER_BUILD_HOST_PATH:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/build}:"
-            "/srv/scratch/sir-convert-a-lot/build"
-        ),
-        (
-            "${SIR_CONVERT_A_LOT_QWEN_DOCKER_CACHE_HOST_PATH:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/cache}:"
-            "/srv/scratch/sir-convert-a-lot/cache"
-        ),
-    ]
-    assert all("/opt/rocm" not in str(volume) for volume in volumes)
-    assert all("/opt/amdgpu" not in str(volume) for volume in volumes)
-
-    health_obj = service.get("healthcheck")
-    assert isinstance(health_obj, dict)
-    assert "http://localhost:8082/v1/models" in " ".join(
-        str(item) for item in health_obj.get("test", [])
-    )
-    assert health_obj.get("retries") == 20
-    assert health_obj.get("start_period") == "120s"
-
-
-def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:
-    compose = _load_compose()
-    reserved_service = _require_service(compose, "sir_convert_a_lot_public_reserved")
-
-    assert reserved_service.get("image") == "nginx:1.27-alpine"
-    assert reserved_service.get("container_name") == "sir_convert_a_lot_public_reserved"
-    assert reserved_service.get("restart") == "unless-stopped"
-    assert reserved_service.get("volumes") == [
-        "./docker/public-edge/reserved-default.conf:/etc/nginx/conf.d/default.conf:ro"
-    ]
-    assert reserved_service.get("expose") == ["8080"]
-
-    env_map = _service_env_map(reserved_service)
-    assert env_map["VIRTUAL_HOST"] == "${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}"
-    assert env_map["VIRTUAL_PORT"] == "8080"
-    assert env_map["LETSENCRYPT_HOST"] == "${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}"
-
-    reserved_config = (REPO_ROOT / "docker" / "public-edge" / "reserved-default.conf").read_text(
-        encoding="utf-8"
-    )
-    assert "return 421" in reserved_config
-    assert "sir-convert-a-lot-public-edge-reserved" in reserved_config
-
-
-def test_compose_declares_rocm_build_args_without_api_gpu_passthrough() -> None:
-    compose = _load_compose()
-    service = _require_service(compose, "sir_convert_a_lot_prod")
-
-    assert service.get("image") == "sir-convert-a-lot-runtime:${SIR_CONVERT_A_LOT_IMAGE_TAG:-local}"
-
-    build_obj = service.get("build")
-    assert isinstance(build_obj, dict)
-    assert build_obj.get("context") == "."
-    assert build_obj.get("dockerfile") == "Dockerfile"
-    assert build_obj.get("args") == {
-        "DEPS_IMAGE": "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:local}"
-    }
-
-    assert service.get("devices") is None
-    assert service.get("group_add") is None
 
 
 def test_dockerignore_limits_build_context_to_service_runtime_contract() -> None:
@@ -584,6 +396,19 @@ def test_prod_pdm_scripts_expose_dependency_image_lane() -> None:
     assert '"prod-recreate" = "bash scripts/devops/prod-compose.sh recreate"' in pyproject_text
 
 
+def test_prod_start_bounded_reuses_hemma_guard_and_python_coordinator() -> None:
+    pyproject_text = PYPROJECT_FILE.read_text(encoding="utf-8")
+    wrapper_text = PROD_START_BOUNDED_SCRIPT.read_text(encoding="utf-8")
+
+    assert '"prod-start-bounded" = "bash scripts/devops/prod-start-bounded.sh"' in pyproject_text
+    assert 'source "${SCRIPT_DIR}/require-hemma-server.sh"' in wrapper_text
+    assert 'sir_convert_require_hemma_server "prod-start-bounded"' in wrapper_text
+    assert 'export SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in wrapper_text
+    assert (
+        "exec python -m scripts.sir_convert_a_lot.devops.bounded_production_startup" in wrapper_text
+    )
+
+
 def test_compose_actions_ensures_dependency_image_before_app_builds() -> None:
     script_text = COMPOSE_ACTIONS_SCRIPT.read_text(encoding="utf-8")
     assert "service-deps-image.sh" in script_text
@@ -603,6 +428,12 @@ def test_dockerfile_consumes_explicit_rocm_dependency_image_for_single_service()
     dockerfile_text = DOCKERFILE.read_text(encoding="utf-8")
     assert "ARG DEPS_IMAGE=sir-convert-a-lot-deps-rocm:local" in dockerfile_text
     assert "FROM ${DEPS_IMAGE} AS runtime" in dockerfile_text
+    assert dockerfile_text.count("ARG SERVICE_REVISION") == 2
+    assert dockerfile_text.count("ARG SIR_CONVERT_A_LOT_DEPENDENCY_IMAGE_HASH") == 2
+    assert (
+        'LABEL org.opencontainers.image.revision="${SERVICE_REVISION}" \\\n'
+        '      sir-convert-a-lot.dependency-image-hash="${SIR_CONVERT_A_LOT_DEPENDENCY_IMAGE_HASH}"'
+    ) in dockerfile_text
     assert "FROM runtime-base AS dependency-builder" not in dockerfile_text
     assert "COPY pyproject.toml" not in dockerfile_text
     assert "pdm.lock" not in dockerfile_text

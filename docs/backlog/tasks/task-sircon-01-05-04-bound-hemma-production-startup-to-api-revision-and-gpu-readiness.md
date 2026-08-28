@@ -4,34 +4,26 @@ id: TASK-SIRCON-01-05-04
 title: Bound Hemma production startup to API revision and GPU readiness
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
-status: ready
+status: in_progress
 closeout_review:
   record: inline
   status: not_started
 story: ST-SIRCON-01-05
 task_kind: story
 acceptance_criteria:
-- A current API starts without any dependency-image helper invocation and passes exact
-  `/readyz` revision/profile/data-root parity.
-- A stale API builds and recreates only `sir_convert_a_lot_prod`; GPU worker, STT,
-  Qwen, dependency-image, and persistent-data identities remain unchanged.
-- No stale application image can report current solely because Compose injected current
-  revision environment values; the selected image labels, tag, and ID prove its source
-  revision and dependency identity before start.
-- "`--no-deps` prevents the GPU worker's Compose dependency edge from starting STT, and before/after identity evidence proves every excluded service stayed untouched."
-- GPU proof targets `sir_convert_a_lot_gpu_worker` and proves ROCm torch, `/dev/kfd`,
-  `/dev/dri`, and `rocm-smi` visibility.
-- API and GPU worker finish with source and live `restart=no`; mismatch is a failing
-  result.
-- Failure retains the failed boundary and never falls back to CPU, broad recreate,
-  dependency rebuild, or unrelated service startup.
-- The command terminates within 120 seconds, prints exactly one final accepted outcome,
-  and returns zero only for `succeeded`.
+  - A current API starts without any dependency-image helper invocation and passes exact `/readyz` revision/profile/data-root parity.
+  - A stale API builds and recreates only `sir_convert_a_lot_prod`; GPU worker, STT, Qwen, dependency-image, and persistent-data identities remain unchanged.
+  - No stale application image can report current solely because Compose injected current revision environment values; the selected image labels, tag, and ID prove its source revision and dependency identity before start.
+  - "`--no-deps` prevents the GPU worker's Compose dependency edge from starting STT, and before/after identity evidence proves every excluded service stayed untouched."
+  - GPU proof targets `sir_convert_a_lot_gpu_worker` and proves ROCm torch, `/dev/kfd`, `/dev/dri`, and `rocm-smi` visibility.
+  - API and GPU worker finish with source and live `restart=no`; mismatch is a failing result.
+  - Failure retains the failed boundary and never falls back to CPU, broad recreate, dependency rebuild, or unrelated service startup.
+  - The command terminates within 120 seconds, prints exactly one final accepted outcome, and returns zero only for `succeeded`.
 retired_ids:
-- task-384-bound-hemma-production-startup-to-api-revision-and-gpu-readiness
+  - task-384-bound-hemma-production-startup-to-api-revision-and-gpu-readiness
 backlog_document_profile: contract-derived
 ---
 
@@ -114,13 +106,13 @@ adds no live conversion workload and performs no broad rebuild or recreate.
 
 ## Decided Contract Terms
 
-| ID | Decided contract term |
-| --- | --------------------- |
-| D01 | The bounded command owns only `sir_convert_a_lot_prod` and `sir_convert_a_lot_gpu_worker`; all other services remain excluded and identity-stable. |
-| D02 | A stale API is repaired by building the exact application image and force-recreating only the API with `--no-deps --no-build`. |
+| ID  | Decided contract term                                                                                                                                                |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D01 | The bounded command owns only `sir_convert_a_lot_prod` and `sir_convert_a_lot_gpu_worker`; all other services remain excluded and identity-stable.                   |
+| D02 | A stale API is repaired by building the exact application image and force-recreating only the API with `--no-deps --no-build`.                                       |
 | D03 | Dependency identity is computed without invoking the dependency-image helper, and the already-present hash-addressed ROCm image plus all identity labels must match. |
-| D04 | The application image tag, ID, OCI revision label, and dependency-hash label must prove provenance before runtime revision values are injected. |
-| D05 | Selected services start separately with `--no-deps`; a stale running worker stops the command instead of being recreated. |
-| D06 | Readiness requires exact revision, production profile, and data-root parity within 120 seconds, followed by GPU proof at the worker boundary with no CPU fallback. |
-| D07 | Source and live restart policies for the API and GPU worker must finish as `restart=no`. |
-| D08 | Exactly one terminal outcome is printed; only `succeeded` exits zero, while failure preserves diagnostics and performs no broad recovery. |
+| D04 | The application image tag, ID, OCI revision label, and dependency-hash label must prove provenance before runtime revision values are injected.                      |
+| D05 | Selected services start separately with `--no-deps`; a stale running worker stops the command instead of being recreated.                                            |
+| D06 | Readiness requires exact revision, production profile, and data-root parity within 120 seconds, followed by GPU proof at the worker boundary with no CPU fallback.   |
+| D07 | Source and live restart policies for the API and GPU worker must finish as `restart=no`.                                                                             |
+| D08 | Exactly one terminal outcome is printed; only `succeeded` exits zero, while failure preserves diagnostics and performs no broad recovery.                            |
