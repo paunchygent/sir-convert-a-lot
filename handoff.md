@@ -3,11 +3,15 @@
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
-- `TASK-SIRCON-REP-0027` and `TASK-SIRCON-REP-0028` are canceled as superseded
-  by the direct `TASK-SKILL-REP-0123` cutover. Sir Convert-a-Lot main records
-  repository-governance `0.11.10` at revision
-  `3f9aaffe1363f02f16888290da3c08a59bc555dd` in commit
-  `74db9664472247e98ff9c286eec17baf1641a5c5`.
+- `TASK-SIRCON-01-05-04` has published its bounded API/GPU-worker startup
+  implementation. Its separately authorized Hemma current/stale-image proof
+  has not run, so the task remains `in_progress`.
+- `TASK-SIRCON-01-05-05` now pins `repository-governance` `0.11.25` at
+  `1548765abc4f81e54cbe13f6112163da96fa8842` and contains the static
+  Sir workload registry, adapters, inventory, CLI, focused tests, and operator
+  contract. The repository-declared `operations` scope and coverage gate pass.
+  No Hemma switching or production mutation ran; the task remains
+  `in_progress` pending separately authorized live acceptance.
 - Root quality has seven Git-derived scopes: `service`, `conversion`, `exam`,
   `speech`, `operations`, `research`, and `repository`. Select the owning scope;
   do not use the broad root aggregate as a routine commit gate.

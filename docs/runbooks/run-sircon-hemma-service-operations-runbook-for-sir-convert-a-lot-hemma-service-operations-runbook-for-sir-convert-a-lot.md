@@ -78,6 +78,24 @@ The command preserves the identities and states of excluded services and all vol
 
 Stop when dependency ensure or build, a broad recreate, an excluded service action, a volume or data mutation, provider or Task 05 work, or a live conversion would be required. When executing the controlled stale-image proof, stop if a genuine older labeled application image is unavailable. Do not add recovery work beyond the accepted API-only stale repair.
 
+## Shared GPU Workload Switching
+
+`pdm run hemma-workload` is Hemma Server-only. The static consumer boundary accepts only these commands; real switching still requires separate explicit runtime authority. No Task05 live Hemma proof has run.
+
+```text
+pdm run hemma-workload start <target> <transaction-id>
+pdm run hemma-workload stop <target> <transaction-id>
+pdm run hemma-workload restore <target>
+```
+
+| Target                | Exact container membership                               | Restart policy and operation                                                                                               |
+| --------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `sir-production`      | `sir_convert_a_lot_prod`, `sir_convert_a_lot_gpu_worker` | `restart=no`; start delegates to Task04 `prod-start-bounded`, and stop names only the GPU worker then API.                 |
+| `sir-stt-sidecar`     | `sir_convert_a_lot_stt_sidecar`                          | `restart=unless-stopped`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
+| `sir-qwen-answer-key` | `sir_convert_qwen_answer_key`                            | `restart=unless-stopped`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
+
+All three targets claim `gpu:amdgpu` and are pairwise conflicts. The provider renders the terminal result as JSON; only `succeeded` exits zero. It owns `/var/lib/hemma/workload-switch/active-receipt.json` and `/var/lib/hemma/workload-switch/active.lock`, and recovery restores only the prior Sir services recorded in that receipt. The reserved edge remains untouched, and unknown GPU consumers cause refusal.
+
 ## Dependency Image Cleanup
 
 `scripts/devops/service-deps-image.sh` builds CPU and ROCm dependency images through explicit repositories:

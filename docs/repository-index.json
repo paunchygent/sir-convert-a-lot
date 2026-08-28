@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "de64b8e4b536b58673a395b3b35ce23ffa280be4e6bae7fce6d4fdd08e32aac6",
+  "source_set_digest": "b8673aee1a62c8f5de9882321e730e029f9684b70952f0fd8b96e344b09100c0",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -1328,7 +1328,7 @@
       "type": "task",
       "title": "Adopt shared Hemma workload switching for Sir production and GPU services",
       "path": "docs/backlog/tasks/task-sircon-01-05-05-adopt-shared-hemma-workload-switching-for-sir-production-and-gpu-services.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "story",
       "story": "ST-SIRCON-01-05",
       "owners": [

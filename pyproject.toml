@@ -38,7 +38,7 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
 ]
 tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@383e7e1b624e032ce2f8fe5f4b06cb3d4681c23c#subdirectory=packages/repository_governance",
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@1548765abc4f81e54cbe13f6112163da96fa8842#subdirectory=packages/repository_governance",
 ]
 
 [tool.repository-governance]
@@ -261,6 +261,7 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"
 "run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
+"hemma-workload" = "python -m scripts.sir_convert_a_lot.devops.hemma_workload_cli"
 "hemma-deploy-and-verify" = "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify"
 "hemma-verify-v2-conversions" = "bash scripts/devops/verify-hemma-v2-conversions.sh"
 "hemma-prod-recreate" = "bash scripts/devops/hemma-prod-recreate.sh"
