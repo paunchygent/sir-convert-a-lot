@@ -15,6 +15,7 @@ from scripts.sir_convert_a_lot.devops.bounded_production_startup_runtime import 
     RuntimeSnapshot,
     StartupFailure,
     assert_preserved,
+    compose_command,
     compose_volume_names,
     docker_command,
     inspect_container,
@@ -128,8 +129,7 @@ def _admit_application_image(
     if needs_build:
         runner.run(
             [
-                *docker_command(),
-                "compose",
+                *compose_command(environment),
                 "-f",
                 "compose.yaml",
                 "build",
@@ -172,8 +172,7 @@ def _start_selected(
 
     api = before.containers[API_SERVICE]
     api_command = [
-        *docker_command(),
-        "compose",
+        *compose_command(environment),
         "-f",
         "compose.yaml",
         "up",
@@ -188,8 +187,7 @@ def _start_selected(
         return
     runner.run(
         [
-            *docker_command(),
-            "compose",
+            *compose_command(environment),
             "-f",
             "compose.yaml",
             "up",

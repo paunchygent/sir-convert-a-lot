@@ -101,6 +101,14 @@ def docker_command() -> list[str]:
     return ["docker"]
 
 
+def compose_command(environment: Mapping[str, str]) -> list[str]:
+    command = docker_command()
+    if command == ["sudo", "-n", "docker"]:
+        assignments = [f"{name}={value}" for name, value in sorted(environment.items())]
+        return ["sudo", "-n", "env", *assignments, "docker", "compose"]
+    return [*command, "compose"]
+
+
 def inspect_image(
     runner: CommandRunner, image: str, *, dependency_boundary: bool = False
 ) -> tuple[str, dict[str, str]]:
@@ -172,7 +180,7 @@ def container_names(runner: CommandRunner) -> set[str]:
 
 def compose_volume_names(runner: CommandRunner, environment: Mapping[str, str]) -> tuple[str, str]:
     result = runner.run(
-        [*docker_command(), "compose", "-f", "compose.yaml", "config", "--format", "json"],
+        [*compose_command(environment), "-f", "compose.yaml", "config", "--format", "json"],
         environment=environment,
     )
     decoded = json.loads(result.stdout)
