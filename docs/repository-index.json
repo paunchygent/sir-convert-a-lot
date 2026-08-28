@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "bd724fa8afe1b4c56db2c6466a660e6165825fca01cc8e7a958c037a6730266a",
+  "source_set_digest": "2f322c40005eb40c605c060fd5e75d22dd1485dc32e2c8d9f9fb09ef45bc0208",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3115,7 +3115,7 @@
       "type": "task",
       "title": "Adopt remote answer-key model profiles with a daily token lease budget",
       "path": "docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "story",
       "story": "ST-SIRCON-08-01",
       "owners": [
