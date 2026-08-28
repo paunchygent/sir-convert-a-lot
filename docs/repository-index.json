@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "9a1e39813302f0dee51676871c5902d1ce3ff646af95a9fa4951b178e2be428d",
+  "source_set_digest": "bd724fa8afe1b4c56db2c6466a660e6165825fca01cc8e7a958c037a6730266a",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3837,7 +3837,7 @@
       "type": "task",
       "title": "Repair Exam.net QTI export to the confirmed import contract",
       "path": "docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3847,7 +3847,9 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "independent-implementation-reviewer",
+        "decided_at": "2026-08-29T10:30:00+02:00"
       }
     },
     {

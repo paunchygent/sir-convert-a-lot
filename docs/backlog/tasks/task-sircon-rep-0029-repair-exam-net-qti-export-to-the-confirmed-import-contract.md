@@ -7,10 +7,12 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-28'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: independent-implementation-reviewer
+  decided_at: '2026-08-29T10:30:00+02:00'
 task_kind: repository
 acceptance_criteria:
 - Regenerated QTI packages emit one assessmentTest resource with assessmentItemRef and dependency wiring and pass the probe-derived regression fixtures.
@@ -81,6 +83,19 @@ zip/XML work with no material performance concern.
   contract shapes.
 - Live Exam.net import proof of one regenerated DigiExam-migration package,
   recorded in the task record.
+- Recorded proof (2026-08-29): a teacher-overlay-unlocked migration bundle
+  from `1772718003-test-samma-prov-i-digiexam.dxe` (package sha256
+  `f36a4ae342a4a734a9f8126b694101517a46b7b3751d1b19ece72484a5328698`, built
+  at integrated head `20797ab5`) imported live into Exam.net as seven flat
+  questions in their confirmed families with keys and points intact — no
+  information-block nesting, no sub-question children, no missing-prompt
+  warnings. An earlier import at head `4b006812` exposed the sibling-stem
+  nesting defect, fixed in `7b7817b0` and added to the empirical reference.
+  User confirmed the accepted outcome
+  (`agent-planning:user-closure-gate`, 2026-08-29). The four narrow
+  empirical unknowns remain open and out of scope. Implementation reviewed
+  in two independent rounds (one changes-requested round closed by
+  `8dc4d643`, then approved).
 - Docs close-out: `pdm run docs-sync`, `pdm run docs-validate`,
   `pdm run handoff-validate`, `git diff --check`.
 
