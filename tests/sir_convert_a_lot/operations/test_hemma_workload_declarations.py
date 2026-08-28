@@ -31,19 +31,19 @@ class StatefulRunner:
 
     def run(self, argv: tuple[str, ...]) -> hemma_workload.CommandResult:
         self.commands.append(argv)
-        if argv == ("docker", "ps", "--format", "{{.Names}}"):
+        if argv == (*hemma_workload.DOCKER_COMMAND, "ps", "--format", "{{.Names}}"):
             return hemma_workload.CommandResult(
                 0, "".join(f"{name}\n" for name in sorted(self.running))
             )
         if argv == ("rocm-smi", "--showpids", "--json"):
             return hemma_workload.CommandResult(0, "")
-        if argv[:2] == ("docker", "top"):
+        if argv[:4] == (*hemma_workload.DOCKER_COMMAND, "top"):
             return hemma_workload.CommandResult(0, "PID\n")
-        if argv[:2] == ("docker", "stop"):
-            self.running.remove(argv[2])
+        if argv[:4] == (*hemma_workload.DOCKER_COMMAND, "stop"):
+            self.running.remove(argv[4])
             return hemma_workload.CommandResult(0, "")
-        if argv[:2] == ("docker", "start"):
-            self.running.add(argv[2])
+        if argv[:4] == (*hemma_workload.DOCKER_COMMAND, "start"):
+            self.running.add(argv[4])
             return hemma_workload.CommandResult(0, "")
         if argv == ("pdm", "run", "prod-start-bounded"):
             self.running.update(hemma_workload.PRODUCTION_CONTAINERS)
@@ -51,21 +51,21 @@ class StatefulRunner:
         if argv[:3] == ("pdm", "run", "prod-stop"):
             self.running.difference_update(hemma_workload.PRODUCTION_CONTAINERS)
             return hemma_workload.CommandResult(0, "")
-        if argv[:4] == (
-            "docker",
+        if argv[:6] == (
+            *hemma_workload.DOCKER_COMMAND,
             "inspect",
             "--format",
             hemma_workload.CONTAINER_STATE_FORMAT,
         ):
-            state = "running" if argv[4] in self.running else "exited"
+            state = "running" if argv[6] in self.running else "exited"
             restart = (
                 hemma_workload.PRODUCTION_RESTART_POLICY
-                if argv[4] in hemma_workload.PRODUCTION_CONTAINERS
+                if argv[6] in hemma_workload.PRODUCTION_CONTAINERS
                 else hemma_workload.SIDECAR_RESTART_POLICY
             )
             return hemma_workload.CommandResult(0, f"{state}\t{restart}\n")
-        if argv[:4] == (
-            "docker",
+        if argv[:6] == (
+            *hemma_workload.DOCKER_COMMAND,
             "inspect",
             "--format",
             hemma_workload.CONTAINER_HEALTH_FORMAT,
@@ -311,5 +311,9 @@ def test_shared_controller_restores_only_receipted_conflict_subset(
     stopped = controller.stop(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-restore")
     assert stopped.outcome is TerminalOutcome.SUCCEEDED
     assert runner.running == {hemma_workload.STT_CONTAINER}
-    assert ("docker", "start", hemma_workload.QWEN_CONTAINER) not in runner.commands
+    assert (
+        *hemma_workload.DOCKER_COMMAND,
+        "start",
+        hemma_workload.QWEN_CONTAINER,
+    ) not in runner.commands
     assert not (tmp_path / "active-receipt.json").exists()

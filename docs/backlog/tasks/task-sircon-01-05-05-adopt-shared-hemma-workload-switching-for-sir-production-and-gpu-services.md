@@ -109,8 +109,11 @@ Compose recreate is permitted.
   pre-existing containers and require bounded health readiness plus the
   declared restart policy.
 - `scripts/sir_convert_a_lot/devops/hemma_workload_cli.py` exposes only shared
-  start, stop, and restore commands after the Hemma Server guard. The provider
-  owns the receipt, lock, transaction, and recovery policy under
+  start, stop, and restore commands. After the Hemma Server guard, it crosses a
+  fixed non-interactive root-worker boundary; the worker rechecks the guard,
+  constructs the controller, and preserves provider-rendered output. Direct
+  Docker operations use literal `sudo -n docker`. The provider owns the
+  receipt, lock, transaction, and recovery policy under
   `/var/lib/hemma/workload-switch`; the consumer adds no duplicate switching
   state.
 - The operations runbook records the exact owner command syntax, target
@@ -119,10 +122,12 @@ Compose recreate is permitted.
 ## Validation Evidence
 
 - Retained command
-  `.orchestration/context/sessions/01a04756-9b0d-7fad-8b48-4aaa8b42d3b3/operational-output/commands/01a04754-bf8f-7372-8ec8-9c7db750865f/0006-pdm-run-check-operations`
-  passed the repository-declared `operations` scope with no failed phases.
-  The operations cohort reported 271 passing tests, including the Task 04
-  bounded-startup, Compose, deploy, and GPU-runtime regressions.
+  `.orchestration/context/sessions/01a04756-9b0d-7fad-8b48-4aaa8b42d3b3/operational-output/commands/01a04754-bf8f-7372-8ec8-9c7db750865f/0007-pdm-run-check-operations`
+  reported 278 passing operations tests, including the Task 04 bounded-startup,
+  Compose, deploy, and GPU-runtime regressions. Lint, docs, skills, handoff, and
+  diff phases passed. Its sole red phase was a test-only callback type error;
+  after replacing that callback with the repository's typed function pattern,
+  focused operations typecheck passed all 40 source files.
 - Retained command
   `.orchestration/context/sessions/01a04756-9b0d-7fad-8b48-4aaa8b42d3b3/operational-output/commands/01a04754-bf8f-7372-8ec8-9c7db750865f/0005-pdm-run-coverage-gate`
   passed with 1,521 tests passing, 6 skipped, and 95.57% coverage against the

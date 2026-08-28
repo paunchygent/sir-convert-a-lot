@@ -94,7 +94,7 @@ pdm run hemma-workload restore <target>
 | `sir-stt-sidecar`     | `sir_convert_a_lot_stt_sidecar`                          | `restart=unless-stopped`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
 | `sir-qwen-answer-key` | `sir_convert_qwen_answer_key`                            | `restart=unless-stopped`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
 
-All three targets claim `gpu:amdgpu` and are pairwise conflicts. The provider renders the terminal result as JSON; only `succeeded` exits zero. It owns `/var/lib/hemma/workload-switch/active-receipt.json` and `/var/lib/hemma/workload-switch/active.lock`, and recovery restores only the prior Sir services recorded in that receipt. The reserved edge remains untouched, and unknown GPU consumers cause refusal.
+All three targets claim `gpu:amdgpu` and are pairwise conflicts. After the Hemma Server guard, the public command crosses one fixed `sudo -n` Python worker boundary; that root worker rechecks the guard, owns the provider transaction, and uses `sudo -n docker` for direct container inspection and control. The provider renders the terminal result as JSON; only `succeeded` exits zero. It owns `/var/lib/hemma/workload-switch/active-receipt.json` and `/var/lib/hemma/workload-switch/active.lock`, and recovery restores only the prior Sir services recorded in that receipt. The reserved edge remains untouched, and unknown GPU consumers cause refusal.
 
 ## Dependency Image Cleanup
 

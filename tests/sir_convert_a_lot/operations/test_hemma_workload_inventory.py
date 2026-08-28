@@ -40,14 +40,17 @@ def _inventory_runner(
     *, running: tuple[str, ...], rocm: str = "", pids: dict[str, tuple[int, ...]] | None = None
 ) -> CommandMapRunner:
     results = {
-        ("docker", "ps", "--format", "{{.Names}}"): hemma_workload.CommandResult(
-            0, "".join(f"{name}\n" for name in running)
-        ),
+        (
+            *hemma_workload.DOCKER_COMMAND,
+            "ps",
+            "--format",
+            "{{.Names}}",
+        ): hemma_workload.CommandResult(0, "".join(f"{name}\n" for name in running)),
         ("rocm-smi", "--showpids", "--json"): hemma_workload.CommandResult(0, rocm),
     }
     for container, values in (pids or {}).items():
-        results[("docker", "top", container, "-eo", "pid")] = hemma_workload.CommandResult(
-            0, "PID\n" + "".join(f"{value}\n" for value in values)
+        results[(*hemma_workload.DOCKER_COMMAND, "top", container, "-eo", "pid")] = (
+            hemma_workload.CommandResult(0, "PID\n" + "".join(f"{value}\n" for value in values))
         )
     return CommandMapRunner(results)
 
@@ -62,19 +65,24 @@ def _inventory_runner(
 def test_sidecars_use_exact_container_commands_and_declared_health(
     identity: str, container: str
 ) -> None:
+    assert hemma_workload.DOCKER_COMMAND == ("sudo", "-n", "docker")
     runner = CommandMapRunner(
         {
-            ("docker", "start", container): hemma_workload.CommandResult(0, ""),
-            ("docker", "stop", container): hemma_workload.CommandResult(0, ""),
+            (*hemma_workload.DOCKER_COMMAND, "start", container): hemma_workload.CommandResult(
+                0, ""
+            ),
+            (*hemma_workload.DOCKER_COMMAND, "stop", container): hemma_workload.CommandResult(
+                0, ""
+            ),
             (
-                "docker",
+                *hemma_workload.DOCKER_COMMAND,
                 "inspect",
                 "--format",
                 hemma_workload.CONTAINER_STATE_FORMAT,
                 container,
             ): hemma_workload.CommandResult(0, "running\tunless-stopped\n"),
             (
-                "docker",
+                *hemma_workload.DOCKER_COMMAND,
                 "inspect",
                 "--format",
                 hemma_workload.CONTAINER_HEALTH_FORMAT,
@@ -95,7 +103,7 @@ def test_sidecar_readiness_refuses_missing_declared_health() -> None:
     runner = CommandMapRunner(
         {
             (
-                "docker",
+                *hemma_workload.DOCKER_COMMAND,
                 "inspect",
                 "--format",
                 hemma_workload.CONTAINER_HEALTH_FORMAT,

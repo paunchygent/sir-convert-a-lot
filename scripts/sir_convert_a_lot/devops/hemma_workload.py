@@ -64,6 +64,7 @@ SIDECAR_READINESS_TIMEOUT_SECONDS = 15 * 60.0
 SIDECAR_READINESS_INTERVAL_SECONDS = 2.0
 PRODUCTION_RESTART_POLICY = "no"
 SIDECAR_RESTART_POLICY = "unless-stopped"
+DOCKER_COMMAND = ("sudo", "-n", "docker")
 
 
 class ProductionWorkloadAdapter:
@@ -200,7 +201,7 @@ class ContainerWorkloadAdapter:
         return _command_result(
             self._identity,
             self._runner,
-            ("docker", "start", self._container),
+            (*DOCKER_COMMAND, "start", self._container),
             f"declared container {self._container} start failed",
         )
 
@@ -208,7 +209,7 @@ class ContainerWorkloadAdapter:
         return _command_result(
             self._identity,
             self._runner,
-            ("docker", "stop", self._container),
+            (*DOCKER_COMMAND, "stop", self._container),
             f"declared container {self._container} stop failed",
         )
 
@@ -246,7 +247,13 @@ class ContainerWorkloadAdapter:
         while True:
             try:
                 result = self._runner.run(
-                    ("docker", "inspect", "--format", CONTAINER_HEALTH_FORMAT, self._container)
+                    (
+                        *DOCKER_COMMAND,
+                        "inspect",
+                        "--format",
+                        CONTAINER_HEALTH_FORMAT,
+                        self._container,
+                    )
                 )
             except subprocess.TimeoutExpired as error:
                 return AdapterResult(self._identity, TerminalOutcome.TIMED_OUT, str(error))
@@ -421,7 +428,7 @@ def _diagnostic(result: CommandResult) -> str:
 
 
 def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]:
-    result = runner.run(("docker", "inspect", "--format", CONTAINER_STATE_FORMAT, container))
+    result = runner.run((*DOCKER_COMMAND, "inspect", "--format", CONTAINER_STATE_FORMAT, container))
     if result.returncode != 0:
         raise ValueError(f"cannot inspect declared container {container}")
     fields = result.stdout.strip().split("\t")
@@ -432,7 +439,7 @@ def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]
 
 
 def _running_containers(runner: CommandExecutor) -> frozenset[str]:
-    result = runner.run(("docker", "ps", "--format", "{{.Names}}"))
+    result = runner.run((*DOCKER_COMMAND, "ps", "--format", "{{.Names}}"))
     if result.returncode != 0:
         raise ValueError("cannot inspect Docker running-container state")
     return frozenset(line for line in result.stdout.splitlines() if line)
@@ -476,7 +483,7 @@ def _declared_container_pids(runner: CommandExecutor, running: frozenset[str]) -
     for container in DECLARED_GPU_CONTAINERS:
         if container not in running:
             continue
-        result = runner.run(("docker", "top", container, "-eo", "pid"))
+        result = runner.run((*DOCKER_COMMAND, "top", container, "-eo", "pid"))
         if result.returncode != 0:
             raise ValueError(f"cannot inspect declared GPU container {container}")
         lines = result.stdout.splitlines()
