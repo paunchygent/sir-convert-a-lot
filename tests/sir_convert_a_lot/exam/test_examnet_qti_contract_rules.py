@@ -146,6 +146,52 @@ def test_unresolved_assessment_item_ref_fails_preflight() -> None:
     assert "assessmentItemRef href items/missing.xml does not resolve" in report.errors[0]
 
 
+def test_package_root_image_src_fails_preflight() -> None:
+    plan = _sample_plan("image-single-choice-mcq")
+    package_bytes = _mutated_zip_bytes(
+        plan,
+        "items/item_001.xml",
+        lambda xml: _replaced(
+            xml,
+            'src="../resources/item_001-image_001.png"',
+            'src="resources/item_001-image_001.png"',
+        ),
+    )
+
+    report = _preflight(plan, package_bytes)
+
+    assert report.package_status == ExamNetQtiPackageStatus.FAILED
+    assert "refuted package-root style" in report.errors[0]
+
+
+def test_match_correct_template_fails_preflight() -> None:
+    plan = _sample_plan("single-choice-mcq")
+    package_bytes = _mutated_zip_bytes(
+        plan,
+        "items/item_001.xml",
+        lambda xml: _replaced(xml, "rptemplates/map_response", "rptemplates/match_correct"),
+    )
+
+    report = _preflight(plan, package_bytes)
+
+    assert report.package_status == ExamNetQtiPackageStatus.FAILED
+    assert "match_correct responseProcessing template" in report.errors[0]
+
+
+def test_unreferenced_item_resource_fails_preflight() -> None:
+    plan = _sample_plan("single-choice-mcq")
+    package_bytes = _mutated_zip_bytes(
+        plan,
+        "assessment.xml",
+        lambda xml: _regex_removed(xml, r"\s*<assessmentItemRef [^>]*/>"),
+    )
+
+    report = _preflight(plan, package_bytes)
+
+    assert report.package_status == ExamNetQtiPackageStatus.FAILED
+    assert "not referenced by an assessmentItemRef" in report.errors[0]
+
+
 def _sample_plan(sample_name: str) -> ExamNetQtiPackagePlan:
     samples = {sample.name: sample for sample in examnet_qti_keyed_samples()}
     sample = samples[sample_name]

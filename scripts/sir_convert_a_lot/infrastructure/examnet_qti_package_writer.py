@@ -57,6 +57,8 @@ def write_examnet_qti_artifacts(
         package_path = output_dir / package_filename
         package_bytes = build_examnet_qti_zip_bytes(plan)
         package_path.write_bytes(package_bytes)
+    else:
+        (output_dir / package_filename).unlink(missing_ok=True)
 
     report = build_examnet_qti_validation_report(
         plan=plan,

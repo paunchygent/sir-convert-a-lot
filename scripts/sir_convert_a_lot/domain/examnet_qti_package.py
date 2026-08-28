@@ -82,7 +82,7 @@ def build_examnet_qti_package_plan(
     image_files_by_item_id: dict[str, tuple[ExamNetQtiPackageFile, ...]] = {}
     for item in ordered_items:
         image_files = tuple(_image_file(item, image) for image in item.image_resources)
-        image_paths = tuple(image.relative_path for image in image_files)
+        image_paths = tuple(f"../{image.relative_path}" for image in image_files)
         item_xml = serialize_qti_assessment_item(item, image_paths=image_paths)
         item_files.append(
             _package_file(
@@ -172,8 +172,10 @@ def _item_errors(item: ExamNetQtiItem) -> tuple[str, ...]:
         errors.append(f"Item {item.item_id} has an unsafe QTI identifier.")
     if not any(line.strip() for line in item.prompt_lines):
         errors.append(f"Item {item.item_id} has no prompt text.")
-    if item.max_score is None and item.evaluation_mode == ExamNetQtiEvaluationMode.AUTOMATIC:
-        errors.append(f"Item {item.item_id} has no point value.")
+    if item.evaluation_mode == ExamNetQtiEvaluationMode.AUTOMATIC and (
+        item.max_score is None or item.max_score < 1
+    ):
+        errors.append(f"Item {item.item_id} needs a positive point value.")
     errors.extend(_choice_errors(item))
     errors.extend(_gap_fill_errors(item))
     errors.extend(_matching_errors(item))

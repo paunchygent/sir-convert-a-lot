@@ -127,7 +127,11 @@ def build_qti_artifacts(
     )
     entries: dict[DigiExamMigrationArtifactKey, DigiExamMigrationArtifactEntry] = {}
     qti_follow_ups = plan.manual_follow_ups
-    if plan.status == ExamNetQtiPackageStatus.PASSED and written.package_path is not None:
+    if (
+        plan.status == ExamNetQtiPackageStatus.PASSED
+        and written.package_path is not None
+        and written.report.package_status == ExamNetQtiPackageStatus.PASSED
+    ):
         entries[DigiExamMigrationArtifactKey.QTI_PACKAGE] = available_entry(
             job=job,
             key=DigiExamMigrationArtifactKey.QTI_PACKAGE,

@@ -15,9 +15,13 @@ from __future__ import annotations
 import hashlib
 import json
 import zipfile
+from dataclasses import replace
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from xml.etree import ElementTree
+
+import pytest
 
 from scripts.sir_convert_a_lot.domain.digiexam_dxe_parser import DigiExamDxeParser
 from scripts.sir_convert_a_lot.domain.digiexam_examnet_qti_adapter import (
@@ -26,6 +30,10 @@ from scripts.sir_convert_a_lot.domain.digiexam_examnet_qti_adapter import (
 from scripts.sir_convert_a_lot.domain.digiexam_ir_contracts import (
     build_digiexam_intermediate_exam,
 )
+from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
+    DigiExamMigrationArtifactAvailability,
+    DigiExamMigrationArtifactKey,
+)
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiChoice,
     ExamNetQtiEvaluationMode,
@@ -33,6 +41,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiInteractionType,
     ExamNetQtiItem,
     ExamNetQtiManualFollowUpReason,
+    ExamNetQtiPackagePlan,
     ExamNetQtiPackageStatus,
     ExamNetQtiTargetSupportStatus,
     ExamNetQtiTextEntryGap,
@@ -54,10 +63,22 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_xml import (
     MAP_RESPONSE_TEMPLATE,
     QTI_NAMESPACE,
 )
+from scripts.sir_convert_a_lot.domain.specs import JobStatus
+from scripts.sir_convert_a_lot.domain.specs_v2 import (
+    JobSpecV2,
+    OutputFormatV2,
+    SourceFormatV2,
+)
+from scripts.sir_convert_a_lot.infrastructure import digiexam_migration_target_artifacts
+from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_target_artifacts import (
+    build_qti_artifacts,
+)
 from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import (
+    ExamNetQtiWrittenArtifacts,
     build_examnet_qti_zip_bytes,
     write_examnet_qti_artifacts,
 )
+from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 
 
 def test_sample_packages_are_deterministic(tmp_path: Path) -> None:
@@ -114,7 +135,9 @@ def test_choice_packages_encode_single_and_multiple_cardinality(tmp_path: Path) 
         ("choice_002", "1.33"),
         ("choice_004", "1.33"),
     ]
-    assert _response_processing_template(single_item) == MAP_RESPONSE_TEMPLATE
+    assert _response_processing_template(single_item) == (
+        "http://www.imsglobal.org/question/qti_v2p1/rptemplates/map_response"
+    )
     assert _response_processing_template(multiple_item) == MAP_RESPONSE_TEMPLATE
 
 
@@ -268,7 +291,8 @@ def test_image_packages_include_manifest_hrefs_and_resolved_item_images(tmp_path
             item_xml = archive.read("items/item_001.xml").decode("utf-8")
 
         assert '<file href="resources/item_001-image_001.png"' in manifest
-        assert 'src="resources/item_001-image_001.png"' in item_xml
+        assert 'src="../resources/item_001-image_001.png"' in item_xml
+        assert 'src="resources/item_001-image_001.png"' not in item_xml
         report = _read_report(sample_dir / "qti-validation-report.json")
         assert _json_string(report, "package_sha256") == _sha256(sample_dir / "qti-package.zip")
 
@@ -428,6 +452,103 @@ def test_gap_fill_plan_blocks_when_any_gap_lacks_accepted_values() -> None:
         ExamNetQtiManualFollowUpReason.MANUAL_ANSWER_KEY_REQUIRED
     )
     assert "accepted values for every gap" in plan.warnings[0]
+
+
+def test_automatic_item_with_non_positive_score_blocks_plan() -> None:
+    plan = build_examnet_qti_package_plan(
+        package_name="zero-score",
+        items=(
+            ExamNetQtiItem(
+                item_id="item_001",
+                sequence=1,
+                title="Zero score",
+                interaction_type=ExamNetQtiInteractionType.SINGLE_CHOICE,
+                prompt_lines=("Choose one.",),
+                max_score=0,
+                choices=(
+                    ExamNetQtiChoice("choice_001", "Alpha"),
+                    ExamNetQtiChoice("choice_002", "Beta"),
+                ),
+                correct_choice_identifiers=("choice_001",),
+            ),
+        ),
+    )
+
+    assert plan.status == ExamNetQtiPackageStatus.BLOCKED
+    assert any("needs a positive point value" in warning for warning in plan.warnings)
+
+
+def test_blocked_plan_removes_stale_package_file(tmp_path: Path) -> None:
+    samples = {sample.name: sample for sample in examnet_qti_manual_unkeyed_samples()}
+    sample = samples["unkeyed-multiple-response-preserved"]
+    sample_dir = tmp_path / sample.name
+    sample_dir.mkdir(parents=True)
+    stale_package = sample_dir / sample.package_filename
+    stale_package.write_bytes(b"stale package bytes")
+
+    plan = build_examnet_qti_package_plan(package_name=sample.name, items=sample.items)
+    written = write_examnet_qti_artifacts(
+        plan=plan,
+        output_dir=sample_dir,
+        package_filename=sample.package_filename,
+        report_filename=sample.report_filename,
+    )
+
+    assert plan.status == ExamNetQtiPackageStatus.BLOCKED
+    assert written.package_path is None
+    assert not stale_package.exists()
+    assert (sample_dir / sample.report_filename).exists()
+
+
+def test_qti_package_entry_fails_when_validation_report_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    exam = build_digiexam_intermediate_exam(
+        DigiExamDxeParser().parse_payload(
+            _digiexam_renderable_payload(),
+            filename="qti-adapter.dxe",
+        )
+    )
+    job = _stored_migration_job(tmp_path)
+
+    def _write_with_failed_report(
+        *,
+        plan: ExamNetQtiPackagePlan,
+        output_dir: Path,
+        package_filename: str = "qti-package.zip",
+        report_filename: str = "qti-validation-report.json",
+        report_package_filename: str | None = None,
+    ) -> ExamNetQtiWrittenArtifacts:
+        written = write_examnet_qti_artifacts(
+            plan=plan,
+            output_dir=output_dir,
+            package_filename=package_filename,
+            report_filename=report_filename,
+            report_package_filename=report_package_filename,
+        )
+        return ExamNetQtiWrittenArtifacts(
+            package_path=written.package_path,
+            report_path=written.report_path,
+            report=replace(written.report, package_status=ExamNetQtiPackageStatus.FAILED),
+        )
+
+    monkeypatch.setattr(
+        digiexam_migration_target_artifacts,
+        "write_examnet_qti_artifacts",
+        _write_with_failed_report,
+    )
+    entries, _follow_ups, _warnings = build_qti_artifacts(
+        job=job,
+        artifacts_dir=tmp_path / "artifacts",
+        exam=exam,
+    )
+
+    package_entry = entries[DigiExamMigrationArtifactKey.QTI_PACKAGE]
+    assert package_entry.availability == DigiExamMigrationArtifactAvailability.FAILED
+    assert package_entry.unavailable_code == "qti_validation_failed"
+    report_entry = entries[DigiExamMigrationArtifactKey.QTI_VALIDATION_REPORT]
+    assert report_entry.availability == DigiExamMigrationArtifactAvailability.AVAILABLE
 
 
 def test_all_sample_packages_wire_assessment_test_into_manifest() -> None:
@@ -604,6 +725,54 @@ def _correct_values(item: ElementTree.Element) -> list[str]:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _stored_migration_job(tmp_path: Path) -> StoredJobV2:
+    upload_path = tmp_path / "raw" / "qti-adapter.dxe"
+    upload_path.parent.mkdir(parents=True, exist_ok=True)
+    upload_path.write_bytes(b"{}")
+    now = datetime.now(UTC)
+    spec = JobSpecV2.model_validate(
+        {
+            "api_version": "v2",
+            "source": {
+                "kind": "upload",
+                "filename": "qti-adapter.dxe",
+                "format": "digiexam_dxe",
+            },
+            "conversion": {
+                "output_format": "examnet_migration_bundle",
+                "targets": ["qti_package"],
+                "artifact_language": "sv",
+            },
+            "digiexam_migration_options": {
+                "parity_pdf_filename": None,
+                "ingestion_overlay_filename": None,
+                "ingestion_overlay_policy": "none",
+                "result_pdf_usage": "correct_machine_marked_answers_only",
+                "manual_follow_up_policy": "emit_item_addressable_report",
+                "completion_mode": "source_evidence_only",
+                "remote_provider_policy": "forbidden",
+            },
+            "retention": {"pin": False},
+        }
+    )
+    return StoredJobV2(
+        job_id="job-qti-report-gate-test",
+        spec=spec,
+        source_filename="qti-adapter.dxe",
+        source_format=SourceFormatV2.DIGIEXAM_DXE,
+        output_format=OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
+        upload_path=upload_path,
+        resources_zip_path=None,
+        reference_docx_path=None,
+        artifact_path=tmp_path / "artifacts" / "bundle.zip",
+        status=JobStatus.RUNNING,
+        created_at=now,
+        updated_at=now,
+        expires_at=None,
+        progress_stage="running",
+    )
 
 
 def _digiexam_renderable_payload() -> dict[str, object]:

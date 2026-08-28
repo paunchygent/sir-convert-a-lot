@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import posixpath
 import zipfile
 from dataclasses import asdict
 from enum import StrEnum
@@ -39,6 +40,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_xml import QTI_NAMESPACE
 
 _FORBIDDEN_PACKAGE_SUFFIXES = (".mp3", ".wav", ".m4a", ".pdf", ".ggb")
 _ITEM_RESOURCE_TYPE = "imsqti_item_xmlv2p1"
+_MATCH_CORRECT_TEMPLATE = "http://www.imsglobal.org/question/qti_v2p1/rptemplates/match_correct"
 
 
 def build_examnet_qti_validation_report(
@@ -216,10 +218,20 @@ def _validate_assessment_test(
         return tuple(errors)
     if test_root.tag != f"{{{QTI_NAMESPACE}}}assessmentTest":
         errors.append(f"{href} root is not a QTI assessmentTest.")
+    ref_hrefs: set[str] = set()
     for item_ref in test_root.findall(f".//{{{QTI_NAMESPACE}}}assessmentItemRef"):
         ref_href = item_ref.attrib.get("href")
         if ref_href is None or ref_href not in names:
             errors.append(f"assessmentItemRef href {ref_href} does not resolve inside the package.")
+        if ref_href is not None:
+            ref_hrefs.add(ref_href)
+    item_hrefs = {
+        resource.attrib["href"]
+        for resource in resources
+        if resource.attrib.get("type") == _ITEM_RESOURCE_TYPE and "href" in resource.attrib
+    }
+    for item_href in sorted(item_hrefs - ref_hrefs):
+        errors.append(f"Item resource href {item_href} is not referenced by an assessmentItemRef.")
     return tuple(errors)
 
 
@@ -265,9 +277,24 @@ def _scoring_shape_errors(name: str, root: ElementTree.Element) -> tuple[str, ..
             has_correct = declaration.find(f"{{{QTI_NAMESPACE}}}correctResponse") is not None
             if has_mapping and not has_correct:
                 errors.append(f"{name} {tag} has a mapping without correctResponse.")
+    errors.extend(_match_correct_template_errors(name, root))
     for interaction in root.iter(f"{{{QTI_NAMESPACE}}}matchInteraction"):
         errors.extend(_matching_left_coverage_errors(name, interaction, declarations))
     return tuple(errors)
+
+
+def _match_correct_template_errors(name: str, root: ElementTree.Element) -> tuple[str, ...]:
+    has_choice_or_match = any(
+        root.find(f".//{{{QTI_NAMESPACE}}}{tag}") is not None
+        for tag in ("choiceInteraction", "matchInteraction")
+    )
+    if not has_choice_or_match:
+        return ()
+    return tuple(
+        f"{name} must not use the match_correct responseProcessing template."
+        for processing in root.findall(f"{{{QTI_NAMESPACE}}}responseProcessing")
+        if processing.attrib.get("template") == _MATCH_CORRECT_TEMPLATE
+    )
 
 
 def _matching_left_coverage_errors(
@@ -326,7 +353,14 @@ def _validate_item_image_references(
             image_src = image.attrib.get("src")
             if image_src is None:
                 errors.append(f"{name} contains an image without src.")
-            elif image_src not in names:
+                continue
+            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), image_src))
+            if resolved.startswith("items/resources/"):
+                errors.append(
+                    f"{name} image src {image_src} uses the refuted package-root style; "
+                    "item XML must reference ../resources/."
+                )
+            elif resolved not in names:
                 errors.append(f"{name} image src {image_src} does not resolve inside package.")
     return tuple(errors)
 
