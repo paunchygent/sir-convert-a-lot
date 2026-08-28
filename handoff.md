@@ -1,5 +1,23 @@
 ## Current
 
+- [TASK-SIRCON-REP-0029](docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md)
+  is `proposed`: repair the Exam.net QTI export (emit `assessmentTest`, emit
+  only empirically confirmed lanes, promote the diagnostic probe ledger to a
+  governed reference, turn probes into regression fixtures). Contract derives
+  from retained planning session `01a048d5-69f7-7394-93dd-8ff91af608cd`
+  (`evidence/planning/TASK-SIRCON-REP-0029/plan.md`), which absorbed the
+  Exam.net diagnostic session `01a0474c-158e-7bf1-85ae-6adb4198c143` and its
+  validated boundary ledger.
+- [TASK-SIRCON-08-01-07](docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md)
+  is `proposed`: exam-lane answer-key completion moves to a GPT-5.6 Luna
+  low-effort default with GLM-5.3-flash (OpenRouter) failover-only backup and
+  a 5,000,000 token/day non-refundable lease (UTC-midnight reset, fail-closed
+  exhaustion).
+- Skriptoteket `EPIC-SKRIPT-39` (proposed, with `ADR-SKRIPT-0090`) will port
+  the exam-conversion domain into Skriptoteket by incremental strangler after
+  the two tasks above land; Sir Convert then retains heavy OCR/STT behind a
+  generic extraction contract and the exam-specific cross-repo schema surface
+  retires with that cutover.
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "997fa76187ad7133063d06cad066b62f1d06e2d5c870996c7e4352b152faae2a",
+  "source_set_digest": "25a407356d9d8ae6f9c8d5153a74ec505a4e01f904a549fb0e4fc13f2e596eb1",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3111,6 +3111,25 @@
       }
     },
     {
+      "id": "TASK-SIRCON-08-01-07",
+      "type": "task",
+      "title": "Adopt remote answer-key model profiles with a daily token lease budget",
+      "path": "docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md",
+      "status": "proposed",
+      "task_kind": "story",
+      "story": "ST-SIRCON-08-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
       "id": "TASK-SIRCON-08-03-01",
       "type": "task",
       "title": "Publish cross-repo Skriptoteket and HuleEdu answer-key completion handoff",
@@ -3811,6 +3830,24 @@
         "status": "not_required",
         "approval_protocol": "agent-planning:user-closure-gate",
         "approval_evidence": "User-directed supersession under TASK-SKILL-REP-0123 on 2026-08-20 after the direct Sir Convert-a-Lot cutover to repository-governance 0.11.10; the former 0.11.6 adoption scope owns no implementation closeout."
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0029",
+      "type": "task",
+      "title": "Repair Exam.net QTI export to the confirmed import contract",
+      "path": "docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {
