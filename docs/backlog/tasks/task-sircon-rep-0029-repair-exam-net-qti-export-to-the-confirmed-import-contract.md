@@ -7,7 +7,7 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-28'
-status: proposed
+status: in_progress
 closeout_review:
   record: inline
   status: not_started

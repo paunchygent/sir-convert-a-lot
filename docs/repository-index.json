@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "25a407356d9d8ae6f9c8d5153a74ec505a4e01f904a549fb0e4fc13f2e596eb1",
+  "source_set_digest": "f717190a7b8155d566ff2439e439d9ecf13fe85117eabba72b2e8f0e4e185f06",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3115,7 +3115,7 @@
       "type": "task",
       "title": "Adopt remote answer-key model profiles with a daily token lease budget",
       "path": "docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md",
-      "status": "proposed",
+      "status": "ready",
       "task_kind": "story",
       "story": "ST-SIRCON-08-01",
       "owners": [
@@ -3837,7 +3837,7 @@
       "type": "task",
       "title": "Repair Exam.net QTI export to the confirmed import contract",
       "path": "docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md",
-      "status": "proposed",
+      "status": "in_progress",
       "task_kind": "repository",
       "owners": [
         {
