@@ -152,8 +152,8 @@ class ProductionWorkloadAdapter:
         )
         try:
             head = _repository_head(runner)
-            _poll_ready(runner, head=head)
-            _prove_gpu_readiness(runner)
+            _poll_ready(runner, head=head, docker_prefix=DOCKER_COMMAND)
+            _prove_gpu_readiness(runner, docker_prefix=DOCKER_COMMAND)
         except subprocess.TimeoutExpired as error:
             return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.TIMED_OUT, str(error))
         except StartupFailure as error:

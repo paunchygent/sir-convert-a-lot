@@ -231,17 +231,25 @@ def test_production_readiness_reuses_task04_api_and_worker_helpers(
     monkeypatch.setattr(
         hemma_workload,
         "_poll_ready",
-        lambda runner, *, head: calls.append(("api", head)),
+        lambda runner, *, head, docker_prefix: calls.append(
+            ("api", f"{head}:{' '.join(docker_prefix)}")
+        ),
     )
     monkeypatch.setattr(
         hemma_workload,
         "_prove_gpu_readiness",
-        lambda runner: calls.append(("worker", hemma_workload.GPU_WORKER_CONTAINER)),
+        lambda runner, *, docker_prefix: calls.append(
+            ("worker", " ".join(docker_prefix))
+        ),
     )
     adapter = hemma_workload.ProductionWorkloadAdapter(QueueRunner([]), Path("/srv/sir"))
 
     assert adapter.readiness().outcome is TerminalOutcome.SUCCEEDED
-    assert calls == [("api", "a" * 40), ("worker", hemma_workload.GPU_WORKER_CONTAINER)]
+    privileged_docker = " ".join(hemma_workload.DOCKER_COMMAND)
+    assert calls == [
+        ("api", f"{'a' * 40}:{privileged_docker}"),
+        ("worker", privileged_docker),
+    ]
 
 
 def test_production_operations_normalize_subprocess_timeouts(
@@ -298,8 +306,16 @@ def test_shared_controller_restores_only_receipted_conflict_subset(
 ) -> None:
     runner = StatefulRunner()
     monkeypatch.setattr(hemma_workload, "_repository_head", lambda bounded: "a" * 40)
-    monkeypatch.setattr(hemma_workload, "_poll_ready", lambda bounded, *, head: None)
-    monkeypatch.setattr(hemma_workload, "_prove_gpu_readiness", lambda bounded: None)
+    monkeypatch.setattr(
+        hemma_workload,
+        "_poll_ready",
+        lambda bounded, *, head, docker_prefix: None,
+    )
+    monkeypatch.setattr(
+        hemma_workload,
+        "_prove_gpu_readiness",
+        lambda bounded, *, docker_prefix: None,
+    )
     controller = hemma_workload.sir_workload_controller(
         runner=runner, project_root=Path("/srv/sir"), state_root=tmp_path
     )

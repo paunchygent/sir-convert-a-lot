@@ -8,6 +8,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.bounded_production_startup_runtime import (
@@ -218,8 +219,11 @@ def _assert_running_worker_identity_preserved(
         raise StartupFailure("preserved GPU worker application provenance changed")
 
 
-def _resolve_api_ready_url(runner: CommandRunner) -> str:
-    output = runner.run([*docker_command(), "port", API_SERVICE, "8085/tcp"]).stdout
+def _resolve_api_ready_url(
+    runner: CommandRunner, *, docker_prefix: Sequence[str] | None = None
+) -> str:
+    command = docker_command() if docker_prefix is None else list(docker_prefix)
+    output = runner.run([*command, "port", API_SERVICE, "8085/tcp"]).stdout
     bindings = [line.strip() for line in output.splitlines() if line.strip()]
     if not bindings:
         raise StartupFailure("production API has no published 8085/tcp binding")
@@ -240,8 +244,10 @@ def _resolve_api_ready_url(runner: CommandRunner) -> str:
     return f"http://127.0.0.1:{ports.pop()}/readyz"
 
 
-def _poll_ready(runner: CommandRunner, *, head: str) -> None:
-    url = _resolve_api_ready_url(runner)
+def _poll_ready(
+    runner: CommandRunner, *, head: str, docker_prefix: Sequence[str] | None = None
+) -> None:
+    url = _resolve_api_ready_url(runner, docker_prefix=docker_prefix)
     last_diagnostic = "no response"
     while True:
         remaining = runner.deadline - time.monotonic()
@@ -281,11 +287,14 @@ def _poll_ready(runner: CommandRunner, *, head: str) -> None:
         time.sleep(min(1.0, max(0.0, runner.deadline - time.monotonic())))
 
 
-def _prove_gpu_readiness(runner: CommandRunner) -> None:
+def _prove_gpu_readiness(
+    runner: CommandRunner, *, docker_prefix: Sequence[str] | None = None
+) -> None:
+    command = docker_command() if docker_prefix is None else list(docker_prefix)
     expected_torch = _read_pinned_torch_version()
     runner.run(
         [
-            *docker_command(),
+            *command,
             "exec",
             WORKER_SERVICE,
             "test",
@@ -295,7 +304,7 @@ def _prove_gpu_readiness(runner: CommandRunner) -> None:
     )
     runner.run(
         [
-            *docker_command(),
+            *command,
             "exec",
             WORKER_SERVICE,
             "test",
@@ -305,7 +314,7 @@ def _prove_gpu_readiness(runner: CommandRunner) -> None:
     )
     probe = runner.run(
         [
-            *docker_command(),
+            *command,
             "exec",
             WORKER_SERVICE,
             "/app/.venv/bin/python",
