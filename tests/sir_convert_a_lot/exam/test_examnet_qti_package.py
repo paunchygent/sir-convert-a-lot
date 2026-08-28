@@ -39,6 +39,7 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     ExamNetQtiValidationStatus,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_package import (
+    IMSCP_NAMESPACE,
     build_examnet_qti_package_plan,
 )
 from scripts.sir_convert_a_lot.domain.examnet_qti_samples import (
@@ -49,7 +50,10 @@ from scripts.sir_convert_a_lot.domain.examnet_qti_samples import (
 from scripts.sir_convert_a_lot.domain.examnet_qti_validation import (
     build_examnet_qti_validation_report,
 )
-from scripts.sir_convert_a_lot.domain.examnet_qti_xml import QTI_NAMESPACE
+from scripts.sir_convert_a_lot.domain.examnet_qti_xml import (
+    MAP_RESPONSE_TEMPLATE,
+    QTI_NAMESPACE,
+)
 from scripts.sir_convert_a_lot.infrastructure.examnet_qti_package_writer import (
     build_examnet_qti_zip_bytes,
     write_examnet_qti_artifacts,
@@ -92,6 +96,26 @@ def test_choice_packages_encode_single_and_multiple_cardinality(tmp_path: Path) 
     assert _response_declaration(multiple_item).attrib["cardinality"] == "multiple"
     assert _choice_interaction(multiple_item).attrib["maxChoices"] == "3"
     assert _correct_values(multiple_item) == ["choice_001", "choice_002", "choice_004"]
+    assert "shuffle" not in _choice_interaction(single_item).attrib
+    assert "shuffle" not in _choice_interaction(multiple_item).attrib
+    assert _mapping(single_item).attrib == {
+        "defaultValue": "0",
+        "lowerBound": "0",
+        "upperBound": "4",
+    }
+    assert _map_entry_pairs(single_item) == [("choice_002", "4")]
+    assert _mapping(multiple_item).attrib == {
+        "defaultValue": "0",
+        "lowerBound": "0",
+        "upperBound": "4",
+    }
+    assert _map_entry_pairs(multiple_item) == [
+        ("choice_001", "1.34"),
+        ("choice_002", "1.33"),
+        ("choice_004", "1.33"),
+    ]
+    assert _response_processing_template(single_item) == MAP_RESPONSE_TEMPLATE
+    assert _response_processing_template(multiple_item) == MAP_RESPONSE_TEMPLATE
 
 
 def test_gap_fill_package_encodes_text_entries_and_accepted_values(tmp_path: Path) -> None:
@@ -108,9 +132,61 @@ def test_gap_fill_package_encodes_text_entries_and_accepted_values(tmp_path: Pat
     assert _correct_values(item) == ["ATP"]
     assert 'mapKey="ATP"' in xml
     assert 'mapKey="atp"' in xml
+    assert _mapping(item).attrib == {
+        "defaultValue": "0",
+        "lowerBound": "0",
+        "upperBound": "1",
+    }
+    assert [
+        (entry.attrib["mapKey"], entry.attrib["mappedValue"], entry.attrib["caseSensitive"])
+        for entry in _map_entries(item)
+    ] == [("ATP", "1", "false"), ("atp", "1", "false")]
+    assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
     assert _json_string(report, "target_support_status") == (
         ExamNetQtiTargetSupportStatus.PROOF_GATED
     )
+
+
+def test_gap_fill_package_splits_max_score_equally_across_gaps() -> None:
+    plan = build_examnet_qti_package_plan(
+        package_name="gap-split",
+        items=(
+            ExamNetQtiItem(
+                item_id="item_001",
+                sequence=1,
+                title="Lucktext med två luckor",
+                interaction_type=ExamNetQtiInteractionType.GAP_FILL,
+                prompt_lines=("Fyll i _____ och _____.",),
+                max_score=3,
+                text_entry_gaps=(
+                    ExamNetQtiTextEntryGap(
+                        response_identifier="RESPONSE_gap_001",
+                        label="Lucka 1",
+                        accepted_values=("alfa", "Alfa"),
+                    ),
+                    ExamNetQtiTextEntryGap(
+                        response_identifier="RESPONSE_gap_002",
+                        label="Lucka 2",
+                        accepted_values=("beta",),
+                    ),
+                ),
+            ),
+        ),
+    )
+    zip_bytes = build_examnet_qti_zip_bytes(plan)
+
+    with zipfile.ZipFile(BytesIO(zip_bytes)) as archive:
+        item = ElementTree.fromstring(archive.read("items/item_001.xml"))
+
+    mappings = item.findall(f".//{{{QTI_NAMESPACE}}}mapping")
+    assert len(mappings) == 2
+    for mapping in mappings:
+        assert mapping.attrib == {
+            "defaultValue": "0",
+            "lowerBound": "0",
+            "upperBound": "1.5",
+        }
+    assert [entry.attrib["mappedValue"] for entry in _map_entries(item)] == ["1.5", "1.5", "1.5"]
 
 
 def test_post_missing_choice_key_blocks_qti_package(
@@ -156,6 +232,7 @@ def test_export_only_matching_sample_preserves_visible_content_as_manual_free_te
 
     assert item.find(f".//{{{QTI_NAMESPACE}}}extendedTextInteraction") is not None
     assert item.find(f".//{{{QTI_NAMESPACE}}}correctResponse") is None
+    assert item.find(f".//{{{QTI_NAMESPACE}}}mapping") is None
     assert item.find(f"{{{QTI_NAMESPACE}}}responseProcessing") is None
     assert "Vänster kolumn:" in _item_xml(sample_dir / "qti-package.zip")
     assert _json_string(report, "examnet_proof_status") == (
@@ -169,6 +246,13 @@ def test_free_text_package_uses_extended_text_without_answer_key(tmp_path: Path)
 
     assert item.find(f".//{{{QTI_NAMESPACE}}}extendedTextInteraction") is not None
     assert item.find(f".//{{{QTI_NAMESPACE}}}correctResponse") is None
+    assert _mapping(item).attrib == {
+        "defaultValue": "0",
+        "lowerBound": "0",
+        "upperBound": "9",
+    }
+    assert _map_entry_pairs(item) == [("CRITERION_FULL", "9")]
+    assert _response_processing_template(item) == MAP_RESPONSE_TEMPLATE
     assert "Resonera kring" in _item_xml(sample_dir / "qti-package.zip")
 
 
@@ -194,7 +278,9 @@ def test_matching_package_is_valid_but_examnet_proof_gated(tmp_path: Path) -> No
     item = _item_root(sample_dir / "qti-package.zip")
     report = _read_report(sample_dir / "qti-validation-report.json")
 
-    assert item.find(f".//{{{QTI_NAMESPACE}}}matchInteraction") is not None
+    match_interaction = item.find(f".//{{{QTI_NAMESPACE}}}matchInteraction")
+    assert match_interaction is not None
+    assert "shuffle" not in match_interaction.attrib
     assert _response_declaration(item).attrib["baseType"] == "directedPair"
     assert _correct_values(item) == [
         "left_001 right_001",
@@ -202,6 +288,18 @@ def test_matching_package_is_valid_but_examnet_proof_gated(tmp_path: Path) -> No
         "left_003 right_003",
         "left_004 right_004",
     ]
+    assert _mapping(item).attrib == {
+        "defaultValue": "0",
+        "lowerBound": "0",
+        "upperBound": "4",
+    }
+    assert _map_entry_pairs(item) == [
+        ("left_001 right_001", "1"),
+        ("left_002 right_002", "1"),
+        ("left_003 right_003", "1"),
+        ("left_004 right_004", "1"),
+    ]
+    assert _response_processing_template(item) == MAP_RESPONSE_TEMPLATE
     assert _json_string(report, "target_support_status") == (
         ExamNetQtiTargetSupportStatus.PROOF_GATED
     )
@@ -332,6 +430,47 @@ def test_gap_fill_plan_blocks_when_any_gap_lacks_accepted_values() -> None:
     assert "accepted values for every gap" in plan.warnings[0]
 
 
+def test_all_sample_packages_wire_assessment_test_into_manifest() -> None:
+    for sample in (*examnet_qti_keyed_samples(), *examnet_qti_manual_unkeyed_samples()):
+        plan = build_examnet_qti_package_plan(package_name=sample.name, items=sample.items)
+        if plan.status != ExamNetQtiPackageStatus.PASSED:
+            continue
+        zip_bytes = build_examnet_qti_zip_bytes(plan)
+
+        with zipfile.ZipFile(BytesIO(zip_bytes)) as archive:
+            names = set(archive.namelist())
+            manifest = ElementTree.fromstring(archive.read("imsmanifest.xml"))
+            assessment = ElementTree.fromstring(archive.read("assessment.xml"))
+
+        assert "assessment.xml" in names
+        resources = manifest.findall(f".//{{{IMSCP_NAMESPACE}}}resource")
+        test_resources = [
+            resource for resource in resources if resource.attrib["type"] == "imsqti_test_xmlv2p1"
+        ]
+        assert len(test_resources) == 1
+        assert test_resources[0].attrib["identifier"] == "res_test"
+        assert test_resources[0].attrib["href"] == "assessment.xml"
+        file_hrefs = {
+            file.attrib["href"] for file in test_resources[0].findall(f"{{{IMSCP_NAMESPACE}}}file")
+        }
+        assert file_hrefs == {"assessment.xml"}
+        item_identifiers = {
+            resource.attrib["identifier"]
+            for resource in resources
+            if resource.attrib["type"] == "imsqti_item_xmlv2p1"
+        }
+        dependency_refs = {
+            dependency.attrib["identifierref"]
+            for dependency in test_resources[0].findall(f"{{{IMSCP_NAMESPACE}}}dependency")
+        }
+        assert item_identifiers
+        assert dependency_refs == item_identifiers
+        assert assessment.tag == f"{{{QTI_NAMESPACE}}}assessmentTest"
+        item_refs = assessment.findall(f".//{{{QTI_NAMESPACE}}}assessmentItemRef")
+        assert item_refs
+        assert all(item_ref.attrib["href"] in names for item_ref in item_refs)
+
+
 def test_digiexam_ir_adapter_feeds_reusable_qti_package_plan() -> None:
     parse_result = DigiExamDxeParser().parse_payload(
         _digiexam_renderable_payload(),
@@ -434,6 +573,26 @@ def _choice_interaction(item: ElementTree.Element) -> ElementTree.Element:
     interaction = item.find(f".//{{{QTI_NAMESPACE}}}choiceInteraction")
     assert interaction is not None
     return interaction
+
+
+def _mapping(item: ElementTree.Element) -> ElementTree.Element:
+    mapping = item.find(f".//{{{QTI_NAMESPACE}}}mapping")
+    assert mapping is not None
+    return mapping
+
+
+def _map_entries(item: ElementTree.Element) -> list[ElementTree.Element]:
+    return item.findall(f".//{{{QTI_NAMESPACE}}}mapEntry")
+
+
+def _map_entry_pairs(item: ElementTree.Element) -> list[tuple[str, str]]:
+    return [(entry.attrib["mapKey"], entry.attrib["mappedValue"]) for entry in _map_entries(item)]
+
+
+def _response_processing_template(item: ElementTree.Element) -> str:
+    processing = item.find(f"{{{QTI_NAMESPACE}}}responseProcessing")
+    assert processing is not None
+    return processing.attrib["template"]
 
 
 def _correct_values(item: ElementTree.Element) -> list[str]:

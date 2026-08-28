@@ -4,17 +4,26 @@ id: REF-SIRCON-GENERAL-exam-net-qti-import-contract-and-validation-strategy
 title: Exam.net QTI Import Contract And Validation Strategy
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 retired_ids:
-- REF-examnet-qti-import-contract-and-validation-strategy
+  - REF-examnet-qti-import-contract-and-validation-strategy
 summary: Exam.net QTI Import Contract And Validation Strategy
 ---
 
 ## Overview
+
+Superseded on 2026-08-29 by
+`REF-SIRCON-GENERAL-exam-net-qti-import-contract-empirical-observations`,
+which records the live-proven Exam.net importer contract from the 2026-08-28
+probe campaign. This document's vendor-reported framing ("importer under
+development, no live import test path") is stale: live import testing exists
+and the empirical reference is the binding contract for the QTI writer
+(`TASK-SIRCON-REP-0029`). The historical source content below is retained for
+provenance only; do not derive writer behavior from it.
 
 ## Facts And Semantics
 
@@ -43,10 +52,10 @@ The full QTI schema text is not copied into this repository. The authoritative
 schema files remain the source of truth and must be used by implementation
 tasks, validators, and reviews:
 
-| Version | Authoritative schema source | Sir Convert use |
-| --- | --- | --- |
-| QTI 2.1 | `https://www.imsglobal.org/xsd/imsqti_v2p1.xsd` | Initial Exam.net package floor and current sample generator target. |
-| QTI 3.0 item schema | `https://purl.imsglobal.org/spec/qti/v3p0/schema/xsd/imsqti_itemv3p0p1_v1p0.xsd` | Compatibility/reference target for later QTI 3 package decisions. |
+| Version             | Authoritative schema source                                                      | Sir Convert use                                                     |
+| ------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| QTI 2.1             | `https://www.imsglobal.org/xsd/imsqti_v2p1.xsd`                                  | Initial Exam.net package floor and current sample generator target. |
+| QTI 3.0 item schema | `https://purl.imsglobal.org/spec/qti/v3p0/schema/xsd/imsqti_itemv3p0p1_v1p0.xsd` | Compatibility/reference target for later QTI 3 package decisions.   |
 
 Schema requirements Sir Convert depends on:
 
@@ -108,14 +117,14 @@ only after a governed compatibility decision.
 
 Initial supported interactions:
 
-| Sir Convert item type | QTI interaction target | Exam.net status |
-| --- | --- | --- |
-| Single-choice multiple choice | `choiceInteraction`, single cardinality | Vendor-reported minimum area: MCQ. |
-| Multiple-response multiple choice | `choiceInteraction`, multiple cardinality | Treat as MCQ family; must be proven with Exam.net sample import. |
-| Free text / essay | `extendedTextInteraction` | Vendor-reported minimum area: free text. |
-| Matching | `matchInteraction` | QTI supports directed-pair matching with association constraints, including many-to-one and distractor choices. Exam.net QTI import is not available yet, so keep live Exam.net readiness behind future import proof. |
-| Short answer | `textEntryInteraction` or equivalent profile | Not part of the vendor-stated minimum; require sample proof. |
-| Gap fill | `textEntryInteraction` in item body with per-gap response declarations | Supported in the local package contract. Exam.net live import remains proof-gated; proof gaps must not remove accepted values from generated QTI. |
+| Sir Convert item type             | QTI interaction target                                                 | Exam.net status                                                                                                                                                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single-choice multiple choice     | `choiceInteraction`, single cardinality                                | Vendor-reported minimum area: MCQ.                                                                                                                                                                                    |
+| Multiple-response multiple choice | `choiceInteraction`, multiple cardinality                              | Treat as MCQ family; must be proven with Exam.net sample import.                                                                                                                                                      |
+| Free text / essay                 | `extendedTextInteraction`                                              | Vendor-reported minimum area: free text.                                                                                                                                                                              |
+| Matching                          | `matchInteraction`                                                     | QTI supports directed-pair matching with association constraints, including many-to-one and distractor choices. Exam.net QTI import is not available yet, so keep live Exam.net readiness behind future import proof. |
+| Short answer                      | `textEntryInteraction` or equivalent profile                           | Not part of the vendor-stated minimum; require sample proof.                                                                                                                                                          |
+| Gap fill                          | `textEntryInteraction` in item body with per-gap response declarations | Supported in the local package contract. Exam.net live import remains proof-gated; proof gaps must not remove accepted values from generated QTI.                                                                     |
 
 Images may be packaged as item resources only when the source IR has
 renderer-neutral image assets and the QTI package manifest references them
@@ -322,15 +331,15 @@ Each sample directory contains:
 
 The sample set is:
 
-| Sample | Status | Exam.net proof status |
-| --- | --- | --- |
-| `single-choice-mcq` | `passed` | `vendor_reported_unproven` |
-| `multiple-response-mcq` | `passed` | `vendor_reported_unproven` |
-| `gap-fill-text-entry` | `passed` | `not_proven` |
-| `free-text` | `passed` | `vendor_reported_unproven` |
-| `image-single-choice-mcq` | `passed` | `vendor_reported_unproven` |
-| `image-free-text` | `passed` | `vendor_reported_unproven` |
-| `matching-proof-gated` | `passed` | `not_proven` |
+| Sample                          | Status   | Exam.net proof status      |
+| ------------------------------- | -------- | -------------------------- |
+| `single-choice-mcq`             | `passed` | `vendor_reported_unproven` |
+| `multiple-response-mcq`         | `passed` | `vendor_reported_unproven` |
+| `gap-fill-text-entry`           | `passed` | `not_proven`               |
+| `free-text`                     | `passed` | `vendor_reported_unproven` |
+| `image-single-choice-mcq`       | `passed` | `vendor_reported_unproven` |
+| `image-free-text`               | `passed` | `vendor_reported_unproven` |
+| `matching-proof-gated`          | `passed` | `not_proven`               |
 | `unsupported-resource-omission` | `passed` | `vendor_reported_unproven` |
 
 The reusable generator surface is:
@@ -348,15 +357,15 @@ packages and reports.
 
 Current package hashes:
 
-| Sample | QTI package SHA-256 |
-| --- | --- |
-| `single-choice-mcq` | `2f8748685e19a347e2521b49941f6c2bd154b55eacce5bad59f2da8e25e89a46` |
-| `multiple-response-mcq` | `6561073ef7f962f4ad85326e669f9561e89a0d5316eee1a3ae436fa3e5600c65` |
-| `gap-fill-text-entry` | `5a40db19c38aa75a8751574edc9934c598bf94633d99c08f74e1677cb4c1a795` |
-| `free-text` | `0bfcd851d820b8a71c443f97dd7e6f72b1d8b1adfc2bc450bc30dd1c6a90c59c` |
-| `image-single-choice-mcq` | `fda63d3a002003b616e84231767424065d376f3512fc12537e57235ba6210c1d` |
-| `image-free-text` | `917dba37c29e44147826ac508942fafcd536d78cd3fcc552d1106bc0072d13e8` |
-| `matching-proof-gated` | `846818e5a2985be23e48077835b8ead3f49f7275182aef2f511ce79ffbca52bc` |
+| Sample                          | QTI package SHA-256                                                |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `single-choice-mcq`             | `2f8748685e19a347e2521b49941f6c2bd154b55eacce5bad59f2da8e25e89a46` |
+| `multiple-response-mcq`         | `6561073ef7f962f4ad85326e669f9561e89a0d5316eee1a3ae436fa3e5600c65` |
+| `gap-fill-text-entry`           | `5a40db19c38aa75a8751574edc9934c598bf94633d99c08f74e1677cb4c1a795` |
+| `free-text`                     | `0bfcd851d820b8a71c443f97dd7e6f72b1d8b1adfc2bc450bc30dd1c6a90c59c` |
+| `image-single-choice-mcq`       | `fda63d3a002003b616e84231767424065d376f3512fc12537e57235ba6210c1d` |
+| `image-free-text`               | `917dba37c29e44147826ac508942fafcd536d78cd3fcc552d1106bc0072d13e8` |
+| `matching-proof-gated`          | `846818e5a2985be23e48077835b8ead3f49f7275182aef2f511ce79ffbca52bc` |
 | `unsupported-resource-omission` | `81f89c05149239d9d0c484bab82882af9ea9b3cb01eb7c4804a778c494440def` |
 
 ### Task 303 Manual/unkeyed Sample Gate
@@ -375,19 +384,19 @@ The matching sample is therefore a Task-298-aware contract sample: it proves the
 manual/free-text preservation shape without claiming reviewed matching
 answer-pair support, automatic evaluation, or IR v3 application.
 
-| Sample | Source | Profile | Status | Exam.net proof status |
-| --- | --- | --- | --- | --- |
-| `unkeyed-single-choice-preserved` | real DXE `item-002` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
-| `unkeyed-multiple-response-preserved` | real DXE `item-004` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
-| `manual-gap-fill-preserved-as-free-text` | real DXE `item-007` | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| Sample                                   | Source                                                                                                        | Profile                     | Status   | Exam.net proof status      |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------- | -------- | -------------------------- |
+| `unkeyed-single-choice-preserved`        | real DXE `item-002`                                                                                           | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| `unkeyed-multiple-response-preserved`    | real DXE `item-004`                                                                                           | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
+| `manual-gap-fill-preserved-as-free-text` | real DXE `item-007`                                                                                           | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
 | `manual-matching-preserved-as-free-text` | contract sample; keyed matching waits for `ExamAuthoringIR v1` plus real Exam.net/authoring matching fixtures | `unkeyed_manual_qti_2_1_v1` | `passed` | `vendor_reported_unproven` |
 
 Current Task 303 package hashes:
 
-| Sample | QTI package SHA-256 |
-| --- | --- |
-| `unkeyed-single-choice-preserved` | `caba9ee65040f0879f1ef02694b18883f85bd00663a5d525d0cf77deef0e2faf` |
-| `unkeyed-multiple-response-preserved` | `60be8c1442baabf24f11d250fba1d2fd2cb9a827844c01fb83461d2e92318fc6` |
+| Sample                                   | QTI package SHA-256                                                |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| `unkeyed-single-choice-preserved`        | `caba9ee65040f0879f1ef02694b18883f85bd00663a5d525d0cf77deef0e2faf` |
+| `unkeyed-multiple-response-preserved`    | `60be8c1442baabf24f11d250fba1d2fd2cb9a827844c01fb83461d2e92318fc6` |
 | `manual-gap-fill-preserved-as-free-text` | `f064a580919ee27d8efd20020103df700468ae10db10415c9d1a40e9a122036a` |
 | `manual-matching-preserved-as-free-text` | `055f41e4ff11e109af8290037dc48aeebeeec9051ba9e36d6dcef606347e192b` |
 

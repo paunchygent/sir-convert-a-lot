@@ -164,6 +164,7 @@ class ExamNetQtiItem:
         ExamNetQtiManualRepresentation.NATIVE_INTERACTION
     )
     source_item_type: str | None = None
+    free_text_criterion_points: int | None = None
     choices: tuple[ExamNetQtiChoice, ...] = ()
     correct_choice_identifiers: tuple[str, ...] = ()
     text_entry_gaps: tuple[ExamNetQtiTextEntryGap, ...] = ()

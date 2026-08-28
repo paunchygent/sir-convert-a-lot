@@ -17,6 +17,12 @@ import re
 from typing import Literal
 from xml.etree import ElementTree
 
+from scripts.sir_convert_a_lot.domain.examnet_qti_assessment_test_xml import (
+    EXAMNET_QTI_ASSESSMENT_TEST_PATH,
+    EXAMNET_QTI_TEST_RESOURCE_IDENTIFIER,
+    EXAMNET_QTI_TEST_RESOURCE_TYPE,
+    serialize_qti_assessment_test,
+)
 from scripts.sir_convert_a_lot.domain.examnet_qti_contracts import (
     EXAMNET_QTI_AUTOMATIC_PROFILE_ID,
     EXAMNET_QTI_GENERATOR_VERSION,
@@ -71,9 +77,10 @@ def build_examnet_qti_package_plan(
             warnings=blocking_errors,
         )
 
+    ordered_items = tuple(sorted(items, key=lambda value: value.sequence))
     item_files: list[ExamNetQtiPackageFile] = []
     image_files_by_item_id: dict[str, tuple[ExamNetQtiPackageFile, ...]] = {}
-    for item in sorted(items, key=lambda value: value.sequence):
+    for item in ordered_items:
         image_files = tuple(_image_file(item, image) for image in item.image_resources)
         image_paths = tuple(image.relative_path for image in image_files)
         item_xml = serialize_qti_assessment_item(item, image_paths=image_paths)
@@ -86,13 +93,15 @@ def build_examnet_qti_package_plan(
         )
         image_files_by_item_id[item.item_id] = image_files
 
+    assessment_file = _assessment_test_file(package_name=package_name, items=ordered_items)
     manifest = _manifest_file(
         item_files=tuple(item_files),
         image_files_by_item_id=image_files_by_item_id,
     )
     files = tuple(
         sorted(
-            (manifest, *item_files, *_all_image_files(image_files_by_item_id)), key=_file_sort_key
+            (manifest, assessment_file, *item_files, *_all_image_files(image_files_by_item_id)),
+            key=_file_sort_key,
         )
     )
     return ExamNetQtiPackagePlan(
@@ -323,6 +332,22 @@ def _item_xml_path(item: ExamNetQtiItem) -> str:
     return f"items/{item.item_id}.xml"
 
 
+def _assessment_test_file(
+    *,
+    package_name: str,
+    items: tuple[ExamNetQtiItem, ...],
+) -> ExamNetQtiPackageFile:
+    payload = serialize_qti_assessment_test(
+        package_name=package_name,
+        item_ids=tuple(item.item_id for item in items),
+    )
+    return _package_file(
+        relative_path=EXAMNET_QTI_ASSESSMENT_TEST_PATH,
+        content_type="application/xml",
+        payload=payload,
+    )
+
+
 def _image_file(item: ExamNetQtiItem, image: ExamNetQtiImageResource) -> ExamNetQtiPackageFile:
     extension = _IMAGE_MEDIA_TYPES[image.media_type]
     filename = f"{item.item_id}-{_safe_path_stem(image.asset_id)}{extension}"
@@ -368,6 +393,21 @@ def _manifest_file(
         ElementTree.SubElement(resource, _cp("file"), {"href": item_file.relative_path})
         for image_file in image_files_by_item_id[item_id]:
             ElementTree.SubElement(resource, _cp("file"), {"href": image_file.relative_path})
+    test_resource = ElementTree.SubElement(
+        resources,
+        _cp("resource"),
+        {
+            "identifier": EXAMNET_QTI_TEST_RESOURCE_IDENTIFIER,
+            "type": EXAMNET_QTI_TEST_RESOURCE_TYPE,
+            "href": EXAMNET_QTI_ASSESSMENT_TEST_PATH,
+        },
+    )
+    ElementTree.SubElement(test_resource, _cp("file"), {"href": EXAMNET_QTI_ASSESSMENT_TEST_PATH})
+    for item_file in item_files:
+        item_id = item_file.relative_path.removeprefix("items/").removesuffix(".xml")
+        ElementTree.SubElement(
+            test_resource, _cp("dependency"), {"identifierref": f"res_{item_id}"}
+        )
     ElementTree.indent(manifest, space="  ")
     xml_text = ElementTree.tostring(
         manifest,
@@ -397,10 +437,14 @@ def _all_image_files(
     return tuple(file for files in image_files_by_item_id.values() for file in files)
 
 
-def _file_sort_key(file: ExamNetQtiPackageFile) -> str:
+def _file_sort_key(file: ExamNetQtiPackageFile) -> tuple[int, str]:
     if file.relative_path == "imsmanifest.xml":
-        return ""
-    return file.relative_path
+        return (0, "")
+    if file.relative_path == EXAMNET_QTI_ASSESSMENT_TEST_PATH:
+        return (1, "")
+    if file.relative_path.startswith("items/"):
+        return (2, file.relative_path)
+    return (3, file.relative_path)
 
 
 def _target_support_status(

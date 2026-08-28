@@ -13,7 +13,7 @@ Relationships:
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from html.parser import HTMLParser
 
 from scripts.sir_convert_a_lot.domain.digiexam_contracts import (
@@ -65,7 +65,7 @@ def build_examnet_qti_items_from_digiexam_ir(
 
 def _qti_item(item: DigiExamIrItem) -> ExamNetQtiItem | None:
     if item.item_type == DigiExamItemType.OPEN_ENDED:
-        return _base_qti_item(item, ExamNetQtiInteractionType.FREE_TEXT)
+        return _free_text_item(item)
     if item.item_type in {DigiExamItemType.SINGLE_CHOICE, DigiExamItemType.MULTIPLE_CHOICE}:
         return _choice_item(
             item,
@@ -112,6 +112,13 @@ def _choice_item(
         correct_choice_identifiers=correct_ids,
         image_resources=base_item.image_resources,
     )
+
+
+def _free_text_item(item: DigiExamIrItem) -> ExamNetQtiItem:
+    base_item = _base_qti_item(item, ExamNetQtiInteractionType.FREE_TEXT)
+    if item.max_score is None or item.max_score < 1:
+        return base_item
+    return replace(base_item, free_text_criterion_points=item.max_score)
 
 
 def _base_qti_item(

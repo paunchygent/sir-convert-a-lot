@@ -8,30 +8,30 @@
         "qti_package"
       ],
       "item_id": "item_004",
-      "message": "Frågan exporteras som manuell QTI utan automatiskt facit (ursprunglig frågetyp: multiple_response).",
-      "reason_code": "automatic_evaluation_unsupported",
+      "message": "Lägg till eller kontrollera facit innan QTI-paketet används i Exam.net.",
+      "reason_code": "manual_answer_key_required",
       "sequence": 4,
       "title": "Flera rätta svar (flervalsfråga)"
     }
   ],
   "package_filename": "qti-package.zip",
-  "package_sha256": "60be8c1442baabf24f11d250fba1d2fd2cb9a827844c01fb83461d2e92318fc6",
-  "package_status": "passed",
-  "profile_id": "unkeyed_manual_qti_2_1_v1",
+  "package_sha256": null,
+  "package_status": "blocked",
+  "profile_id": "examnet_qti_2_1_v1",
   "qti_version": "2.1",
   "schema_version": "examnet_qti_validation_report_v1",
   "target_support_status": "vendor_reported_minimum",
   "validator_results": [
     {
       "layer": "package_xml_preflight",
-      "message": "Package files, XML documents, manifest hrefs, and image references passed.",
+      "message": "QTI package generation was blocked before zip validation.",
       "name": "sir-convert-local-qti-package-preflight",
-      "status": "passed",
+      "status": "blocked",
       "version": "examnet_qti_2_1_v1"
     },
     {
       "layer": "official_qti_validation",
-      "message": "Official 1EdTech validation is recorded as an external dependency for this local Exam.net QTI gate.",
+      "message": "Official 1EdTech validation is recorded as an external dependency for this local keyed QTI gate.",
       "name": "1EdTech QTI validator",
       "status": "external_validator_unavailable",
       "version": "external"
@@ -44,5 +44,7 @@
       "version": "not_configured"
     }
   ],
-  "warnings": []
+  "warnings": [
+    "Item item_004 needs one or more correct choices."
+  ]
 }
