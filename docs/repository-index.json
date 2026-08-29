@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "2f322c40005eb40c605c060fd5e75d22dd1485dc32e2c8d9f9fb09ef45bc0208",
+  "source_set_digest": "c7adee09a3db43c65bf6b280cea9d4671691c469bd5512a269041846d6328510",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4100,6 +4100,25 @@
       ]
     },
     {
+      "id": "ADR-SIRCON-0014",
+      "type": "adr",
+      "title": "Remote-first answer-key completion with a daily token lease for the exam lane",
+      "path": "docs/decisions/adr-sircon-0014-remote-first-answer-key-completion-with-a-daily-token-lease-for-the-exam-lane.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": [
+          "TASK-SIRCON-08-01-07",
+          "ADR-SIRCON-0009"
+        ]
+      }
+    },
+    {
       "id": "REF-SIRCON-DECISIONS-qwen3-tts-swedish-corpus-curation-policy",
       "type": "reference",
       "title": "Qwen3-TTS Swedish Corpus Curation Policy",
@@ -5252,6 +5271,16 @@
         "title": "Cloudflare R2 job artifact storage boundary",
         "status": "accepted",
         "path": "docs/decisions/adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0014",
+        "title": "Remote-first answer-key completion with a daily token lease for the exam lane",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0014-remote-first-answer-key-completion-with-a-daily-token-lease-for-the-exam-lane.md",
         "governing": [],
         "governed_contracts": [],
         "supersedes": [],

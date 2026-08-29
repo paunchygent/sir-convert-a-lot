@@ -17,6 +17,9 @@ Relationships:
 
 from __future__ import annotations
 
+from scripts.sir_convert_a_lot.domain.answer_key_token_lease_contracts import (
+    AnswerKeyTokenLeaseError,
+)
 from scripts.sir_convert_a_lot.domain.digiexam_answer_key_completion_candidates import (
     DigiExamAnswerKeyCandidatePlannerProtocol,
     DigiExamCompletionCandidatePlan,
@@ -108,7 +111,14 @@ async def build_digiexam_answer_key_completion_report(
                 )
             )
             continue
-        rows.append(await _provider_entry(candidate, provider))
+        rows.append(
+            await _provider_entry(
+                candidate=candidate,
+                provider=provider,
+                provider_set=provider_set,
+                route_policy=route_policy,
+            )
+        )
 
     return completion_report(
         job_id=job_id,
@@ -121,6 +131,8 @@ async def build_digiexam_answer_key_completion_report(
 async def _provider_entry(
     candidate: DigiExamCompletionCandidatePlan,
     provider: StructuredChatProviderProtocol,
+    provider_set: StructuredChatProviderSet | None,
+    route_policy: StructuredLLMRoutePolicy,
 ) -> DigiExamAnswerKeyCompletionReportItem:
     request = candidate.request
     item = candidate.item
@@ -132,30 +144,140 @@ async def _provider_entry(
             profile=profile,
             failure_code=DigiExamAnswerKeyCompletionFailureCode.PROVIDER_CONFIG_MISSING,
         )
-    budget = resolve_structured_llm_token_budget(
-        profile=profile,
-        requested_max_output_tokens=request.max_output_tokens,
-        safety_margin_tokens=ANSWER_KEY_COMPLETION_SAFETY_MARGIN_TOKENS,
-    )
-    preflight = preflight_structured_llm_prompt(request=request, budget=budget)
-    if not preflight.fits:
-        return _manual_entry(
-            item=item,
-            request=request,
-            profile=profile,
-            failure_code=DigiExamAnswerKeyCompletionFailureCode.OVER_BUDGET,
-        )
+    preflight_failure = _preflight_failure(candidate)
+    if preflight_failure is not None:
+        return preflight_failure
     try:
         response = await provider.complete_structured_chat(request=request, profile=profile)
+    except AnswerKeyTokenLeaseError as exc:
+        return _lease_error_entry(candidate=candidate, error=exc)
     except StructuredLLMProviderError as exc:
-        return _manual_entry(
-            item=item,
-            request=request,
-            profile=profile,
-            failure_code=exc.failure_code,
-            provider_error_diagnostic=exc.diagnostic,
+        if not _allows_provider_failover(exc) or provider_set is None:
+            return _provider_error_entry(candidate=candidate, error=exc)
+        return await _fallback_entry(
+            primary_failure=exc,
+            primary_candidate=candidate,
+            provider=provider,
+            provider_set=provider_set,
+            route_policy=route_policy,
         )
     return _response_entry(candidate=candidate, profile=profile, response=response)
+
+
+async def _fallback_entry(
+    *,
+    primary_failure: StructuredLLMProviderError,
+    primary_candidate: DigiExamCompletionCandidatePlan,
+    provider: StructuredChatProviderProtocol,
+    provider_set: StructuredChatProviderSet,
+    route_policy: StructuredLLMRoutePolicy,
+) -> DigiExamAnswerKeyCompletionReportItem:
+    """Attempt the configured fallback once after an eligible primary outage."""
+
+    route = decide_structured_llm_route(
+        provider_set=provider_set,
+        policy=route_policy,
+        primary_available=False,
+        fallback_available=provider_set.fallback is not None,
+    )
+    fallback = provider_set.fallback
+    if route.provider_slot != "fallback" or fallback is None:
+        return _provider_error_entry(candidate=primary_candidate, error=primary_failure)
+    fallback_candidate = answer_key_candidate_planner_for_profile(fallback).plan_candidate(
+        job_id=primary_candidate.request.job_id,
+        item=primary_candidate.item,
+        profile=fallback,
+    )
+    if fallback_candidate is None:
+        return _provider_error_entry(candidate=primary_candidate, error=primary_failure)
+    preflight_failure = _preflight_failure(fallback_candidate)
+    if preflight_failure is not None:
+        return preflight_failure
+    try:
+        response = await provider.complete_structured_chat(
+            request=fallback_candidate.request,
+            profile=fallback,
+        )
+    except AnswerKeyTokenLeaseError as exc:
+        return _lease_error_entry(candidate=fallback_candidate, error=exc)
+    except StructuredLLMProviderError as exc:
+        return _provider_error_entry(candidate=fallback_candidate, error=exc)
+    return _response_entry(candidate=fallback_candidate, profile=fallback, response=response)
+
+
+def _preflight_failure(
+    candidate: DigiExamCompletionCandidatePlan,
+) -> DigiExamAnswerKeyCompletionReportItem | None:
+    """Return a terminal report row when this profile cannot fit the request."""
+
+    profile = candidate.provider_profile
+    if profile is None:
+        return _manual_entry(
+            item=candidate.item,
+            request=candidate.request,
+            profile=profile,
+            failure_code=DigiExamAnswerKeyCompletionFailureCode.PROVIDER_CONFIG_MISSING,
+        )
+    budget = resolve_structured_llm_token_budget(
+        profile=profile,
+        requested_max_output_tokens=candidate.request.max_output_tokens,
+        safety_margin_tokens=ANSWER_KEY_COMPLETION_SAFETY_MARGIN_TOKENS,
+    )
+    preflight = preflight_structured_llm_prompt(request=candidate.request, budget=budget)
+    if preflight.fits:
+        return None
+    return _manual_entry(
+        item=candidate.item,
+        request=candidate.request,
+        profile=profile,
+        failure_code=DigiExamAnswerKeyCompletionFailureCode.OVER_BUDGET,
+    )
+
+
+def _allows_provider_failover(error: StructuredLLMProviderError) -> bool:
+    """Limit fallback execution to transient provider outages only."""
+
+    if error.failure_code in {
+        StructuredLLMBackendFailureCode.PROVIDER_TIMEOUT,
+        StructuredLLMBackendFailureCode.PROVIDER_REQUEST_FAILED,
+    }:
+        return True
+    return (
+        error.failure_code == StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR
+        and error.status_code is not None
+        and (error.status_code == 408 or 500 <= error.status_code <= 599)
+    )
+
+
+def _lease_error_entry(
+    *,
+    candidate: DigiExamCompletionCandidatePlan,
+    error: AnswerKeyTokenLeaseError,
+) -> DigiExamAnswerKeyCompletionReportItem:
+    """Project a typed lease refusal without emitting storage or provider data."""
+
+    return _manual_entry(
+        item=candidate.item,
+        request=candidate.request,
+        profile=candidate.provider_profile,
+        failure_code=DigiExamAnswerKeyCompletionFailureCode(error.failure_code.value),
+    )
+
+
+def _provider_error_entry(
+    *,
+    candidate: DigiExamCompletionCandidatePlan,
+    error: StructuredLLMProviderError,
+) -> DigiExamAnswerKeyCompletionReportItem:
+    """Project one terminal provider failure into the advisory report."""
+
+    return _manual_entry(
+        item=candidate.item,
+        request=candidate.request,
+        profile=candidate.provider_profile,
+        failure_code=error.failure_code,
+        provider_error_diagnostic=error.diagnostic,
+    )
 
 
 def _route_decision(

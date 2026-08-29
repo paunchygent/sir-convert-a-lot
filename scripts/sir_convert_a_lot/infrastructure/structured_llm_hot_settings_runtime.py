@@ -19,6 +19,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_hot_settings import (
     StructuredLLMInternalRouteClass,
     StructuredLLMProviderRoutingSettings,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openrouter_model_profiles import (
+    is_answer_key_openrouter_provider_profile,
+)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     StructuredLLMRuntimeConfig,
@@ -62,7 +65,9 @@ def structured_llm_provider_ids(config: StructuredLLMRuntimeConfig) -> frozenset
     if config.provider_set is None:
         return frozenset()
     provider_ids = {config.provider_set.primary.provider_id}
-    if config.provider_set.fallback is not None:
+    if config.provider_set.fallback is not None and not is_answer_key_openrouter_provider_profile(
+        config.provider_set.fallback
+    ):
         provider_ids.add(config.provider_set.fallback.provider_id)
     return frozenset(provider_ids)
 

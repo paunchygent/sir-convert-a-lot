@@ -270,6 +270,12 @@ def service_config_from_env() -> ServiceConfig:
         minimum=1,
         maximum=64,
     )
+    answer_key_daily_token_limit = _parse_bounded_int_env(
+        name="SIR_CONVERT_A_LOT_ANSWER_KEY_DAILY_TOKEN_LIMIT",
+        default=5_000_000,
+        minimum=1,
+        maximum=100_000_000,
+    )
     enable_supervisor = _parse_bool_env(
         name="SIR_CONVERT_A_LOT_ENABLE_SUPERVISOR",
         default=True,
@@ -380,6 +386,7 @@ def service_config_from_env() -> ServiceConfig:
         exam_authoring_source_state_signature_secret=_optional_secret_from_env(
             "SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET"
         ),
+        answer_key_daily_token_limit=answer_key_daily_token_limit,
         structured_llm=structured_llm_runtime_config_from_env(),
         object_store=terminal_object_store_config_from_env(),
     )

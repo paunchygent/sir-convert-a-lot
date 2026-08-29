@@ -15,6 +15,7 @@
 - `ADR-SIRCON-0011` | [Service API v2 Current-State Authority and Extension Boundary](adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
 - `ADR-SIRCON-0012` | [Speech-to-Text Sidecar and Audio Ingestion Governance](adr-sircon-0012-speech-to-text-sidecar-and-audio-ingestion-governance.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
 - `ADR-SIRCON-0013` | [Cloudflare R2 job artifact storage boundary](adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
+- `ADR-SIRCON-0014` | [Remote-first answer-key completion with a daily token lease for the exam lane](adr-sircon-0014-remote-first-answer-key-completion-with-a-daily-token-lease-for-the-exam-lane.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
 
 ## Historical Coverage Debt
 

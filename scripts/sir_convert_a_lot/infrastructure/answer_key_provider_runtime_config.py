@@ -39,6 +39,10 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles i
     AnswerKeyOpenAIProviderProfileName,
     answer_key_openai_provider_json_for_profile,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openrouter_model_profiles import (
+    AnswerKeyOpenRouterProviderProfileName,
+    answer_key_openrouter_provider_json,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
@@ -79,7 +83,7 @@ def render_answer_key_provider_environment(
     *,
     lane: AnswerKeyProviderRuntimeLane,
     profile_name: AnswerKeyRuntimeProviderProfileName = (
-        AnswerKeyOpenAIProviderProfileName.GPT54_MINI_2026_03_17
+        AnswerKeyOpenAIProviderProfileName.GPT56_LUNA
     ),
 ) -> dict[str, str]:
     """Render canonical env keys for one answer-key provider profile."""
@@ -91,13 +95,16 @@ def render_answer_key_provider_environment(
     )
     primary_provider_id = profile_name.value if is_api_profile else LLAMA_CPP_PROVIDER_ID
     remote_enabled = "1" if is_api_profile else "0"
+    fallback_provider_id = ""
+    if profile_name == AnswerKeyOpenAIProviderProfileName.GPT56_LUNA:
+        fallback_provider_id = AnswerKeyOpenRouterProviderProfileName.GLM53_FLASH.value
     return {
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_ENABLED": "1",
         STRUCTURED_LLM_PROVIDER_PROFILE_ENV: profile_name.value,
         STRUCTURED_LLM_RUNTIME_LANE_ENV: lane.value,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON": providers_json,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID": primary_provider_id,
-        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID": "",
+        "SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID": fallback_provider_id,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED": remote_enabled,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED": remote_enabled,
         "SIR_CONVERT_A_LOT_STRUCTURED_LLM_VISION_MEDIA_PATH": (
@@ -121,6 +128,8 @@ def answer_key_provider_json_for_profile(
         return answer_key_deepseek_provider_json_for_profile(profile_name)
     if isinstance(profile_name, AnswerKeyOpenAIProviderProfileName):
         del lane
+        if profile_name == AnswerKeyOpenAIProviderProfileName.GPT56_LUNA:
+            return _luna_remote_provider_catalog()
         return answer_key_openai_provider_json_for_profile(profile_name)
     if profile_name not in {
         AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP,
@@ -147,6 +156,17 @@ def answer_key_provider_json_for_profile(
         }
     }
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def _luna_remote_provider_catalog() -> str:
+    """Render the governed Luna primary and GLM failover provider catalog."""
+
+    luna_payload = json.loads(
+        answer_key_openai_provider_json_for_profile(AnswerKeyOpenAIProviderProfileName.GPT56_LUNA)
+    )
+    glm_payload = json.loads(answer_key_openrouter_provider_json())
+    catalog = {**luna_payload, **glm_payload}
+    return json.dumps(catalog, sort_keys=True, separators=(",", ":"))
 
 
 def provider_json_from_runtime_profile(source: Mapping[str, str]) -> str:

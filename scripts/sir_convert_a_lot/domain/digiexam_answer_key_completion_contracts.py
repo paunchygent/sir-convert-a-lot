@@ -70,6 +70,8 @@ class DigiExamAnswerKeyCompletionFailureCode(StrEnum):
     PROVIDER_ROUTE_BLOCKED = "provider_route_blocked"
     OVER_BUDGET = "over_budget"
     LLM_OUTPUT_INVALID = "llm_output_invalid"
+    DAILY_TOKEN_LEASE_EXHAUSTED = "daily_token_lease_exhausted"
+    TOKEN_LEASE_LEDGER_UNAVAILABLE = "token_lease_ledger_unavailable"
 
 
 @dataclass(frozen=True)
