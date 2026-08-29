@@ -19,11 +19,15 @@
   proofs covered Luna success, one-shot GLM failover with two leases, and
   fail-closed exhaustion with zero provider calls while deterministic artifacts
   continued; canonical API and worker runtime was restored healthy afterward.
-- Skriptoteket `EPIC-SKRIPT-39` (proposed, with `ADR-SKRIPT-0090`) will port
-  the exam-conversion domain into Skriptoteket by incremental strangler after
-  the two tasks above land; Sir Convert then retains heavy OCR/STT behind a
-  generic extraction contract and the exam-specific cross-repo schema surface
-  retires with that cutover.
+- Skriptoteket `EPIC-SKRIPT-39` (active, with accepted `ADR-SKRIPT-0090`) is
+  porting the exam-conversion domain into Skriptoteket by incremental
+  strangler. Its walking skeleton `TASK-SKRIPT-39-01-01` is `done`
+  (2026-08-29): the exam domain chain ported from this repo at `41be61a6`
+  produces a byte-identical QTI package (sha256 `f36a4ae3…`) behind a lane
+  switch defaulting to the Sir Convert path, proven through the authenticated
+  HuleEdu ceremony. This repo stays the default lane until the cutover story;
+  Sir Convert then retains heavy OCR/STT behind a generic extraction contract
+  and the exam-specific cross-repo schema surface retires with that cutover.
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
