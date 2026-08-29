@@ -13,10 +13,12 @@
   (stems-in-prompt rule included), superseding the vendor-reported strategy
   reference. Four narrow empirical unknowns stay open in that reference.
 - [TASK-SIRCON-08-01-07](docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md)
-  is `ready`: exam-lane answer-key completion moves to a GPT-5.6 Luna
-  low-effort default with GLM-5.3-flash (OpenRouter) failover-only backup and
-  a 5,000,000 token/day non-refundable lease (UTC-midnight reset, fail-closed
-  exhaustion).
+  is `done`: published revision `a1319739` runs GPT-5.6 Luna as the exam-lane
+  low-effort default with GLM-5.3-flash (OpenRouter) as a failover-only backup
+  under one 5,000,000 token/day non-refundable UTC lease. Credentialed Hemma
+  proofs covered Luna success, one-shot GLM failover with two leases, and
+  fail-closed exhaustion with zero provider calls while deterministic artifacts
+  continued; canonical API and worker runtime was restored healthy afterward.
 - Skriptoteket `EPIC-SKRIPT-39` (proposed, with `ADR-SKRIPT-0090`) will port
   the exam-conversion domain into Skriptoteket by incremental strangler after
   the two tasks above land; Sir Convert then retains heavy OCR/STT behind a

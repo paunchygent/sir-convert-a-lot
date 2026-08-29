@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "c7adee09a3db43c65bf6b280cea9d4671691c469bd5512a269041846d6328510",
+  "source_set_digest": "4092ce0b3812c5058ec9c1355fa5d3237847a3da5ee2a9d7afb333fe99b1e338",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3115,7 +3115,7 @@
       "type": "task",
       "title": "Adopt remote answer-key model profiles with a daily token lease budget",
       "path": "docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "story",
       "story": "ST-SIRCON-08-01",
       "owners": [
@@ -3126,7 +3126,11 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "spec-verifier",
+        "decided_at": "2026-08-29T04:03:02+02:00",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Retained verifier review .orchestration/context/sessions/01a048d5-69f7-7394-93dd-8ff91af608cd/evidence/reviews/TASK-SIRCON-08-01-07/spec-verification.md verified published revision a1319739 after the approved 18126d08 repair, 406-passed exam gate, deployed credentialed Luna, forced GLM failover, and forced-exhaustion proofs, and restored exact healthy canonical runtime."
       }
     },
     {

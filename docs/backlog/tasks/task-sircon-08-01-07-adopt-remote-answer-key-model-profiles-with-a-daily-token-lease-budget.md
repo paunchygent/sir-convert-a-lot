@@ -7,10 +7,18 @@ owners:
 - kind: service
   id: sir-convert-a-lot
 created: '2026-08-28'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: spec-verifier
+  decided_at: '2026-08-29T04:03:02+02:00'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: Retained verifier review
+    .orchestration/context/sessions/01a048d5-69f7-7394-93dd-8ff91af608cd/evidence/reviews/TASK-SIRCON-08-01-07/spec-verification.md
+    verified published revision a1319739 after the approved 18126d08 repair,
+    406-passed exam gate, deployed credentialed Luna, forced GLM failover, and
+    forced-exhaustion proofs, and restored exact healthy canonical runtime.
 task_kind: story
 acceptance_criteria:
 - Exam-lane answer-key completion defaults to the GPT-5.6 Luna low-reasoning-effort remote profile, with GLM-5.3-flash via OpenRouter as a failover-only backup drawing from the same lease.
