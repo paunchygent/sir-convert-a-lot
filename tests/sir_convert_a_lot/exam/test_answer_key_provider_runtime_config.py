@@ -26,6 +26,10 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_local_model_profiles im
 from scripts.sir_convert_a_lot.infrastructure.answer_key_openai_model_profiles import (
     AnswerKeyOpenAIProviderProfileName,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openrouter_model_profiles import (
+    OPENROUTER_API_KEY_ENV,
+    AnswerKeyOpenRouterProviderProfileName,
+)
 from scripts.sir_convert_a_lot.infrastructure.answer_key_provider_runtime_config import (
     STRUCTURED_LLM_PROVIDER_PROFILE_ENV,
     STRUCTURED_LLM_RUNTIME_LANE_ENV,
@@ -37,24 +41,32 @@ from scripts.sir_convert_a_lot.infrastructure.answer_key_provider_runtime_config
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     structured_llm_runtime_config_from_env,
 )
+from scripts.sir_convert_a_lot.infrastructure.structured_llm_hot_settings_runtime import (
+    structured_llm_provider_ids,
+)
 from scripts.sir_convert_a_lot.infrastructure.structured_llm_provider import (
     StructuredLLMProviderConnection,
 )
 
 
-def test_rendered_prod_profile_uses_openai_mini_as_temporary_default() -> None:
+def test_rendered_prod_profile_uses_luna_primary_with_glm_failover() -> None:
     env = render_answer_key_provider_environment(
         lane=AnswerKeyProviderRuntimeLane.HEMMA_PROD_COMPOSE
     )
     provider_payload = _provider_payload(
         env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON"],
-        provider_id="openai-gpt-5.4-mini-2026-03-17",
+        provider_id="openai-gpt-5.6-luna",
+    )
+    fallback_payload = _provider_payload(
+        env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON"],
+        provider_id=AnswerKeyOpenRouterProviderProfileName.GLM53_FLASH.value,
     )
 
-    assert env[STRUCTURED_LLM_PROVIDER_PROFILE_ENV] == "openai-gpt-5.4-mini-2026-03-17"
+    assert env[STRUCTURED_LLM_PROVIDER_PROFILE_ENV] == "openai-gpt-5.6-luna"
     assert env[STRUCTURED_LLM_RUNTIME_LANE_ENV] == "hemma-prod-compose"
-    assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID"] == (
-        "openai-gpt-5.4-mini-2026-03-17"
+    assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_PRIMARY_PROVIDER_ID"] == ("openai-gpt-5.6-luna")
+    assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_FALLBACK_PROVIDER_ID"] == (
+        "openrouter-glm-5.3-flash"
     )
     assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED"] == "1"
     assert env["SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED"] == "1"
@@ -62,12 +74,12 @@ def test_rendered_prod_profile_uses_openai_mini_as_temporary_default() -> None:
         "/home/paunchygent/.data/sir-convert-a-lot/build/verification/"
         "answer-key-qwen-provider/vision-assets"
     )
-    assert provider_payload["model"] == "gpt-5.4-mini-2026-03-17"
+    assert provider_payload["model"] == "gpt-5.6-luna"
     assert provider_payload["base_url"] == "https://api.openai.com"
     assert provider_payload["endpoint_kind"] == "responses"
     assert provider_payload["output_mode"] == "json_schema"
     assert provider_payload["is_remote"] is True
-    assert provider_payload["context_window_tokens"] == 400000
+    assert provider_payload["context_window_tokens"] == 32768
     assert provider_payload["max_output_tokens"] == 4096
     assert provider_payload["temperature"] == 0.0
     assert provider_payload["capabilities"] == {
@@ -76,6 +88,9 @@ def test_rendered_prod_profile_uses_openai_mini_as_temporary_default() -> None:
         "supports_multimodal_vision": True,
         "supports_vllm_structured_choice": False,
     }
+    assert fallback_payload["model"] == "z-ai/glm-5.3-flash"
+    assert fallback_payload["base_url"] == "https://openrouter.ai/api/v1"
+    assert fallback_payload["api_key_env"] == OPENROUTER_API_KEY_ENV
 
 
 def test_structured_config_can_render_default_openai_profile_when_raw_json_is_absent() -> None:
@@ -84,14 +99,19 @@ def test_structured_config_can_render_default_openai_profile_when_raw_json_is_ab
     )
     env.pop("SIR_CONVERT_A_LOT_STRUCTURED_LLM_PROVIDERS_JSON")
     env["SIR_CONVERT_A_LOT_OPENAI_API_KEY"] = "test-openai-token"
+    env[OPENROUTER_API_KEY_ENV] = "test-openrouter-token"
 
     config = structured_llm_runtime_config_from_env(env)
 
     assert config.provider_set is not None
-    assert config.provider_set.primary.model == "gpt-5.4-mini-2026-03-17"
+    assert config.provider_set.primary.model == "gpt-5.6-luna"
+    assert config.provider_set.fallback is not None
+    assert config.provider_set.fallback.model == "z-ai/glm-5.3-flash"
     assert config.provider_set.primary.is_remote is True
     assert config.remote_providers_enabled is True
-    assert config.connections["openai-gpt-5.4-mini-2026-03-17"].api_key == ("test-openai-token")
+    assert config.connections["openai-gpt-5.6-luna"].api_key == ("test-openai-token")
+    assert config.connections["openrouter-glm-5.3-flash"].api_key == ("test-openrouter-token")
+    assert structured_llm_provider_ids(config) == frozenset({"openai-gpt-5.6-luna"})
 
 
 def test_qwen_profile_remains_explicitly_selectable() -> None:

@@ -40,6 +40,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredChatProviderSet,
     StructuredLLMEndpointKind,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_token_lease import (
+    FilesystemAnswerKeyTokenLeaseLedger,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_vision_assets import (
     DigiExamDataURLVisionCandidatePlanner,
     DigiExamVisionCandidatePlanner,
@@ -49,6 +52,9 @@ from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest
     artifact_path,
     available_entry,
     write_json,
+)
+from scripts.sir_convert_a_lot.infrastructure.leased_structured_llm_provider import (
+    LeasedStructuredChatProvider,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
@@ -154,14 +160,20 @@ async def _run_digiexam_answer_key_completion_report(
             completion_mode=completion_mode,
             exam=exam,
             provider_set=None,
-            route_policy=structured_config.route_policy(allow_remote_fallback=False),
+            route_policy=structured_config.route_policy(allow_remote_fallback=True),
             provider=None,
             admitted_route=admitted_route,
         )
 
     container = create_structured_llm_async_container(config=structured_config)
     try:
-        provider = await container.get(HttpStructuredChatProvider)
+        provider = LeasedStructuredChatProvider(
+            provider=await container.get(HttpStructuredChatProvider),
+            lease_ledger=FilesystemAnswerKeyTokenLeaseLedger(
+                ledger_directory=config.data_root / "answer-key-token-leases",
+                daily_token_limit=config.answer_key_daily_token_limit,
+            ),
+        )
         provider_set = provider_set_for_admitted_route(
             structured_config=structured_config,
             admitted_route=admitted_route,
@@ -177,7 +189,7 @@ async def _run_digiexam_answer_key_completion_report(
             completion_mode=completion_mode,
             exam=exam,
             provider_set=provider_set,
-            route_policy=structured_config.route_policy(allow_remote_fallback=False),
+            route_policy=structured_config.route_policy(allow_remote_fallback=True),
             provider=provider,
             candidate_planner=candidate_planner,
             admitted_route=admitted_route,

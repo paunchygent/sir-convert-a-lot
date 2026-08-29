@@ -113,6 +113,7 @@ class ServiceConfig:
     internal_identity_trust_profile: HuleEduInternalIdentityTrustRuntimeConfig | None = None
     public_exam_converter_access: PublicExamConverterRuntimeAccessConfig | None = None
     exam_authoring_source_state_signature_secret: str | None = None
+    answer_key_daily_token_limit: int = 5_000_000
     structured_llm: StructuredLLMRuntimeConfig = field(
         default_factory=disabled_structured_llm_runtime_config
     )

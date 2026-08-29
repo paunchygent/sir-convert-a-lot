@@ -377,7 +377,7 @@ def _request(
             _estimate_tokens(system_prompt) + _estimate_tokens(user_payload_text)
         ),
         max_output_tokens=max_output_tokens,
-        allow_remote_fallback=False,
+        allow_remote_fallback=True,
     )
 
 

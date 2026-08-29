@@ -38,11 +38,15 @@ OPENAI_ANSWER_KEY_TIMEOUT_SECONDS = 90.0
 OPENAI_ANSWER_KEY_TEMPERATURE = 0.0
 OPENAI_ANSWER_KEY_REASONING_EFFORT = StructuredLLMReasoningEffort.NONE
 OPENAI_ANSWER_KEY_TEXT_VERBOSITY = StructuredLLMTextVerbosity.LOW
+OPENAI_LUNA_CONFIGURED_CONTEXT_WINDOW_TOKENS = 32_768
+OPENAI_LUNA_CONFIGURED_MAX_OUTPUT_TOKENS = 4_096
+OPENAI_LUNA_ANSWER_KEY_REASONING_EFFORT = StructuredLLMReasoningEffort.LOW
 
 
 class AnswerKeyOpenAIProviderProfileName(StrEnum):
     """Pinned OpenAI provider profiles for answer-key completion."""
 
+    GPT56_LUNA = "openai-gpt-5.6-luna"
     GPT54_MINI_2026_03_17 = "openai-gpt-5.4-mini-2026-03-17"
     GPT54_NANO_2026_03_17 = "openai-gpt-5.4-nano-2026-03-17"
 
@@ -67,8 +71,21 @@ class AnswerKeyOpenAIProviderDefaults:
 
 OPENAI_GPT54_MINI_MODEL = "gpt-5.4-mini-2026-03-17"
 OPENAI_GPT54_NANO_MODEL = "gpt-5.4-nano-2026-03-17"
+OPENAI_GPT56_LUNA_MODEL = "gpt-5.6-luna"
 
 ANSWER_KEY_OPENAI_PROVIDER_DEFAULTS = {
+    AnswerKeyOpenAIProviderProfileName.GPT56_LUNA: AnswerKeyOpenAIProviderDefaults(
+        profile_name=AnswerKeyOpenAIProviderProfileName.GPT56_LUNA,
+        provider_id=AnswerKeyOpenAIProviderProfileName.GPT56_LUNA.value,
+        model=OPENAI_GPT56_LUNA_MODEL,
+        context_window_tokens=OPENAI_LUNA_CONFIGURED_CONTEXT_WINDOW_TOKENS,
+        max_output_tokens=OPENAI_LUNA_CONFIGURED_MAX_OUTPUT_TOKENS,
+        answer_key_max_output_tokens=OPENAI_ANSWER_KEY_MAX_OUTPUT_TOKENS,
+        timeout_seconds=OPENAI_ANSWER_KEY_TIMEOUT_SECONDS,
+        temperature=OPENAI_ANSWER_KEY_TEMPERATURE,
+        reasoning_effort=OPENAI_LUNA_ANSWER_KEY_REASONING_EFFORT,
+        text_verbosity=OPENAI_ANSWER_KEY_TEXT_VERBOSITY,
+    ),
     AnswerKeyOpenAIProviderProfileName.GPT54_MINI_2026_03_17: (
         AnswerKeyOpenAIProviderDefaults(
             profile_name=AnswerKeyOpenAIProviderProfileName.GPT54_MINI_2026_03_17,

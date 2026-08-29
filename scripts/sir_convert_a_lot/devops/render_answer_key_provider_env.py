@@ -48,7 +48,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
             AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP.value,
             AnswerKeyProviderProfileName.QWEN36_LLAMA_CPP_MTP.value,
         ],
-        default=AnswerKeyOpenAIProviderProfileName.GPT54_MINI_2026_03_17.value,
+        default=AnswerKeyOpenAIProviderProfileName.GPT56_LUNA.value,
     )
     return parser.parse_args(argv)
 

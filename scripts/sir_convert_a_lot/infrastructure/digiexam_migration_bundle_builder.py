@@ -73,6 +73,9 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     ExamMigrationTargetV2,
     normalized_exam_migration_targets_v2,
 )
+from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_completion_manifest import (
+    answer_key_completion_manifest,
+)
 from scripts.sir_convert_a_lot.infrastructure.digiexam_answer_key_completion_runtime import (
     write_requested_digiexam_answer_key_completion_report,
 )
@@ -351,6 +354,9 @@ def execute_digiexam_migration_bundle_job(
         "answer_key_review_state": {
             "artifact_key": DigiExamMigrationArtifactKey.ANSWER_KEY_REVIEW_STATE_REPORT.value,
         },
+        "answer_key_completion": answer_key_completion_manifest(
+            report=answer_key_completion_report_entry.report,
+        ),
         "source_binding": {
             "source_ir_schema_version": exam.schema_version,
             "source_ir_sha256": source_ir_sha256,

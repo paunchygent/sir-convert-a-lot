@@ -118,7 +118,14 @@ def provider_set_for_admitted_route(
     )
     if profile is None:
         return None
-    return StructuredChatProviderSet(primary=profile)
+    fallback = structured_config.provider_set.fallback
+    preserved_fallback = (
+        fallback if fallback is not None and fallback.provider_id != profile.provider_id else None
+    )
+    return StructuredChatProviderSet(
+        primary=profile,
+        fallback=preserved_fallback,
+    )
 
 
 def provider_profile_by_id(

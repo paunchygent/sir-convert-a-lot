@@ -19,6 +19,7 @@ from pydantic import JsonValue
 from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMEndpointKind,
     StructuredLLMOutputMode,
+    StructuredLLMReasoningEffort,
     StructuredLLMRequest,
     StructuredOutputSpec,
 )
@@ -61,8 +62,9 @@ CHOICE_DECISION_SCHEMA: dict[str, JsonValue] = {
 }
 
 
-def test_openai_model_manifest_contains_only_pinned_snapshots() -> None:
+def test_openai_model_manifest_contains_pinned_answer_key_profiles() -> None:
     assert answer_key_openai_provider_profile_values() == (
+        "openai-gpt-5.6-luna",
         "openai-gpt-5.4-mini-2026-03-17",
         "openai-gpt-5.4-nano-2026-03-17",
     )
@@ -83,6 +85,32 @@ def test_openai_mini_profile_uses_responses_json_schema_and_snapshot_model() -> 
     assert profile.text_verbosity == OPENAI_ANSWER_KEY_TEXT_VERBOSITY
     assert profile.capabilities.supports_json_schema is True
     assert profile.capabilities.supports_multimodal_vision is True
+
+
+def test_openai_luna_profile_uses_low_effort_responses_json_schema() -> None:
+    defaults = answer_key_openai_defaults_for_provider_profile("openai-gpt-5.6-luna")
+    profile = build_answer_key_openai_provider_profile(defaults)
+    payload = build_responses_payload(profile=profile, request=_request())
+
+    assert profile.provider_id == "openai-gpt-5.6-luna"
+    assert profile.model == "gpt-5.6-luna"
+    assert profile.endpoint_kind == StructuredLLMEndpointKind.RESPONSES
+    assert profile.output_mode == StructuredLLMOutputMode.JSON_SCHEMA
+    assert profile.max_output_tokens == OPENAI_ANSWER_KEY_MAX_OUTPUT_TOKENS
+    assert profile.reasoning_effort == StructuredLLMReasoningEffort.LOW
+    assert profile.text_verbosity == OPENAI_ANSWER_KEY_TEXT_VERBOSITY
+    assert payload["model"] == "gpt-5.6-luna"
+    assert payload["store"] is False
+    assert payload["reasoning"] == {"effort": "low"}
+    assert payload["text"] == {
+        "verbosity": "low",
+        "format": {
+            "type": "json_schema",
+            "name": "choice_decision",
+            "strict": True,
+            "schema": CHOICE_DECISION_SCHEMA,
+        },
+    }
 
 
 def test_openai_nano_provider_json_uses_secret_indirection_without_raw_key() -> None:

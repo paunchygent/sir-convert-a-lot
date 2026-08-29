@@ -25,6 +25,9 @@ from scripts.sir_convert_a_lot.domain.structured_llm_contracts import (
     StructuredLLMTextContentPart,
     StructuredOutputSpec,
 )
+from scripts.sir_convert_a_lot.infrastructure.answer_key_openrouter_model_profiles import (
+    is_answer_key_openrouter_provider_profile,
+)
 
 StructuredLLMPayload = dict[str, JsonValue]
 
@@ -61,6 +64,8 @@ def build_chat_completions_payload(
         "temperature": profile.temperature,
     }
     _apply_chat_completions_thinking_mode(payload=payload, profile=profile)
+    if is_answer_key_openrouter_provider_profile(profile):
+        payload["provider"] = {"require_parameters": True}
     if profile.output_mode == StructuredLLMOutputMode.JSON_OBJECT:
         payload["response_format"] = build_chat_completions_json_object_response_format()
         return payload
