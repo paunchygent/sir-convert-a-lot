@@ -245,7 +245,7 @@ def _allows_provider_failover(error: StructuredLLMProviderError) -> bool:
     return (
         error.failure_code == StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR
         and error.status_code is not None
-        and 500 <= error.status_code <= 599
+        and (error.status_code == 408 or 500 <= error.status_code <= 599)
     )
 
 

@@ -34,6 +34,11 @@ class LeasedStructuredChatProvider:
     ) -> StructuredLLMResponse:
         """Delegate after send-state persistence and reconcile usable success usage."""
 
+        if not profile.is_remote:
+            return await self._provider.complete_structured_chat(
+                request=request,
+                profile=profile,
+            )
         lease = self._lease_ledger.reserve(
             estimated_input_tokens=request.estimated_input_tokens,
             max_output_tokens=request.max_output_tokens,

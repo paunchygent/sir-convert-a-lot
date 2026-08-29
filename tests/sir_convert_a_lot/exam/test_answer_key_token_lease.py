@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import multiprocessing
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -177,6 +177,32 @@ def test_provider_success_reconciles_reported_total_usage(tmp_path: Path) -> Non
     assert delegated_provider.call_count == 1
     assert ledger.snapshot().consumed_tokens == 190
     assert ledger.snapshot().uncertain_tokens == 0
+
+
+def test_local_provider_call_bypasses_remote_lease_ledger(tmp_path: Path) -> None:
+    ledger = _ledger(tmp_path=tmp_path, daily_token_limit=1, clock=MutableUTCClock(_FIRST_DAY))
+    delegated_provider = SuccessfulProvider(usage=StructuredLLMUsage(total_tokens=190))
+    provider = LeasedStructuredChatProvider(
+        provider=delegated_provider,
+        lease_ledger=ledger,
+    )
+
+    asyncio.run(
+        provider.complete_structured_chat(
+            request=_request(),
+            profile=replace(
+                _profile(),
+                provider_id="qwen36-llama-cpp-mtp",
+                model="qwen3.6-27b-q6k-mtp",
+                endpoint_kind=StructuredLLMEndpointKind.LLAMA_CPP_CHAT_COMPLETIONS,
+                is_remote=False,
+            ),
+        )
+    )
+
+    assert delegated_provider.call_count == 1
+    assert list(tmp_path.iterdir()) == []
+    assert ledger.snapshot().leases == ()
 
 
 def test_missing_provider_usage_keeps_sent_lease_uncertain(tmp_path: Path) -> None:

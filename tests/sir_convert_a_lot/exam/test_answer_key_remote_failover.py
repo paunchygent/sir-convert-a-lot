@@ -63,6 +63,7 @@ from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
     (
         (StructuredLLMBackendFailureCode.PROVIDER_TIMEOUT, None),
         (StructuredLLMBackendFailureCode.PROVIDER_REQUEST_FAILED, None),
+        (StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR, 408),
         (StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR, 500),
     ),
 )
@@ -102,7 +103,6 @@ def test_transient_primary_failure_replans_and_calls_fallback_once(
     ("failure_code", "status_code"),
     (
         (StructuredLLMBackendFailureCode.PROVIDER_CONFIG_MISSING, None),
-        (StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR, 408),
         (StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR, 429),
         (StructuredLLMBackendFailureCode.PROVIDER_HTTP_ERROR, 499),
         (StructuredLLMBackendFailureCode.PROVIDER_INVALID_JSON, None),
@@ -251,18 +251,19 @@ def test_transient_failover_reserves_a_second_lease_and_reconciles_success(
     ledger = _lease_ledger(tmp_path=tmp_path, daily_token_limit=10_000)
 
     report = _run_completion(
-        LeasedStructuredChatProvider(provider=delegated_provider, lease_ledger=ledger)
+        LeasedStructuredChatProvider(provider=delegated_provider, lease_ledger=ledger),
+        provider_set=_remote_provider_set(),
     )
 
     snapshot = ledger.snapshot()
     assert [profile.provider_id for profile in delegated_provider.profiles] == [
-        "primary-vllm",
-        "fallback-remote",
+        "openai-gpt-5.6-luna",
+        "openrouter-glm-5.3-flash",
     ]
     assert len(snapshot.leases) == 2
     assert snapshot.uncertain_tokens > 0
     assert snapshot.consumed_tokens == 40
-    assert report.items[0].provider_profile_id == "fallback-remote"
+    assert report.items[0].provider_profile_id == "openrouter-glm-5.3-flash"
 
 
 def test_second_lease_exhaustion_stops_before_fallback_provider_call(tmp_path: Path) -> None:
@@ -277,11 +278,14 @@ def test_second_lease_exhaustion_stops_before_fallback_provider_call(tmp_path: P
     ledger = _lease_ledger(tmp_path=tmp_path, daily_token_limit=1_000)
 
     report = _run_completion(
-        LeasedStructuredChatProvider(provider=delegated_provider, lease_ledger=ledger)
+        LeasedStructuredChatProvider(provider=delegated_provider, lease_ledger=ledger),
+        provider_set=_remote_provider_set(),
     )
 
-    assert [profile.provider_id for profile in delegated_provider.profiles] == ["primary-vllm"]
-    assert report.items[0].provider_profile_id == "fallback-remote"
+    assert [profile.provider_id for profile in delegated_provider.profiles] == [
+        "openai-gpt-5.6-luna"
+    ]
+    assert report.items[0].provider_profile_id == "openrouter-glm-5.3-flash"
     assert report.items[0].backend_failure_code == "daily_token_lease_exhausted"
     assert len(ledger.snapshot().leases) == 1
 
@@ -298,11 +302,12 @@ def test_hard_exhaustion_makes_zero_provider_calls(tmp_path: Path) -> None:
     ledger = _lease_ledger(tmp_path=tmp_path, daily_token_limit=1)
 
     report = _run_completion(
-        LeasedStructuredChatProvider(provider=delegated_provider, lease_ledger=ledger)
+        LeasedStructuredChatProvider(provider=delegated_provider, lease_ledger=ledger),
+        provider_set=_remote_provider_set(),
     )
 
     assert delegated_provider.requests == []
-    assert report.items[0].provider_profile_id == "primary-vllm"
+    assert report.items[0].provider_profile_id == "openai-gpt-5.6-luna"
     assert report.items[0].backend_failure_code == "daily_token_lease_exhausted"
     assert ledger.snapshot().leases == ()
 
@@ -330,16 +335,18 @@ class _SequenceProvider:
         return response
 
 
-def _run_completion(provider: StructuredChatProviderProtocol) -> DigiExamAnswerKeyCompletionReport:
+def _run_completion(
+    provider: StructuredChatProviderProtocol,
+    *,
+    provider_set: StructuredChatProviderSet | None = None,
+) -> DigiExamAnswerKeyCompletionReport:
     return asyncio.run(
         build_digiexam_answer_key_completion_report(
             job_id="job-1",
             completion_mode="local_llm_suggest_missing_machine_marked",
             exam=_exam(),
-            provider_set=StructuredChatProviderSet(
-                primary=_primary_profile(),
-                fallback=_fallback_profile(),
-            ),
+            provider_set=provider_set
+            or StructuredChatProviderSet(primary=_primary_profile(), fallback=_fallback_profile()),
             route_policy=StructuredLLMRoutePolicy(
                 remote_providers_enabled=True,
                 remote_fallback_policy_authorized=True,
@@ -358,6 +365,22 @@ def _lease_ledger(
     return FilesystemAnswerKeyTokenLeaseLedger(
         ledger_directory=tmp_path,
         daily_token_limit=daily_token_limit,
+    )
+
+
+def _remote_provider_set() -> StructuredChatProviderSet:
+    return StructuredChatProviderSet(
+        primary=replace(
+            _fallback_profile(),
+            provider_id="openai-gpt-5.6-luna",
+            model="gpt-5.6-luna",
+        ),
+        fallback=replace(
+            _fallback_profile(),
+            provider_id="openrouter-glm-5.3-flash",
+            model="z-ai/glm-5.3-flash",
+            endpoint_kind=StructuredLLMEndpointKind.CHAT_COMPLETIONS,
+        ),
     )
 
 
