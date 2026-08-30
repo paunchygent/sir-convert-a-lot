@@ -64,7 +64,10 @@ Operate Sir Convert-a-Lot on Hemma without duplicating HuleEdu or Skriptoteket r
 - Deploy and live verify: `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
 - GPU runtime verify from a client checkout:
   `pdm run run-local-pdm hemma-verify-gpu-runtime`. The local launcher reuses `SIR_CONVERT_A_LOT_V2_API_KEY` loaded by `run-local-pdm` and forwards only that key through the `run-hemma` verifier opt-in; operators should not rediscover or routinely pass `--api-key` by hand.
-  `hemma-deploy-and-verify` gates deploy success on revision/readiness parity, structured LLM provider verification, metrics safety, and public-edge reserved state. The legacy V2 conversion smoke is evidence only; `gpu_not_available` there is a conversion-worker finding, not a deploy failure.
+  `hemma-deploy-and-verify` gates deploy success on revision/readiness parity,
+  metrics safety, and public-edge reserved state. The legacy V2 conversion smoke
+  is evidence only; `gpu_not_available` there is a conversion-worker finding,
+  not a deploy failure.
   Use the wrapper from the local repo root. It is environment-aware: from a client machine it SSHes to Hemma; from the canonical Hemma Server checkout it runs directly after checking the hostname, repo root, and shared skill repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an operator deliberately needs the SSH path despite local Hemma detection. `run-hemma` does not forward local secrets by default; the GPU verifier is the committed exception and opts in to forwarding only `SIR_CONVERT_A_LOT_V2_API_KEY` for its remote process.
   Direct production and ROCm helpers such as `prod-*`, `prod-deps-rocm-build`, and `hemma-sync-prod-env-mirror` are Hemma Server-only. They fail before Docker or host env mutation when the session does not prove the canonical Hemma hostname, repo root, and shared skill repository.
 
@@ -128,8 +131,6 @@ Deploy/live verification key precedence:
 
 1. `--api-key` 1. `SIR_CONVERT_A_LOT_API_KEY` 1. explicit failure
    The implicit development key is rejected unless passed deliberately. Never write API keys into reports, logs, or retained artifacts.
-   API-provider credentials used by structured answer-key completion live in the canonical prod env mirror by key reference only. The OpenAI provider reads `SIR_CONVERT_A_LOT_OPENAI_API_KEY`; the mirror also preserves the generic `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, and `DEEPSEEK_API_KEY` names plus Sir-prefixed aliases for follow-on provider profiles. Verify presence by key name only and redact values in any retained output.
-   The unified exam-authoring correction route requires `SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET` so producer source states can be signed and later verified before readiness or artifact availability is projected. Verify only that the key is present; never print the secret value.
 
 ## Production Env Mirror
 

@@ -33,10 +33,14 @@ from scripts.sir_convert_a_lot.interfaces.http_create_job_routes_v2 import (
     build_create_job_route_registry_v2,
     infer_source_format_from_filename_v2,
 )
-from tests.sir_convert_a_lot.exam.digiexam_migration_bundle_api_fixtures import (
-    _API_KEY,
-    _headers,
-    _IdentitySigner,
+from tests.sir_convert_a_lot.identity_test_support import (
+    API_KEY as _API_KEY,
+)
+from tests.sir_convert_a_lot.identity_test_support import (
+    IdentitySigner as _IdentitySigner,
+)
+from tests.sir_convert_a_lot.identity_test_support import (
+    headers as _headers,
 )
 
 _KEY_ID = "gateway-identity-rs256-v1"

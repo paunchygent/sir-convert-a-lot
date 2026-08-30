@@ -22,8 +22,6 @@ def build_report_markdown(report: dict[str, object]) -> str:
     service_remote = checks_obj.get("service_revision_matches_remote")
     public_host = checks_obj.get("nginx_proxy_public_host_registered")
     default_host = checks_obj.get("default_host_reserved_placeholder_passed")
-    llm_models = checks_obj.get("structured_llm_models_reachable")
-    llm_probe = checks_obj.get("structured_llm_microprobe_passed")
 
     lines: list[str] = [
         "# Hemma Deploy and Verify Report",
@@ -41,8 +39,6 @@ def build_report_markdown(report: dict[str, object]) -> str:
         "",
         f"- expected_revision_matches_remote: `{expected_remote}`",
         f"- service_revision_matches_remote: `{service_remote}`",
-        f"- structured_llm_models_reachable: `{llm_models}`",
-        f"- structured_llm_microprobe_passed: `{llm_probe}`",
         f"- live_smoke_passed: `{checks_obj.get('live_smoke_passed')}`",
         f"- live_smoke_required: `{checks_obj.get('live_smoke_required')}`",
         f"- metrics_scan_passed: `{checks_obj.get('metrics_scan_passed')}`",

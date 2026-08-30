@@ -2,7 +2,7 @@
 
 Purpose:
     Define product-neutral replay actions, attempt snapshots, lineage, typed
-    reattempt reasons, and extension decisions for Service API v2 create-job
+      reattempt reasons, and decisions for Service API v2 create-job
     idempotency.
 
 Relationships:
@@ -79,27 +79,6 @@ class RouteArtifactCompatibilityDecisionV2:
 
     status: RouteArtifactCompatibilityStatusV2
     reason: IdempotencyReattemptReasonV2 | None = None
-
-
-@dataclass(frozen=True)
-class CorrectionReplayIdentityRequestV2:
-    """Neutral correction replay identity request for future artifact-set stores."""
-
-    parent_job_id: str
-    request_id: str
-    source_binding_digest: str
-    source_state_sha256: str
-    correction_payload_digest: str
-    target_set_digest: str
-    replay_profile_version: str
-
-
-@dataclass(frozen=True)
-class CorrectionReplayIdentityReservationV2:
-    """Neutral correction replay artifact-set reservation result."""
-
-    artifact_set_id: str
-    duplicate_request: bool
 
 
 @dataclass(frozen=True)

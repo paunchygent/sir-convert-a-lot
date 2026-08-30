@@ -4,16 +4,16 @@ id: ADR-SIRCON-0012
 title: Speech-to-Text Sidecar and Audio Ingestion Governance
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 deciders:
-- platform
+  - platform
 links:
   governing: []
 retired_ids:
-- ADR-0013
+  - ADR-0013
 ---
 
 ## Purpose
@@ -308,16 +308,16 @@ labels, or audio-derived content.
 
 Initial retention classes:
 
-| Class | Examples | Sir Convert retention |
-| --- | --- | --- |
-| Source media | uploaded audio/video | purge at terminal job cleanup and no later than 24h |
-| Normalized audio | WAV/PCM intermediates | purge at terminal job cleanup and no later than 24h |
-| Sidecar temp chunks | probe files, split audio, alignment scratch | purge on success/failure/cancel and sweep no later than 24h |
-| Canonical transcript JSON | `transcript_json` artifact | expire with v2 job result TTL, capped at 24h unless a later accepted contract allows pinning |
-| Formatter artifacts | future `txt`, `md`, `vtt`, `srt` | same as transcript JSON |
-| Failed/canceled partials | incomplete transcripts, chunk checkpoints | purge at terminal cleanup; partial retrieval is out of scope for the first STT slice |
-| Logs/metrics/traces | operational metadata only | bounded metadata only; no content payload retention |
-| Benchmark fixtures | sanitized or operator-owned fixtures | governed by the benchmark task/runbook, never by live product retention |
+| Class                     | Examples                                    | Sir Convert retention                                                                        |
+| ------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Source media              | uploaded audio/video                        | purge at terminal job cleanup and no later than 24h                                          |
+| Normalized audio          | WAV/PCM intermediates                       | purge at terminal job cleanup and no later than 24h                                          |
+| Sidecar temp chunks       | probe files, split audio, alignment scratch | purge on success/failure/cancel and sweep no later than 24h                                  |
+| Canonical transcript JSON | `transcript_json` artifact                  | expire with v2 job result TTL, capped at 24h unless a later accepted contract allows pinning |
+| Formatter artifacts       | future `txt`, `md`, `vtt`, `srt`            | same as transcript JSON                                                                      |
+| Failed/canceled partials  | incomplete transcripts, chunk checkpoints   | purge at terminal cleanup; partial retrieval is out of scope for the first STT slice         |
+| Logs/metrics/traces       | operational metadata only                   | bounded metadata only; no content payload retention                                          |
+| Benchmark fixtures        | sanitized or operator-owned fixtures        | governed by the benchmark task/runbook, never by live product retention                      |
 
 `retention.pin=true` is not accepted for `audio -> transcript_bundle` until a
 later retention contract defines what pinning means for source media,
@@ -348,4 +348,4 @@ Tradeoffs:
 - Benchmark codec probing, transcription, diarization, and 120-minute batch
   processing on Hemma before production route registration.
 - Update HuleEdu Gateway route docs/tests when the generic Sir Convert product
-  edge is widened from DigiExam-only wording to governed conversion routes.
+  edge is widened from route-specific wording to governed conversion routes.

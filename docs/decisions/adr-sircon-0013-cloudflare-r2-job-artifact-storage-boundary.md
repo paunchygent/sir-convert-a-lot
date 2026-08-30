@@ -4,16 +4,16 @@ id: ADR-SIRCON-0013
 title: Cloudflare R2 job artifact storage boundary
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 links:
   governing: []
 deciders:
-- platform
+  - platform
 retired_ids:
-- ADR-0014
+  - ADR-0014
 ---
 
 ## ADR-0014: Cloudflare R2 job artifact storage boundary
@@ -50,19 +50,19 @@ Adopt a Sir Convert-owned R2 artifact bucket and storage adapter boundary:
 1. Sir Convert owns its job and artifact storage, including raw conversion
    inputs, terminal artifacts, named artifacts, partials, checkpoints,
    manifests, logs, retention, and pin semantics.
-1. Sir Convert must not route its job runtime store through HuleEdu File
+2. Sir Convert must not route its job runtime store through HuleEdu File
    Service. HuleEdu File Service may later receive selected user-saved outputs,
    but it is not the job store.
-1. The first object-storage implementation must introduce an explicit storage
+3. The first object-storage implementation must introduce an explicit storage
    port/adapter behind `JobStoreV2` and artifact resolution. Direct R2 calls
    must not scatter through parsers, renderers, HTTP routes, or worker code.
-1. The first implementation may keep local scratch/work directories for active
+4. The first implementation may keep local scratch/work directories for active
    conversion execution while moving only terminal or cold artifacts to R2, if
    the adapter contract and recovery proof make that split explicit.
-1. HTTP artifact routes must keep Sir Convert owner/grant checks. They may
+5. HTTP artifact routes must keep Sir Convert owner/grant checks. They may
    stream from R2 or proxy bytes after authorization, but must not expose raw R2
    object URLs as authorization.
-1. Production R2 credentials are environment-only secrets. They must not be
+6. Production R2 credentials are environment-only secrets. They must not be
    committed, printed, retained in proof, or copied into generated reports.
 
 The first implementation slice is intentionally narrower than the full storage
@@ -71,18 +71,18 @@ migration:
 1. Move only terminal/cold artifact blobs for successful jobs behind the new
    adapter: the primary terminal artifact and route-owned named terminal bundle
    artifacts.
-1. Keep raw uploads, resources, reference DOCX files, manifests, lifecycle
+2. Keep raw uploads, resources, reference DOCX files, manifests, lifecycle
    events, idempotency state, `.manifest.lock` files, active scratch/work
-   directories, partial artifacts, checkpoints, logs, and correction replay
-   artifact sets on the existing POSIX job store for the first slice.
-1. Keep `JobStoreV2` as the job state and worker coordination authority for
+   directories, partial artifacts, checkpoints, and logs on the existing POSIX
+   job store for the first slice.
+3. Keep `JobStoreV2` as the job state and worker coordination authority for
    the first slice. A DB/object-aware job store, object-backed lock/claim
    semantics, and object-backed checkpoints require a separate task before
    they can replace POSIX coordination.
-1. Use server-side authorized streaming/proxy responses for R2-backed artifact
+4. Use server-side authorized streaming/proxy responses for R2-backed artifact
    reads. Presigned or raw R2 URLs are not a browser/downstream authorization
    mechanism in the first slice.
-1. Treat the Sir Convert sweeper as the source of truth for retention and pin
+5. Treat the Sir Convert sweeper as the source of truth for retention and pin
    semantics. R2 lifecycle rules may be configured only as a safety net for
    incomplete multipart uploads and maximum-age cleanup, with reconciliation
    evidence retained by Sir Convert.
@@ -113,30 +113,30 @@ Closed for the first implementation task:
 
 1. First artifact class: primary terminal artifacts and route-owned named
    terminal bundle artifacts only.
-1. Active coordination: local POSIX remains authoritative for manifests,
+2. Active coordination: local POSIX remains authoritative for manifests,
    events, locks, raw material, worker claiming, partials, checkpoints, and
    logs.
-1. Route behavior: Sir Convert authorization remains the gate before bytes are
+3. Route behavior: Sir Convert authorization remains the gate before bytes are
    read; R2-backed reads stream through Sir Convert and do not expose raw R2
    URLs.
-1. Retention: Sir Convert owns delete/pin decisions and records object delete
+4. Retention: Sir Convert owns delete/pin decisions and records object delete
    reconciliation; R2 lifecycle is safety-net infrastructure, not the pin
    authority.
-1. Test backend: default automated tests use a deterministic fake/local object
+5. Test backend: default automated tests use a deterministic fake/local object
    adapter; MinIO or an R2 dev bucket is optional proof, not a default unit
    test dependency.
-1. Production secrets: env-only by key name; retained proof may show presence
+6. Production secrets: env-only by key name; retained proof may show presence
    and source label only, never values.
 
 Routed follow-ups before broader migration:
 
 1. Moving raw inputs, manifests, events, idempotency state, locks, partials,
-   checkpoints, logs, or correction replay artifact sets to object storage.
-1. Replacing `fcntl`/POSIX worker claim semantics with DB or object-aware
+   checkpoints, or logs to object storage.
+2. Replacing `fcntl`/POSIX worker claim semantics with DB or object-aware
    coordination.
-1. Production backfill from `/var/lib/sir-convert-a-lot/prod`, rollback, and
+3. Production backfill from `/var/lib/sir-convert-a-lot/prod`, rollback, and
    deletion of any existing local data.
-1. Any direct-to-browser presigned URL contract.
+4. Any direct-to-browser presigned URL contract.
 
 Implementation stops if code starts depending on an unstated POSIX behavior
 while claiming R2-backed durability, or if a task tries to widen beyond the

@@ -4,17 +4,18 @@ id: ADR-SIRCON-0011
 title: Service API v2 Current-State Authority and Extension Boundary
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 links:
   governing: []
 deciders:
-- platform
+  - platform
 retired_ids:
-- ADR-0012
+  - ADR-0012
 ---
+
 ## Context
 
 Source record: docs/decisions/0012-service-api-v2-current-state-authority-and-extension-boundary.md
@@ -81,9 +82,8 @@ Source record: docs/decisions/0012-service-api-v2-current-state-authority-and-ex
 > extensions.
 >
 > This decision does not make every `/v2/*` HTTP route part of the base
-> multi-format conversion ADR. Operator-only settings, Gateway/internal identity
-> cutover, and exam-authoring correction APIs remain governed by their own
-> decisions, converter contracts, references, and backlog tasks.
+> multi-format conversion ADR. Operator-only settings and Gateway/internal
+> identity cutover remain governed by their own decisions and references.
 >
 > ### Extension policy
 >
@@ -135,7 +135,6 @@ Source record: docs/decisions/0012-service-api-v2-current-state-authority-and-ex
 > - Historical v1/v2 compatibility and v1 API docs remain archival or draft
 >   context; they do not override the active v2-only conversion surface.
 > - Future conversion route expansion must declare whether it is base v2,
->   route-specific v2, operator-only, Gateway/internal identity, or exam-authoring
->   authority.
+>   route-specific v2, operator-only, or Gateway/internal identity authority.
 > - Runtime behavior is unchanged by this decision. This is a docs-as-code
 >   authority closeout, not a deploy or implementation slice.

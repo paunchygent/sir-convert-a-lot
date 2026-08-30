@@ -3,13 +3,11 @@
 Purpose:
     Expose owner-scoped terminal result, primary artifact, named bundle
     artifact, and long-PDF partial/checkpoint reads without mixing retrieval
-    concerns into job admission, status, cancellation, or correction replay
-    artifact resolution.
+    concerns into job admission, status, or cancellation.
 
 Relationships:
     - Registered by `interfaces.http_routes_jobs_v2.build_job_router_v2`.
-    - Registers the request-scoped correction replay artifact route family,
-      which owns artifact-set and content-hash guarded replay downloads.
+    - Preserves generic primary and named transcript artifact retrieval.
     - Uses v2 runtime behavior in `infrastructure.runtime_engine_v2`.
     - Reads PDF checkpoint/partial artifacts produced by
       `infrastructure.v2_conversion_executor`.
@@ -26,23 +24,11 @@ from scripts.sir_convert_a_lot.application.contracts_v2 import (
     JobResultResponseV2,
     ResultPayloadV2,
 )
-from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
-    DigiExamMigrationBundleManifestV2,
-)
-from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
-    DigiExamMigrationArtifactKey,
-)
 from scripts.sir_convert_a_lot.domain.specs import TERMINAL_JOB_STATUSES, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_artifacts import (
     build_audio_transcript_artifact_manifest,
     resolve_audio_transcript_artifact,
-)
-from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_artifacts import (
-    resolve_digiexam_migration_artifact,
-)
-from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_manifest import (
-    public_artifact_filename,
 )
 from scripts.sir_convert_a_lot.infrastructure.pdf_checkpoints_v2 import (
     PdfCheckpointV2,
@@ -59,18 +45,6 @@ from scripts.sir_convert_a_lot.interfaces.http_auth_v2 import (
 from scripts.sir_convert_a_lot.interfaces.http_job_result_metadata_v2 import (
     conversion_metadata_for_job_v2,
 )
-from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_access_v2 import (
-    is_public_job_v2,
-    public_bundle_manifest_artifact_key_v2,
-    require_public_artifact_read_lease_v2,
-    require_public_job_access_v2,
-)
-from scripts.sir_convert_a_lot.interfaces.http_public_exam_converter_artifacts_v2 import (
-    load_public_bundle_manifest_v2,
-)
-from scripts.sir_convert_a_lot.interfaces.http_routes_correction_replay_artifacts_v2 import (
-    register_correction_replay_artifact_routes_v2,
-)
 from scripts.sir_convert_a_lot.interfaces.http_terminal_artifact_responses_v2 import (
     terminal_artifact_response_v2,
 )
@@ -83,8 +57,6 @@ def _content_type_for_output(output_format: OutputFormatV2) -> str:
         return "application/pdf"
     if output_format == OutputFormatV2.DOCX:
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
-        return "application/json"
     if output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
         return "application/json"
     raise AssertionError(f"Unsupported output_format: {output_format}")
@@ -107,11 +79,6 @@ def _terminal_without_result_details(job: StoredJobV2) -> dict[str, object]:
 
 
 def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: str) -> None:
-    register_correction_replay_artifact_routes_v2(
-        router=router,
-        service_started_at=service_started_at,
-    )
-
     @router.get(
         "/v2/convert/jobs/{job_id}/result",
         response_model=JobResultResponseV2,
@@ -120,31 +87,17 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
     async def get_result(job_id: str, request: Request) -> JSONResponse:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if is_public_job_v2(job):
-            if job is None:
-                raise ServiceError(
-                    status_code=404,
-                    code="job_not_found",
-                    message="Job not found or expired.",
-                    retryable=False,
-                )
-            require_public_job_access_v2(
-                request=request,
-                service_started_at=service_started_at,
-                job=job,
-            )
-        else:
-            auth_context = auth_context_for_job_access_v2(
-                request,
-                service_started_at=service_started_at,
-                job=job,
-                required_grant="sir-convert:jobs:read-own",
-            )
-            job = require_job_access_v2(
-                auth_context=auth_context,
-                job=job,
-                required_grant="sir-convert:jobs:read-own",
-            )
+        auth_context = auth_context_for_job_access_v2(
+            request,
+            service_started_at=service_started_at,
+            job=job,
+            required_grant="sir-convert:jobs:read-own",
+        )
+        job = require_job_access_v2(
+            auth_context=auth_context,
+            job=job,
+            required_grant="sir-convert:jobs:read-own",
+        )
 
         if job.status not in TERMINAL_JOB_STATUSES:
             pending = JobPendingResultResponseV2(job_id=job.job_id, status=job.status)
@@ -236,76 +189,30 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
 
     @router.get(
         "/v2/convert/jobs/{job_id}/artifacts",
-        responses={
-            200: {"model": DigiExamMigrationBundleManifestV2},
-            202: {"model": JobPendingResultResponseV2},
-        },
+        responses={202: {"model": JobPendingResultResponseV2}},
     )
     async def get_artifact_bundle_manifest(job_id: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        public_grant = None
-        if is_public_job_v2(job):
-            if job is None:
-                raise ServiceError(
-                    status_code=404,
-                    code="job_not_found",
-                    message="Job not found or expired.",
-                    retryable=False,
-                )
-            public_grant = require_public_job_access_v2(
-                request=request,
-                service_started_at=service_started_at,
-                job=job,
-            )
-            require_public_artifact_read_lease_v2(
-                request=request,
-                service_started_at=service_started_at,
-                verified_grant=public_grant,
-                job=job,
-                artifact_key=public_bundle_manifest_artifact_key_v2(),
-            )
-        else:
-            auth_context = auth_context_for_job_access_v2(
-                request,
-                service_started_at=service_started_at,
-                job=job,
-                required_grant="sir-convert:artifacts:read-own",
-            )
-            job = require_job_access_v2(
-                auth_context=auth_context,
-                job=job,
-                required_grant="sir-convert:artifacts:read-own",
-                access_denied_code="artifact_access_denied",
-            )
+        auth_context = auth_context_for_job_access_v2(
+            request,
+            service_started_at=service_started_at,
+            job=job,
+            required_grant="sir-convert:artifacts:read-own",
+        )
+        job = require_job_access_v2(
+            auth_context=auth_context,
+            job=job,
+            required_grant="sir-convert:artifacts:read-own",
+            access_denied_code="artifact_access_denied",
+        )
         _require_named_artifact_bundle_job(job)
         pending = _pending_or_unsuccessful_response(job)
         if pending is not None:
             return pending
-        if job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
-            return JSONResponse(
-                status_code=200,
-                content=build_audio_transcript_artifact_manifest(job=job),
-            )
-        if public_grant is not None:
-            manifest = load_public_bundle_manifest_v2(
-                request=request,
-                service_started_at=service_started_at,
-                job=job,
-                verified_grant=public_grant,
-                object_store=runtime.terminal_artifact_store,
-            )
-            return JSONResponse(status_code=200, content=manifest)
-        return terminal_artifact_response_v2(
-            runtime=runtime,
-            job=job,
-            artifact_key="primary",
-            filesystem_path=job.artifact_path,
-            content_type="application/json",
-            filename=public_artifact_filename(
-                job=job,
-                key=DigiExamMigrationArtifactKey.BUNDLE_MANIFEST,
-            ),
+        return JSONResponse(
+            status_code=200,
+            content=build_audio_transcript_artifact_manifest(job=job),
         )
 
     @router.get(
@@ -315,68 +222,33 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
     async def get_named_artifact(job_id: str, artifact_key: str, request: Request) -> Response:
         runtime = runtime_v2_for_request(request, utc_now_iso=service_started_at)
         job = runtime.get_job(job_id)
-        if is_public_job_v2(job):
-            if job is None:
-                raise ServiceError(
-                    status_code=404,
-                    code="job_not_found",
-                    message="Job not found or expired.",
-                    retryable=False,
-                )
-            public_grant = require_public_job_access_v2(
-                request=request,
-                service_started_at=service_started_at,
-                job=job,
-            )
-            require_public_artifact_read_lease_v2(
-                request=request,
-                service_started_at=service_started_at,
-                verified_grant=public_grant,
-                job=job,
-                artifact_key=artifact_key,
-            )
-        else:
-            auth_context = auth_context_for_job_access_v2(
-                request,
-                service_started_at=service_started_at,
-                job=job,
-                required_grant="sir-convert:artifacts:read-own",
-            )
-            job = require_job_access_v2(
-                auth_context=auth_context,
-                job=job,
-                required_grant="sir-convert:artifacts:read-own",
-                access_denied_code="artifact_access_denied",
-            )
+        auth_context = auth_context_for_job_access_v2(
+            request,
+            service_started_at=service_started_at,
+            job=job,
+            required_grant="sir-convert:artifacts:read-own",
+        )
+        job = require_job_access_v2(
+            auth_context=auth_context,
+            job=job,
+            required_grant="sir-convert:artifacts:read-own",
+            access_denied_code="artifact_access_denied",
+        )
         _require_named_artifact_bundle_job(job)
         pending = _pending_or_unsuccessful_response(job)
         if pending is not None:
             return pending
-        if job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
-            resolved_audio = resolve_audio_transcript_artifact(
-                job=job,
-                artifact_key=artifact_key,
-            )
-            return terminal_artifact_response_v2(
-                runtime=runtime,
-                job=job,
-                artifact_key=artifact_key,
-                filesystem_path=resolved_audio.path,
-                content_type=resolved_audio.content_type,
-                filename=resolved_audio.filename,
-            )
-        resolved = resolve_digiexam_migration_artifact(
+        resolved_audio = resolve_audio_transcript_artifact(
             job=job,
             artifact_key=artifact_key,
-            object_store=runtime.terminal_artifact_store,
         )
         return terminal_artifact_response_v2(
             runtime=runtime,
             job=job,
             artifact_key=artifact_key,
-            filesystem_path=resolved.path,
-            content_type=resolved.content_type,
-            filename=resolved.filename,
+            filesystem_path=resolved_audio.path,
+            content_type=resolved_audio.content_type,
+            filename=resolved_audio.filename,
         )
 
     @router.get(
@@ -490,10 +362,7 @@ def register_job_artifact_routes_v2(*, router: APIRouter, service_started_at: st
 
 
 def _require_named_artifact_bundle_job(job: StoredJobV2) -> None:
-    if job.output_format in {
-        OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
-        OutputFormatV2.TRANSCRIPT_BUNDLE,
-    }:
+    if job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
         return
     raise ServiceError(
         status_code=409,

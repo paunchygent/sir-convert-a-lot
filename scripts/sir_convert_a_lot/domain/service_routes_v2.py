@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Protocol
 
 from scripts.sir_convert_a_lot.domain.specs import AccelerationPolicy
 from scripts.sir_convert_a_lot.domain.specs_v2 import (
@@ -23,11 +23,6 @@ from scripts.sir_convert_a_lot.domain.specs_v2 import (
     PdfPageCssModeV2,
     SourceFormatV2,
     SourceKindV2,
-)
-
-RouteTerminalArtifactCompatibilityContractV2 = Literal["digiexam_migration_bundle_v3"]
-DIGIEXAM_MIGRATION_BUNDLE_TERMINAL_CONTRACT_V2: RouteTerminalArtifactCompatibilityContractV2 = (
-    "digiexam_migration_bundle_v3"
 )
 
 
@@ -49,14 +44,6 @@ class ConversionRoutePolicySubjectV2(Protocol):
     @property
     def output_format(self) -> OutputFormatV2:
         """Return the target output format."""
-
-    @property
-    def targets(self) -> Sequence[object]:
-        """Return route target artifacts."""
-
-    @property
-    def artifact_language(self) -> str | None:
-        """Return requested artifact language."""
 
     @property
     def css_filenames(self) -> Sequence[str]:
@@ -115,10 +102,6 @@ class JobSpecRoutePolicySubjectV2(Protocol):
         """Return execution options."""
 
     @property
-    def digiexam_migration_options(self) -> object | None:
-        """Return DigiExam migration options."""
-
-    @property
     def audio_transcription_options(self) -> object | None:
         """Return audio transcription options."""
 
@@ -150,13 +133,10 @@ class RoutePolicyV2:
     requires_execution: bool = False
     allows_execution: bool = False
     ignores_execution: bool = False
-    allows_digiexam_migration_options: bool = False
     requires_audio_transcription_options: bool = False
     allows_audio_transcription_options: bool = False
     requires_transcript_formatter_options: bool = False
     allows_transcript_formatter_options: bool = False
-    allows_targets: bool = False
-    allows_artifact_language: bool = False
     allows_css_filenames: bool = False
     allows_pdf_layout: bool = False
     allows_page_css_mode: bool = False
@@ -169,9 +149,6 @@ class RoutePolicyV2:
     create_optional_identity_grant: str | None = None
     dispatches_runtime_jobs: bool = True
     unsupported_option_context: str | None = None
-    terminal_artifact_compatibility_contract: (
-        RouteTerminalArtifactCompatibilityContractV2 | None
-    ) = None
 
 
 def _generic_route_policy(
@@ -197,11 +174,6 @@ def _generic_route_policy(
     )
 
 
-DIGIEXAM_MIGRATION_ROUTE_KEY_V2 = RouteKeyV2(
-    source_format=SourceFormatV2.DIGIEXAM_DXE,
-    output_format=OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
-)
-
 AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2 = RouteKeyV2(
     source_format=SourceFormatV2.AUDIO,
     output_format=OutputFormatV2.TRANSCRIPT_BUNDLE,
@@ -223,17 +195,6 @@ SERVICE_ROUTE_POLICIES_V2: tuple[RoutePolicyV2, ...] = (
     _generic_route_policy(SourceFormatV2.HTML, OutputFormatV2.PDF),
     _generic_route_policy(SourceFormatV2.HTML, OutputFormatV2.DOCX),
     _generic_route_policy(SourceFormatV2.PDF, OutputFormatV2.DOCX),
-    RoutePolicyV2(
-        key=DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
-        ignores_pdf_options=True,
-        ignores_execution=True,
-        allows_digiexam_migration_options=True,
-        allows_targets=True,
-        allows_artifact_language=True,
-        create_required_grant="sir-convert:jobs:create",
-        unsupported_option_context="DigiExam migration routes",
-        terminal_artifact_compatibility_contract=(DIGIEXAM_MIGRATION_BUNDLE_TERMINAL_CONTRACT_V2),
-    ),
     RoutePolicyV2(
         key=AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
         requires_execution=True,

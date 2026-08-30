@@ -45,17 +45,17 @@ laptop debug), and `compose.remote-proof.yaml`, with `Dockerfile`,
 Despite sitting under `scripts/`, this package is the product. It follows a
 layered shape with the v2 contract as the stable seam:
 
-| Layer             | Holds                                                                                                                                 |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain/`         | Conversion contracts, policies, and the DigiExam answer-key model: completion, GBNF grammar, projections, live-validation goldens     |
-| `application/`    | Use cases: exam-authoring corrections, answer-key review state, correction replay artifacts and overlays, source-state projection     |
-| `infrastructure/` | Adapters: answer-key provider profiles (OpenAI, DeepSeek, local), audio transcript chunking, merging, alignment, checkpoints, bundles |
-| `interfaces/`     | The delivery surface: `http_api.py` and `http_routes_*_v2.py` for the REST v2 API, `cli_app.py` and `cli_*_v2.py` for the CLI         |
-| `integrations/`   | Adapter profiles for downstream consumers                                                                                             |
-| `benchmarking/`   | PDF throughput, OCR runtime preflight, runtime parity, and scientific-corpus harnesses                                                |
-| `stt_sidecar/`    | The speech-to-text sidecar application: factory, runtime, model lifecycle, media and audio normalization                              |
-| `ml/`             | Qwen model work that stays inside the main dependency boundary                                                                        |
-| `service.py`      | The service entry point, with `service_local.py` and `service_remote_proof.py` variants                                               |
+| Layer             | Holds                                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `domain/`         | Conversion, job-lifecycle, artifact, OCR, and speech contracts and policies                                                   |
+| `application/`    | Use cases for generic conversion admission, idempotent replay, job execution, artifacts, events, and transcript formatting    |
+| `infrastructure/` | Adapters for document conversion, OCR, audio transcripts, checkpoints, artifacts, workers, and offload                        |
+| `interfaces/`     | The delivery surface: `http_api.py` and `http_routes_*_v2.py` for the REST v2 API, `cli_app.py` and `cli_*_v2.py` for the CLI |
+| `integrations/`   | Adapter profiles for downstream consumers                                                                                     |
+| `benchmarking/`   | PDF throughput, OCR runtime preflight, runtime parity, and scientific-corpus harnesses                                        |
+| `stt_sidecar/`    | The speech-to-text sidecar application: factory, runtime, model lifecycle, media and audio normalization                      |
+| `ml/`             | Qwen model work that stays inside the main dependency boundary                                                                |
+| `service.py`      | The service entry point, with `service_local.py` and `service_remote_proof.py` variants                                       |
 
 `scripts/docs_as_code/` and `scripts/devops/` sit beside it: the governance
 entry points and the named shell wrappers for compose, Hemma commands, prod
@@ -99,7 +99,7 @@ SSHes to Hemma, and from the canonical Hemma Server repo it executes locally
 after host and skill-repository checks. GPU and offload work is GPU-first and
 decision-governed. The shared `sir-convert-a-lot-client` skill is the authority
 for calling this platform from another repository, including lane selection and
-the transcript and answer-key contract boundaries.
+the transcript contract boundary.
 
 ## 6. `docs/` — Governed Docs Surface
 

@@ -22,9 +22,6 @@ from pydantic import BaseModel
 from scripts.sir_convert_a_lot.application.openapi_contracts_v2 import (
     OPENAPI_CONTRACT_COMPONENT_MODELS,
 )
-from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
-    digiexam_schema_version_extension,
-)
 
 JsonObject = dict[str, object]
 
@@ -70,37 +67,15 @@ def _patch_create_job_multipart_contract(schema: MutableMapping[str, object]) ->
     post_operation = _path_operation(schema, "/v2/convert/jobs", "post")
     post_operation["x-sir-convert-contract-components"] = {
         "job_spec": "#/components/schemas/JobSpecV2",
-        "digiexam_ingestion_overlay": "#/components/schemas/DigiExamIngestionOverlay",
-        "digiexam_migration_bundle_manifest": (
-            "#/components/schemas/DigiExamMigrationBundleManifestV2"
-        ),
-        "target_readiness_report": "#/components/schemas/DigiExamTargetReadinessReportV1",
-        "answer_key_review_state_report": ("#/components/schemas/DigiExamAnswerKeyReviewStateV1"),
-        "effective_ir_json": "#/components/schemas/DigiExamEffectiveExamV1",
-        "ingestion_overlay_report": "#/components/schemas/DigiExamIngestionOverlayReportV1",
-        "answer_key_completion_report": (
-            "#/components/schemas/DigiExamAnswerKeyCompletionReportV1"
-        ),
     }
-    post_operation["x-sir-convert-digiexam-schema-versions"] = digiexam_schema_version_extension()
     content = _multipart_content(post_operation)
-    content["encoding"] = {
-        "job_spec": {"contentType": "application/json"},
-        "digiexam_ingestion_overlay": {"contentType": "application/json"},
-    }
+    content["encoding"] = {"job_spec": {"contentType": "application/json"}}
     body_schema = _create_job_body_schema(schema)
     properties = _ensure_mapping(body_schema, "properties")
     if "job_spec" in properties:
         properties["job_spec"] = {
             "$ref": "#/components/schemas/JobSpecV2",
             "description": "Multipart JSON part parsed as the v2 job specification.",
-        }
-    if "digiexam_ingestion_overlay" in properties:
-        properties["digiexam_ingestion_overlay"] = {
-            "$ref": "#/components/schemas/DigiExamIngestionOverlay",
-            "description": (
-                "Optional multipart JSON part carrying a source-bound teacher ingestion overlay."
-            ),
         }
 
 

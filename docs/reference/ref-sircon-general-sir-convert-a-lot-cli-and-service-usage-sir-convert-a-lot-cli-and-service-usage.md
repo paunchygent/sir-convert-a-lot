@@ -4,14 +4,14 @@ id: REF-SIRCON-GENERAL-sir-convert-a-lot-cli-and-service-usage
 title: Sir Convert-a-Lot CLI and Service Usage
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 summary: Sir Convert-a-Lot CLI and Service Usage
 retired_ids:
-- CONV-sir-convert-a-lot
+  - CONV-sir-convert-a-lot
 ---
 
 ## Overview
@@ -67,9 +67,6 @@ Planned routes remain discoverable via `convert-a-lot routes` and `--dry-run`.
 endpoint owns multipart mechanics, auth context, idempotency, route lookup, and
 job persistence; route handlers own route-specific companion uploads and target
 preparation.
-
-The `examnet_artifact -> teacher_authoring_bundle` route remains draft-only
-until a later governed runtime task registers and implements that route.
 
 ### Local Runtime Rule
 
@@ -419,10 +416,10 @@ pdm run sir-convert-a-lot convert ./pdfs --output-dir ./research
 ### Canonical Access Flow
 
 1. Ensure service is running on Hemma.
-1. Choose exactly one client lane:
+2. Choose exactly one client lane:
    - tunnel: `http://127.0.0.1:28085`
    - Gateway/public lane: disabled until cutover proof re-enables it
-1. Run from any repo directory:
+3. Run from any repo directory:
 
 ```bash
 pdm run convert-a-lot convert ./folder_with_pdfs \

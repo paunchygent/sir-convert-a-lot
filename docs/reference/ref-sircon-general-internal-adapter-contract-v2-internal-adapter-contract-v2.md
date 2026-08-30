@@ -4,14 +4,14 @@ id: REF-SIRCON-GENERAL-internal-adapter-contract-v2
 title: Internal Adapter Contract v2
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 summary: Internal Adapter Contract v2
 retired_ids:
-- CONV-internal-adapter-contract-v2
+  - CONV-internal-adapter-contract-v2
 ---
 
 ## Overview
@@ -36,9 +36,6 @@ headers, and error propagation), not service runtime policy internals.
 - Applies to internal integration layers only.
 - All submissions must target `/v2/convert/jobs*` endpoints (no legacy version lanes).
 - Adapter helpers must remain transport-only; conversion policy and orchestration live in this repo.
-- Route-specific adapters, including DigiExam migration for Skriptoteket, must
-  follow the route-specific converter contract without embedding conversion
-  policy in the consumer app.
 - Route-specific adapters, including audio transcription, must remain
   transport-only and follow the accepted route contract, OpenAPI update, and
   runtime route state.
@@ -68,14 +65,6 @@ headers, and error propagation), not service runtime policy internals.
   - `source.format: "pdf"`
   - `conversion.output_format: "md"`
   - `execution.acceleration_policy: "gpu_required"` (unless explicit caller override)
-  - `retention.pin: false`
-- For Skriptoteket DigiExam migration, required defaults are owned by
-  `docs/reference/ref-sircon-general-digiexam-migration-service-api-artifact-contract-digiexam-migration-service-api-artifact-contract.md` and
-  include:
-  - `api_version: "v2"`
-  - `source.kind: "upload"`
-  - `source.format: "digiexam_dxe"`
-  - `conversion.output_format: "examnet_migration_bundle"`
   - `retention.pin: false`
 - For audio transcription, required defaults are owned by
   `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract-audio-transcription-service-api-artifact-contract.md` and
@@ -140,17 +129,6 @@ Canonical reference implementation:
 - Adapters must keep using Sir Convert for general conversion and parsing
   workloads rather than for renderer-owned teacher artifacts.
 
-### 8. DigiExam migration adapter boundary
-
-- Skriptoteket may submit `.dxe` files and optional governed companion PDFs
-  through the DigiExam migration contract.
-- The adapter must remain transport-only: it builds headers and job specs,
-  uploads declared parts, polls status/result, lists named artifacts, downloads
-  artifacts, and passes artifact metadata to Skriptoteket user-file storage.
-- The adapter must not parse `.dxe`, parse graded-result PDFs, infer answer
-  keys, hide manual-follow-up states, rewrite target warnings, or inspect Sir
-  Convert work directories.
-
 ### 9. Audio transcription adapter boundary
 
 - Skriptoteket and HuleEdu adapters may submit governed audio transcription
@@ -180,9 +158,6 @@ Required scenario coverage includes:
 - Correlation pass-through plus deterministic fallback generation.
 - Non-mutating error propagation (auth/validation/timeout).
 - End-to-end adapter smoke path through canonical API app.
-- DigiExam migration conformance must cover route-specific idempotency over
-  `.dxe` plus companion digests and named artifact bundle handling when the
-  runtime route is implemented.
 - Audio transcription conformance must cover route-specific idempotency over
   uploaded media, optional diarization settings, canonical transcript JSON
   artifact handling, and no adapter-side transcription or diarization policy.

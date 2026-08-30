@@ -19,12 +19,6 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from scripts.sir_convert_a_lot.application.contracts import ErrorBody
-from scripts.sir_convert_a_lot.application.public_exam_converter_contract_v2 import (
-    PublicArtifactReadLeaseResponseV2,
-)
-from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
-    DigiExamMigrationBundleSchemaVersion,
-)
 from scripts.sir_convert_a_lot.domain.idempotency_replay_policy_v2 import (
     IdempotencyReattemptReasonV2,
 )
@@ -128,7 +122,6 @@ class IdempotencyMetadataV2(BaseModel):
 class JobCreateResponseV2(JobRecordResponseV2):
     """Response payload for v2 job creation endpoints."""
 
-    public_artifact_read_lease: PublicArtifactReadLeaseResponseV2 | None = None
     idempotency: IdempotencyMetadataV2 | None = None
 
 
@@ -170,19 +163,6 @@ class ConversionMetadataV2(BaseModel):
     effective_gpu_stage_limit: int | None = Field(default=None, ge=1)
     scheduling_mode: str | None = None
     formula_authority: dict[str, object] = Field(default_factory=dict)
-
-
-class DigiExamMigrationConversionMetadataV2(ConversionMetadataV2):
-    """Route-specific result metadata for DigiExam migration bundles."""
-
-    route_key: Literal["digiexam_dxe_to_examnet_migration_bundle"]
-    bundle_schema_version: DigiExamMigrationBundleSchemaVersion
-    bundle_status: Literal["complete", "partial", "needs_review", "failed"]
-    source_sha256: str
-    target_readiness_report_artifact_key: Literal["target_readiness_report"]
-    manual_follow_up_required: bool
-    warning_count: int = Field(ge=0)
-    artifact_count: int = Field(ge=0)
 
 
 class DocxTemplateSummaryV2(BaseModel):
@@ -251,7 +231,7 @@ class ResultPayloadV2(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     artifact: ArtifactMetadataV2
-    conversion_metadata: DigiExamMigrationConversionMetadataV2 | ConversionMetadataV2
+    conversion_metadata: ConversionMetadataV2
     warnings: list[str] = Field(default_factory=list)
 
 

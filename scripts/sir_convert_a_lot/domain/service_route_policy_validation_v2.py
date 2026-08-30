@@ -30,7 +30,6 @@ def validate_supported_job_spec_options_v2(
     """Validate route-specific job-spec options through shared route policy."""
 
     _validate_pdf_runtime_options(spec=spec, policy=policy)
-    _validate_exam_migration_options(spec=spec, policy=policy)
     _validate_audio_transcription_options(spec=spec, policy=policy)
     _validate_transcript_formatter_options(spec=spec, policy=policy)
     _validate_pdf_output_options(spec=spec, policy=policy)
@@ -65,23 +64,6 @@ def _validate_pdf_runtime_options(
                 option_name="execution",
                 default_message="execution is only supported for PDF source routes",
             )
-        )
-
-
-def _validate_exam_migration_options(
-    *,
-    spec: JobSpecRoutePolicySubjectV2,
-    policy: RoutePolicyV2,
-) -> None:
-    if not policy.allows_digiexam_migration_options and spec.digiexam_migration_options is not None:
-        raise ValueError(
-            "digiexam_migration_options is only supported for DigiExam migration routes"
-        )
-    if not policy.allows_targets and spec.conversion.targets:
-        raise ValueError("conversion.targets is only supported for exam migration outputs")
-    if not policy.allows_artifact_language and spec.conversion.artifact_language is not None:
-        raise ValueError(
-            "conversion.artifact_language is only supported for exam migration outputs"
         )
 
 

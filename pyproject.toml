@@ -64,12 +64,55 @@ producers = [
 ]
 
 [[tool.repository-governance.quality.cohorts]]
-name = "behavior"
-kind = "component-root"
-root = "tests/sir_convert_a_lot"
-test-target = "component"
+name = "conversion"
+kind = "path"
+path = "tests/sir_convert_a_lot/conversion"
+test-target = "recursive-tests"
 typecheck = "root-typecheck"
 test = "root-test"
+
+[[tool.repository-governance.quality.cohorts]]
+name = "operations"
+kind = "path"
+path = "tests/sir_convert_a_lot/operations"
+test-target = "recursive-tests"
+typecheck = "root-typecheck"
+test = "root-test"
+
+[[tool.repository-governance.quality.cohorts]]
+name = "repository"
+kind = "path"
+path = "tests/sir_convert_a_lot/repository"
+test-target = "recursive-tests"
+typecheck = "root-typecheck"
+test = "root-test"
+
+[[tool.repository-governance.quality.cohorts]]
+name = "research"
+kind = "path"
+path = "tests/sir_convert_a_lot/research"
+test-target = "recursive-tests"
+typecheck = "root-typecheck"
+test = "root-test"
+
+[[tool.repository-governance.quality.cohorts]]
+name = "service"
+kind = "path"
+path = "tests/sir_convert_a_lot/service"
+test-target = "recursive-tests"
+typecheck = "root-typecheck"
+test = "root-test"
+
+[[tool.repository-governance.quality.cohorts]]
+name = "speech"
+kind = "path"
+path = "tests/sir_convert_a_lot/speech"
+test-target = "recursive-tests"
+typecheck = "root-typecheck"
+test = "root-test"
+
+[tool.repository-governance.quality.aggregates]
+behavior = ["conversion", "operations", "repository", "research", "service", "speech"]
 
 [[tool.repository-governance.quality.validators]]
 name = "docs-validate"
@@ -200,8 +243,6 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "deepseek-ocr2-vllm-batch" = "python -m scripts.sir_convert_a_lot.devops.deepseek_ocr2_vllm_batch"
 "deepseek-ocr2-hf-command" = "python -m scripts.sir_convert_a_lot.devops.deepseek_ocr2_hf_command"
 "paddleocr-amd-container-probe" = "python -m scripts.sir_convert_a_lot.devops.paddleocr_amd_container_probe"
-"examnet-qti-samples" = "python -m scripts.sir_convert_a_lot.examnet_qti_sample_packages"
-"examnet-qti-migration-samples" = "python -m scripts.sir_convert_a_lot.examnet_qti_sample_packages --profile manual-unkeyed"
 "benchmark:pdf-throughput-two-worker-sweep" = "python -m scripts.sir_convert_a_lot.pdf_throughput_benchmark_report --two-worker-sweep"
 "benchmark:pdf-throughput-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_pdf_throughput_hemma_benchmark"
 "benchmark:pdf-throughput-two-worker-sweep-hemma" = "python -m scripts.sir_convert_a_lot.devops.run_pdf_throughput_hemma_benchmark --two-worker-sweep"
@@ -221,7 +262,6 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "benchmark:stt-sidecar-live-observation" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_live_observation"
 "benchmark:stt-sidecar-profile-proof" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_profile_proof"
 "proof:remote-proof-audio-transcript" = "python -m scripts.sir_convert_a_lot.devops.remote_proof_audio_transcript_evidence"
-"proof:story58-live-replay" = "python -m scripts.sir_convert_a_lot.devops.run_story58_live_replay_proof"
 "diagnose:stt-sidecar-diarization-access" = "python -m scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_diarization_access"
 "qwen-acquire" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-acquire"
 "qwen-batch-plan" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-batch-plan"
@@ -247,7 +287,6 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "qwen-token-span-audit" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-token-span-audit"
 "qwen-rixvox-train-staging" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-rixvox-train-staging"
 "qwen-llama-provider-build" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-llama-provider-build"
-"answer-key-provider-env" = "python -m scripts.sir_convert_a_lot.devops.render_answer_key_provider_env"
 "qwen-smoke" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-smoke"
 "qwen-train" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-train"
 "qwen-pilot-bundle" = "python -m scripts.sir_convert_a_lot.devops.run_qwen_project qwen-pilot-bundle"
@@ -255,7 +294,6 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "hemma-docker-storage-remediation" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_docker_storage_remediation"
 "hemma-docker-storage-detached" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_docker_storage_detached"
 "hemma-scratch-policy" = "python -m scripts.sir_convert_a_lot.devops.run_hemma_scratch_policy"
-"answer-key-live-validation" = "python -m scripts.sir_convert_a_lot.devops.run_answer_key_live_validation"
 "benchmark:pdf-telemetry-overhead" = "python -m scripts.sir_convert_a_lot.pdf_telemetry_overhead_benchmark"
 "benchmark:scientific-corpus" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "cc1a6d433ff7a272b77b02df72375b20b010029a1254a1c5b6abc6316f6519b9",
+  "source_set_digest": "7fa8a5af241a753de7a60814feedfd43f741a5208165328833b27099624c6689",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -2980,7 +2980,7 @@
       "type": "task",
       "title": "Remove the retired Sir exam-conversion domain and runtime",
       "path": "docs/backlog/tasks/task-sircon-07-04-01-remove-the-retired-sir-exam-conversion-domain-and-runtime.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "story",
       "story": "ST-SIRCON-07-04",
       "owners": [
@@ -4049,44 +4049,6 @@
       ]
     },
     {
-      "id": "ADR-SIRCON-0009",
-      "type": "adr",
-      "title": "Hot-swappable Structured Answer-key Provider Routing",
-      "path": "docs/decisions/adr-sircon-0009-hot-swappable-structured-answer-key-provider-routing.md",
-      "status": "accepted",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "links": {
-        "governing": []
-      },
-      "retired_ids": [
-        "ADR-0010"
-      ]
-    },
-    {
-      "id": "ADR-SIRCON-0010",
-      "type": "adr",
-      "title": "Source-neutral Exam Authoring Correction Apply Contract",
-      "path": "docs/decisions/adr-sircon-0010-source-neutral-exam-authoring-correction-apply-contract.md",
-      "status": "accepted",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "links": {
-        "governing": []
-      },
-      "retired_ids": [
-        "ADR-0011"
-      ]
-    },
-    {
       "id": "ADR-SIRCON-0011",
       "type": "adr",
       "title": "Service API v2 Current-State Authority and Extension Boundary",
@@ -4144,25 +4106,6 @@
       ]
     },
     {
-      "id": "ADR-SIRCON-0014",
-      "type": "adr",
-      "title": "Remote-first answer-key completion with a daily token lease for the exam lane",
-      "path": "docs/decisions/adr-sircon-0014-remote-first-answer-key-completion-with-a-daily-token-lease-for-the-exam-lane.md",
-      "status": "accepted",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "links": {
-        "governing": [
-          "TASK-SIRCON-08-01-07",
-          "ADR-SIRCON-0009"
-        ]
-      }
-    },
-    {
       "id": "REF-SIRCON-DECISIONS-qwen3-tts-swedish-corpus-curation-policy",
       "type": "reference",
       "title": "Qwen3-TTS Swedish Corpus Curation Policy",
@@ -4214,57 +4157,6 @@
       ]
     },
     {
-      "id": "REF-SIRCON-GENERAL-digiexam-intermediate-exam-representation-contract",
-      "type": "reference",
-      "title": "DigiExam Intermediate Exam Representation Contract",
-      "path": "docs/reference/ref-sircon-general-digiexam-intermediate-exam-representation-contract-digiexam-intermediate-exam-representation-contract.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "CONV-digiexam-intermediate-exam-representation-contract"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-digiexam-machine-marked-answer-key-completion-architecture",
-      "type": "reference",
-      "title": "DigiExam Machine-marked Answer-key Completion Architecture",
-      "path": "docs/reference/ref-sircon-general-digiexam-machine-marked-answer-key-completion-architecture-digiexam-machine-marked-answer-key-completion-architecture.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-digiexam-machine-marked-answer-key-completion-architecture"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-digiexam-migration-service-api-artifact-contract",
-      "type": "reference",
-      "title": "DigiExam Migration Service API Artifact Contract",
-      "path": "docs/reference/ref-sircon-general-digiexam-migration-service-api-artifact-contract-digiexam-migration-service-api-artifact-contract.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "CONV-digiexam-migration-service-api-artifact-contract"
-      ]
-    },
-    {
       "id": "REF-SIRCON-GENERAL-docx-template-catalog-contract-v2",
       "type": "reference",
       "title": "DOCX Template Catalog Contract v2",
@@ -4296,105 +4188,6 @@
       ],
       "retired_ids": [
         "CONV-downstream-integration-contract-v2"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-exam-authoring-corrections-apply-contract",
-      "type": "reference",
-      "title": "Exam Authoring Corrections Apply Contract",
-      "path": "docs/reference/ref-sircon-general-exam-authoring-corrections-apply-contract-exam-authoring-corrections-apply-contract.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "CONV-exam-authoring-corrections-apply-contract"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-exam-net-artifact-authoring-service-api-artifact-contract",
-      "type": "reference",
-      "title": "Exam.net Artifact Authoring Service API Artifact Contract",
-      "path": "docs/reference/ref-sircon-general-exam-net-artifact-authoring-service-api-artifact-contract-exam-net-artifact-authoring-service-api-artifact-contract.md",
-      "status": "draft",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "CONV-examnet-artifact-authoring-service-api-artifact-contract"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-exam-net-pdf-to-exam-swedish-renderer-profile",
-      "type": "reference",
-      "title": "Exam.net PDF-to-Exam Swedish Renderer Profile",
-      "path": "docs/reference/ref-sircon-general-exam-net-pdf-to-exam-swedish-renderer-profile-exam-net-pdf-to-exam-swedish-renderer-profile.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-examnet-pdf-to-exam-swedish-renderer-profile"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-exam-net-qti-import-contract-and-validation-strategy",
-      "type": "reference",
-      "title": "Exam.net QTI Import Contract And Validation Strategy",
-      "path": "docs/reference/ref-sircon-general-exam-net-qti-import-contract-and-validation-strategy-exam-net-qti-import-contract-and-validation-strategy.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-examnet-qti-import-contract-and-validation-strategy"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-exam-net-qti-import-contract-empirical-observations",
-      "type": "reference",
-      "title": "Exam.net QTI import contract empirical observations",
-      "path": "docs/reference/ref-sircon-general-exam-net-qti-import-contract-empirical-observations-exam-net-qti-import-contract-empirical-observations.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ]
-    },
-    {
-      "id": "REF-SIRCON-GENERAL-examauthoringir-v1-contract",
-      "type": "reference",
-      "title": "ExamAuthoringIR v1 Contract",
-      "path": "docs/reference/ref-sircon-general-examauthoringir-v1-contract-examauthoringir-v1-contract.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "CONV-exam-authoring-ir-v1-contract"
       ]
     },
     {
@@ -4568,23 +4361,6 @@
       ]
     },
     {
-      "id": "REF-SIRCON-GENERAL-story-58-live-proof-operator-manifest-contract",
-      "type": "reference",
-      "title": "Story 58 Live Proof Operator Manifest Contract",
-      "path": "docs/reference/ref-sircon-general-story-58-live-proof-operator-manifest-contract-story-58-live-proof-operator-manifest-contract.md",
-      "status": "active",
-      "reference_kind": "general",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-story-58-live-proof-operator-manifest-contract"
-      ]
-    },
-    {
       "id": "REF-SIRCON-GENERAL-stt-proof-lanes-and-admission-operations",
       "type": "reference",
       "title": "STT Proof Lanes and Admission Operations",
@@ -4633,40 +4409,6 @@
       ],
       "retired_ids": [
         "REF-hemma-sidecar-tts-md-to-wav-contract-outline"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-PLAN-local-model-answer-key-completion-runtime-and-benchmark-plan",
-      "type": "reference",
-      "title": "Local Model Answer-key Completion Runtime And Benchmark Plan",
-      "path": "docs/reference/ref-sircon-plan-local-model-answer-key-completion-runtime-and-benchmark-plan-local-model-answer-key-completion-runtime-and-benchmark-plan.md",
-      "status": "active",
-      "reference_kind": "plan",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-PLAN-machine-marked-answer-key-completion-implementation-roadmap",
-      "type": "reference",
-      "title": "Machine-marked Answer-key Completion Implementation Roadmap",
-      "path": "docs/reference/ref-sircon-plan-machine-marked-answer-key-completion-implementation-roadmap-machine-marked-answer-key-completion-implementation-roadmap.md",
-      "status": "active",
-      "reference_kind": "plan",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-machine-marked-answer-key-completion-implementation-roadmap"
       ]
     },
     {
@@ -4738,57 +4480,6 @@
       ]
     },
     {
-      "id": "REF-SIRCON-RESEARCH-bug-report-docling-form-extraction-ordering-regression-on-exam-pdf",
-      "type": "reference",
-      "title": "Bug report: Docling form extraction ordering regression on exam PDF",
-      "path": "docs/reference/ref-sircon-research-bug-report-docling-form-extraction-ordering-regression-on-exam-pdf-bug-report-docling-form-extraction-ordering-regression-on-exam-pdf.md",
-      "status": "active",
-      "reference_kind": "research",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-docling-form-ordering-exam-pdf-2026-02-16"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-RESEARCH-digiexam-exam-artifact-item-type-evidence",
-      "type": "reference",
-      "title": "DigiExam Exam Artifact Item Type Evidence",
-      "path": "docs/reference/ref-sircon-research-digiexam-exam-artifact-item-type-evidence-digiexam-exam-artifact-item-type-evidence.md",
-      "status": "active",
-      "reference_kind": "research",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-digiexam-exam-artifact-item-type-evidence"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-RESEARCH-digiexam-jspdf-export-shape-and-exam-net-migration-research",
-      "type": "reference",
-      "title": "DigiExam jsPDF Export Shape And Exam.net Migration Research",
-      "path": "docs/reference/ref-sircon-research-digiexam-jspdf-export-shape-and-exam-net-migration-research-digiexam-jspdf-export-shape-and-exam-net-migration-research.md",
-      "status": "active",
-      "reference_kind": "research",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-digiexam-jspdf-export-shape-and-examnet-migration-research"
-      ]
-    },
-    {
       "id": "REF-SIRCON-RESEARCH-espeak-ng-swedish-phoneme-integration-research-for-chatterbox",
       "type": "reference",
       "title": "eSpeak NG Swedish Phoneme Integration Research for Chatterbox",
@@ -4803,23 +4494,6 @@
       ],
       "retired_ids": [
         "REF-espeak-ng-swedish-phoneme-integration-for-chatterbox"
-      ]
-    },
-    {
-      "id": "REF-SIRCON-RESEARCH-exam-converter-solid-domain-coupling-audit",
-      "type": "reference",
-      "title": "Exam Converter SOLID Domain Coupling Audit",
-      "path": "docs/reference/ref-sircon-research-exam-converter-solid-domain-coupling-audit-exam-converter-solid-domain-coupling-audit.md",
-      "status": "active",
-      "reference_kind": "research",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "REF-exam-converter-solid-domain-coupling-audit"
       ]
     },
     {
@@ -5044,22 +4718,6 @@
       ]
     },
     {
-      "id": "RUN-SIRCON-answer-key-local-model-operator-guide",
-      "type": "runbook",
-      "title": "Answer-Key Local Model Operator Guide",
-      "path": "docs/runbooks/run-sircon-answer-key-local-model-operator-guide-answer-key-local-model-operator-guide.md",
-      "status": "active",
-      "owners": [
-        {
-          "kind": "service",
-          "id": "sir-convert-a-lot"
-        }
-      ],
-      "retired_ids": [
-        "RUN-answer-key-local-model-operator-guide"
-      ]
-    },
-    {
       "id": "RUN-SIRCON-chatterbox-multilingual-tuning-runbook-for-hemma",
       "type": "runbook",
       "title": "Chatterbox Multilingual Tuning Runbook for Hemma",
@@ -5271,26 +4929,6 @@
         "superseded_by": null
       },
       {
-        "id": "ADR-SIRCON-0009",
-        "title": "Hot-swappable Structured Answer-key Provider Routing",
-        "status": "accepted",
-        "path": "docs/decisions/adr-sircon-0009-hot-swappable-structured-answer-key-provider-routing.md",
-        "governing": [],
-        "governed_contracts": [],
-        "supersedes": [],
-        "superseded_by": null
-      },
-      {
-        "id": "ADR-SIRCON-0010",
-        "title": "Source-neutral Exam Authoring Correction Apply Contract",
-        "status": "accepted",
-        "path": "docs/decisions/adr-sircon-0010-source-neutral-exam-authoring-correction-apply-contract.md",
-        "governing": [],
-        "governed_contracts": [],
-        "supersedes": [],
-        "superseded_by": null
-      },
-      {
         "id": "ADR-SIRCON-0011",
         "title": "Service API v2 Current-State Authority and Extension Boundary",
         "status": "accepted",
@@ -5315,16 +4953,6 @@
         "title": "Cloudflare R2 job artifact storage boundary",
         "status": "accepted",
         "path": "docs/decisions/adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md",
-        "governing": [],
-        "governed_contracts": [],
-        "supersedes": [],
-        "superseded_by": null
-      },
-      {
-        "id": "ADR-SIRCON-0014",
-        "title": "Remote-first answer-key completion with a daily token lease for the exam lane",
-        "status": "accepted",
-        "path": "docs/decisions/adr-sircon-0014-remote-first-answer-key-completion-with-a-daily-token-lease-for-the-exam-lane.md",
         "governing": [],
         "governed_contracts": [],
         "supersedes": [],

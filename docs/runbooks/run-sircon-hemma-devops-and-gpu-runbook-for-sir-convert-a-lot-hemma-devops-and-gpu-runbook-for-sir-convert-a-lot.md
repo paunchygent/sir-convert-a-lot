@@ -4,14 +4,14 @@ id: RUN-SIRCON-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot
 title: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 summary: Hemma DevOps and GPU Runbook for Sir Convert-a-Lot
 system: hemma.hule.education
 retired_ids:
-- RUN-hemma-devops-and-gpu
+  - RUN-hemma-devops-and-gpu
 ---
 
 ## Trigger
@@ -36,15 +36,13 @@ benchmark, and tunnel work.
 
 ### Route By Job
 
-| Job | Read |
-|---|---|
-| Service placement, deploys, tunnels, health checks, prod env mirror | `docs/runbooks/runbook-hemma-service-ops.md` |
-| GPU checks, scratch-backed caches, vLLM, llama.cpp, Docling GPU validation | `docs/runbooks/runbook-hemma-gpu-runtime.md` |
-| Answer-key local model setup, GGUF switching, structured probes, lessons learned | `docs/runbooks/runbook-answer-key-local-model-operator-guide.md` |
-| Conversion smoke tests, throughput, bottleneck triage | `docs/runbooks/runbook-hemma-conversion-benchmarks.md` |
-| TTS sidecar and Swedish voice benchmark lanes | `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md` |
-| Public API or CLI contract behavior | `docs/converters/` and `docs/decisions/` |
-| Local answer-key model selection and structured-output benchmark plan | `docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md` |
+| Job                                                                        | Read                                                    |
+| -------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Service placement, deploys, tunnels, health checks, prod env mirror        | `docs/runbooks/runbook-hemma-service-ops.md`            |
+| GPU checks, scratch-backed caches, vLLM, llama.cpp, Docling GPU validation | `docs/runbooks/runbook-hemma-gpu-runtime.md`            |
+| Conversion smoke tests, throughput, bottleneck triage                      | `docs/runbooks/runbook-hemma-conversion-benchmarks.md`  |
+| TTS sidecar and Swedish voice benchmark lanes                              | `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md` |
+| Public API or CLI contract behavior                                        | `docs/converters/` and `docs/decisions/`                |
 
 ### Global Invariants
 
@@ -63,37 +61,6 @@ benchmark, and tunnel work.
 - Raw corpora and cold completed artifacts belong on `/srv/storage`.
 - Runtime changes need governing backlog/reference/ADR authority before they are
   treated as product behavior.
-
-### Current Answer-Key Provider Default
-
-Use OpenAI `gpt-5.4-mini-2026-03-17` as the temporary accepted/default
-structured answer-key provider in development and Hemma production. Task 326
-teacher adjudication leaves mini at 43 correct, 1 wrong-but-valid, and 0 manual
-follow-up on 44 eligible rows, ahead of the retained Qwen3.6 baseline of 41
-correct, 3 wrong-but-valid, and 0 manual follow-up. Qwen3.6 remains the guarded
-local rollback provider and can be stopped in production to free GPU VRAM while
-mini is default.
-
-- Default provider profile: `openai-gpt-5.4-mini-2026-03-17`
-- Default model: `gpt-5.4-mini-2026-03-17`
-- Endpoint kind: OpenAI Responses
-- Output constraint: JSON Schema structured output
-- Remote-provider controls: `SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_PROVIDERS_ENABLED=1`
-  and `SIR_CONVERT_A_LOT_STRUCTURED_LLM_REMOTE_FALLBACK_POLICY_AUTHORIZED=1`
-  are required when mini is the primary provider.
-- Qwen rollback profile: `qwen36-llama-cpp-mtp`
-- Qwen production container: `sir_convert_qwen_answer_key`; it is gated behind
-  the `qwen-answer-key` Compose profile and must not be recreated unless
-  explicitly returning to the local provider.
-- Cache contract: `docs/runbooks/runbook-hemma-gpu-runtime.md`
-- Operator details:
-  `docs/runbooks/runbook-answer-key-local-model-operator-guide.md`
-- Evidence and benchmark authority:
-  `docs/backlog/tasks/task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus.md`
-- Productionization authority:
-  `docs/backlog/tasks/task-319-enable-qwen3-6-vision-capable-advisory-answer-key-completion-in-the-main-pipeline.md`
-- Model-selection reference:
-  `docs/reference/ref-local-llama-answer-key-completion-model-shortlist-and-benchmark-plan.md`
 
 ### Closeout
 

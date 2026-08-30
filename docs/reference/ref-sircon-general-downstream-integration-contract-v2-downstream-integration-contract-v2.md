@@ -4,13 +4,13 @@ id: REF-SIRCON-GENERAL-downstream-integration-contract-v2
 title: Downstream Integration Contract v2
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 retired_ids:
-- CONV-downstream-integration-contract-v2
+  - CONV-downstream-integration-contract-v2
 summary: Downstream Integration Contract v2
 ---
 
@@ -36,8 +36,6 @@ handling, template discovery, and deterministic error handling on service API v2
 ### Contract Authority and Version Policy
 
 - API contract authority: `docs/converters/multi_format_conversion_service_api_v2.md`
-- DigiExam migration API/artifact contract authority:
-  `docs/converters/digiexam-migration-service-api-artifact-contract.md`
 - Template authority: `docs/converters/docx-template-catalog-contract-v2.md`
 - CLI usage authority: `docs/converters/sir_convert_a_lot.md`
 
@@ -84,34 +82,29 @@ Deterministic route constraints:
 - `resources` is allowed only for `html -> md` when `output_format="md"`.
 - `reference_docx` is not allowed for `output_format="md"`.
 - `conversion.template` and `reference_docx` must not be combined.
-- DigiExam migration is the current route-specific exception: it accepts
-  `graded_result_pdf` and `parity_pdf` companion parts under
-  `docs/converters/digiexam-migration-service-api-artifact-contract.md` and
-  rejects generic `resources` or `reference_docx`.
 
 ### Capability Matrix (Implemented v2 Routes)
 
-| Source | Target | Route key | Notes |
-| --- | --- | --- | --- |
-| `pdf` | `md` | `pdf -> md` | Requires `pdf_options` + `execution` |
-| `docx` | `md` | `docx -> md` | Pandoc path, deterministic normalization |
-| `html` | `md` | `html -> md` | Supports optional `resources` |
-| `md` | `docx` | `md -> docx` | Supports template selector |
-| `md` | `pdf` | `md -> pdf` | Service pipeline |
-| `html` | `pdf` | `html -> pdf` | Service pipeline |
-| `html` | `docx` | `html -> docx` | Service pipeline |
-| `pdf` | `docx` | `pdf -> docx` | Service pipeline |
-| `docx` | `pdf` | `docx -> pdf` | Service pipeline |
+| Source | Target | Route key      | Notes                                    |
+| ------ | ------ | -------------- | ---------------------------------------- |
+| `pdf`  | `md`   | `pdf -> md`    | Requires `pdf_options` + `execution`     |
+| `docx` | `md`   | `docx -> md`   | Pandoc path, deterministic normalization |
+| `html` | `md`   | `html -> md`   | Supports optional `resources`            |
+| `md`   | `docx` | `md -> docx`   | Supports template selector               |
+| `md`   | `pdf`  | `md -> pdf`    | Service pipeline                         |
+| `html` | `pdf`  | `html -> pdf`  | Service pipeline                         |
+| `html` | `docx` | `html -> docx` | Service pipeline                         |
+| `pdf`  | `docx` | `pdf -> docx`  | Service pipeline                         |
+| `docx` | `pdf`  | `docx -> pdf`  | Service pipeline                         |
 
 ### Specialized Routes
 
 These routes have accepted or active contracts with route-specific readiness
 states:
 
-| Source | Target | Route key | State | Contract |
-| --- | --- | --- | --- | --- |
-| `digiexam_dxe` | `examnet_migration_bundle` | `digiexam_dxe -> examnet_migration_bundle` | Runtime route | `docs/converters/digiexam-migration-service-api-artifact-contract.md` |
-| `audio` | `transcript_bundle` | `audio -> transcript_bundle` | Runtime JSON execution plus optional formatter artifacts | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
+| Source            | Target              | Route key                              | State                                                                      | Contract                                                               |
+| ----------------- | ------------------- | -------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `audio`           | `transcript_bundle` | `audio -> transcript_bundle`           | Runtime JSON execution plus optional formatter artifacts                   | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 | `transcript_json` | `transcript_bundle` | `transcript_json -> transcript_bundle` | Fast-lane formatter replay over saved canonical JSON plus speaker overlays | `docs/converters/audio-transcription-service-api-artifact-contract.md` |
 
 For audio transcription, product/browser traffic uses the same HuleEdu Gateway
@@ -199,12 +192,12 @@ Terminal-state behavior:
 
 ### Status Matrix
 
-| Endpoint | Non-terminal | Succeeded | Failed/Canceled |
-| --- | --- | --- | --- |
-| `GET /v2/convert/jobs/{job_id}` | `200` job payload | `200` job payload | `200` job payload |
-| `GET /v2/convert/jobs/{job_id}/result` | `202` pending payload | `200` result payload | `409 job_not_succeeded` |
-| `GET /v2/convert/jobs/{job_id}/artifact` | `202` pending payload | `200` binary artifact | `409 job_not_succeeded` |
-| `POST /v2/convert/jobs/{job_id}/cancel` | `202` accepted | `409 job_not_cancelable` | `200` when already canceled |
+| Endpoint                                 | Non-terminal          | Succeeded                | Failed/Canceled             |
+| ---------------------------------------- | --------------------- | ------------------------ | --------------------------- |
+| `GET /v2/convert/jobs/{job_id}`          | `200` job payload     | `200` job payload        | `200` job payload           |
+| `GET /v2/convert/jobs/{job_id}/result`   | `202` pending payload | `200` result payload     | `409 job_not_succeeded`     |
+| `GET /v2/convert/jobs/{job_id}/artifact` | `202` pending payload | `200` binary artifact    | `409 job_not_succeeded`     |
+| `POST /v2/convert/jobs/{job_id}/cancel`  | `202` accepted        | `409 job_not_cancelable` | `200` when already canceled |
 
 ### API request shape
 
@@ -263,11 +256,11 @@ Replay (same key + same payload):
 Create-job consumers must read the JSON `idempotency.state` field rather than
 inferring policy from headers alone:
 
-| State | Meaning |
-| --- | --- |
-| `fresh_admission` | First accepted attempt for this idempotency scope. |
-| `strict_replay` | Same logical request returned the same active, succeeded, non-retryable failed, or canceled job. |
-| `service_reattempt` | Same logical request superseded a retryable failed job with one fresh active attempt. |
+| State               | Meaning                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| `fresh_admission`   | First accepted attempt for this idempotency scope.                                               |
+| `strict_replay`     | Same logical request returned the same active, succeeded, non-retryable failed, or canceled job. |
+| `service_reattempt` | Same logical request superseded a retryable failed job with one fresh active attempt.            |
 
 Gateway and browser integrations must forward Sir Convert create-job responses
 without rewriting `idempotency` metadata. They must not solve retryable failed
@@ -434,28 +427,28 @@ with httpx.Client(base_url=base_url, timeout=60.0) as client:
 
 ### Deterministic Error Contract (Selected Codes)
 
-| Scenario | Status | Error code |
-| --- | --- | --- |
-| Missing/invalid API key | `401` | `auth_invalid_api_key` |
-| Missing `Idempotency-Key` | `400` | `idempotency_key_missing` |
-| Reused key with different payload | `409` | `idempotency_key_reused_with_different_payload` |
-| Unsupported file type | `415` | `unsupported_media_type` |
-| Empty upload | `422` | `input_unreadable` |
-| Pending result/artifact | `202` | pending payload (not error envelope) |
-| Terminal non-success result/artifact | `409` | `job_not_succeeded` |
-| Unknown template id/version in create request | `422` | `validation_error` |
-| Disabled template selection | `409` | `template_unavailable` |
+| Scenario                                      | Status | Error code                                      |
+| --------------------------------------------- | ------ | ----------------------------------------------- |
+| Missing/invalid API key                       | `401`  | `auth_invalid_api_key`                          |
+| Missing `Idempotency-Key`                     | `400`  | `idempotency_key_missing`                       |
+| Reused key with different payload             | `409`  | `idempotency_key_reused_with_different_payload` |
+| Unsupported file type                         | `415`  | `unsupported_media_type`                        |
+| Empty upload                                  | `422`  | `input_unreadable`                              |
+| Pending result/artifact                       | `202`  | pending payload (not error envelope)            |
+| Terminal non-success result/artifact          | `409`  | `job_not_succeeded`                             |
+| Unknown template id/version in create request | `422`  | `validation_error`                              |
+| Disabled template selection                   | `409`  | `template_unavailable`                          |
 
 ### Evidence Matrix (Normative Statement -> Source and Tests)
 
-| Contract area | Primary sources | Validation tests |
-| --- | --- | --- |
-| v2 lifecycle endpoints and status semantics | `docs/converters/multi_format_conversion_service_api_v2.md`, `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py` | `tests/sir_convert_a_lot/test_api_contract_v2.py`, `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_read_cancel.py` |
-| `pdf -> md` v2 lock and v1 absence | `scripts/sir_convert_a_lot/interfaces/http_api.py`, `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py` | `tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py` |
-| `docx -> md` route | `scripts/sir_convert_a_lot/domain/specs_v2.py`, `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py` | `tests/sir_convert_a_lot/test_api_contract_v2_docx_to_md.py` |
-| `html -> md` route + resources policy | `scripts/sir_convert_a_lot/interfaces/http_jobs_v2_request_validation.py` | `tests/sir_convert_a_lot/test_api_contract_v2_html_to_md.py`, `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py` |
-| Template discovery endpoints | `scripts/sir_convert_a_lot/interfaces/http_routes_templates_v2.py`, `docs/converters/docx-template-catalog-contract-v2.md` | `tests/sir_convert_a_lot/test_http_routes_templates_v2.py` |
-| Template selector validation | `scripts/sir_convert_a_lot/interfaces/http_jobs_v2_request_validation.py` | `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_templates.py`, `tests/sir_convert_a_lot/test_api_contract_v2_docx_templates.py` |
-| CLI route/dry-run parity + manifest fields | `docs/converters/sir_convert_a_lot.md`, `scripts/sir_convert_a_lot/interfaces/cli_routes.py`, `scripts/sir_convert_a_lot/interfaces/cli_app.py` | `tests/sir_convert_a_lot/test_cli_route_registry_and_dry_run.py`, `tests/sir_convert_a_lot/test_cli_v2_routes.py` |
-| Adapter profile behavior (Skriptoteket/HuleEdu) | `scripts/sir_convert_a_lot/integrations/adapter_profiles.py` | `tests/sir_convert_a_lot/test_integration_adapter_conformance.py` |
-| Projektveckor secret mirroring policy | `docs/runbooks/runbook-hemma-devops-and-gpu.md` | Operational policy evidence in Task 43 docs: `docs/backlog/tasks/task-43-publish-convert-domain-and-centralize-prod-env-mirroring-across-internal-repos.md` |
+| Contract area                                   | Primary sources                                                                                                                                 | Validation tests                                                                                                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v2 lifecycle endpoints and status semantics     | `docs/converters/multi_format_conversion_service_api_v2.md`, `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py`                      | `tests/sir_convert_a_lot/test_api_contract_v2.py`, `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_read_cancel.py`                             |
+| `pdf -> md` v2 lock and v1 absence              | `scripts/sir_convert_a_lot/interfaces/http_api.py`, `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py`                               | `tests/sir_convert_a_lot/test_api_contract_v2_pdf_to_md_and_v1_absence.py`                                                                                  |
+| `docx -> md` route                              | `scripts/sir_convert_a_lot/domain/specs_v2.py`, `scripts/sir_convert_a_lot/interfaces/http_routes_jobs_v2.py`                                   | `tests/sir_convert_a_lot/test_api_contract_v2_docx_to_md.py`                                                                                                |
+| `html -> md` route + resources policy           | `scripts/sir_convert_a_lot/interfaces/http_jobs_v2_request_validation.py`                                                                       | `tests/sir_convert_a_lot/test_api_contract_v2_html_to_md.py`, `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_create.py`                       |
+| Template discovery endpoints                    | `scripts/sir_convert_a_lot/interfaces/http_routes_templates_v2.py`, `docs/converters/docx-template-catalog-contract-v2.md`                      | `tests/sir_convert_a_lot/test_http_routes_templates_v2.py`                                                                                                  |
+| Template selector validation                    | `scripts/sir_convert_a_lot/interfaces/http_jobs_v2_request_validation.py`                                                                       | `tests/sir_convert_a_lot/test_http_routes_jobs_v2_edge_cases_templates.py`, `tests/sir_convert_a_lot/test_api_contract_v2_docx_templates.py`                |
+| CLI route/dry-run parity + manifest fields      | `docs/converters/sir_convert_a_lot.md`, `scripts/sir_convert_a_lot/interfaces/cli_routes.py`, `scripts/sir_convert_a_lot/interfaces/cli_app.py` | `tests/sir_convert_a_lot/test_cli_route_registry_and_dry_run.py`, `tests/sir_convert_a_lot/test_cli_v2_routes.py`                                           |
+| Adapter profile behavior (Skriptoteket/HuleEdu) | `scripts/sir_convert_a_lot/integrations/adapter_profiles.py`                                                                                    | `tests/sir_convert_a_lot/test_integration_adapter_conformance.py`                                                                                           |
+| Projektveckor secret mirroring policy           | `docs/runbooks/runbook-hemma-devops-and-gpu.md`                                                                                                 | Operational policy evidence in Task 43 docs: `docs/backlog/tasks/task-43-publish-convert-domain-and-centralize-prod-env-mirroring-across-internal-repos.md` |

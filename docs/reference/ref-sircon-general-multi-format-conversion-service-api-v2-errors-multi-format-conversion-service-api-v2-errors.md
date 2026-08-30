@@ -4,13 +4,13 @@ id: REF-SIRCON-GENERAL-multi-format-conversion-service-api-v2-errors
 title: Multi-format Conversion Service API v2 Errors
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 retired_ids:
-- CONV-multi-format-conversion-service-api-v2-errors
+  - CONV-multi-format-conversion-service-api-v2-errors
 summary: Multi-format Conversion Service API v2 Errors
 ---
 
@@ -72,11 +72,6 @@ architecture or governance rationale to an ADR, material planning choices to a
   - `500 Internal Server Error`
   - `error.code = "html_to_markdown_failed"`
   - `error.retryable = false`
-
-DigiExam migration route errors are governed by
-`docs/converters/digiexam-migration-service-api-artifact-contract.md` because
-that route has source-validation, companion-evidence, privacy, and named
-artifact-bundle semantics beyond the generic v2 routes.
 
 ## Error Envelope (v2)
 
