@@ -40,9 +40,12 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
 
-    hemma_deploy_and_verify._remote_recreate_service()
+    hemma_deploy_and_verify._remote_recreate_service("verified-revision")
 
     assert calls[0] == [
+        "env",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
         "pdm",
         "run",
         "prod-recreate",
@@ -57,6 +60,8 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
         "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
         "/home/paunchygent/.local/bin/pdm",
         "run",
         "prod-recreate",
@@ -87,8 +92,19 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_erro
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
 
-    hemma_deploy_and_verify._remote_recreate_service()
+    hemma_deploy_and_verify._remote_recreate_service("verified-revision")
 
+    assert calls[0] == [
+        "env",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
+        "pdm",
+        "run",
+        "prod-recreate",
+        "sir_convert_a_lot_gpu_worker",
+        "sir_convert_a_lot_prod",
+        "sir_convert_a_lot_public_reserved",
+    ]
     assert calls[1] == [
         "sudo",
         "-n",
@@ -96,6 +112,8 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_erro
         "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
         "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
         "/home/paunchygent/.local/bin/pdm",
         "run",
         "prod-recreate",
@@ -123,10 +141,47 @@ def test_remote_recreate_service_raises_on_non_permission_error(
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
 
     with pytest.raises(hemma_deploy_and_verify.CommandExecutionError, match="unexpected"):
-        hemma_deploy_and_verify._remote_recreate_service()
+        hemma_deploy_and_verify._remote_recreate_service("verified-revision")
 
     assert calls == [
         [
+            "env",
+            "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
+            "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
+            "pdm",
+            "run",
+            "prod-recreate",
+            "sir_convert_a_lot_gpu_worker",
+            "sir_convert_a_lot_prod",
+            "sir_convert_a_lot_public_reserved",
+        ]
+    ]
+
+
+def test_remote_recreate_service_injects_verified_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_remote(
+        remote_args: list[str],
+        *,
+        label: str,
+        redactions: tuple[str, ...] = (),
+    ) -> str:
+        del label, redactions
+        calls.append(remote_args)
+        return ""
+
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
+
+    hemma_deploy_and_verify._remote_recreate_service("verified-revision")
+
+    assert calls == [
+        [
+            "env",
+            "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
+            "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
             "pdm",
             "run",
             "prod-recreate",
@@ -176,6 +231,7 @@ def test_execute_workflow_records_public_edge_report(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     remote_calls: list[list[str]] = []
+    recreated_revisions: list[str] = []
 
     def fake_run_command(
         command: list[str],
@@ -230,9 +286,12 @@ def test_execute_workflow_records_public_edge_report(
             "public_edge_artifact": paths.public_edge_json.name,
         }
 
+    def fake_recreate_service(remote_revision: str) -> None:
+        recreated_revisions.append(remote_revision)
+
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
-    monkeypatch.setattr(hemma_deploy_and_verify, "_remote_recreate_service", lambda: None)
+    monkeypatch.setattr(hemma_deploy_and_verify, "_remote_recreate_service", fake_recreate_service)
     monkeypatch.setattr(
         hemma_deploy_and_verify,
         "_fetch_readyz_with_retry",
@@ -266,6 +325,7 @@ def test_execute_workflow_records_public_edge_report(
     assert checks["live_smoke_required"] is False
     assert report["live_smoke_failure"] is None
     assert report["public_edge"] is not None
+    assert recreated_revisions == ["abc"]
 
     report_payload = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     assert report_payload["checks"]["default_host_reserved_placeholder_passed"] is True
@@ -313,7 +373,11 @@ def test_execute_workflow_records_live_smoke_failure_without_failing_deploy(
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
-    monkeypatch.setattr(hemma_deploy_and_verify, "_remote_recreate_service", lambda: None)
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "_remote_recreate_service",
+        lambda remote_revision: None,
+    )
     monkeypatch.setattr(
         hemma_deploy_and_verify,
         "_fetch_readyz_with_retry",

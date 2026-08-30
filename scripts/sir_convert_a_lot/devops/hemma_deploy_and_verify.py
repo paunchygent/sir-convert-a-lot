@@ -257,9 +257,12 @@ def _initialize_artifacts(output_root: Path) -> tuple[Path, Path, Path, Path, Pa
     return report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path
 
 
-def _remote_recreate_service() -> None:
+def _remote_recreate_service(remote_revision: str) -> None:
     """Recreate remote service, retrying with sudo when Docker socket is restricted."""
     recreate_args = [
+        "env",
+        f"SIR_CONVERT_A_LOT_SERVICE_REVISION={remote_revision}",
+        f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={remote_revision}",
         "pdm",
         "run",
         "prod-recreate",
@@ -286,6 +289,8 @@ def _remote_recreate_service() -> None:
             f"PATH={REMOTE_DEPLOY_PATH}",
             f"SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY={REMOTE_HEMMA_SKILL_REPOSITORY}",
             f"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY={REMOTE_HEMMA_SKILL_REPOSITORY}",
+            f"SIR_CONVERT_A_LOT_SERVICE_REVISION={remote_revision}",
+            f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={remote_revision}",
             REMOTE_PDM,
             "run",
             "prod-recreate",
@@ -349,7 +354,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         if isinstance(checks_obj, dict):
             checks_obj["expected_revision_matches_remote"] = True
 
-        _remote_recreate_service()
+        _remote_recreate_service(remote_revision)
 
         readyz_payload = _fetch_readyz_with_retry(service_url=settings.service_url)
         _write_json(readyz_path, readyz_payload)
