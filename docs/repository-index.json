@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "4092ce0b3812c5058ec9c1355fa5d3237847a3da5ee2a9d7afb333fe99b1e338",
+  "source_set_digest": "cc1a6d433ff7a272b77b02df72375b20b010029a1254a1c5b6abc6316f6519b9",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -1001,6 +1001,27 @@
       "readiness_review": {
         "record": "inline",
         "status": "not_started"
+      },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "ST-SIRCON-07-04",
+      "type": "story",
+      "title": "Retire the Sir exam-conversion runtime after Skriptoteket cutover",
+      "path": "docs/backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md",
+      "status": "active",
+      "epic": "EPIC-SIRCON-07",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "decisions": []
       },
       "closeout_review": {
         "record": "inline",
@@ -2949,6 +2970,25 @@
         "record": "inline",
         "status": "not_started"
       },
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-07-04-01",
+      "type": "task",
+      "title": "Remove the retired Sir exam-conversion domain and runtime",
+      "path": "docs/backlog/tasks/task-sircon-07-04-01-remove-the-retired-sir-exam-conversion-domain-and-runtime.md",
+      "status": "ready",
+      "task_kind": "story",
+      "story": "ST-SIRCON-07-04",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
       "closeout_review": {
         "record": "inline",
         "status": "not_started"
@@ -5291,6 +5331,14 @@
         "superseded_by": null
       }
     ],
-    "historical_coverage_debt": []
+    "historical_coverage_debt": [
+      {
+        "id": "ST-SIRCON-07-04",
+        "type": "story",
+        "title": "Retire the Sir exam-conversion runtime after Skriptoteket cutover",
+        "status": "active",
+        "path": "docs/backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md"
+      }
+    ]
   }
 }

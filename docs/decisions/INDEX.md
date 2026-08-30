@@ -19,4 +19,4 @@
 
 ## Historical Coverage Debt
 
-- none
+- `ST-SIRCON-07-04` | [Retire the Sir exam-conversion runtime after Skriptoteket cutover](../backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md) | story | active
