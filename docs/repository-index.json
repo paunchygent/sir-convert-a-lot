@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "7fa8a5af241a753de7a60814feedfd43f741a5208165328833b27099624c6689",
+  "source_set_digest": "dac3f943db64851fad09503d84dad0f5adea87e9a4a7615f218c4c6c10307b9a",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -1349,6 +1349,25 @@
       "type": "task",
       "title": "Adopt shared Hemma workload switching for Sir production and GPU services",
       "path": "docs/backlog/tasks/task-sircon-01-05-05-adopt-shared-hemma-workload-switching-for-sir-production-and-gpu-services.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-01-05",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-01-05-06",
+      "type": "task",
+      "title": "Run Sir production CPU-only during exclusive Hemma GPU research",
+      "path": "docs/backlog/tasks/task-sircon-01-05-06-run-sir-production-cpu-only-during-exclusive-hemma-gpu-research.md",
       "status": "in_progress",
       "task_kind": "story",
       "story": "ST-SIRCON-01-05",
