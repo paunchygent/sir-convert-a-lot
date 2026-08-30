@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "cc1a6d433ff7a272b77b02df72375b20b010029a1254a1c5b6abc6316f6519b9",
+  "source_set_digest": "13084f523b71355f3b44b0437589be9ad710d109a5c6d3968de2eda0ed977e65",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -2980,7 +2980,7 @@
       "type": "task",
       "title": "Remove the retired Sir exam-conversion domain and runtime",
       "path": "docs/backlog/tasks/task-sircon-07-04-01-remove-the-retired-sir-exam-conversion-domain-and-runtime.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "story",
       "story": "ST-SIRCON-07-04",
       "owners": [
