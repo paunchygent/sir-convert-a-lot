@@ -123,10 +123,34 @@ if [[ "${1:-}" == "version" ]]; then
 fi
 
 if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
+  compose_env_file=""
+  compose_args=("$@")
+  for index in "${!compose_args[@]}"; do
+    if [[ "${compose_args[index]}" == "--env-file" ]]; then
+      compose_env_file="${compose_args[index + 1]}"
+      break
+    fi
+  done
+
+  service_revision="${SIR_CONVERT_A_LOT_SERVICE_REVISION:-}"
+  expected_revision="${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-}"
+  if [[ -n "${compose_env_file}" ]]; then
+    while IFS= read -r env_line || [[ -n "${env_line}" ]]; do
+      case "${env_line}" in
+        SIR_CONVERT_A_LOT_SERVICE_REVISION=*)
+          service_revision="${env_line#*=}"
+          ;;
+        SIR_CONVERT_A_LOT_EXPECTED_REVISION=*)
+          expected_revision="${env_line#*=}"
+          ;;
+      esac
+    done <"${compose_env_file}"
+  fi
+
   printf "%s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
   printf "service_revision=%s expected_revision=%s\\n" \
-    "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-}" \
-    "${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-}" >>"${FAKE_DOCKER_LOG}"
+    "${service_revision}" \
+    "${expected_revision}" >>"${FAKE_DOCKER_LOG}"
 fi
 
 exit 0
@@ -165,6 +189,8 @@ fi
 if [[ "${1:-}" == "-n" ]]; then
   shift
 fi
+unset SIR_CONVERT_A_LOT_SERVICE_REVISION
+unset SIR_CONVERT_A_LOT_EXPECTED_REVISION
 exec "$@"
 """,
         encoding="utf-8",
@@ -192,6 +218,27 @@ def _with_fake_hemma_env(env: dict[str, str]) -> dict[str, str]:
     updated["SIR_CONVERT_A_LOT_HEMMA_ROOT"] = str(REPO_ROOT)
     updated["SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY"] = str(REPO_ROOT / ".test-skills")
     updated["SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY"] = str(REPO_ROOT / ".test-skills")
+    return updated
+
+
+def _with_fake_prod_compose_env(env: dict[str, str], tmp_path: Path) -> dict[str, str]:
+    """Provide isolated source and snapshot directories for production Compose tests."""
+    updated = dict(env)
+    source_env = tmp_path / "prod-compose.env"
+    source_env.write_text(
+        "\n".join(
+            (
+                "SIR_CONVERT_A_LOT_SERVICE_REVISION=source_service_revision",
+                "SIR_CONVERT_A_LOT_EXPECTED_REVISION=source_expected_revision",
+                "UNRELATED_SOURCE_VALUE=not-observed",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    snapshot_dir = tmp_path / "compose-env-snapshots"
+    updated["SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE"] = str(source_env)
+    updated["SIR_CONVERT_A_LOT_COMPOSE_ENV_SNAPSHOT_DIR"] = str(snapshot_dir)
     return updated
 
 
@@ -351,19 +398,25 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
     env = _with_fake_hemma_env(env)
+    env = _with_fake_prod_compose_env(env, tmp_path)
 
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_prod"], env)
     assert result.returncode == 0
 
-    log_lines = [
-        line
-        for line in log_file.read_text(encoding="utf-8").splitlines()
-        if not line.startswith("sudo ")
-    ]
-    assert log_lines[0].startswith(
-        f"-f {REPO_ROOT / 'compose.yaml'} up -d --force-recreate --build sir_convert_a_lot_prod"
+    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    sudo_compose_line = next(
+        line for line in log_lines if line.startswith("sudo -n docker compose --env-file ")
     )
-    assert log_lines[1] == "service_revision=prod_rev expected_revision=prod_rev"
+    snapshot_path = Path(sudo_compose_line.split(" --env-file ", maxsplit=1)[1].split(" -f ")[0])
+    assert snapshot_path.parent == tmp_path / "compose-env-snapshots"
+    assert snapshot_path.name.startswith("sir-convert-compose-env.")
+    assert str(tmp_path / "prod-compose.env") not in sudo_compose_line
+    assert (
+        f"--env-file {snapshot_path} -f {REPO_ROOT / 'compose.yaml'} "
+        "up -d --force-recreate --build sir_convert_a_lot_prod"
+    ) in log_lines
+    assert "service_revision=prod_rev expected_revision=prod_rev" in log_lines
+    assert not snapshot_path.exists()
 
 
 def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: Path) -> None:
@@ -385,6 +438,7 @@ def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: P
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
     env = _with_fake_hemma_env(env)
+    env = _with_fake_prod_compose_env(env, tmp_path)
 
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
     assert result.returncode == 0
@@ -418,6 +472,7 @@ def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
     env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
     env = _with_fake_hemma_env(env)
+    env = _with_fake_prod_compose_env(env, tmp_path)
 
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
     assert result.returncode == 0

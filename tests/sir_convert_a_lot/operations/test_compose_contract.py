@@ -329,6 +329,10 @@ def test_compose_declares_only_prod_named_volume() -> None:
 def test_prod_compose_helper_targets_production_compose_surface() -> None:
     script_text = PROD_COMPOSE_SCRIPT.read_text(encoding="utf-8")
     assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"' in script_text
+    assert (
+        'export SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE="'
+        '${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE:-${REPO_ROOT}/.env}"' in script_text
+    )
     assert 'SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"' in script_text
     assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
 
