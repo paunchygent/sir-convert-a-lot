@@ -18,6 +18,7 @@ import re
 from pathlib import Path
 
 DOCKERFILE_PATH = Path("containers/stt-sidecar-benchmark/Dockerfile")
+DEPS_DOCKERFILE_PATH = Path("Dockerfile.deps")
 
 
 def test_benchmark_image_installs_official_ctranslate2_rocm_wheel_after_stt_deps() -> None:
@@ -31,7 +32,7 @@ def test_benchmark_image_installs_official_ctranslate2_rocm_wheel_after_stt_deps
         "9ec6d82e5682b27af6c535f56525665c949cc63fbef14a9028c47b0164717143"
     )
     assert args["CTRANSLATE2_ROCM_WHEEL"] == (
-        "ctranslate2-4.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+        "ctranslate2-4.8.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
     )
     assert args["CTRANSLATE2_RELEASE_BASE_URL"] == (
         "https://github.com/OpenNMT/CTranslate2/releases/download"
@@ -73,7 +74,13 @@ def test_benchmark_image_keeps_ctranslate2_rocm_libraries_out_of_global_linker_s
     dockerfile = _dockerfile_text()
     args = _arg_values(dockerfile)
 
-    assert args["TORCH_ROCM_LIBRARY_DIR"] == ("/app/.venv/lib/python3.11/site-packages/torch/lib")
+    assert args["TORCH_ROCM_LIBRARY_DIR"] == "/app/.venv/lib/python3.12/site-packages/torch/lib"
+    assert args["CTRANSLATE2_PYTHON_PACKAGE_DIR"] == (
+        "/app/.venv/lib/python3.12/site-packages/ctranslate2"
+    )
+    assert args["CTRANSLATE2_WHEEL_LIBRARY_DIR"] == (
+        "/app/.venv/lib/python3.12/site-packages/ctranslate2.libs"
+    )
     assert args["CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR"] == "/opt/ctranslate2-rocm-libraries"
     assert "patchelf" in dockerfile
     assert 'find "${TORCH_ROCM_LIBRARY_DIR}" -maxdepth 1' in dockerfile
@@ -125,6 +132,12 @@ def test_sidecar_image_exposes_long_running_http_service_and_probe_modules() -> 
         'CMD ["uvicorn", "scripts.sir_convert_a_lot.stt_sidecar.app:app", '
         '"--host", "0.0.0.0", "--port", "8095"]'
     ) in dockerfile
+
+
+def test_benchmark_image_contract_matches_deps_base_cpython_3_12() -> None:
+    deps_dockerfile = DEPS_DOCKERFILE_PATH.read_text(encoding="utf-8")
+
+    assert _arg_values(deps_dockerfile)["PYTHON_IMAGE"] == "python:3.12-slim"
 
 
 def _dockerfile_text() -> str:
