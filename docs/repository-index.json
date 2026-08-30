@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "dac3f943db64851fad09503d84dad0f5adea87e9a4a7615f218c4c6c10307b9a",
+  "source_set_digest": "364c4189d4789cd69cd24d9b2876063c277f190f4a5f823f485e0bd7ad9549b4",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -1366,7 +1366,7 @@
     {
       "id": "TASK-SIRCON-01-05-06",
       "type": "task",
-      "title": "Run Sir production CPU-only during exclusive Hemma GPU research",
+      "title": "Hold Sir GPU workloads during exclusive Hemma GPU research",
       "path": "docs/backlog/tasks/task-sircon-01-05-06-run-sir-production-cpu-only-during-exclusive-hemma-gpu-research.md",
       "status": "in_progress",
       "task_kind": "story",
