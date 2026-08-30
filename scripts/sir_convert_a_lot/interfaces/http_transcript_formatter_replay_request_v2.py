@@ -70,12 +70,6 @@ def _reject_replay_companions(parts: "CreateJobCompanionPartsV2") -> None:
         unsupported_parts.append("resources")
     if parts.reference_docx is not None:
         unsupported_parts.append("reference_docx")
-    if parts.graded_result_pdf is not None:
-        unsupported_parts.append("graded_result_pdf")
-    if parts.parity_pdf is not None:
-        unsupported_parts.append("parity_pdf")
-    if parts.digiexam_ingestion_overlay is not None:
-        unsupported_parts.append("digiexam_ingestion_overlay")
     if unsupported_parts:
         raise ServiceError(
             status_code=422,

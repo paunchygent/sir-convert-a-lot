@@ -13,7 +13,6 @@ Relationships:
 
 from __future__ import annotations
 
-import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -21,13 +20,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
-    PublicExamConverterAccessProfileV2,
-)
-from scripts.sir_convert_a_lot.domain.digiexam_schema_versions import (
-    DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
-)
-from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure import runtime_engine_v2 as runtime_engine_v2_module
 from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_artifacts import (
     build_audio_transcript_artifact_manifest,
@@ -41,29 +33,11 @@ from scripts.sir_convert_a_lot.infrastructure.object_store_models import (
     TerminalArtifactRead,
     TerminalArtifactWriteRequest,
 )
-from scripts.sir_convert_a_lot.infrastructure.runtime_models import (
-    PublicExamConverterRuntimeAccessConfig,
-    ServiceConfig,
-)
+from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
-from tests.sir_convert_a_lot.exam.test_public_exam_converter_grant_runtime_v2 import (
-    _API_KEY as _PUBLIC_API_KEY,
-)
-from tests.sir_convert_a_lot.exam.test_public_exam_converter_grant_runtime_v2 import (
-    _KEY_ID as _PUBLIC_KEY_ID,
-)
-from tests.sir_convert_a_lot.exam.test_public_exam_converter_grant_runtime_v2 import (
-    _LEASE_SECRET as _PUBLIC_LEASE_SECRET,
-)
-from tests.sir_convert_a_lot.exam.test_public_exam_converter_grant_runtime_v2 import (
-    _post_public_digiexam_job,
-    _public_headers,
-    _PublicGrantSigner,
-)
 from tests.sir_convert_a_lot.service.http_routes_jobs_v2_edge_cases_test_support import (
     build_client,
     disable_run_job_async,
-    job_spec_v2,
     post_create,
 )
 from tests.sir_convert_a_lot.speech.test_audio_transcript_bundle_runtime_v2 import (
@@ -110,161 +84,6 @@ def test_terminal_artifact_route_streams_object_ref_when_filesystem_artifact_is_
     assert artifact_response.status_code == 200
     assert artifact_response.content == b"%PDF-1.7\nobject-backed\n"
     assert runtime.terminal_artifact_store.read_count == 1
-
-
-def test_named_bundle_artifact_route_reads_named_artifact_through_object_store(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    disable_run_job_async(monkeypatch)
-    client, app = _object_store_client(tmp_path)
-    spec = job_spec_v2(
-        filename="exam.dxe",
-        source_format=SourceFormatV2.DIGIEXAM_DXE,
-        output_format=OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
-    )
-    client.get("/readyz")
-    runtime = app.state.runtime_v2
-    created = runtime.job_store.create_job(
-        job_id="jobv2_named_object_store",
-        spec=JobSpecV2.model_validate(spec),
-        upload_bytes=b"{}",
-        resources_zip_bytes=None,
-        reference_docx_bytes=None,
-    )
-    job_id = created.job_id
-    queued_job = runtime.get_job(job_id)
-    assert queued_job is not None
-    named_path = queued_job.artifact_path.parent / "examnet-import.pdf"
-    named_path.parent.mkdir(parents=True, exist_ok=True)
-    named_path.write_bytes(b"%PDF-1.7\nnamed-object-backed\n")
-    manifest_bytes = _bundle_manifest_bytes(job_id=job_id)
-
-    assert runtime.job_store.claim_queued_job(job_id) is True
-    runtime.job_store.mark_succeeded(
-        job_id,
-        artifact_bytes=manifest_bytes,
-        pipeline_used="digiexam_migration_bundle_v2",
-        backend_used="digiexam_migration",
-        acceleration_used=None,
-        options_fingerprint="sha256:options",
-        warnings=[],
-    )
-    named_path.unlink()
-    read_count_before_download = runtime.terminal_artifact_store.read_count
-
-    artifact_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
-        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr-object-named"},
-    )
-
-    assert artifact_response.status_code == 200
-    assert artifact_response.content == b"%PDF-1.7\nnamed-object-backed\n"
-    assert runtime.terminal_artifact_store.read_count == read_count_before_download + 1
-
-
-def test_named_bundle_artifact_route_survives_cold_primary_manifest_and_named_file(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    disable_run_job_async(monkeypatch)
-    client, app = _object_store_client(tmp_path)
-    spec = job_spec_v2(
-        filename="exam.dxe",
-        source_format=SourceFormatV2.DIGIEXAM_DXE,
-        output_format=OutputFormatV2.EXAMNET_MIGRATION_BUNDLE,
-    )
-    client.get("/readyz")
-    runtime = app.state.runtime_v2
-    created = runtime.job_store.create_job(
-        job_id="jobv2_named_cold_object_store",
-        spec=JobSpecV2.model_validate(spec),
-        upload_bytes=b"{}",
-        resources_zip_bytes=None,
-        reference_docx_bytes=None,
-    )
-    queued_job = runtime.get_job(created.job_id)
-    assert queued_job is not None
-    named_path = queued_job.artifact_path.parent / "examnet-import.pdf"
-    named_path.parent.mkdir(parents=True, exist_ok=True)
-    named_path.write_bytes(b"%PDF-1.7\nnamed-object-backed\n")
-
-    assert runtime.job_store.claim_queued_job(created.job_id) is True
-    runtime.job_store.mark_succeeded(
-        created.job_id,
-        artifact_bytes=_bundle_manifest_bytes(job_id=created.job_id),
-        pipeline_used="digiexam_migration_bundle_v2",
-        backend_used="digiexam_migration",
-        acceleration_used=None,
-        options_fingerprint="sha256:options",
-        warnings=[],
-    )
-    job = runtime.get_job(created.job_id)
-    assert job is not None
-    job.artifact_path.unlink()
-    named_path.unlink()
-    read_count_before_download = runtime.terminal_artifact_store.read_count
-
-    artifact_response = client.get(
-        f"/v2/convert/jobs/{created.job_id}/artifacts/examnet_pdf",
-        headers={"X-API-Key": "secret-key", "X-Correlation-ID": "corr-object-cold-named"},
-    )
-
-    assert artifact_response.status_code == 200
-    assert artifact_response.content == b"%PDF-1.7\nnamed-object-backed\n"
-    assert runtime.terminal_artifact_store.read_count == read_count_before_download + 2
-
-
-def test_public_bundle_manifest_lease_generation_survives_cold_primary_manifest(
-    tmp_path: Path,
-) -> None:
-    signer = _PublicGrantSigner()
-    app = create_app(
-        ServiceConfig(
-            api_key=_PUBLIC_API_KEY,
-            data_root=tmp_path / "service_data",
-            gpu_available=False,
-            enable_supervisor=False,
-            processing_delay_seconds=0.0,
-            public_exam_converter_access=PublicExamConverterRuntimeAccessConfig(
-                profile=PublicExamConverterAccessProfileV2(),
-                grant_public_keys={_PUBLIC_KEY_ID: signer.public_key_pem},
-                artifact_read_lease_secret=_PUBLIC_LEASE_SECRET,
-            ),
-            object_store=TerminalObjectStoreConfig(
-                backend="local",
-                key_prefix="task-381-public-cold-test",
-            ),
-        )
-    )
-    client = TestClient(app)
-    response = _post_public_digiexam_job(
-        client=client,
-        signer=signer,
-        idempotency_key="idem-public-cold-manifest",
-        targets=("examnet_pdf",),
-        wait_seconds=20,
-    )
-    assert response.status_code == 200
-    job_id = response.json()["job"]["job_id"]
-    manifest_lease = response.json()["public_artifact_read_lease"]["token"]
-    runtime = app.state.runtime_v2
-    job = runtime.get_job(job_id)
-    assert job is not None
-    job.artifact_path.unlink()
-    grant_headers = _public_headers(signer=signer, targets=("examnet_pdf",))
-    grant_headers["X-Public-Artifact-Read-Lease"] = manifest_lease
-    read_count_before_manifest = runtime.terminal_artifact_store.read_count
-
-    manifest_response = client.get(
-        f"/v2/convert/jobs/{job_id}/artifacts",
-        headers=grant_headers,
-    )
-
-    assert manifest_response.status_code == 200
-    entries = {entry["artifact_key"]: entry for entry in manifest_response.json()["artifacts"]}
-    assert "public_artifact_read_lease" in entries["examnet_pdf"]
-    assert runtime.terminal_artifact_store.read_count == read_count_before_manifest + 1
 
 
 def test_transcript_bundle_listing_keeps_object_backed_formatter_available(
@@ -598,30 +417,6 @@ def _object_store_client(tmp_path: Path) -> tuple[TestClient, FastAPI]:
             key_prefix="task-381-test",
         ),
     )
-
-
-def _bundle_manifest_bytes(*, job_id: str) -> bytes:
-    payload = {
-        "schema_version": DIGIEXAM_MIGRATION_BUNDLE_SCHEMA_VERSION,
-        "job_id": job_id,
-        "source": {"filename": "exam.dxe", "sha256": "sha256:source", "format": "digiexam_dxe"},
-        "bundle_status": "partial",
-        "artifacts": [
-            {
-                "artifact_key": "examnet_pdf",
-                "filename": "exam.pdf",
-                "content_type": "application/pdf",
-                "availability": "available",
-                "size_bytes": len(b"%PDF-1.7\nnamed-object-backed\n"),
-                "sha256": "sha256:named",
-                "download_path": f"/v2/convert/jobs/{job_id}/artifacts/examnet_pdf",
-            }
-        ],
-        "manual_follow_up": {"required": False, "artifact_key": "manual_follow_up_report"},
-        "readiness": {"artifact_key": "target_readiness_report"},
-        "warnings": {"count": 0},
-    }
-    return json.dumps(payload, sort_keys=True).encode("utf-8")
 
 
 def _artifact_entries(payload: object) -> dict[str, dict[str, object]]:

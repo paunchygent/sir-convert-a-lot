@@ -46,7 +46,6 @@ class SourceFormatV2(StrEnum):
     MD = "md"
     HTML = "html"
     DOCX = "docx"
-    DIGIEXAM_DXE = "digiexam_dxe"
 
 
 class OutputFormatV2(StrEnum):
@@ -56,55 +55,6 @@ class OutputFormatV2(StrEnum):
     PDF = "pdf"
     DOCX = "docx"
     TRANSCRIPT_BUNDLE = "transcript_bundle"
-    EXAMNET_MIGRATION_BUNDLE = "examnet_migration_bundle"
-
-
-class ExamMigrationTargetV2(StrEnum):
-    """Supported target artifacts for exam-migration bundle routes."""
-
-    EXAMNET_PDF = "examnet_pdf"
-    QTI_PACKAGE = "qti_package"
-
-
-DEFAULT_EXAM_MIGRATION_TARGETS_V2: tuple[ExamMigrationTargetV2, ...] = (
-    ExamMigrationTargetV2.EXAMNET_PDF,
-    ExamMigrationTargetV2.QTI_PACKAGE,
-)
-
-
-class DigiExamResultPdfUsageV2(StrEnum):
-    """Allowed use of optional DigiExam graded-result PDF evidence."""
-
-    CORRECT_MACHINE_MARKED_ANSWERS_ONLY = "correct_machine_marked_answers_only"
-
-
-class DigiExamManualFollowUpPolicyV2(StrEnum):
-    """Allowed manual-follow-up reporting policy for DigiExam migration."""
-
-    EMIT_ITEM_ADDRESSABLE_REPORT = "emit_item_addressable_report"
-
-
-class DigiExamIngestionOverlayPolicyV2(StrEnum):
-    """Allowed teacher overlay application policies for DigiExam migration."""
-
-    NONE = "none"
-    APPLY_TEACHER_OVERLAY = "apply_teacher_overlay"
-
-
-class DigiExamAnswerKeyCompletionModeV2(StrEnum):
-    """Allowed answer-key completion modes for DigiExam migration."""
-
-    SOURCE_EVIDENCE_ONLY = "source_evidence_only"
-    LOCAL_LLM_SUGGEST_MISSING_MACHINE_MARKED = "local_llm_suggest_missing_machine_marked"
-    LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW = (
-        "local_llm_apply_missing_machine_marked_with_review"
-    )
-
-
-class DigiExamRemoteProviderPolicyV2(StrEnum):
-    """Allowed remote-provider policies for DigiExam answer-key completion."""
-
-    FORBIDDEN = "forbidden"
 
 
 class PdfPaperSizeV2(StrEnum):
@@ -177,63 +127,7 @@ class ConversionSpecV2(BaseModel):
     pdf_layout: PdfLayoutV2 | None = None
     template: TemplateSelectorV2 | None = None
     reference_docx_filename: str | None = None
-    targets: list[ExamMigrationTargetV2] = Field(default_factory=list)
     artifact_language: str | None = Field(default=None, min_length=2, max_length=8)
-
-
-class DigiExamMigrationOptionsV2(BaseModel):
-    """Route-specific options for DigiExam migration bundle jobs."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    graded_result_pdf_filename: str | None = None
-    parity_pdf_filename: str | None = None
-    result_pdf_usage: DigiExamResultPdfUsageV2 = (
-        DigiExamResultPdfUsageV2.CORRECT_MACHINE_MARKED_ANSWERS_ONLY
-    )
-    manual_follow_up_policy: DigiExamManualFollowUpPolicyV2 = (
-        DigiExamManualFollowUpPolicyV2.EMIT_ITEM_ADDRESSABLE_REPORT
-    )
-    ingestion_overlay_filename: str | None = None
-    ingestion_overlay_policy: DigiExamIngestionOverlayPolicyV2 = (
-        DigiExamIngestionOverlayPolicyV2.NONE
-    )
-    completion_mode: DigiExamAnswerKeyCompletionModeV2 = (
-        DigiExamAnswerKeyCompletionModeV2.SOURCE_EVIDENCE_ONLY
-    )
-    remote_provider_policy: DigiExamRemoteProviderPolicyV2 = (
-        DigiExamRemoteProviderPolicyV2.FORBIDDEN
-    )
-
-    @model_validator(mode="after")
-    def _validate_ingestion_overlay_policy(self) -> "DigiExamMigrationOptionsV2":
-        has_filename = self.ingestion_overlay_filename is not None
-        if (
-            self.completion_mode
-            == DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW
-            and not has_filename
-        ):
-            raise ValueError(
-                "digiexam_migration_options.ingestion_overlay_filename is required "
-                "when completion_mode is "
-                f"'{DigiExamAnswerKeyCompletionModeV2.LOCAL_LLM_APPLY_MISSING_MACHINE_MARKED_WITH_REVIEW.value}'"
-            )
-        if has_filename and self.ingestion_overlay_policy != (
-            DigiExamIngestionOverlayPolicyV2.APPLY_TEACHER_OVERLAY
-        ):
-            raise ValueError(
-                "digiexam_migration_options.ingestion_overlay_policy must be "
-                "'apply_teacher_overlay' when ingestion_overlay_filename is present"
-            )
-        if (
-            not has_filename
-            and self.ingestion_overlay_policy != DigiExamIngestionOverlayPolicyV2.NONE
-        ):
-            raise ValueError(
-                "digiexam_migration_options.ingestion_overlay_policy must be "
-                "'none' when ingestion_overlay_filename is omitted"
-            )
-        return self
 
 
 class PdfOptionsV2(BaseModel):
@@ -381,7 +275,6 @@ class JobSpecV2(BaseModel):
     conversion: ConversionSpecV2
     pdf_options: PdfOptionsV2 | None = None
     execution: ExecutionSpecV2 | None = None
-    digiexam_migration_options: DigiExamMigrationOptionsV2 | None = None
     audio_transcription_options: AudioTranscriptionOptionsV2 | None = None
     transcript_formatter_options: TranscriptFormatterReplayOptionsV2 | None = None
     retention: RetentionSpecV2 = Field(default_factory=RetentionSpecV2)
@@ -409,18 +302,3 @@ class JobSpecV2(BaseModel):
         for option_name in ignored_runtime_option_names_for_spec_v2(self):
             setattr(self, option_name, None)
         return self
-
-
-def normalized_exam_migration_targets_v2(spec: JobSpecV2) -> tuple[ExamMigrationTargetV2, ...]:
-    """Return exam-migration targets, defaulting to all governed route targets."""
-
-    if not spec.conversion.targets:
-        return DEFAULT_EXAM_MIGRATION_TARGETS_V2
-    seen: set[ExamMigrationTargetV2] = set()
-    ordered: list[ExamMigrationTargetV2] = []
-    for target in spec.conversion.targets:
-        if target in seen:
-            continue
-        ordered.append(target)
-        seen.add(target)
-    return tuple(ordered)

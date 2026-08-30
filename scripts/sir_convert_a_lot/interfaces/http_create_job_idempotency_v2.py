@@ -39,9 +39,6 @@ from scripts.sir_convert_a_lot.infrastructure.idempotency_replay_adapters_v2 imp
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import (
     IdempotencyStore,
 )
-from scripts.sir_convert_a_lot.infrastructure.route_terminal_artifact_compatibility_v2 import (
-    RoutePolicyTerminalArtifactCompatibilityAdapterV2,
-)
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 
@@ -68,7 +65,6 @@ def admit_create_job_with_idempotency_v2(
     service = IdempotencyReplayServiceV2(
         records=IdempotencyStoreRecordAdapterV2(store),
         jobs=RuntimeJobLookupAdapterV2(get_job),
-        route_compatibility=RoutePolicyTerminalArtifactCompatibilityAdapterV2(get_job),
     )
     try:
         decision = service.resolve_create_job_replay(

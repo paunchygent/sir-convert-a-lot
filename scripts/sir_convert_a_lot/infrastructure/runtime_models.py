@@ -16,17 +16,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from scripts.sir_convert_a_lot.application.public_exam_converter_access_policy_v2 import (
-    PublicExamConverterAccessProfileV2,
-)
 from scripts.sir_convert_a_lot.domain.specs import JobSpec, JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2
 from scripts.sir_convert_a_lot.infrastructure.object_store_config import (
     TerminalObjectStoreConfig,
-)
-from scripts.sir_convert_a_lot.infrastructure.structured_llm_config import (
-    StructuredLLMRuntimeConfig,
-    disabled_structured_llm_runtime_config,
 )
 
 HuleEduInternalIdentityEnvironmentId = Literal["local-auth-integration", "hemma-production"]
@@ -52,15 +45,6 @@ class HuleEduInternalIdentityTrustRuntimeConfig:
     spki_sha256_fingerprint: str
     ttl_seconds: int
     allowed_clock_skew_seconds: int
-
-
-@dataclass(frozen=True)
-class PublicExamConverterRuntimeAccessConfig:
-    """Server-side trust material for public Exam Converter access."""
-
-    profile: PublicExamConverterAccessProfileV2
-    grant_public_keys: dict[str, str] = field(default_factory=dict)
-    artifact_read_lease_secret: str | None = None
 
 
 @dataclass(frozen=True)
@@ -111,12 +95,6 @@ class ServiceConfig:
     internal_identity_ttl_seconds: int = 60
     internal_identity_allowed_clock_skew_seconds: int = 5
     internal_identity_trust_profile: HuleEduInternalIdentityTrustRuntimeConfig | None = None
-    public_exam_converter_access: PublicExamConverterRuntimeAccessConfig | None = None
-    exam_authoring_source_state_signature_secret: str | None = None
-    answer_key_daily_token_limit: int = 5_000_000
-    structured_llm: StructuredLLMRuntimeConfig = field(
-        default_factory=disabled_structured_llm_runtime_config
-    )
     object_store: TerminalObjectStoreConfig = field(default_factory=TerminalObjectStoreConfig)
 
 

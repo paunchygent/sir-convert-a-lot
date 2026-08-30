@@ -2,8 +2,7 @@
 
 Purpose:
     Define application-layer ports for idempotency records, job lookup, fresh
-    admission, route terminal-artifact compatibility, and future correction
-    replay identity storage.
+    admission and route terminal-artifact compatibility.
 
 Relationships:
     - Implemented by infrastructure adapters over filesystem idempotency state
@@ -18,8 +17,6 @@ from contextlib import AbstractContextManager
 from typing import Protocol
 
 from scripts.sir_convert_a_lot.domain.idempotency_replay_policy_v2 import (
-    CorrectionReplayIdentityRequestV2,
-    CorrectionReplayIdentityReservationV2,
     IdempotencyAttemptSnapshotV2,
     IdempotencyJobSnapshotV2,
     IdempotencyRecordSnapshotV2,
@@ -101,25 +98,3 @@ class CompatibleRouteArtifactCompatibilityPortV2:
             status=RouteArtifactCompatibilityStatusV2.COMPATIBLE,
             reason=None,
         )
-
-
-class CorrectionReplayIdentityStorePortV2(Protocol):
-    """Port for future request-scoped correction replay artifact identity."""
-
-    def reserve_artifact_set(
-        self, request: CorrectionReplayIdentityRequestV2
-    ) -> CorrectionReplayIdentityReservationV2:
-        """Reserve or return a verified correction replay artifact set."""
-        ...
-
-
-class DeferredCorrectionReplayIdentityStorePortV2:
-    """Neutral Task 375 correction replay identity placeholder."""
-
-    def reserve_artifact_set(
-        self, request: CorrectionReplayIdentityRequestV2
-    ) -> CorrectionReplayIdentityReservationV2:
-        """Fail if used before Tasks 377-378 bind real correction replay storage."""
-
-        del request
-        raise NotImplementedError("Correction replay identity storage is deferred from Task 375.")

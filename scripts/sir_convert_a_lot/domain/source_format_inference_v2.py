@@ -49,6 +49,4 @@ def infer_source_format_from_filename_v2(filename: str) -> SourceFormatV2 | None
         return SourceFormatV2.HTML
     if suffix == ".docx":
         return SourceFormatV2.DOCX
-    if suffix == ".dxe":
-        return SourceFormatV2.DIGIEXAM_DXE
     return None

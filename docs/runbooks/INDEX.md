@@ -1,6 +1,5 @@
 # Runbooks
 
-- `RUN-SIRCON-answer-key-local-model-operator-guide` | [Answer-Key Local Model Operator Guide](../../docs/runbooks/run-sircon-answer-key-local-model-operator-guide-answer-key-local-model-operator-guide.md) | active | readiness=- | closeout=- | changed=2026-08-02T17:28:00+02:00
 - `RUN-SIRCON-chatterbox-multilingual-tuning-runbook-for-hemma` | [Chatterbox Multilingual Tuning Runbook for Hemma](../../docs/runbooks/run-sircon-chatterbox-multilingual-tuning-runbook-for-hemma-chatterbox-multilingual-tuning-runbook-for-hemma.md) | active | readiness=- | closeout=- | changed=2026-08-02T17:28:00+02:00
 - `RUN-SIRCON-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot` | [Hemma Conversion Benchmark Runbook for Sir Convert-a-Lot](../../docs/runbooks/run-sircon-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot.md) | active | readiness=- | closeout=- | changed=2026-08-02T17:28:00+02:00
 - `RUN-SIRCON-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot` | [Hemma DevOps and GPU Runbook for Sir Convert-a-Lot](../../docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md) | active | readiness=- | closeout=- | changed=2026-08-02T17:28:00+02:00

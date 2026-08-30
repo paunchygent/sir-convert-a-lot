@@ -6,8 +6,6 @@ Purpose:
 
 Relationships:
     - Used by `interfaces.http_routes_jobs_v2` during job admission.
-    - Supports DigiExam companion validation from
-      `interfaces.http_digiexam_migration_request_v2`.
 """
 
 from __future__ import annotations
@@ -21,9 +19,6 @@ def bound_create_job_form_part_names_v2(
     request: Request,
     resources: UploadFile | None,
     reference_docx: UploadFile | None,
-    graded_result_pdf: UploadFile | None,
-    parity_pdf: UploadFile | None,
-    digiexam_ingestion_overlay: UploadFile | None,
 ) -> frozenset[str]:
     """Return submitted create-job multipart field names without parsing again."""
 
@@ -36,10 +31,4 @@ def bound_create_job_form_part_names_v2(
         names.add("resources")
     if reference_docx is not None:
         names.add("reference_docx")
-    if graded_result_pdf is not None:
-        names.add("graded_result_pdf")
-    if parity_pdf is not None:
-        names.add("parity_pdf")
-    if digiexam_ingestion_overlay is not None:
-        names.add("digiexam_ingestion_overlay")
     return frozenset(names)

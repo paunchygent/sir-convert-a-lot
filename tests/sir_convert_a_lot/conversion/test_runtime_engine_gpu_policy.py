@@ -110,19 +110,6 @@ def test_service_config_from_env_parallel_overrides_are_bounded(monkeypatch) -> 
     assert config.run_jobs_on_submit is False
 
 
-def test_service_config_from_env_reads_exam_authoring_source_authority_secret(
-    monkeypatch,
-) -> None:
-    monkeypatch.setenv(
-        "SIR_CONVERT_A_LOT_EXAM_AUTHORING_SOURCE_STATE_SIGNATURE_SECRET",
-        " signed-source-state-secret ",
-    )
-
-    config = service_config_from_env()
-
-    assert config.exam_authoring_source_state_signature_secret == "signed-source-state-secret"
-
-
 def test_service_config_from_env_reads_stt_sidecar_input_dir(monkeypatch, tmp_path: Path) -> None:
     input_dir = tmp_path / "stt-sidecar-inputs"
     monkeypatch.setenv("SIR_CONVERT_A_LOT_STT_SIDECAR_INPUT_DIR", str(input_dir))

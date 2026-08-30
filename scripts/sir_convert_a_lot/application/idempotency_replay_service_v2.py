@@ -9,16 +9,13 @@ Relationships:
     - Consumes pure domain decision types from
       `domain.idempotency_replay_policy_v2`.
     - Depends on protocol ports from `application.idempotency_replay_ports_v2`.
-    - Used by interface/infrastructure adapters to preserve Task 368 behavior
-      while exposing extension points for Tasks 376-378.
+    - Used by interface/infrastructure adapters to preserve generic replay behavior.
 """
 
 from __future__ import annotations
 
 from scripts.sir_convert_a_lot.application.idempotency_replay_ports_v2 import (
     CompatibleRouteArtifactCompatibilityPortV2,
-    CorrectionReplayIdentityStorePortV2,
-    DeferredCorrectionReplayIdentityStorePortV2,
     FreshAttemptAdmissionPortV2,
     IdempotencyJobLookupPortV2,
     IdempotencyRecordPortV2,
@@ -57,22 +54,12 @@ class IdempotencyReplayServiceV2:
         records: IdempotencyRecordPortV2,
         jobs: IdempotencyJobLookupPortV2,
         route_compatibility: RouteArtifactCompatibilityPortV2 | None = None,
-        correction_replay_identity: CorrectionReplayIdentityStorePortV2 | None = None,
     ) -> None:
         self._records = records
         self._jobs = jobs
         self._route_compatibility = (
             route_compatibility or CompatibleRouteArtifactCompatibilityPortV2()
         )
-        self._correction_replay_identity = (
-            correction_replay_identity or DeferredCorrectionReplayIdentityStorePortV2()
-        )
-
-    @property
-    def correction_replay_identity(self) -> CorrectionReplayIdentityStorePortV2:
-        """Return the correction replay identity extension port for later tasks."""
-
-        return self._correction_replay_identity
 
     def resolve_create_job_replay(
         self,

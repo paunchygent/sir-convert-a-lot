@@ -2,14 +2,12 @@
 
 Purpose:
     Keep route-specific create-job policy, companion upload handling, and
-    target validation behind a typed registry keyed by v2 source/output format.
+    companion validation behind a typed registry keyed by v2 source/output format.
 
 Relationships:
     - Used by `interfaces.http_routes_jobs_v2` for `POST /v2/convert/jobs`.
     - Uses route metadata from `domain.service_routes_v2` as the route
       authority.
-    - Delegates DigiExam migration companion checks to
-      `interfaces.http_digiexam_migration_request_v2`.
 """
 
 from __future__ import annotations
@@ -30,7 +28,6 @@ from scripts.sir_convert_a_lot.domain.audio_transcription_contracts import (
 )
 from scripts.sir_convert_a_lot.domain.service_routes_v2 import (
     AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2,
-    DIGIEXAM_MIGRATION_ROUTE_KEY_V2,
     TRANSCRIPT_FORMATTER_REPLAY_ROUTE_KEY_V2,
     RouteKeyV2,
     RoutePolicyV2,
@@ -49,9 +46,6 @@ from scripts.sir_convert_a_lot.infrastructure.job_store_models_v2 import (
     StoredJobRecordV2,
 )
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
-from scripts.sir_convert_a_lot.interfaces.http_digiexam_migration_request_v2 import (
-    read_digiexam_migration_companions_v2,
-)
 from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
     validate_create_job_route_constraints,
 )
@@ -66,9 +60,6 @@ class CreateJobCompanionPartsV2:
 
     resources: UploadFile | None
     reference_docx: UploadFile | None
-    graded_result_pdf: UploadFile | None
-    parity_pdf: UploadFile | None
-    digiexam_ingestion_overlay: UploadFile | None
     form_part_names: frozenset[str]
 
 
@@ -80,12 +71,6 @@ class PreparedCreateJobRouteV2:
     resources_sha256: str | None = None
     reference_docx_bytes: bytes | None = None
     reference_docx_sha256: str | None = None
-    graded_result_pdf_bytes: bytes | None = None
-    graded_result_pdf_sha256: str | None = None
-    parity_pdf_bytes: bytes | None = None
-    parity_pdf_sha256: str | None = None
-    digiexam_ingestion_overlay_bytes: bytes | None = None
-    digiexam_ingestion_overlay_sha256: str | None = None
 
 
 DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2: tuple[RouteKeyV2, ...] = (
@@ -170,7 +155,6 @@ class DefaultCreateJobRouteHandlerV2:
         parts: CreateJobCompanionPartsV2,
     ) -> PreparedCreateJobRouteV2:
         del primary_payload_size
-        _reject_digiexam_companions_for_default_route(parts)
         resources_bytes = await _read_optional_resources(
             upload=parts.resources,
             config=config,
@@ -189,41 +173,6 @@ class DefaultCreateJobRouteHandlerV2:
             resources_sha256=_sha256(resources_bytes),
             reference_docx_bytes=reference_docx_bytes,
             reference_docx_sha256=_sha256(reference_docx_bytes),
-        )
-
-
-class DigiExamMigrationCreateJobRouteHandlerV2:
-    """Create-job preparation for DigiExam migration bundle routes."""
-
-    def __init__(self, *, policy: RoutePolicyV2) -> None:
-        self.policy = policy
-
-    async def prepare(
-        self,
-        *,
-        spec: JobSpecV2,
-        config: ServiceConfig,
-        primary_payload_size: int,
-        parts: CreateJobCompanionPartsV2,
-    ) -> PreparedCreateJobRouteV2:
-        companions = await read_digiexam_migration_companions_v2(
-            spec=spec,
-            config=config,
-            primary_payload_size=primary_payload_size,
-            form_part_names=set(parts.form_part_names),
-            resources_uploaded=parts.resources is not None,
-            reference_docx_uploaded=parts.reference_docx is not None,
-            graded_result_pdf=parts.graded_result_pdf,
-            parity_pdf=parts.parity_pdf,
-            digiexam_ingestion_overlay=parts.digiexam_ingestion_overlay,
-        )
-        return PreparedCreateJobRouteV2(
-            graded_result_pdf_bytes=companions.graded_result_pdf_bytes,
-            graded_result_pdf_sha256=companions.graded_result_pdf_sha256,
-            parity_pdf_bytes=companions.parity_pdf_bytes,
-            parity_pdf_sha256=companions.parity_pdf_sha256,
-            digiexam_ingestion_overlay_bytes=companions.digiexam_ingestion_overlay_bytes,
-            digiexam_ingestion_overlay_sha256=companions.digiexam_ingestion_overlay_sha256,
         )
 
 
@@ -305,11 +254,6 @@ def build_create_job_route_registry_v2() -> ServiceRouteRegistryV2:
     handlers: list[CreateJobRouteHandlerV2] = []
     for key in DEFAULT_DOCUMENT_CREATE_JOB_ROUTE_KEYS_V2:
         handlers.append(DefaultCreateJobRouteHandlerV2(policy=_required_route_policy_v2(key)))
-    handlers.append(
-        DigiExamMigrationCreateJobRouteHandlerV2(
-            policy=_required_route_policy_v2(DIGIEXAM_MIGRATION_ROUTE_KEY_V2)
-        )
-    )
     handlers.append(
         AudioTranscriptionAdmissionCreateJobRouteHandlerV2(
             policy=_required_route_policy_v2(AUDIO_TRANSCRIPT_BUNDLE_ROUTE_KEY_V2)
@@ -393,36 +337,12 @@ def _is_audio_transcript_bundle_spec_v2(spec: JobSpecV2) -> bool:
     )
 
 
-def _reject_digiexam_companions_for_default_route(parts: CreateJobCompanionPartsV2) -> None:
-    unsupported_parts = []
-    if parts.graded_result_pdf is not None:
-        unsupported_parts.append("graded_result_pdf")
-    if parts.parity_pdf is not None:
-        unsupported_parts.append("parity_pdf")
-    if parts.digiexam_ingestion_overlay is not None:
-        unsupported_parts.append("digiexam_ingestion_overlay")
-    if unsupported_parts:
-        raise ServiceError(
-            status_code=422,
-            code="digiexam_companion_unsupported",
-            message="DigiExam companion uploads are only accepted by the migration bundle route.",
-            retryable=False,
-            details={"unsupported_parts": unsupported_parts},
-        )
-
-
 def _reject_audio_companions_for_audio_route(parts: CreateJobCompanionPartsV2) -> None:
     unsupported_parts = []
     if parts.resources is not None:
         unsupported_parts.append("resources")
     if parts.reference_docx is not None:
         unsupported_parts.append("reference_docx")
-    if parts.graded_result_pdf is not None:
-        unsupported_parts.append("graded_result_pdf")
-    if parts.parity_pdf is not None:
-        unsupported_parts.append("parity_pdf")
-    if parts.digiexam_ingestion_overlay is not None:
-        unsupported_parts.append("digiexam_ingestion_overlay")
     if unsupported_parts:
         raise ServiceError(
             status_code=422,

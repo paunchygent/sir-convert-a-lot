@@ -4,14 +4,14 @@ id: RUN-SIRCON-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot
 title: Hemma TTS Sidecar Benchmark Runbook for Sir Convert-a-Lot
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 summary: Hemma TTS Sidecar Benchmark Runbook for Sir Convert-a-Lot
 system: hemma.hule.education
 retired_ids:
-- RUN-hemma-tts-sidecar-benchmarks
+  - RUN-hemma-tts-sidecar-benchmarks
 ---
 
 ## Trigger
@@ -31,7 +31,7 @@ retired_ids:
 ### Purpose
 
 Route Swedish TTS sidecar benchmark work without mixing it into conversion,
-deploy, or local answer-key LLM operations.
+deploy, or unrelated model operations.
 
 ### Route
 

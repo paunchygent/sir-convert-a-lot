@@ -342,6 +342,7 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     fake_bin = tmp_path / "fake-bin"
     fake_bin.mkdir(parents=True)
     _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
     log_file = tmp_path / "docker.log"
 
     env = os.environ.copy()
@@ -354,7 +355,11 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_prod"], env)
     assert result.returncode == 0
 
-    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    log_lines = [
+        line
+        for line in log_file.read_text(encoding="utf-8").splitlines()
+        if not line.startswith("sudo ")
+    ]
     assert log_lines[0].startswith(
         f"-f {REPO_ROOT / 'compose.yaml'} up -d --force-recreate --build sir_convert_a_lot_prod"
     )
@@ -365,6 +370,7 @@ def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: P
     fake_bin = tmp_path / "fake-bin"
     fake_bin.mkdir(parents=True)
     _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
     log_file = tmp_path / "docker.log"
     identity = _current_rocm_identity()
 
@@ -397,6 +403,7 @@ def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
     fake_bin = tmp_path / "fake-bin"
     fake_bin.mkdir(parents=True)
     _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
     log_file = tmp_path / "docker.log"
     identity = _current_rocm_identity()
 

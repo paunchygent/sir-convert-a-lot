@@ -4,14 +4,14 @@ id: REF-SIRCON-GENERAL-sir-convert-internalidentitycontextv1-authorization-profi
 title: Sir Convert InternalIdentityContextV1 Authorization Profile
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 summary: Sir Convert InternalIdentityContextV1 Authorization Profile
 retired_ids:
-- REF-sir-convert-internalidentitycontextv1-authorization-profile
+  - REF-sir-convert-internalidentitycontextv1-authorization-profile
 ---
 
 ## Overview
@@ -149,49 +149,13 @@ public conversion requires a separate accepted ADR/task.
 
 ### Caller Classes
 
-| Class | Allowed transport | Ownership source | Notes |
-| --- | --- | --- | --- |
-| Gateway product/browser | Gateway proxy route plus signed `InternalIdentityContextV1` | verified user context | Normal public/product lane. |
-| User-originated backend worker | Internal service transport plus the original Gateway-issued `InternalIdentityContextV1` | verified user context | A backend worker must not convert user work into global service-owned work. |
-| Non-browser internal service | Internal transport plus Sir-profiled service context using the canonical HuleEdu identity headers | verified service context | Requires explicit grants and must not use a separate Sir-signed issuer. |
-| Local operator | Tunnel/internal transport plus Sir-profiled operator context using the canonical HuleEdu identity headers | verified operator context | Must be auditable and distinct from product/browser work. |
-| Anonymous public | none | none | Reserved/fail-closed only. |
-
-### Public Exam Converter Grant Exception
-
-Task 291 defines a separate public grant exception for Skriptoteket's no-login
-Exam Converter lane. This exception does not change the
-`InternalIdentityContextV1` caller classes above and does not make anonymous
-public traffic an identity-bearing caller class.
-
-The only accepted public exception is a HuleEdu-signed
-`PublicConversionGrantV1` scoped to:
-
-- `source_app=skriptoteket`
-- `capability=documents.conversion_hub.exam_converter`
-- `route_key=digiexam_dxe_to_examnet_migration_bundle`
-- `source_format=digiexam_dxe`
-- `output_format=examnet_migration_bundle`
-- `allowed_targets` within `examnet_pdf` and `qti_package`
-
-Sir Convert verifies that grant through the DigiExam migration service
-API/artifact contract, persists `owner_kind=public_grant`, and authorizes only
-the public submit/status/result/artifact operations named there. This public
-grant is not user identity, service identity, operator identity, org or tenant
-authority, API-key ownership, browser session authority, or a shortcut for
-general public Sir Convert conversion.
-
-Public artifact manifest reads and named downloads require a matching
-`PublicArtifactReadLeaseV1` bound to the persisted public-grant job, owner
-digest, route, parent grant, artifact key, target snapshot, TTL, and correlation
-id. Expired or mismatched public grants and leases fail closed without falling
-back to authenticated user, service, operator, guest, or transport-key
-ownership.
-
-The public grant authority is paired with HuleEdu `TASK-0563` and the HuleEdu
-`REF-public-exam-converter-grant-v1-contract`. Skriptoteket `PR-0320` remains
-blocked until both the HuleEdu minting authority and Sir Convert verifier /
-ownership contract are accepted.
+| Class                          | Allowed transport                                                                                         | Ownership source          | Notes                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------- |
+| Gateway product/browser        | Gateway proxy route plus signed `InternalIdentityContextV1`                                               | verified user context     | Normal public/product lane.                                                 |
+| User-originated backend worker | Internal service transport plus the original Gateway-issued `InternalIdentityContextV1`                   | verified user context     | A backend worker must not convert user work into global service-owned work. |
+| Non-browser internal service   | Internal transport plus Sir-profiled service context using the canonical HuleEdu identity headers         | verified service context  | Requires explicit grants and must not use a separate Sir-signed issuer.     |
+| Local operator                 | Tunnel/internal transport plus Sir-profiled operator context using the canonical HuleEdu identity headers | verified operator context | Must be auditable and distinct from product/browser work.                   |
+| Anonymous public               | none                                                                                                      | none                      | Reserved/fail-closed only.                                                  |
 
 ### Minting Authority
 
@@ -244,25 +208,25 @@ therefore must be represented through allowed v1 fields such as `sub`,
 `active_context`; or the upstream HuleEdu contract must be extended through
 accepted HuleEdu governance before Sir Convert can consume a new version.
 
-| Field | Gateway product/browser | User-originated backend worker | Non-browser internal service | Local operator |
-| --- | --- | --- | --- | --- |
-| `context_version` | `1` | original Gateway value | `1` | `1` |
-| `iss` | `api_gateway_service` | original Gateway value | `api_gateway_service` | `api_gateway_service` |
-| `aud` | `sir-convert-a-lot` | original Gateway value | `sir-convert-a-lot` | `sir-convert-a-lot` |
-| `sub` | signed user subject | original Gateway user subject | `service:<registered-service-id>` | `operator:<operator-id>` |
-| `session_id` | browser session id | original Gateway browser session id | nonblank HuleEdu-minted handle `service-session:<jti>` | nonblank HuleEdu-minted handle `operator-session:<jti>` |
-| `org_id` | signed org, or `null` when product realm permits | original Gateway value | signed service scope org, or `null` | signed operator scope org, or `null` |
-| `tenant_id` | signed tenant, or `null` when product realm permits | original Gateway value | signed service scope tenant, or `null` | signed operator scope tenant, or `null` |
-| `roles` | signed user roles | original Gateway value | `["service"]` plus narrower HuleEdu roles when needed | `["operator"]` plus narrower HuleEdu roles when needed |
-| `grants` | Sir Convert grants derived from product entitlement | original Gateway value | explicit service grants only | explicit operator grants only |
-| `source_app` | product source app, for example `skriptoteket` | original Gateway value | registered service id, for example `projektveckor_portal` | operator wrapper id, for example `sir-convert-operator-cli` |
-| `active_app` | active product app when present | original Gateway value | omitted or registered service id | omitted or operator tool id |
-| `active_product_identity_realm` | product realm when required | original Gateway value | omitted | omitted |
-| `realm_subject_id` | product realm subject when required | original Gateway value | omitted | omitted |
-| `policy_version` | nonblank HuleEdu policy version | original Gateway value | nonblank HuleEdu service policy version | nonblank HuleEdu operator policy version |
-| `iat` / `exp` | HuleEdu Gateway TTL | original Gateway value | max 60 seconds unless HuleEdu contract tightens it | max 60 seconds unless HuleEdu contract tightens it |
-| `jti` | Gateway nonce | original Gateway value | HuleEdu-minted nonce | HuleEdu-minted nonce |
-| `active_context` | may include product/org context | original Gateway value | may include `{"sir_convert":{"workload_purpose":"service_conversion"}}` | may include `{"sir_convert":{"workload_purpose":"operator_conversion"}}` |
+| Field                           | Gateway product/browser                             | User-originated backend worker      | Non-browser internal service                                            | Local operator                                                           |
+| ------------------------------- | --------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `context_version`               | `1`                                                 | original Gateway value              | `1`                                                                     | `1`                                                                      |
+| `iss`                           | `api_gateway_service`                               | original Gateway value              | `api_gateway_service`                                                   | `api_gateway_service`                                                    |
+| `aud`                           | `sir-convert-a-lot`                                 | original Gateway value              | `sir-convert-a-lot`                                                     | `sir-convert-a-lot`                                                      |
+| `sub`                           | signed user subject                                 | original Gateway user subject       | `service:<registered-service-id>`                                       | `operator:<operator-id>`                                                 |
+| `session_id`                    | browser session id                                  | original Gateway browser session id | nonblank HuleEdu-minted handle `service-session:<jti>`                  | nonblank HuleEdu-minted handle `operator-session:<jti>`                  |
+| `org_id`                        | signed org, or `null` when product realm permits    | original Gateway value              | signed service scope org, or `null`                                     | signed operator scope org, or `null`                                     |
+| `tenant_id`                     | signed tenant, or `null` when product realm permits | original Gateway value              | signed service scope tenant, or `null`                                  | signed operator scope tenant, or `null`                                  |
+| `roles`                         | signed user roles                                   | original Gateway value              | `["service"]` plus narrower HuleEdu roles when needed                   | `["operator"]` plus narrower HuleEdu roles when needed                   |
+| `grants`                        | Sir Convert grants derived from product entitlement | original Gateway value              | explicit service grants only                                            | explicit operator grants only                                            |
+| `source_app`                    | product source app, for example `skriptoteket`      | original Gateway value              | registered service id, for example `projektveckor_portal`               | operator wrapper id, for example `sir-convert-operator-cli`              |
+| `active_app`                    | active product app when present                     | original Gateway value              | omitted or registered service id                                        | omitted or operator tool id                                              |
+| `active_product_identity_realm` | product realm when required                         | original Gateway value              | omitted                                                                 | omitted                                                                  |
+| `realm_subject_id`              | product realm subject when required                 | original Gateway value              | omitted                                                                 | omitted                                                                  |
+| `policy_version`                | nonblank HuleEdu policy version                     | original Gateway value              | nonblank HuleEdu service policy version                                 | nonblank HuleEdu operator policy version                                 |
+| `iat` / `exp`                   | HuleEdu Gateway TTL                                 | original Gateway value              | max 60 seconds unless HuleEdu contract tightens it                      | max 60 seconds unless HuleEdu contract tightens it                       |
+| `jti`                           | Gateway nonce                                       | original Gateway value              | HuleEdu-minted nonce                                                    | HuleEdu-minted nonce                                                     |
+| `active_context`                | may include product/org context                     | original Gateway value              | may include `{"sir_convert":{"workload_purpose":"service_conversion"}}` | may include `{"sir_convert":{"workload_purpose":"operator_conversion"}}` |
 
 The non-browser `session_id` values are not browser sessions. They are
 short-lived signed HuleEdu session handles used only to satisfy the upstream
@@ -366,19 +330,19 @@ permissions.
 
 ### Route Authorization
 
-| Route family | Required ownership/grant rule |
-| --- | --- |
-| `POST /v2/convert/jobs` | Valid context plus `sir-convert:jobs:create`; job owner is persisted from context. |
-| `GET /v2/convert/jobs/{job_id}` | Same persisted owner or explicit operator/service grant. |
-| `GET /v2/convert/jobs/{job_id}/result` | Same persisted owner or explicit operator/service grant. |
-| `GET /v2/convert/jobs/{job_id}/artifact` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant. |
-| `GET /v2/convert/jobs/{job_id}/artifacts` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant. |
-| `GET /v2/convert/jobs/{job_id}/artifacts/{artifact_key}` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant. |
-| `POST /v2/convert/jobs/{job_id}/cancel` | Same persisted owner plus `sir-convert:jobs:cancel-own`, or explicit operator/service grant. |
-| partial, checkpoint, resume, and SSE routes | Same owner rule as the parent job route. |
-| `GET /v2/templates/docx*` | Valid context plus `sir-convert:templates:read`, unless explicitly reduced to an internal unauthenticated catalog in a later accepted decision. |
-| template mutation routes | Valid context plus `sir-convert:templates:manage`. |
-| webhook subscription routes | Valid context plus `sir-convert:webhooks:manage`; browser public routes must not expose this surface directly. |
+| Route family                                             | Required ownership/grant rule                                                                                                                   |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v2/convert/jobs`                                  | Valid context plus `sir-convert:jobs:create`; job owner is persisted from context.                                                              |
+| `GET /v2/convert/jobs/{job_id}`                          | Same persisted owner or explicit operator/service grant.                                                                                        |
+| `GET /v2/convert/jobs/{job_id}/result`                   | Same persisted owner or explicit operator/service grant.                                                                                        |
+| `GET /v2/convert/jobs/{job_id}/artifact`                 | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant.                                                 |
+| `GET /v2/convert/jobs/{job_id}/artifacts`                | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant.                                                 |
+| `GET /v2/convert/jobs/{job_id}/artifacts/{artifact_key}` | Same persisted owner plus `sir-convert:artifacts:read-own`, or explicit operator/service grant.                                                 |
+| `POST /v2/convert/jobs/{job_id}/cancel`                  | Same persisted owner plus `sir-convert:jobs:cancel-own`, or explicit operator/service grant.                                                    |
+| partial, checkpoint, resume, and SSE routes              | Same owner rule as the parent job route.                                                                                                        |
+| `GET /v2/templates/docx*`                                | Valid context plus `sir-convert:templates:read`, unless explicitly reduced to an internal unauthenticated catalog in a later accepted decision. |
+| template mutation routes                                 | Valid context plus `sir-convert:templates:manage`.                                                                                              |
+| webhook subscription routes                              | Valid context plus `sir-convert:webhooks:manage`; browser public routes must not expose this surface directly.                                  |
 
 Cross-owner reads and artifact downloads fail closed with `403`, even when the
 request has a valid transport API key.

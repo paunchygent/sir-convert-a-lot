@@ -29,9 +29,6 @@ from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client
     UnconfiguredAudioTranscriptionSidecarClient,
 )
 from scripts.sir_convert_a_lot.infrastructure.conversion_backend import ConversionBackend
-from scripts.sir_convert_a_lot.infrastructure.digiexam_migration_bundle_builder import (
-    execute_digiexam_migration_bundle_job,
-)
 from scripts.sir_convert_a_lot.infrastructure.resources_zip import (
     ResourcesZipError,
     extract_resources_zip,
@@ -182,14 +179,6 @@ def execute_v2_job_conversion(
     precomputed_artifact_bytes: bytes | None = None
 
     if (
-        job.source_format == SourceFormatV2.DIGIEXAM_DXE
-        and job.output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE
-    ):
-        bundle_result = execute_digiexam_migration_bundle_job(job=job, config=config)
-        pipeline_used = "digiexam_dxe_to_examnet_migration_bundle_v2"
-        warnings = list(bundle_result.warnings)
-        phase_timings_ms = dict(bundle_result.phase_timings_ms)
-    elif (
         job.source_format == SourceFormatV2.AUDIO
         and job.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
     ):

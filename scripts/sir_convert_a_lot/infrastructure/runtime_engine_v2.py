@@ -19,17 +19,9 @@ from uuid import uuid4
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
-from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
-    StructuredLLMAdmittedRouteSnapshot,
-)
 from scripts.sir_convert_a_lot.infrastructure.audio_transcription_sidecar_client import (
     AudioTranscriptionSidecarClient,
     build_audio_transcription_sidecar_client,
-)
-from scripts.sir_convert_a_lot.infrastructure.digiexam_job_companion_paths_v2 import (
-    graded_result_pdf_path_for_upload,
-    ingestion_overlay_path_for_upload,
-    parity_pdf_path_for_upload,
 )
 from scripts.sir_convert_a_lot.infrastructure.docling_backend import DoclingConversionBackend
 from scripts.sir_convert_a_lot.infrastructure.idempotency_store import IdempotencyStore
@@ -305,7 +297,6 @@ class ServiceRuntimeV2:
             failure_message=record.failure_message,
             failure_retryable=record.failure_retryable,
             failure_details=record.failure_details,
-            structured_llm_admission=record.structured_llm_admission,
         )
 
     def read_terminal_artifact(
@@ -397,10 +388,6 @@ class ServiceRuntimeV2:
         upload_bytes: bytes,
         resources_zip_bytes: bytes | None,
         reference_docx_bytes: bytes | None,
-        graded_result_pdf_bytes: bytes | None = None,
-        parity_pdf_bytes: bytes | None = None,
-        digiexam_ingestion_overlay_bytes: bytes | None = None,
-        structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None,
     ) -> StoredJobV2:
         preflight_pdf_ocr_or_raise(
             spec=spec,
@@ -417,18 +404,7 @@ class ServiceRuntimeV2:
             upload_bytes=upload_bytes,
             resources_zip_bytes=resources_zip_bytes,
             reference_docx_bytes=reference_docx_bytes,
-            structured_llm_admission=structured_llm_admission,
         )
-        if graded_result_pdf_bytes is not None:
-            graded_result_pdf_path_for_upload(record.upload_path).write_bytes(
-                graded_result_pdf_bytes
-            )
-        if parity_pdf_bytes is not None:
-            parity_pdf_path_for_upload(record.upload_path).write_bytes(parity_pdf_bytes)
-        if digiexam_ingestion_overlay_bytes is not None:
-            ingestion_overlay_path_for_upload(record.upload_path).write_bytes(
-                digiexam_ingestion_overlay_bytes
-            )
         stored = self.get_job(record.job_id)
         if stored is None:
             raise RuntimeError("created v2 job must be loadable immediately")

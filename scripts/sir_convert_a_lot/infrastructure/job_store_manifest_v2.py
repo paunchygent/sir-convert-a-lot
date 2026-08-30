@@ -17,11 +17,6 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
-from scripts.sir_convert_a_lot.domain.structured_llm_admission import (
-    StructuredLLMAdmittedRouteSnapshot,
-    admitted_route_snapshot_from_json,
-    admitted_route_snapshot_to_json,
-)
 from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     dt_from_rfc3339,
     dt_to_rfc3339,
@@ -98,7 +93,6 @@ def build_initial_manifest(
     pinned: bool,
     raw_expires_at: datetime,
     artifact_expires_at: datetime,
-    structured_llm_admission: StructuredLLMAdmittedRouteSnapshot | None = None,
 ) -> dict[str, object]:
     """Build initial on-disk manifest structure for a newly created v2 job."""
     return {
@@ -141,11 +135,6 @@ def build_initial_manifest(
             "last_heartbeat_at": dt_to_rfc3339(now),
             "current_phase_started_at": dt_to_rfc3339(now),
             "phase_timings_ms": {},
-            "structured_llm_admission": (
-                admitted_route_snapshot_to_json(structured_llm_admission)
-                if structured_llm_admission is not None
-                else None
-            ),
         },
     }
 
@@ -228,9 +217,6 @@ def parse_stored_job_record(
     last_heartbeat_at = dt_from_rfc3339(diagnostics_obj.get("last_heartbeat_at"))
     current_phase_started_at = dt_from_rfc3339(diagnostics_obj.get("current_phase_started_at"))
     phase_timings_ms = parse_phase_timings(diagnostics_obj)
-    structured_llm_admission = admitted_route_snapshot_from_json(
-        diagnostics_obj.get("structured_llm_admission")
-    )
     if (
         status in {JobStatus.SUCCEEDED, JobStatus.FAILED}
         and TIMING_KEY_FINAL_ARTIFACT_PERSIST_MS not in phase_timings_ms
@@ -450,5 +436,4 @@ def parse_stored_job_record(
         failure_message=failure_message,
         failure_retryable=failure_retryable,
         failure_details=failure_details,
-        structured_llm_admission=structured_llm_admission,
     )

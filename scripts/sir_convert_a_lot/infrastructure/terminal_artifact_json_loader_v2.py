@@ -5,7 +5,7 @@ Purpose:
     object-store boundary for cold primary bundle manifests.
 
 Relationships:
-    - Used by DigiExam private and public bundle manifest routes.
+    - Supports routes that expose JSON terminal artifacts.
     - Delegates object reads to `TerminalArtifactStore` without exposing SDK
       details to route handlers.
 """

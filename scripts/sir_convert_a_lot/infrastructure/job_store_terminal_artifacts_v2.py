@@ -15,9 +15,6 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from scripts.sir_convert_a_lot.domain.digiexam_migration_bundle_contracts import (
-    ARTIFACT_DEFINITIONS,
-)
 from scripts.sir_convert_a_lot.domain.specs_v2 import OutputFormatV2
 from scripts.sir_convert_a_lot.domain.transcript_formatter_artifacts import (
     TRANSCRIPT_FORMATTER_ARTIFACT_DEFINITIONS,
@@ -60,17 +57,6 @@ def persist_terminal_artifact_objects_v2(
             )
         )
     }
-    if output_format == OutputFormatV2.EXAMNET_MIGRATION_BUNDLE:
-        refs["bundle_manifest"] = refs["primary"]
-        refs.update(
-            _persist_digiexam_named_artifacts(
-                object_store=object_store,
-                job_id=job_id,
-                route_key=route_key,
-                owner_scope_sha256=owner_scope_sha256,
-                artifacts_dir=artifact_path.parent,
-            )
-        )
     if output_format == OutputFormatV2.TRANSCRIPT_BUNDLE:
         refs[TRANSCRIPT_JSON_ARTIFACT_KEY] = refs["primary"]
         refs.update(
@@ -80,36 +66,6 @@ def persist_terminal_artifact_objects_v2(
                 route_key=route_key,
                 owner_scope_sha256=owner_scope_sha256,
                 artifacts_dir=artifact_path.parent,
-            )
-        )
-    return refs
-
-
-def _persist_digiexam_named_artifacts(
-    *,
-    object_store: TerminalArtifactStore,
-    job_id: str,
-    route_key: str,
-    owner_scope_sha256: str,
-    artifacts_dir: Path,
-) -> dict[str, TerminalArtifactObjectRef]:
-    refs: dict[str, TerminalArtifactObjectRef] = {}
-    for artifact_key, definition in ARTIFACT_DEFINITIONS.items():
-        if artifact_key.value == "bundle_manifest":
-            continue
-        path = artifacts_dir / definition.filename
-        if not path.exists():
-            continue
-        refs[artifact_key.value] = object_store.put_artifact(
-            TerminalArtifactWriteRequest(
-                job_id=job_id,
-                route_key=route_key,
-                owner_scope_sha256=owner_scope_sha256,
-                artifact_class="terminal_bundle",
-                artifact_key=artifact_key.value,
-                filename=definition.filename,
-                content_type=definition.content_type,
-                payload=path.read_bytes(),
             )
         )
     return refs
