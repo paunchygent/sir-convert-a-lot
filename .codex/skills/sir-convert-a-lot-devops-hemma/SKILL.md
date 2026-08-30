@@ -7,6 +7,18 @@ description: >-
 
 # Sir Convert-a-Lot DevOps (Hemma + GPU)
 
+## Active Exclusive-Qwen Hold
+
+Hemma's GPU is reserved for the private Qwen CJ experiment. Read the shared
+`hemma-devops` skill and its
+`references/hemma-exclusive-qwen-cj-gpu-hold.md` before any Hemma action.
+
+Do not start or restore Sir production, GPU worker, STT, Qwen, speech,
+diarization, TTS, training, benchmark, or other GPU profiles while the existing
+production contract includes the GPU worker. This is a runtime hold, not code
+removal, and remains active until the user explicitly lifts it. Skriptoteket's
+temporary provider routing is owned in Skriptoteket, not here.
+
 ## Use When
 
 - Operating or troubleshooting Sir Convert-a-Lot on Hemma.
@@ -17,15 +29,15 @@ description: >-
 ## Read Order
 
 1. `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
-1. Route from that doorway to the focused runbook:
+2. Route from that doorway to the focused runbook:
    - `docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot-hemma-service-operations-runbook-for-sir-convert-a-lot.md`
    - `docs/runbooks/run-sircon-hemma-gpu-runtime-runbook-for-sir-convert-a-lot-hemma-gpu-runtime-runbook-for-sir-convert-a-lot.md`
    - `docs/runbooks/run-sircon-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot.md`
    - `docs/runbooks/run-sircon-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot.md`
-1. For STT proof lanes, audio admission timing, or formatter replay failures
+3. For STT proof lanes, audio admission timing, or formatter replay failures
    observed during downstream proof, read:
    - `docs/reference/ref-sircon-general-stt-proof-lanes-and-admission-operations-stt-proof-lanes-and-admission-operations.md`
-1. For public contracts, read:
+4. For public contracts, read:
    - `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md`
    - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md`
    - `docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md`
@@ -33,16 +45,17 @@ description: >-
 ## Workflow
 
 1. Confirm the governed task/reference/ADR surface before changing runtime behavior.
-1. Use `pdm run run-hemma -- ...` from the local repo root for remote commands.
-1. Use committed detached runners for long Hemma jobs.
-1. Record durable findings in the governing task, reference, ADR, or runbook.
-1. Keep this `SKILL.md` as a router; do not add task logs or command dumps here.
+2. Use `pdm run run-hemma -- ...` from the local repo root for remote commands.
+3. Use committed detached runners for long Hemma jobs.
+4. Record durable findings in the governing task, reference, ADR, or runbook.
+5. Keep this `SKILL.md` as a router; do not add task logs or command dumps here.
 
 ## Global Invariants
 
 - Canonical remote repo root: `/home/paunchygent/apps/sir-convert-a-lot`.
 - Canonical client tunnel lane: `http://127.0.0.1:28085`.
-- GPU/offload work is GPU-first; no silent CPU fallback.
+- Outside the active experiment hold, GPU/offload work is GPU-first. During the
+  hold, Sir production and all Sir GPU/offload work stay stopped.
 - STT proof work runs local/downstream proof before native Hemma production
   proof, and review starts only after both live proofs pass.
 - Formatter replay export failures during STT/downstream proof are not the

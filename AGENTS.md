@@ -17,7 +17,12 @@ keep product facts in references, ADRs, and backlog items.
   `pdm run run-hemma -- ...` wrapper or a committed command surface.
 - From MacBook/client sessions, `run-hemma` SSHes to Hemma; from the canonical
   Hemma Server repo, it executes locally after host/root/skill-repository checks.
-- GPU/offload work is GPU-first and decision-governed.
+- Current Hemma operating state: the GPU is reserved exclusively for the
+  private Qwen CJ experiment. Sir GPU worker, STT, Qwen sidecars, training,
+  benchmark, and other GPU profiles are on hold and must not start. Read
+  `hemma-devops` and
+  `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md` before any Hemma
+  runtime action.
 
 ## Session Start
 
@@ -39,6 +44,7 @@ product workflow, or command-wrapper context.
 | Next-session or developer handoff messages                                | `agent-session-handoff` plus its Sir Convert-a-Lot reference                                  |
 | Local dev, PDM scripts, wrappers, local Docker, dependency workflow       | `local-devops` plus its Sir Convert-a-Lot reference                                           |
 | Hemma deploys, remote operations, shared host runtime, GPU/offload lanes  | `hemma-devops` plus `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md` when Sir-specific |
+| Current exclusive-Qwen GPU hold and prohibited Sir/Hule GPU starts        | `hemma-devops`, then its active Hemma GPU-hold reference                                      |
 | Sir Convert client usage from other repos or operator workflows           | `sir-convert-a-lot-client`                                                                    |
 | Qwen3-TTS fine-tuning, preprocessing, evaluation, and promotion decisions | `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`                                    |
 | Speech-model fine-tuning beyond Qwen-specific guidance                    | `.codex/skills/speech-model-finetuning-on-hemma/SKILL.md`                                     |
