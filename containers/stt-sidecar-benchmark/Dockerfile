@@ -20,11 +20,11 @@ ARG CTRANSLATE2_VERSION=4.8.0
 ARG CTRANSLATE2_RELEASE_BASE_URL=https://github.com/OpenNMT/CTranslate2/releases/download
 ARG CTRANSLATE2_ROCM_WHEELS_ARCHIVE=rocm-python-wheels-Linux.zip
 ARG CTRANSLATE2_ROCM_WHEELS_SHA256=9ec6d82e5682b27af6c535f56525665c949cc63fbef14a9028c47b0164717143
-ARG CTRANSLATE2_ROCM_WHEEL=ctranslate2-4.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-ARG CTRANSLATE2_PYTHON_PACKAGE_DIR=/app/.venv/lib/python3.11/site-packages/ctranslate2
-ARG CTRANSLATE2_WHEEL_LIBRARY_DIR=/app/.venv/lib/python3.11/site-packages/ctranslate2.libs
+ARG CTRANSLATE2_ROCM_WHEEL=ctranslate2-4.8.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+ARG CTRANSLATE2_PYTHON_PACKAGE_DIR=/app/.venv/lib/python3.12/site-packages/ctranslate2
+ARG CTRANSLATE2_WHEEL_LIBRARY_DIR=/app/.venv/lib/python3.12/site-packages/ctranslate2.libs
 ARG CTRANSLATE2_ROCM_RUNTIME_LIBRARY_DIR=/opt/ctranslate2-rocm-libraries
-ARG TORCH_ROCM_LIBRARY_DIR=/app/.venv/lib/python3.11/site-packages/torch/lib
+ARG TORCH_ROCM_LIBRARY_DIR=/app/.venv/lib/python3.12/site-packages/torch/lib
 
 ENV HF_HOME=/cache/huggingface
 ENV HF_HUB_CACHE=/cache/huggingface/hub
