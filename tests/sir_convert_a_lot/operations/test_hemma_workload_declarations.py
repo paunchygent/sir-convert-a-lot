@@ -74,7 +74,7 @@ class StatefulRunner:
         raise AssertionError(f"unexpected command: {argv}")
 
 
-def test_registry_declares_closed_symmetric_sir_gpu_workloads() -> None:
+def test_registry_declares_sir_gpu_workloads_and_passive_reserved_edge() -> None:
     registry = hemma_workload.sir_workload_registry(
         runner=QueueRunner([]), project_root=Path("/srv/sir")
     )
@@ -85,21 +85,30 @@ def test_registry_declares_closed_symmetric_sir_gpu_workloads() -> None:
             hemma_workload.PRODUCTION_WORKLOAD_ID,
             hemma_workload.STT_WORKLOAD_ID,
             hemma_workload.QWEN_WORKLOAD_ID,
+            hemma_workload.RESERVED_EDGE_WORKLOAD_ID,
         }
     )
     production = registry.declaration(hemma_workload.PRODUCTION_WORKLOAD_ID)
     stt = registry.declaration(hemma_workload.STT_WORKLOAD_ID)
     qwen = registry.declaration(hemma_workload.QWEN_WORKLOAD_ID)
+    reserved_edge = registry.declaration(hemma_workload.RESERVED_EDGE_WORKLOAD_ID)
     assert production.service_identities == (
         hemma_workload.API_CONTAINER,
         hemma_workload.GPU_WORKER_CONTAINER,
     )
     assert stt.service_identities == (hemma_workload.STT_CONTAINER,)
     assert qwen.service_identities == (hemma_workload.QWEN_CONTAINER,)
-    for declaration in registry.declarations:
+    assert reserved_edge.service_identities == (hemma_workload.RESERVED_EDGE_CONTAINER,)
+    for declaration in (production, stt, qwen):
         assert declaration.resource_claims == frozenset({"gpu:amdgpu"})
         assert declaration.dependencies == ()
         assert declaration.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
+    assert reserved_edge.resource_claims == frozenset({hemma_workload.PRODUCT_RESOURCE_CLAIM})
+    assert reserved_edge.dependencies == ()
+    assert reserved_edge.conflicts == frozenset()
+    assert reserved_edge.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
+    assert hemma_workload.RESERVED_EDGE_CONTAINER not in hemma_workload.PRODUCTION_CONTAINERS
+    assert hemma_workload.RESERVED_EDGE_CONTAINER not in hemma_workload.DECLARED_GPU_CONTAINERS
     assert production.conflicts == frozenset(
         {hemma_workload.STT_WORKLOAD_ID, hemma_workload.QWEN_WORKLOAD_ID}
     )
