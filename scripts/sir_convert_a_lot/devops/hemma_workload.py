@@ -43,9 +43,11 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_runtime import (
 
 HOST_IDENTITY = "hemma"
 GPU_CLAIM = "gpu:amdgpu"
+PRODUCT_RESOURCE_CLAIM = "product:sir"
 PRODUCTION_WORKLOAD_ID = "sir-production"
 STT_WORKLOAD_ID = "sir-stt-sidecar"
 QWEN_WORKLOAD_ID = "sir-qwen-answer-key"
+RESERVED_EDGE_WORKLOAD_ID = "sir-public-reserved-edge"
 API_CONTAINER = "sir_convert_a_lot_prod"
 GPU_WORKER_CONTAINER = "sir_convert_a_lot_gpu_worker"
 STT_CONTAINER = "sir_convert_a_lot_stt_sidecar"
@@ -291,13 +293,21 @@ class GpuProcess:
 
 
 class SirGpuInventory:
-    """Inventory exact Sir GPU workloads and fail closed on unknown consumers."""
+    """Inventory exact Sir workloads and fail closed on unknown GPU consumers."""
 
     def __init__(self, runner: CommandExecutor) -> None:
         self._runner = runner
 
     def inspect(self, resource_claims: frozenset[str]) -> InventorySnapshot:
         try:
+            if resource_claims == frozenset({PRODUCT_RESOURCE_CLAIM}):
+                running = _running_containers(self._runner)
+                product_workloads = (
+                    frozenset({RESERVED_EDGE_WORKLOAD_ID})
+                    if RESERVED_EDGE_CONTAINER in running
+                    else frozenset()
+                )
+                return InventorySnapshot(product_workloads, ())
             if resource_claims != frozenset({GPU_CLAIM}):
                 raise ValueError(f"Sir inventory cannot inspect claims {sorted(resource_claims)}")
             running = _running_containers(self._runner)
@@ -364,6 +374,19 @@ def sir_workload_registry(
                 frozenset({GPU_CLAIM}),
                 frozenset({PRODUCTION_WORKLOAD_ID, STT_WORKLOAD_ID}),
                 ContainerWorkloadAdapter(QWEN_WORKLOAD_ID, QWEN_CONTAINER, command_runner),
+                frozenset({TerminalOutcome.SUCCEEDED}),
+            ),
+            WorkloadDeclaration(
+                RESERVED_EDGE_WORKLOAD_ID,
+                (RESERVED_EDGE_CONTAINER,),
+                (),
+                frozenset({PRODUCT_RESOURCE_CLAIM}),
+                frozenset(),
+                ContainerWorkloadAdapter(
+                    RESERVED_EDGE_WORKLOAD_ID,
+                    RESERVED_EDGE_CONTAINER,
+                    command_runner,
+                ),
                 frozenset({TerminalOutcome.SUCCEEDED}),
             ),
         ),
