@@ -19,43 +19,43 @@ canonical execution surface.
 
 Top-level layout:
 
-| Path                 | Holds                                                                     |
-| -------------------- | ------------------------------------------------------------------------- |
-| `AGENTS.md`          | Repository route list and command policy; the boot router                 |
-| `README.md`          | Human quickstart, conversion routes, and core commands                    |
-| `scripts/`           | All application code, plus the docs-as-code and devops entry points       |
-| `services/`          | Ownership-scoped test packages (`api_gateway_service/tests`)              |
-| `containers/`        | Sidecar and finetune container definitions                                |
-| `docker/`            | Public-edge and service-dependency image lanes                            |
-| `qwen/`              | Isolated Qwen research dependency boundary with its own lock and tests    |
-| `colab_ml_training/` | Colab notebook and proof inputs for portable ML slices                    |
-| `tests/`             | Root unit and fixture suites                                              |
-| `docs/`              | Governed docs-as-code surface plus generated indexes and OpenAPI          |
-| `build/`             | Generated benchmark, evaluation, and proof artifact trees                 |
-| `data/`, `inputs/`   | Corpus and sample inputs used by conversion and benchmark runs            |
-| `.codex/`            | Repo-local agent lane: skills, handoff, long-term memory                  |
-| `.archive/`          | Retired governed documents                                                |
+| Path                 | Holds                                                                  |
+| -------------------- | ---------------------------------------------------------------------- |
+| `AGENTS.md`          | Repository route list and command policy; the boot router              |
+| `README.md`          | Human quickstart, conversion routes, and core commands                 |
+| `scripts/`           | All application code, plus the docs-as-code and devops entry points    |
+| `services/`          | Ownership-scoped test packages (`api_gateway_service/tests`)           |
+| `containers/`        | Sidecar and finetune container definitions                             |
+| `docker/`            | Public-edge and service-dependency image lanes                         |
+| `qwen/`              | Isolated Qwen research dependency boundary with its own lock and tests |
+| `colab_ml_training/` | Colab notebook and proof inputs for portable ML slices                 |
+| `tests/`             | Root unit and fixture suites                                           |
+| `docs/`              | Governed docs-as-code surface plus generated indexes and OpenAPI       |
+| `build/`             | Generated benchmark, evaluation, and proof artifact trees              |
+| `data/`, `inputs/`   | Corpus and sample inputs used by conversion and benchmark runs         |
+| `.codex/`            | Repo-local agent lane: skills, handoff, long-term memory               |
+| `.archive/`          | Retired governed documents                                             |
 
 Deploy surfaces are `compose.yaml` (prod), `compose.local.yaml` (CPU-only
 laptop debug), and `compose.remote-proof.yaml`, with `Dockerfile`,
-`Dockerfile.deps`, `Dockerfile.local`, and `Dockerfile.qwen-provider`.
+`Dockerfile.deps`, `Dockerfile.local`.
 
 ## 2. `scripts/sir_convert_a_lot/` — The Application
 
 Despite sitting under `scripts/`, this package is the product. It follows a
 layered shape with the v2 contract as the stable seam:
 
-| Layer             | Holds                                                                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `domain/`         | Conversion contracts, policies, and the DigiExam answer-key model: completion, GBNF grammar, projections, live-validation goldens |
-| `application/`    | Use cases: exam-authoring corrections, answer-key review state, correction replay artifacts and overlays, source-state projection |
+| Layer             | Holds                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain/`         | Conversion contracts, policies, and the DigiExam answer-key model: completion, GBNF grammar, projections, live-validation goldens     |
+| `application/`    | Use cases: exam-authoring corrections, answer-key review state, correction replay artifacts and overlays, source-state projection     |
 | `infrastructure/` | Adapters: answer-key provider profiles (OpenAI, DeepSeek, local), audio transcript chunking, merging, alignment, checkpoints, bundles |
-| `interfaces/`     | The delivery surface: `http_api.py` and `http_routes_*_v2.py` for the REST v2 API, `cli_app.py` and `cli_*_v2.py` for the CLI     |
-| `integrations/`   | Adapter profiles for downstream consumers                                                                                       |
-| `benchmarking/`   | PDF throughput, OCR runtime preflight, runtime parity, and scientific-corpus harnesses                                          |
-| `stt_sidecar/`    | The speech-to-text sidecar application: factory, runtime, model lifecycle, media and audio normalization                        |
-| `ml/`             | Qwen model work that stays inside the main dependency boundary                                                                  |
-| `service.py`      | The service entry point, with `service_local.py` and `service_remote_proof.py` variants                                         |
+| `interfaces/`     | The delivery surface: `http_api.py` and `http_routes_*_v2.py` for the REST v2 API, `cli_app.py` and `cli_*_v2.py` for the CLI         |
+| `integrations/`   | Adapter profiles for downstream consumers                                                                                             |
+| `benchmarking/`   | PDF throughput, OCR runtime preflight, runtime parity, and scientific-corpus harnesses                                                |
+| `stt_sidecar/`    | The speech-to-text sidecar application: factory, runtime, model lifecycle, media and audio normalization                              |
+| `ml/`             | Qwen model work that stays inside the main dependency boundary                                                                        |
+| `service.py`      | The service entry point, with `service_local.py` and `service_remote_proof.py` variants                                               |
 
 `scripts/docs_as_code/` and `scripts/devops/` sit beside it: the governance
 entry points and the named shell wrappers for compose, Hemma commands, prod

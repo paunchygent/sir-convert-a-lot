@@ -37,7 +37,6 @@ SELECTED_NAMES = frozenset((API_SERVICE, WORKER_SERVICE))
 EXPLICIT_EXCLUDED_NAMES = frozenset(
     (
         "sir_convert_a_lot_stt_sidecar",
-        "sir_convert_qwen_answer_key",
         "sir_convert_a_lot_public_reserved",
     )
 )

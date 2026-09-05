@@ -38,7 +38,7 @@ Top-level layout:
 
 Deploy surfaces are `compose.yaml` (prod), `compose.local.yaml` (CPU-only
 laptop debug), and `compose.remote-proof.yaml`, with `Dockerfile`,
-`Dockerfile.deps`, `Dockerfile.local`, and `Dockerfile.qwen-provider`.
+`Dockerfile.deps`, `Dockerfile.local`.
 
 ## 2. `scripts/sir_convert_a_lot/` — The Application
 

@@ -122,92 +122,21 @@ def test_compose_declares_private_stt_sidecar_runtime() -> None:
     assert health_obj.get("start_period") == "120s"
 
 
-def test_compose_declares_private_qwen_provider_runtime() -> None:
+def test_compose_has_no_answer_key_sidecar() -> None:
     compose = _load_compose()
-    service = _require_service(compose, "sir_convert_qwen_answer_key")
-
-    assert service.get("profiles") == ["qwen-answer-key"]
-    assert service.get("image") == (
-        "sir-convert-qwen-llama-runtime:${SIR_CONVERT_A_LOT_QWEN_PROVIDER_IMAGE_TAG:-local}"
-    )
-    assert service.get("container_name") == "sir_convert_qwen_answer_key"
-    assert service.get("restart") == "unless-stopped"
-    assert service.get("ports") is None
-    assert service.get("expose") == ["8082"]
-    env_map = _service_env_map(service)
-    assert env_map["LD_LIBRARY_PATH"] == (
-        "${SIR_CONVERT_A_LOT_QWEN_ROCM_LIBRARY_PATH:-"
-        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_devel/lib:"
-        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_libraries_gfx120X_all/lib:"
-        "/opt/python/lib/python3.12/site-packages/_rocm_sdk_core/lib:"
-        "/usr/lib/x86_64-linux-gnu}"
-    )
-
-    build_obj = service.get("build")
-    assert isinstance(build_obj, dict)
-    assert build_obj.get("context") == "."
-    assert build_obj.get("dockerfile") == "Dockerfile.qwen-provider"
-
-    command = service.get("command")
-    assert isinstance(command, list)
-    joined_command = " ".join(str(item) for item in command)
-    assert "/srv/scratch/sir-convert-a-lot/bin/llama-server" in command
-    assert "-hf ${SIR_CONVERT_A_LOT_QWEN36_HF_REPO:-unsloth/Qwen3.6-27B-MTP-GGUF}" in (
-        joined_command
-    )
-    assert "-hff ${SIR_CONVERT_A_LOT_QWEN36_HF_FILE:-Qwen3.6-27B-Q6_K.gguf}" in joined_command
-    assert "--alias ${SIR_CONVERT_A_LOT_QWEN36_MODEL:-qwen3.6-27b-q6k-mtp}" in joined_command
-    assert "--host 0.0.0.0 --port 8082" in joined_command
-    assert "--ctx-size 16384" in joined_command
-    assert "--parallel 1" in joined_command
-    assert "--n-gpu-layers all" in joined_command
-    assert "--fit off" in joined_command
-    assert "--flash-attn on" in joined_command
-    assert "--jinja" in command
-    assert "--reasoning off" in joined_command
-    assert "--temp ${SIR_CONVERT_A_LOT_QWEN36_TEMPERATURE:-0.15}" in joined_command
-    assert "--offline" in command
-    assert "--spec-type draft-mtp" in joined_command
-    assert "--spec-draft-n-max 2" in joined_command
-    assert "--top-p" not in command
-    assert "--top-k" not in command
-
-    assert service.get("devices") == ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
-    assert service.get("group_add") == [
-        "${SIR_CONVERT_A_LOT_GPU_VIDEO_GROUP_ID:-44}",
-        "${SIR_CONVERT_A_LOT_GPU_RENDER_GROUP_ID:-993}",
-    ]
-    assert service.get("networks") == ["hule-network"]
-    volumes = service.get("volumes")
-    assert isinstance(volumes, list)
-    assert volumes == [
-        (
-            "${SIR_CONVERT_A_LOT_QWEN_LLAMA_SERVER_HOST_PATH:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/build/"
-            "llama.cpp-qwen35/build-hip/bin/llama-server}:"
-            "/srv/scratch/sir-convert-a-lot/bin/llama-server:ro"
-        ),
-        (
-            "${SIR_CONVERT_A_LOT_QWEN_DOCKER_BUILD_HOST_PATH:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/build}:"
-            "/srv/scratch/sir-convert-a-lot/build"
-        ),
-        (
-            "${SIR_CONVERT_A_LOT_QWEN_DOCKER_CACHE_HOST_PATH:-"
-            "/home/paunchygent/.data/sir-convert-a-lot/cache}:"
-            "/srv/scratch/sir-convert-a-lot/cache"
-        ),
-    ]
-    assert all("/opt/rocm" not in str(volume) for volume in volumes)
-    assert all("/opt/amdgpu" not in str(volume) for volume in volumes)
-
-    health_obj = service.get("healthcheck")
-    assert isinstance(health_obj, dict)
-    health_test = health_obj.get("test")
-    assert isinstance(health_test, list)
-    assert "http://localhost:8082/v1/models" in " ".join(str(item) for item in health_test)
-    assert health_obj.get("retries") == 20
-    assert health_obj.get("start_period") == "120s"
+    services_obj = compose.get("services")
+    assert isinstance(services_obj, dict)
+    assert "sir_convert_qwen_answer_key" not in services_obj
+    for service_name, service_obj in services_obj.items():
+        assert isinstance(service_obj, dict)
+        assert service_obj.get("profiles") != ["qwen-answer-key"]
+        assert "sir-convert-qwen-llama-runtime" not in str(service_obj.get("image"))
+        build_obj = service_obj.get("build")
+        if isinstance(build_obj, dict):
+            assert build_obj.get("dockerfile") != "Dockerfile.qwen-provider"
+        expose = service_obj.get("expose", [])
+        assert isinstance(expose, list)
+        assert "8082" not in [str(item) for item in expose], service_name
 
 
 def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:

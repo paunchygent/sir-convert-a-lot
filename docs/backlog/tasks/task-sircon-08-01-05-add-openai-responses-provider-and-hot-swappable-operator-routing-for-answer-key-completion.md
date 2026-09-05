@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-01-05
 title: Add OpenAI Responses provider and hot-swappable operator routing for answer-key completion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,41 +17,24 @@ closeout_review:
 story: ST-SIRCON-08-01
 task_kind: story
 acceptance_criteria:
-- '- [x] Sir Convert can configure an `openai_responses` provider profile using Responses structured output and the same source-neutral
-  answer-key schemas used by the local provider path.'
-- '- [x] The OpenAI model manifest contains pinned profiles for `gpt-5.4-mini-2026-03-17` and `gpt-5.4-nano-2026-03-17`; the
-  initial eval and production-default decision do not depend on broad moving model aliases or implicit provider behavior defaults.'
-- '- [ ] OpenAI Responses payload tests prove `text.format` JSON Schema shape, strict schema behavior, model/profile metadata,
-  and refusal/failure parsing without leaking raw provider responses into production capture.'
-- '- [ ] OpenAI HTTP failures preserve enough redacted upstream diagnostics to distinguish 400 request-shape defects, 401/403
-  credential or model-access failures, 404 unavailable model/profile, 429 quota/rate limits, and 5xx transient provider failures
-  without storing raw provider bodies.'
-- '- [x] Task 326 is linked as the required model-quality gate and remains the owner for running the existing local-model
-  answer-key evaluation harness/corpus against both OpenAI profiles.'
-- '- [x] No OpenAI profile becomes an operator-selectable production default, and Task 325 is not marked done, until Task
-  326 completes a sanitized eval report comparing both OpenAI snapshots against the current local baseline.'
-- '- [x] A running service can switch the active default route for new advisory requests between local Qwen3.6 and OpenAI
-  without process restart, Docker recreate, or env-only mutation.'
-- '- [x] Settings mutation requires operator/internal-identity authority. Public conversion requests, grant requests, API-key-only
-  calls, and unsigned callers cannot change route settings.'
-- '- [x] Runtime settings reload is atomic and versioned. Invalid, stale, unsigned, or unauthorized settings leave the last
-  valid active settings in place and emit a typed failure/audit signal.'
-- '- [x] Settings audit records actor identity, authority source, previous settings version, new settings version, selected
-  provider profile, allowed internal route classes, remote-provider authorization state, rollout label, timestamp, and correlation
-  ID; it excludes raw secrets, prompts, item text, and raw provider payloads.'
-- '- [x] Already-admitted advisory jobs retain the provider profile and settings version resolved at admission time; retries
-  and report lineage cannot drift to a later settings version.'
-- '- [x] Advisory report lineage records enough metadata to audit local vs OpenAI provider selection without exposing vendor-native
-  response bodies or raw request content.'
-- '- [x] No `provider_route_class`, `service_default`, `local`, `api`, or similar public job-spec field is added. If implementation
-  discovers a need for a public selector, this task stops and a separate contract/OpenAPI task is created first.'
-- '- [x] Public/grant remote-provider policy remains fail-closed by default, and OpenAI remote use cannot become a hidden
-  fallback for public jobs.'
-- '- [ ] Task 320 local-provider service-backed route remains green after adding OpenAI. Task 311 remains the gate for full
-  auth/public-edge mirror claims.'
-- '- [x] OpenRouter and DeepSeek are not implemented in this task.'
+  - '- [x] Sir Convert can configure an `openai_responses` provider profile using Responses structured output and the same source-neutral answer-key schemas used by the local provider path.'
+  - '- [x] The OpenAI model manifest contains pinned profiles for `gpt-5.4-mini-2026-03-17` and `gpt-5.4-nano-2026-03-17`; the initial eval and production-default decision do not depend on broad moving model aliases or implicit provider behavior defaults.'
+  - '- [ ] OpenAI Responses payload tests prove `text.format` JSON Schema shape, strict schema behavior, model/profile metadata, and refusal/failure parsing without leaking raw provider responses into production capture.'
+  - '- [ ] OpenAI HTTP failures preserve enough redacted upstream diagnostics to distinguish 400 request-shape defects, 401/403 credential or model-access failures, 404 unavailable model/profile, 429 quota/rate limits, and 5xx transient provider failures without storing raw provider bodies.'
+  - '- [x] Task 326 is linked as the required model-quality gate and remains the owner for running the existing local-model answer-key evaluation harness/corpus against both OpenAI profiles.'
+  - '- [x] No OpenAI profile becomes an operator-selectable production default, and Task 325 is not marked done, until Task 326 completes a sanitized eval report comparing both OpenAI snapshots against the retained historical local baseline (evidence only; not a current Sir production routing requirement under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and TASK-SIRCON-08-01-07).'
+  - '- [x] Historical harness proof retained - a running service could switch the active default route for new advisory requests between local Qwen3.6 and OpenAI without restart/recreate. Superseded for the Sir exam lane - local Qwen3.6 is no longer a routable production endpoint (sidecar removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04; exam-lane default is TASK-SIRCON-08-01-07 remote profiles). Hot-routing mechanics remain governed; generic qwen/ tooling, CJ resources, and GPU hold are unchanged.'
+  - '- [x] Settings mutation requires operator/internal-identity authority. Public conversion requests, grant requests, API-key-only calls, and unsigned callers cannot change route settings.'
+  - '- [x] Runtime settings reload is atomic and versioned. Invalid, stale, unsigned, or unauthorized settings leave the last valid active settings in place and emit a typed failure/audit signal.'
+  - '- [x] Settings audit records actor identity, authority source, previous settings version, new settings version, selected provider profile, allowed internal route classes, remote-provider authorization state, rollout label, timestamp, and correlation ID; it excludes raw secrets, prompts, item text, and raw provider payloads.'
+  - '- [x] Already-admitted advisory jobs retain the provider profile and settings version resolved at admission time; retries and report lineage cannot drift to a later settings version.'
+  - '- [x] Advisory report lineage records enough metadata to audit local vs OpenAI provider selection without exposing vendor-native response bodies or raw request content.'
+  - '- [x] No `provider_route_class`, `service_default`, `local`, `api`, or similar public job-spec field is added. If implementation discovers a need for a public selector, this task stops and a separate contract/OpenAPI task is created first.'
+  - '- [x] Public/grant remote-provider policy remains fail-closed by default, and OpenAI remote use cannot become a hidden fallback for public jobs.'
+  - '- [ ] Superseded - the Task 320 local-provider service-backed route requirement no longer applies (Task 320 Qwen provider route removed with the sidecar under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04; retained as historical evidence only). Task 311 remains the gate for full auth/public-edge mirror claims only insofar as that mirror is still pursued under Skript ownership; this task must not require a live Task 320 route.'
+  - '- [x] OpenRouter and DeepSeek are not implemented in this task.'
 retired_ids:
-- task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion
+  - task-325-add-openai-responses-provider-and-hot-swappable-operator-routing-for-answer-key-completion
 ---
 
 ## Context
@@ -90,12 +73,12 @@ Implement the first API-backed structured answer-key provider directly inside
 Sir Convert, using OpenAI Responses structured outputs behind the existing
 source-neutral structured-provider harness and ADR-0010 hot-routing decision.
 
-The slice must let operators switch new advisory requests between the proven
+The slice let operators switch new advisory requests between the proven
 local Qwen3.6 production profile and configured OpenAI profiles through
-running-service settings, without service restart or container recreation. The
-switching surface is operator/internal-identity controlled and remains
+running-service settings, without service restart or container recreation (historical harness proof retained). Superseded for the Sir exam lane: local Qwen3.6 is no longer a routable production endpoint (sidecar removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04; exam-lane default is TASK-SIRCON-08-01-07 remote profiles). The
+switching mechanics stay operator/internal-identity controlled and remain
 operator-internal; this task must not add a public `provider_route_class` or
-any other provider selector to the conversion job-spec contract.
+any other provider selector to the conversion job-spec contract. Generic qwen/ tooling, CJ resources, and the active GPU hold are unchanged.
 
 ### PR Scope
 
@@ -141,14 +124,14 @@ any other provider selector to the conversion job-spec contract.
   route may be used only for authenticated/operator-authorized policy paths
   with explicit request eligibility.
 - Keep Task 311 as the later full HuleEdu auth/public-edge mirror validation
-  gate. This task may prove HuleEdu-signed service behavior through the service
-  path, but it must not claim public-edge alpha readiness.
+  gate only insofar as that mirror is still pursued under Skript ownership; the former Task 320 local-provider route precondition is superseded and removed with the sidecar under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 (retained as historical evidence only). This task may prove HuleEdu-signed service behavior through the service
+  path, but it must not claim public-edge alpha readiness and must not require a live Task 320 route.
 - Do not integrate HuleEdu LLM Provider Service in this task. ADR-0010 keeps
   that as future broker work only after HuleEdu exposes a generic structured
   completion contract.
 - Keep model-quality promotion out of this implementation slice. Task 326 owns
   the eval-harness run and any eval-harness modifications needed to compare
-  both OpenAI model manifest entries against the current local Qwen3.6 baseline.
+  both OpenAI model manifest entries against the retained historical local Qwen3.6 baseline (evidence only; not a current Sir production routing requirement under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and TASK-SIRCON-08-01-07).
   Task 325 cannot be marked done and no OpenAI profile may become an
   operator-selectable production route until Task 326 is completed.
 
@@ -201,10 +184,10 @@ any other provider selector to the conversion job-spec contract.
   against both OpenAI profiles.
 - [x] No OpenAI profile becomes an operator-selectable production default, and
   Task 325 is not marked done, until Task 326 completes a sanitized eval report
-  comparing both OpenAI snapshots against the current local baseline.
-- [x] A running service can switch the active default route for new advisory
+  comparing both OpenAI snapshots against the retained historical local baseline (evidence only; not a current Sir production routing requirement under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and TASK-SIRCON-08-01-07).
+- [x] Historical harness proof retained: a running service could switch the active default route for new advisory
   requests between local Qwen3.6 and OpenAI without process restart, Docker
-  recreate, or env-only mutation.
+  recreate, or env-only mutation. Superseded for the Sir exam lane: local Qwen3.6 is no longer a routable production endpoint (sidecar removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04; exam-lane default is TASK-SIRCON-08-01-07 remote profiles). Hot-routing mechanics remain governed; generic qwen/ tooling, CJ resources, and GPU hold are unchanged.
 - [x] Settings mutation requires operator/internal-identity authority. Public
   conversion requests, grant requests, API-key-only calls, and unsigned callers
   cannot change route settings.
@@ -228,8 +211,7 @@ any other provider selector to the conversion job-spec contract.
   created first.
 - [x] Public/grant remote-provider policy remains fail-closed by default, and
   OpenAI remote use cannot become a hidden fallback for public jobs.
-- [ ] Task 320 local-provider service-backed route remains green after adding
-  OpenAI. Task 311 remains the gate for full auth/public-edge mirror claims.
+- [ ] Superseded: the Task 320 local-provider service-backed route requirement no longer applies (Task 320 Qwen provider route removed with the sidecar under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04; retained as historical evidence only). Task 311 remains the gate for full auth/public-edge mirror claims only insofar as that mirror is still pursued under Skript ownership; this task must not require a live Task 320 route.
 - [x] OpenRouter and DeepSeek are not implemented in this task.
 
 ### Implementation Checkpoint - 2026-05-18
@@ -367,12 +349,12 @@ the `openai-gpt-5.4-mini-2026-03-17` profile through
 whose teacher golden expects only a visible candidate label or number, plus the
 image-backed ecology row that triggered the issue:
 
-| Source / item | Surface | Returned accepted values | Diagnostic |
-| --- | --- | --- | --- |
-| `1811577114-ekologiprov-v-49-25d-e.dxe` / `item-013` | Image-backed `A`-`E` candidate definitions | `D`, `A`, `B`, `E`, `C` | none |
-| `1776888013-ak7-lag-och-ratt.dxe` / `item-006` | Text `T`/`B` candidate labels | `B`, `T`, `T`, `B`, `B`, `B`, `T` | none |
-| `1813537086-25c-manniskokroppen-prov-eca.dxe` / `item-009` | Text numeric labels `1`-`5` | `4`, `3`, `1`, `2`, `5` | none |
-| `1819027155-25d-manniskokroppen-prov-eca.dxe` / `item-006` | Text `A`-`C` candidate labels | `A`, `A`, `B`, `C`, `B` | none |
+| Source / item                                              | Surface                                    | Returned accepted values          | Diagnostic |
+| ---------------------------------------------------------- | ------------------------------------------ | --------------------------------- | ---------- |
+| `1811577114-ekologiprov-v-49-25d-e.dxe` / `item-013`       | Image-backed `A`-`E` candidate definitions | `D`, `A`, `B`, `E`, `C`           | none       |
+| `1776888013-ak7-lag-och-ratt.dxe` / `item-006`             | Text `T`/`B` candidate labels              | `B`, `T`, `T`, `B`, `B`, `B`, `T` | none       |
+| `1813537086-25c-manniskokroppen-prov-eca.dxe` / `item-009` | Text numeric labels `1`-`5`                | `4`, `3`, `1`, `2`, `5`           | none       |
+| `1819027155-25d-manniskokroppen-prov-eca.dxe` / `item-006` | Text `A`-`C` candidate labels              | `A`, `A`, `B`, `C`, `B`           | none       |
 
 ### Test Requirements
 

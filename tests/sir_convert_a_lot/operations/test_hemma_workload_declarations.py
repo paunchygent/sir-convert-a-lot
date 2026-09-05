@@ -84,22 +84,19 @@ def test_registry_declares_sir_gpu_workloads_and_passive_reserved_edge() -> None
         {
             hemma_workload.PRODUCTION_WORKLOAD_ID,
             hemma_workload.STT_WORKLOAD_ID,
-            hemma_workload.QWEN_WORKLOAD_ID,
             hemma_workload.RESERVED_EDGE_WORKLOAD_ID,
         }
     )
     production = registry.declaration(hemma_workload.PRODUCTION_WORKLOAD_ID)
     stt = registry.declaration(hemma_workload.STT_WORKLOAD_ID)
-    qwen = registry.declaration(hemma_workload.QWEN_WORKLOAD_ID)
     reserved_edge = registry.declaration(hemma_workload.RESERVED_EDGE_WORKLOAD_ID)
     assert production.service_identities == (
         hemma_workload.API_CONTAINER,
         hemma_workload.GPU_WORKER_CONTAINER,
     )
     assert stt.service_identities == (hemma_workload.STT_CONTAINER,)
-    assert qwen.service_identities == (hemma_workload.QWEN_CONTAINER,)
     assert reserved_edge.service_identities == (hemma_workload.RESERVED_EDGE_CONTAINER,)
-    for declaration in (production, stt, qwen):
+    for declaration in (production, stt):
         assert declaration.resource_claims == frozenset({"gpu:amdgpu"})
         assert declaration.dependencies == ()
         assert declaration.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
@@ -109,15 +106,8 @@ def test_registry_declares_sir_gpu_workloads_and_passive_reserved_edge() -> None
     assert reserved_edge.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
     assert hemma_workload.RESERVED_EDGE_CONTAINER not in hemma_workload.PRODUCTION_CONTAINERS
     assert hemma_workload.RESERVED_EDGE_CONTAINER not in hemma_workload.DECLARED_GPU_CONTAINERS
-    assert production.conflicts == frozenset(
-        {hemma_workload.STT_WORKLOAD_ID, hemma_workload.QWEN_WORKLOAD_ID}
-    )
-    assert stt.conflicts == frozenset(
-        {hemma_workload.PRODUCTION_WORKLOAD_ID, hemma_workload.QWEN_WORKLOAD_ID}
-    )
-    assert qwen.conflicts == frozenset(
-        {hemma_workload.PRODUCTION_WORKLOAD_ID, hemma_workload.STT_WORKLOAD_ID}
-    )
+    assert production.conflicts == frozenset({hemma_workload.STT_WORKLOAD_ID})
+    assert stt.conflicts == frozenset({hemma_workload.PRODUCTION_WORKLOAD_ID})
 
 
 @pytest.mark.parametrize(
@@ -247,9 +237,7 @@ def test_production_readiness_reuses_task04_api_and_worker_helpers(
     monkeypatch.setattr(
         hemma_workload,
         "_prove_gpu_readiness",
-        lambda runner, *, docker_prefix: calls.append(
-            ("worker", " ".join(docker_prefix))
-        ),
+        lambda runner, *, docker_prefix: calls.append(("worker", " ".join(docker_prefix))),
     )
     adapter = hemma_workload.ProductionWorkloadAdapter(QueueRunner([]), Path("/srv/sir"))
 
@@ -336,9 +324,8 @@ def test_shared_controller_restores_only_receipted_conflict_subset(
     stopped = controller.stop(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-restore")
     assert stopped.outcome is TerminalOutcome.SUCCEEDED
     assert runner.running == {hemma_workload.STT_CONTAINER}
-    assert (
-        *hemma_workload.DOCKER_COMMAND,
-        "start",
-        hemma_workload.QWEN_CONTAINER,
-    ) not in runner.commands
+    started_containers = {command[4] for command in runner.commands if command[3:4] == ("start",)}
+    assert started_containers <= set(hemma_workload.PRODUCTION_CONTAINERS) | {
+        hemma_workload.STT_CONTAINER
+    }
     assert not (tmp_path / "active-receipt.json").exists()

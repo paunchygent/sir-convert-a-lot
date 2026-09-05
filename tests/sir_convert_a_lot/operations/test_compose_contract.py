@@ -18,7 +18,6 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 DOCKERFILE = REPO_ROOT / "Dockerfile"
-DOCKERFILE_QWEN_PROVIDER = REPO_ROOT / "Dockerfile.qwen-provider"
 DOCKERFILE_DEPS = REPO_ROOT / "Dockerfile.deps"
 DOCKERIGNORE = REPO_ROOT / ".dockerignore"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
@@ -81,14 +80,14 @@ def _require_service(compose: YamlMapping, service_name: str) -> YamlMapping:
     return service_obj
 
 
-def test_compose_declares_prod_runtime_and_private_qwen_provider_services() -> None:
+def test_compose_declares_prod_runtime_without_answer_key_sidecar() -> None:
     compose = _load_compose()
     services_obj = compose.get("services")
     assert isinstance(services_obj, dict)
     assert "sir_convert_a_lot_prod" in services_obj
     assert "sir_convert_a_lot_gpu_worker" in services_obj
     assert "sir_convert_a_lot_stt_sidecar" in services_obj
-    assert "sir_convert_qwen_answer_key" in services_obj
+    assert "sir_convert_qwen_answer_key" not in services_obj
     assert "sir_convert_a_lot_public_reserved" in services_obj
     assert "sir_convert_a_lot_eval" not in services_obj
 

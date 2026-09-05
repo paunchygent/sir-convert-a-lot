@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-01-04
 title: Run service-backed auth-public-edge mirror validation for answer-key completion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,21 +17,18 @@ closeout_review:
 story: ST-SIRCON-08-01
 task_kind: story
 acceptance_criteria:
-- The validation runs through the deployed service path, not the in-process executor.
-- Authenticated access and public-edge readiness are explicitly proven or the task
-  records a blocking failure.
-- The governed Qwen3.6 llama.cpp provider is reachable only through the intended service/local-provider
-  path and is not publicly exposed.
-- Reports retain zero raw prompts and zero raw provider responses.
-- Source IR and effective IR mutation semantics match Task 309 and Task 306 contracts.
-- Wrong-but-valid remains the primary safety metric; manual follow-up is acceptable,
-  plausible wrong keys are not.
-- Unknown IDs and duplicate IDs are zero for any mirror-success claim.
-- Service-backed differences from the in-process baseline are explained before any
-  alpha-readiness recommendation.
+  - The validation runs through the deployed service path, not the in-process executor.
+  - Authenticated access and public-edge readiness are explicitly proven or the task records a blocking failure.
+  - Superseded for the Sir exam lane - the former governed Qwen3.6 llama.cpp provider-reachability requirement no longer applies. The Sir Qwen answer-key sidecar declarations are removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and the exam-lane default is TASK-SIRCON-08-01-07 remote profiles. Retained as historical evidence only; this task must not require a live local-Qwen provider. Generic qwen/ tooling, CJ resources, and the active GPU hold are unchanged.
+  - Reports retain zero raw prompts and zero raw provider responses.
+  - Source IR and effective IR mutation semantics match Task 309 and Task 306 contracts.
+  - Wrong-but-valid remains the primary safety metric; manual follow-up is acceptable, plausible wrong keys are not.
+  - Unknown IDs and duplicate IDs are zero for any mirror-success claim.
+  - Service-backed differences from the in-process baseline are explained before any alpha-readiness recommendation.
 retired_ids:
-- task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion
+  - task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-mirror-validation-for-answer-key-completion.md
@@ -54,9 +51,7 @@ Source record: docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-m
 
 ### PR Scope
 
-> - Use the governed provider lane established by Task 309. As of the 2026-05-16
->   evidence, this means Qwen3.6-27B-Q6_K on llama.cpp with JSON Schema output,
->   not the demoted Granite/vLLM or Devstral lanes.
+> - Superseded for the Sir exam lane - the former Task 309 Qwen3.6-27B-Q6_K llama.cpp provider lane (2026-05-16 evidence, demoted Granite/vLLM/Devstral lanes) is retained as historical evidence only and no longer governs this validation. The Sir Qwen answer-key sidecar is removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and the exam-lane default is TASK-SIRCON-08-01-07 remote profiles. This task must not require a live local-Qwen lane.
 > - Run the versioned DigiExam DXE fixture corpus through the deployed service
 >   path rather than the in-process job executor.
 > - Include authenticated service access and public-edge readiness checks needed
@@ -76,7 +71,7 @@ Source record: docs/backlog/tasks/task-311-run-service-backed-auth-public-edge-m
 
 > - Model bake-off or GGUF candidate comparison.
 > - Reopening model bake-off or replacing the Task 309 governed provider choice
->   without a new governed operator decision.
+>   without a new governed operator decision. The exam-lane supersession by TASK-SIRCON-08-01-07 and TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 is that governing decision for the Sir exam lane; the former Qwen lane remains historical evidence only.
 > - Prompt-engineering around a specific failed item.
 > - Weakening auth/public-edge policy to make validation easier.
 
