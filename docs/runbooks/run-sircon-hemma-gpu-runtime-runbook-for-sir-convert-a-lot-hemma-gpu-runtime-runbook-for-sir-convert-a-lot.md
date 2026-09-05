@@ -62,16 +62,6 @@ Canonical Sir Convert scratch roots:
 - `/srv/scratch/sir-convert-a-lot/cache`
 - `/srv/scratch/sir-convert-a-lot/cache/huggingface`
 
-Canonical llama.cpp server binary:
-
-```text
-/srv/scratch/sir-convert-a-lot/bin/llama-server
-```
-
-This symlink must point to the current HIP-enabled llama.cpp build for GGUF
-answer-key model probes. Do not use older home-directory builds for Qwen3.5 or
-Gemma 4 validation; they may lack current architecture support.
-
 ## llama.cpp HIP Build Stability
 
 `llama.cpp` HIP builds are heavyweight host operations.
@@ -92,27 +82,9 @@ pdm run run-hemma -- ps -eo pid,stat,ni,pcpu,pmem,comm,args
 pdm run run-hemma -- rocm-smi --showmeminfo vram --showpids
 ```
 
-Build:
-
-```bash
-pdm run qwen-llama-provider-build
-```
-
-The helper is the preferred command surface for Task 320 and enforces the
-`nice -n 10` / `-j8` contract. Its expanded command is:
-
-```bash
-cd /srv/scratch/sir-convert-a-lot/build/llama.cpp-qwen35
-cmake -S . -B build-hip -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DGGML_HIP=ON \
-  -DAMDGPU_TARGETS=gfx1201 \
-  -DGGML_HIP_GRAPHS=ON \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-nohup nice -n 10 ninja -C build-hip -j8 llama-server \
-  > build-hip/build-log.txt 2>&1 &
-```
+Retired: the answer-key provider build helper (`qwen-llama-provider-build`)
+was removed with the sidecar in `TASK-SIRCON-REP-0030`; no replacement build
+surface exists.
 
 Recovery:
 

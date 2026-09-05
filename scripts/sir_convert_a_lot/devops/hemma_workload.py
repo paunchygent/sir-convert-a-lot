@@ -46,15 +46,13 @@ GPU_CLAIM = "gpu:amdgpu"
 PRODUCT_RESOURCE_CLAIM = "product:sir"
 PRODUCTION_WORKLOAD_ID = "sir-production"
 STT_WORKLOAD_ID = "sir-stt-sidecar"
-QWEN_WORKLOAD_ID = "sir-qwen-answer-key"
 RESERVED_EDGE_WORKLOAD_ID = "sir-public-reserved-edge"
 API_CONTAINER = "sir_convert_a_lot_prod"
 GPU_WORKER_CONTAINER = "sir_convert_a_lot_gpu_worker"
 STT_CONTAINER = "sir_convert_a_lot_stt_sidecar"
-QWEN_CONTAINER = "sir_convert_qwen_answer_key"
 RESERVED_EDGE_CONTAINER = "sir_convert_a_lot_public_reserved"
 PRODUCTION_CONTAINERS = (API_CONTAINER, GPU_WORKER_CONTAINER)
-DECLARED_GPU_CONTAINERS = (GPU_WORKER_CONTAINER, STT_CONTAINER, QWEN_CONTAINER)
+DECLARED_GPU_CONTAINERS = (GPU_WORKER_CONTAINER, STT_CONTAINER)
 HOST_STATE_ROOT = Path("/var/lib/hemma/workload-switch")
 RECEIPT_PATH = HOST_STATE_ROOT / "active-receipt.json"
 LOCK_PATH = HOST_STATE_ROOT / "active.lock"
@@ -319,10 +317,8 @@ class SirGpuInventory:
                 workloads.add(PRODUCTION_WORKLOAD_ID)
             if STT_CONTAINER in running:
                 workloads.add(STT_WORKLOAD_ID)
-            if QWEN_CONTAINER in running:
-                workloads.add(QWEN_WORKLOAD_ID)
             declared_services = frozenset(
-                (*PRODUCTION_CONTAINERS, STT_CONTAINER, QWEN_CONTAINER, RESERVED_EDGE_CONTAINER)
+                (*PRODUCTION_CONTAINERS, STT_CONTAINER, RESERVED_EDGE_CONTAINER)
             )
             unknown = {
                 f"container {name}"
@@ -345,7 +341,7 @@ def sir_workload_registry(
 ) -> WorkloadRegistry:
     command_runner = runner or CommandRunner()
     root = project_root or Path.cwd()
-    production_conflicts = frozenset({STT_WORKLOAD_ID, QWEN_WORKLOAD_ID})
+    production_conflicts = frozenset({STT_WORKLOAD_ID})
     registry = WorkloadRegistry(
         HOST_IDENTITY,
         (
@@ -363,17 +359,8 @@ def sir_workload_registry(
                 (STT_CONTAINER,),
                 (),
                 frozenset({GPU_CLAIM}),
-                frozenset({PRODUCTION_WORKLOAD_ID, QWEN_WORKLOAD_ID}),
+                frozenset({PRODUCTION_WORKLOAD_ID}),
                 ContainerWorkloadAdapter(STT_WORKLOAD_ID, STT_CONTAINER, command_runner),
-                frozenset({TerminalOutcome.SUCCEEDED}),
-            ),
-            WorkloadDeclaration(
-                QWEN_WORKLOAD_ID,
-                (QWEN_CONTAINER,),
-                (),
-                frozenset({GPU_CLAIM}),
-                frozenset({PRODUCTION_WORKLOAD_ID, STT_WORKLOAD_ID}),
-                ContainerWorkloadAdapter(QWEN_WORKLOAD_ID, QWEN_CONTAINER, command_runner),
                 frozenset({TerminalOutcome.SUCCEEDED}),
             ),
             WorkloadDeclaration(

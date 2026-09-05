@@ -4,8 +4,8 @@ id: EPIC-SIRCON-08
 title: Machine-marked answer-key completion for exam conversion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,7 +18,7 @@ links:
   decisions: []
 outcome: Machine-marked answer-key completion for exam conversion
 retired_ids:
-- epic-11-machine-marked-answer-key-completion-for-exam-conversion
+  - epic-11-machine-marked-answer-key-completion-for-exam-conversion
 ---
 
 ## Scope
@@ -75,11 +75,8 @@ review gates.
   `effective_item_patch` in the effective layer.
 - Teacher/manual answer-key overlay semantics that remain authoritative only in
   the effective layer.
-- Local-first structured LLM answer-key completion for missing machine-marked
-  answer keys in single choice, multiple choice, multiple response, gap-fill,
-  and eventually matching items.
-- Explicit remote provider policy where remote fallback is forbidden by default
-  and explicit false is terminal.
+- Superseded for the Sir exam lane: former local-first structured LLM answer-key completion for missing machine-marked answer keys in single choice, multiple choice, multiple response, gap-fill, and eventually matching items. Retained as historical harness evidence only. The Sir Qwen answer-key sidecar is removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and the exam-lane default is TASK-SIRCON-08-01-07 remote profiles. Generic provider-harness mechanics, generic qwen/ tooling, CJ resources, and the active GPU hold are unchanged.
+- Superseded for the Sir exam lane: former explicit remote-provider policy where remote fallback was forbidden by default and explicit false was terminal. Retained as historical harness policy evidence only. The exam-lane remote-policy decision is TASK-SIRCON-08-01-07 (remote-API-first for teacher exam content only); Sir Qwen sidecar routing is removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04.
 - Hot service settings for provider routing so sanctioned CLI/API flows can
   switch new advisory requests between configured local and API providers
   without service restart or container recreation.
@@ -108,16 +105,16 @@ review gates.
 1. `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md`
    defines source-bound overlay, item fingerprint, effective IR, and contract
    report semantics.
-1. `docs/backlog/stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md`
+2. `docs/backlog/stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md`
    defines the reusable structured provider harness, provider capabilities,
    token budgeting, failover policy, and item-type output schemas.
-1. `docs/backlog/stories/st-sircon-08-03-skriptoteket-teacher-review-workflow-for-answer-key-completion.md`
+3. `docs/backlog/stories/st-sircon-08-03-skriptoteket-teacher-review-workflow-for-answer-key-completion.md`
    defines the cross-product teacher review workflow and the HuleEdu provider
    decision checkpoint.
-1. `docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md`
+4. `docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md`
    tracks Task 373, Skriptoteket PR-0406, and the final production browser
    proof with a tracked DXE fixture.
-1. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+5. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
    owns the follow-up replay/idempotency hardening after production showed that
    stale succeeded jobs can mask current compact review-state artifacts.
 
@@ -174,9 +171,8 @@ Task 328 is the separate proposed-decision audit slice. It keeps ADR-0002 and
 ADR-0009 status cleanup out of ADR-0011 and preserves the rule that ADR-0009
 requires its explicit Gateway acceptance path before acceptance.
 ADR-0010 is the proposed decision for API provider expansion and hot-swappable
-provider routing. It keeps local Qwen3.6 as the guarded default while requiring
-future OpenAI/OpenRouter/DeepSeek provider work to route through service
-settings for new requests without service restart or container recreation.
+provider routing. It formerly kept local Qwen3.6 as the guarded default; for the Sir exam lane that default is superseded by TASK-SIRCON-08-01-07 (remote Luna/GLM exam-lane default) and TASK-SIRCON-REP-0030 under TASK-SKRIPT-39-03-04 (Sir Qwen answer-key sidecar declarations removed, Skript-owned boundary). Retained Qwen3.6 wording is historical evidence only. Future OpenAI/OpenRouter/DeepSeek provider work still routes through service
+settings for new requests without service restart or container recreation where still pursued under Skript ownership. Generic qwen/ tooling, CJ resources, and the active GPU hold are unchanged.
 Task 325 is the OpenAI-first implementation slice under ADR-0010: direct Sir
 Convert OpenAI Responses provider, hot running-service settings,
 operator/internal-identity mutation, admission-time lineage, no public
@@ -185,7 +181,7 @@ Task 326 is the linked eval gate: it runs the existing answer-key model
 evaluation harness/corpus against `gpt-5.4-mini-2026-03-17` and
 `gpt-5.4-nano-2026-03-17` and blocks Task 325 done-state plus OpenAI
 production-default promotion until both snapshots are compared against the
-current Qwen3.6 baseline.
+retained historical Qwen3.6 baseline (evidence only; not a current Sir production routing requirement under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and TASK-SIRCON-08-01-07).
 Task 301 is an experimental Hemma runtime smoke checkpoint for Granite 4.1 8B
 FP8 on the ROCm vLLM preview image; it can inform provider viability, but it
 does not replace Task 300's `llama.cpp` GGUF benchmark matrix or authorize
@@ -213,10 +209,10 @@ deployed.
   schemas needed by consumer type-generation and live-test preflight.
 - [ ] Teacher/manual overlay can remove manual follow-up only when source
   binding and type compatibility are proven.
-- [x] Structured LLM completion is local-first, item-local, schema-specific,
-  non-explanatory, and metadata-only in normal capture.
-- [x] Remote fallback cannot occur unless policy and signed authenticated/public
-  consent explicitly allow it.
+- [x] Historical harness proof retained: structured LLM completion was local-first, item-local, schema-specific,
+  non-explanatory, and metadata-only in normal capture. Superseded for the Sir exam lane (sidecar removed under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04; exam-lane default is TASK-SIRCON-08-01-07 remote profiles); not a current Sir production routing requirement.
+- [x] Historical harness policy proof retained: remote fallback could not occur unless policy and signed authenticated/public
+  consent explicitly allowed it. Superseded for the Sir exam lane by TASK-SIRCON-08-01-07 (remote-API-first for teacher exam content only); not a current exam-lane prohibition.
 - [ ] Provider routing can be changed for new advisory requests through
   running service settings without restart or container recreation.
 - [x] Advisory completion can be produced without changing renderer input.

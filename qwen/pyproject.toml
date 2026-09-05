@@ -59,7 +59,6 @@ qwen-fallback-proof = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_fallback_
 qwen-fallback-accumulation-proof = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_fallback_accumulation_proof"
 qwen-token-span-audit = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_token_span_audit"
 qwen-rixvox-train-staging = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_rixvox_train_staging"
-qwen-llama-provider-build = "bash scripts/devops/qwen-llama-provider-build.sh"
 qwen-smoke = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_smoke"
 qwen-train = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_train"
 qwen-pilot-bundle = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_bundle"

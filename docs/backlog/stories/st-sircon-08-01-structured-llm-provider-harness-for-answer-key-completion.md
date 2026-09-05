@@ -4,8 +4,8 @@ id: ST-SIRCON-08-01
 title: Structured LLM provider harness for answer-key completion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,25 +18,17 @@ epic: EPIC-SIRCON-08
 links:
   decisions: []
 acceptance_criteria:
-- Provider code is generic structured output, not edit-op-specific.
-- Chat Completions and Responses payload builders keep their schema shapes separate.
-- Local llama.cpp support is capability-configured and does not infer GBNF or JSON
-  Schema support from host/port.
-- The completion prompt is single-turn and item-local with no full exam, result PDF,
-  raw `.dxe`, student data, owner metadata, or artifact paths.
-- Over-budget items are not sent to a provider and produce `manual_follow_up_required`
-  with backend failure code `over_budget`.
-- Provider failure, invalid JSON, schema mismatch, unknown IDs, duplicate IDs, or
-  invalid answer payloads become manual follow-up with backend-owned failure codes.
-- Remote fallback is attempted only when authenticated/signed policy allows it and
-  the request explicitly opts in.
-- Provider routing tests cover running-service settings changes that affect new requests
-  while preserving already-admitted job lineage.
-- Hot provider settings tests prove mutation is operator/internal-identity gated,
-  invalid or stale settings fail closed, public/grant callers cannot mutate routing,
-  and advisory lineage records the resolved provider profile plus settings version.
+  - Provider code is generic structured output, not edit-op-specific.
+  - Chat Completions and Responses payload builders keep their schema shapes separate.
+  - Local llama.cpp support is capability-configured and does not infer GBNF or JSON Schema support from host/port.
+  - The completion prompt is single-turn and item-local with no full exam, result PDF, raw `.dxe`, student data, owner metadata, or artifact paths.
+  - Over-budget items are not sent to a provider and produce `manual_follow_up_required` with backend failure code `over_budget`.
+  - Provider failure, invalid JSON, schema mismatch, unknown IDs, duplicate IDs, or invalid answer payloads become manual follow-up with backend-owned failure codes.
+  - Remote fallback is attempted only when authenticated/signed policy allows it and the request explicitly opts in.
+  - Provider routing tests cover running-service settings changes that affect new requests while preserving already-admitted job lineage.
+  - Hot provider settings tests prove mutation is operator/internal-identity gated, invalid or stale settings fail closed, public/grant callers cannot mutate routing, and advisory lineage records the resolved provider profile plus settings version.
 retired_ids:
-- story-47-structured-llm-provider-harness-for-answer-key-completion
+  - story-47-structured-llm-provider-harness-for-answer-key-completion
 ---
 
 ## Context
@@ -138,9 +130,7 @@ ADR-0010 is the accepted provider-routing decision for the next API-provider
 slice. Review 20 is approved. It selects direct Sir Convert API providers first,
 starting with OpenAI, and requires hot service settings so CLI/API traffic can
 route new advisory requests between configured local and API providers without
-service restart or container recreation. Production local-provider routing
-depends on Task 320, now done with Docker DNS and HuleEdu-signed service-report
-proof. Authenticated/public-edge mirror readiness remains gated by Task 311.
+service restart or container recreation. Production local-provider routing formerly depended on Task 320 (Docker DNS and HuleEdu-signed service-report proof, retained as historical evidence only). Superseded for the Sir exam lane: the Task 320 Qwen provider route is removed with the sidecar under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and must not be required; the exam-lane default is TASK-SIRCON-08-01-07 remote profiles. Authenticated/public-edge mirror readiness remains gated by Task 311 only insofar as that mirror is still pursued under Skript ownership. Generic provider-harness mechanics, generic qwen/ tooling, CJ resources, and the active GPU hold are unchanged.
 ADR-0010 keeps provider route selection operator-internal unless a later
 contract task adds a public `provider_route_class` field with OpenAPI and
 consumer-impact proof.
@@ -153,7 +143,7 @@ public/grant remote-provider policy. Its initial OpenAI model manifest is pinned
 to `gpt-5.4-mini-2026-03-17` and `gpt-5.4-nano-2026-03-17`. Task 326 owns the
 separate eval-harness proof and blocks Task 325 done-state plus any OpenAI
 production-default promotion until both snapshots are compared against the
-current Qwen3.6 baseline.
+retained historical Qwen3.6 baseline (evidence only; not a current Sir production routing requirement under TASK-SIRCON-REP-0030 / TASK-SKRIPT-39-03-04 and TASK-SIRCON-08-01-07).
 
 ### Acceptance Criteria
 

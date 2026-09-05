@@ -59,7 +59,6 @@ def _inventory_runner(
     ("identity", "container"),
     [
         (hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER),
-        (hemma_workload.QWEN_WORKLOAD_ID, hemma_workload.QWEN_CONTAINER),
     ],
 )
 def test_sidecars_use_exact_container_commands_and_declared_health(
@@ -107,12 +106,12 @@ def test_sidecar_readiness_refuses_missing_declared_health() -> None:
                 "inspect",
                 "--format",
                 hemma_workload.CONTAINER_HEALTH_FORMAT,
-                hemma_workload.QWEN_CONTAINER,
+                hemma_workload.STT_CONTAINER,
             ): hemma_workload.CommandResult(0, "no-healthcheck\n")
         }
     )
     adapter = hemma_workload.ContainerWorkloadAdapter(
-        hemma_workload.QWEN_WORKLOAD_ID, hemma_workload.QWEN_CONTAINER, runner
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
     )
 
     assert adapter.readiness().outcome is TerminalOutcome.DEPENDENCY_UNHEALTHY
@@ -153,8 +152,8 @@ def test_sidecar_readiness_polls_starting_until_healthy() -> None:
 def test_sidecar_starting_health_returns_typed_timeout() -> None:
     times = iter((0.0, 2.0))
     adapter = hemma_workload.ContainerWorkloadAdapter(
-        hemma_workload.QWEN_WORKLOAD_ID,
-        hemma_workload.QWEN_CONTAINER,
+        hemma_workload.STT_WORKLOAD_ID,
+        hemma_workload.STT_CONTAINER,
         SequenceRunner([hemma_workload.CommandResult(0, "starting\n")]),
         monotonic=lambda: next(times),
         sleeper=lambda seconds: None,
@@ -210,14 +209,12 @@ def test_inventory_maps_exact_group_and_sidecars_with_blank_rocm_output() -> Non
         hemma_workload.API_CONTAINER,
         hemma_workload.GPU_WORKER_CONTAINER,
         hemma_workload.STT_CONTAINER,
-        hemma_workload.QWEN_CONTAINER,
     )
     runner = _inventory_runner(
         running=running,
         pids={
             hemma_workload.GPU_WORKER_CONTAINER: (),
             hemma_workload.STT_CONTAINER: (),
-            hemma_workload.QWEN_CONTAINER: (),
         },
     )
 
@@ -227,7 +224,6 @@ def test_inventory_maps_exact_group_and_sidecars_with_blank_rocm_output() -> Non
         {
             hemma_workload.PRODUCTION_WORKLOAD_ID,
             hemma_workload.STT_WORKLOAD_ID,
-            hemma_workload.QWEN_WORKLOAD_ID,
         }
     )
     assert snapshot.unknown_consumers == ()
