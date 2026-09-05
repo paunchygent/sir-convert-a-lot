@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "364c4189d4789cd69cd24d9b2876063c277f190f4a5f823f485e0bd7ad9549b4",
+  "source_set_digest": "3a6a6bec9e39d7acd6859b246ed804601efd562eeced88e655b431233a19ae45",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3913,6 +3913,24 @@
         "status": "approved",
         "reviewer": "independent-implementation-reviewer",
         "decided_at": "2026-08-29T10:30:00+02:00"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0030",
+      "type": "task",
+      "title": "Remove obsolete exam answer-key sidecar declarations under Skriptoteket ownership",
+      "path": "docs/backlog/tasks/task-sircon-rep-0030-remove-obsolete-exam-answer-key-sidecar-declarations-under-skriptoteket-ownership.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {
