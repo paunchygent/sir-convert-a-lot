@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "62211df683555cb98ad6301dd896f9264b28e0b7ae7299a71ff5ca421a2c7b78",
+  "source_set_digest": "b7d38c1a435696480609cfc12c489847b6b1fcc72fdb229ffa4c43fa54d4b9fa",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3920,6 +3920,24 @@
       "type": "task",
       "title": "Remove obsolete exam answer-key sidecar declarations under Skriptoteket ownership",
       "path": "docs/backlog/tasks/task-sircon-rep-0030-remove-obsolete-exam-answer-key-sidecar-declarations-under-skriptoteket-ownership.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0031",
+      "type": "task",
+      "title": "Provide bounded Sir research image cleanup",
+      "path": "docs/backlog/tasks/task-sircon-rep-0031-provide-bounded-sir-research-image-cleanup.md",
       "status": "proposed",
       "task_kind": "repository",
       "owners": [
