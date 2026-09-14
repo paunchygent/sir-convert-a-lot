@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "bd5b20133022fcdff9c06eac935e180ad4a1821940815bc859d7c5d5a51d9008",
+  "source_set_digest": "962c3cf6dd74de29635bceeb656d2a73e62af239a8102f2389587c9c5f844187",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3938,7 +3938,7 @@
       "type": "task",
       "title": "Provide bounded Sir research image cleanup",
       "path": "docs/backlog/tasks/task-sircon-rep-0031-provide-bounded-sir-research-image-cleanup.md",
-      "status": "ready",
+      "status": "in_progress",
       "task_kind": "repository",
       "owners": [
         {

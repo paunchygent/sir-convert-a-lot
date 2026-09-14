@@ -111,7 +111,10 @@ RUN mkdir -p /opt/easyocr-models \
 
 LABEL sir-convert-a-lot.dependency-hash="${SERVICE_DEPENDENCY_HASH}"
 LABEL sir-convert-a-lot.recipe-hash="${SERVICE_RECIPE_HASH}"
-LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}"
+LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}" \
+      org.sir_convert_a_lot.owner="sir-convert-a-lot" \
+      org.sir_convert_a_lot.image_family="deps" \
+      org.sir_convert_a_lot.rebuildable="true"
 
 FROM deps-base AS cpu-deps
 
@@ -133,4 +136,7 @@ RUN mkdir -p /opt/easyocr-models \
 
 LABEL sir-convert-a-lot.dependency-hash="${SERVICE_DEPENDENCY_HASH}"
 LABEL sir-convert-a-lot.recipe-hash="${SERVICE_RECIPE_HASH}"
-LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}"
+LABEL sir-convert-a-lot.dependency-image-hash="${SERVICE_DEPENDENCY_IMAGE_HASH}" \
+      org.sir_convert_a_lot.owner="sir-convert-a-lot" \
+      org.sir_convert_a_lot.image_family="deps" \
+      org.sir_convert_a_lot.rebuildable="true"

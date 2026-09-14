@@ -28,6 +28,9 @@ LABEL org.sir_convert_a_lot.runtime_domain="qwen_ml"
 LABEL org.sir_convert_a_lot.runtime_backend="qwen3_tts_12hz_1p7b"
 LABEL org.sir_convert_a_lot.lifecycle="experimental_training"
 LABEL org.sir_convert_a_lot.hemma_deployable="false"
+LABEL org.sir_convert_a_lot.owner="sir-convert-a-lot"
+LABEL org.sir_convert_a_lot.image_family="qwen"
+LABEL org.sir_convert_a_lot.rebuildable="true"
 
 WORKDIR /app
 
