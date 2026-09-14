@@ -16,6 +16,10 @@ ARG BASE_IMAGE=sir-convert-a-lot-deps-rocm:local
 
 FROM ${BASE_IMAGE} AS stt-sidecar-benchmark
 
+LABEL org.sir_convert_a_lot.owner="sir-convert-a-lot" \
+      org.sir_convert_a_lot.image_family="stt" \
+      org.sir_convert_a_lot.rebuildable="true"
+
 ARG CTRANSLATE2_VERSION=4.8.0
 ARG CTRANSLATE2_RELEASE_BASE_URL=https://github.com/OpenNMT/CTranslate2/releases/download
 ARG CTRANSLATE2_ROCM_WHEELS_ARCHIVE=rocm-python-wheels-Linux.zip
