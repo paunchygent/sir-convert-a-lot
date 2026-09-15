@@ -38,7 +38,7 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
 ]
 tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@f8951a209ad0c1afac04673fe62403b5bdb24bca#subdirectory=packages/repository_governance",
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@eb315885264e589966a2ad621dbc3f2da0f5de83#subdirectory=packages/repository_governance",
 ]
 
 [tool.repository-governance]
@@ -225,6 +225,8 @@ check-md-all = "check-md-all"
 # repository-governance:bindings:end
 # repository-governance:auxiliary-bindings:start
 archive-documents = "repository-governance-archive-documents"
+markdownlint-config-sync = "markdownlint-config-sync"
+markdownlint-config-drift-check = "markdownlint-config-drift-check"
 staleness-audit = "repository-governance-staleness-audit --repo-root ${PDM_PROJECT_ROOT}"
 publish-main = "repository-governance-publish-main --repository-root ${PDM_PROJECT_ROOT}"
 verify-main-publication = "repository-governance-verify-main-publication --repository-root ${PDM_PROJECT_ROOT}"
