@@ -21,7 +21,7 @@ from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
-from tests.sir_convert_a_lot.speech.test_transcript_formatter_replay_v2 import (
+from tests.sir_convert_a_lot.speech.transcript_formatter_replay_test_support import (
     _app,
     _post_replay_job,
     _replay_job_spec,

@@ -40,11 +40,11 @@ from tests.sir_convert_a_lot.service.http_routes_jobs_v2_edge_cases_test_support
     disable_run_job_async,
     post_create,
 )
-from tests.sir_convert_a_lot.speech.test_audio_transcript_bundle_runtime_v2 import (
-    _FakeAudioTranscriptionSidecar,
-)
-from tests.sir_convert_a_lot.speech.test_audio_transcript_bundle_runtime_v2 import (
+from tests.sir_convert_a_lot.speech.audio_transcript_bundle_runtime_test_support import (
     _headers as _audio_headers,
+)
+from tests.sir_convert_a_lot.speech.audio_transcript_sidecar_test_doubles import (
+    _FakeAudioTranscriptionSidecar,
 )
 from tests.sir_convert_a_lot.speech.test_transcript_formatter_artifacts import (
     _post_audio_job,
