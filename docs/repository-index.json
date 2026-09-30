@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "962c3cf6dd74de29635bceeb656d2a73e62af239a8102f2389587c9c5f844187",
+  "source_set_digest": "cc9e7dc7fa507a72dcbe1fcd6fcc8584198c532dfc95757c660f5a102922bb0e",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -2999,7 +2999,7 @@
       "type": "task",
       "title": "Remove the retired Sir exam-conversion domain and runtime",
       "path": "docs/backlog/tasks/task-sircon-07-04-01-remove-the-retired-sir-exam-conversion-domain-and-runtime.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "story",
       "story": "ST-SIRCON-07-04",
       "owners": [
@@ -3010,7 +3010,11 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-reviewer",
+        "decided_at": "2026-09-30T22:22:19+02:00",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Independent review requested changes F1-F5; repairs 9ec42dd8 and a7f89f3c cleared F1 and F3-F5; T6 amended by user decision in 00a4c6c6 and implemented in 74a32254; independent rereview (Pi invocation 6dc1d6f3) approved with no open findings. No Hemma deploy or live proof per T8. Retained session 01a0f366-a539-743a-8ee1-9b99e06d1157 evidence/reviews/sir-exam-retirement-independent-review.md."
       }
     },
     {
@@ -3949,6 +3953,28 @@
       "closeout_review": {
         "record": "inline",
         "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0032",
+      "type": "task",
+      "title": "Type test-client responses with the httpx2 response type",
+      "path": "docs/backlog/tasks/task-sircon-rep-0032-type-test-client-responses-with-the-httpx2-response-type.md",
+      "status": "done",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "approved",
+        "reviewer": "ruthless-reviewer",
+        "decided_at": "2026-09-30T22:47:29+02:00",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Independent review (Pi invocation 6dc1d6f3) requested changes R1 (two touched speech tests over 500 lines) on 822b5ef2; T2 widened in 810330f3; split repair 98c05af1; independent rereview (Pi invocation 92aca639) approved with no remaining findings; check service and check speech pass including typecheck. Retained session 01a0f366-a539-743a-8ee1-9b99e06d1157 evidence/reviews/task-sircon-rep-0032-review.md."
       }
     },
     {

@@ -430,20 +430,6 @@
         "additionalProperties": false,
         "description": "Conversion section of the v2 job specification.",
         "properties": {
-          "artifact_language": {
-            "anyOf": [
-              {
-                "maxLength": 8,
-                "minLength": 2,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Artifact Language"
-          },
           "css_filenames": {
             "items": {
               "type": "string"

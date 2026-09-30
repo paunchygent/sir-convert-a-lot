@@ -43,7 +43,7 @@ def test_audio_contract_initial_request_shape_is_admissible() -> None:
 
     assert spec.source.format == SourceFormatV2.AUDIO
     assert spec.conversion.output_format == OutputFormatV2.TRANSCRIPT_BUNDLE
-    assert spec.conversion.artifact_language is None
+    assert "artifact_language" not in spec.conversion.model_dump()
     assert spec.audio_transcription_options is not None
     assert spec.audio_transcription_options.language == "auto"
 

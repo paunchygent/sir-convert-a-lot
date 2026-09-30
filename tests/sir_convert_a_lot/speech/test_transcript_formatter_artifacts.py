@@ -25,7 +25,7 @@ from typing import IO, TypeAlias
 
 import pytest
 from fastapi.testclient import TestClient
-from httpx import Response
+from httpx2 import Response
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2, OutputFormatV2, SourceFormatV2
@@ -36,10 +36,12 @@ from scripts.sir_convert_a_lot.infrastructure.audio_transcript_bundle_artifacts 
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig, ServiceError
 from scripts.sir_convert_a_lot.infrastructure.runtime_models_v2 import StoredJobV2
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
-from tests.sir_convert_a_lot.speech.test_audio_transcript_bundle_runtime_v2 import (
+from tests.sir_convert_a_lot.speech.audio_transcript_bundle_runtime_test_support import (
     _API_KEY,
-    _FakeAudioTranscriptionSidecar,
     _headers,
+)
+from tests.sir_convert_a_lot.speech.audio_transcript_sidecar_test_doubles import (
+    _FakeAudioTranscriptionSidecar,
 )
 
 FIXTURE_PATH = (

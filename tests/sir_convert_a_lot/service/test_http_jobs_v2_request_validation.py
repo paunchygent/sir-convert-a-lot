@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceError
 from scripts.sir_convert_a_lot.interfaces.http_jobs_v2_request_validation import (
     validate_create_job_route_constraints,
+)
+from tests.sir_convert_a_lot.service.http_routes_jobs_v2_edge_cases_test_support import (
+    build_client,
+    md_to_pdf_spec,
+    post_create,
 )
 
 
@@ -56,3 +63,16 @@ def test_allows_reference_docx_upload_for_docx_output() -> None:
         resources_uploaded=False,
         reference_docx_uploaded=True,
     )
+
+
+def test_create_job_rejects_retired_artifact_language(tmp_path: Path) -> None:
+    client, _ = build_client(tmp_path, run_jobs_on_submit=False)
+    spec = md_to_pdf_spec("note.md")
+    conversion = spec["conversion"]
+    assert isinstance(conversion, dict)
+    conversion["artifact_language"] = "sv"
+
+    response = post_create(client, spec=spec)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"

@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 from typing import IO, Mapping, TypeAlias
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -104,7 +104,7 @@ def post_create(
     resources_file: tuple[str, bytes, str] | None = None,
     reference_docx_file: tuple[str, bytes, str] | None = None,
     api_key: str = "secret-key",
-) -> httpx.Response:
+) -> httpx2.Response:
     """Submit a typed multipart request to `POST /v2/convert/jobs`."""
 
     headers = {
@@ -130,7 +130,7 @@ def post_create(
     if reference_docx_file is not None:
         files.append(("reference_docx", reference_docx_file))
 
-    response: httpx.Response = client.post("/v2/convert/jobs", headers=headers, files=files)
+    response: httpx2.Response = client.post("/v2/convert/jobs", headers=headers, files=files)
     return response
 
 

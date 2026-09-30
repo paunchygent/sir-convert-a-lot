@@ -6,7 +6,7 @@ Purpose:
     finalization.
 
 Relationships:
-    - Called by `job_store_v2.JobStoreV2.mark_succeeded`.
+    - Called by `job_store_terminal_transitions_v2.mark_job_succeeded_v2`.
     - Keeps route-specific artifact selection out of generic job-state code.
 """
 

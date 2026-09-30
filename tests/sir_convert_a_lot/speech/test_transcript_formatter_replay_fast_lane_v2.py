@@ -29,11 +29,11 @@ from scripts.sir_convert_a_lot.infrastructure.transcript_formatter_replay_runtim
     TranscriptFormatterReplayExecutionResult,
 )
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app
-from tests.sir_convert_a_lot.speech.test_audio_transcript_bundle_runtime_v2 import (
+from tests.sir_convert_a_lot.speech.audio_transcript_bundle_runtime_test_support import (
     _API_KEY,
     _headers,
 )
-from tests.sir_convert_a_lot.speech.test_transcript_formatter_replay_v2 import (
+from tests.sir_convert_a_lot.speech.transcript_formatter_replay_test_support import (
     _artifact_entries,
     _canonical_bytes,
     _post_replay_job,

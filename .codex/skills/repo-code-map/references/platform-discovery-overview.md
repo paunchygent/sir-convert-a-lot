@@ -9,8 +9,8 @@ boundary.
 
 Sir Convert-a-Lot is the canonical document-conversion platform of the estate:
 one v2 service that turns PDF, DOCX, HTML, Markdown, and audio into
-LLM-friendly, deterministic, auditable outputs, plus the CLI that drives it and
-the exam-migration workflows built on top. It is a single Python/PDM project
+LLM-friendly, deterministic, auditable outputs, plus the CLI that drives it.
+It is a single Python/PDM project
 (`requires-python = ">=3.12,<3.14"`), not a service fan-out — the one directory
 under `services/` holds ownership-scoped tests, not a second deployable.
 
