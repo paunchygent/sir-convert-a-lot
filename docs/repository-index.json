@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "c532d995d3483488229205bae67d1ebc9439accddd5be8b158c8e4162939a762",
+  "source_set_digest": "7b0f92f41ea54c7a5b2e15af268e58d244abad0ded33016aa48e2a368e3e7ed9",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -1012,7 +1012,7 @@
       "type": "story",
       "title": "Retire the Sir exam-conversion runtime after Skriptoteket cutover",
       "path": "docs/backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md",
-      "status": "active",
+      "status": "done",
       "epic": "EPIC-SIRCON-07",
       "owners": [
         {
@@ -1025,7 +1025,11 @@
       },
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "spec-verifier (Pi c24293c0-e3fc-4150-b5d8-6557b3aac055)",
+        "decided_at": "2026-10-01T00:10:25+02:00",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Verified the complete ST-SIRCON-07-04 story slice at afabb8ee against S1-S5 and TASK-SIRCON-07-04-01 T6/T8 user decisions (2026-09-30); no open findings. Approved retirement, REP-0030 and REP-0032 rereviews and retained service (216 tests), speech (299 tests), conversion/OCR/workload (89 tests) and compose/workload (57 tests) evidence support the preserved generic boundary and exam-surface removal. Parent may close the story and reconcile stale live-proof wording; no deploy, Hemma or live proof was required or run because production/STT stay offline. Accepted residual risk: old same-key fingerprints may conflict until normal expiry; actual volume migration and restart-image availability remain unproven future-start dependencies. Retained review: .orchestration/context/sessions/01a0f366-a539-743a-8ee1-9b99e06d1157/evidence/reviews/st-sircon-07-04-verifier-review.md."
       }
     },
     {
@@ -5049,7 +5053,7 @@
         "id": "ST-SIRCON-07-04",
         "type": "story",
         "title": "Retire the Sir exam-conversion runtime after Skriptoteket cutover",
-        "status": "active",
+        "status": "done",
         "path": "docs/backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md"
       }
     ]
