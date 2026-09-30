@@ -49,7 +49,8 @@ conversion execution model or adding work to generic requests.
 
 ## Validation
 
-- Inspect the named `exam` check plan and run `pdm run check exam`.
+- The named `exam` check cohort is removed with the exam runtime; run the
+  owning `service`, `speech`, and `operations` check scopes instead.
 - Run affected generic service, conversion, OCR, speech, job, artifact, worker,
   and offload tests needed to prove their preserved behavior.
 - Regenerate and validate OpenAPI after removing exam routes and schemas.
@@ -63,7 +64,7 @@ conversion execution model or adding work to generic requests.
 
 Independent review `sir-exam-retirement-independent-review.md` (retained
 session `01a0f366-a539-743a-8ee1-9b99e06d1157`) requested changes. Admitted
-findings F1-F5 are repaired on this task: F1 and F2 through the T6 migration,
+findings F1-F5 are repaired on this task: F1 and F2 through the T6 migration (F2 as amended by the T6 user decision),
 F3 through T7, F4 by aligning the current codemap and handoff, and F5 by
 splitting `job_store_v2.py`, `test_audio_transcription_route_admission_v2.py`,
 and `hemma_workload.py` under the 500-line limit.
@@ -79,13 +80,13 @@ and `hemma_workload.py` under the 500-line limit.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term                                                                                                                                                      |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T1  | Delete exam-only modules and remove only exam branches from mixed generic modules.                                                                                         |
-| T2  | Preserve generic conversion, OCR, STT, jobs, artifacts, workers, sidecars, and offload.                                                                                    |
-| T3  | Remove exam routes, schemas, config, secrets, tests, scripts, and current docs together.                                                                                   |
-| T4  | Do not preserve adapters, aliases, fallbacks, or dormant exam code.                                                                                                        |
-| T5  | Qwen cleanup is excluded and remains owned by Skriptoteket Task 04.                                                                                                        |
-| T6  | Stored pre-retirement jobs are repaired by a one-time data migration command that drops retired fields and recomputes fingerprints; the runtime keeps no legacy-read code. |
-| T7  | The retired `artifact_language` field is removed from the published generic request contract.                                                                              |
-| T8  | No Hemma deploy or live proof: Sir production and STT stay offline by user decision (2026-09-30).                                                                          |
+| ID  | Decided contract term                                                                                                                                                                                                                                                                                                                                           |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1  | Delete exam-only modules and remove only exam branches from mixed generic modules.                                                                                                                                                                                                                                                                              |
+| T2  | Preserve generic conversion, OCR, STT, jobs, artifacts, workers, sidecars, and offload.                                                                                                                                                                                                                                                                         |
+| T3  | Remove exam routes, schemas, config, secrets, tests, scripts, and current docs together.                                                                                                                                                                                                                                                                        |
+| T4  | Do not preserve adapters, aliases, fallbacks, or dormant exam code.                                                                                                                                                                                                                                                                                             |
+| T5  | Qwen cleanup is excluded and remains owned by Skriptoteket Task 04.                                                                                                                                                                                                                                                                                             |
+| T6  | Stored pre-retirement jobs are repaired by a one-time data migration command that drops retired fields; the runtime keeps no legacy-read code. By user decision (2026-09-30) the migration neither recomputes idempotency fingerprints nor waits for or blocks on idempotency records inside their replay window; such records expire on their normal schedule. |
+| T7  | The retired `artifact_language` field is removed from the published generic request contract.                                                                                                                                                                                                                                                                   |
+| T8  | No Hemma deploy or live proof: Sir production and STT stay offline by user decision (2026-09-30).                                                                                                                                                                                                                                                               |
