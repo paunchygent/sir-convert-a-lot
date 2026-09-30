@@ -21,7 +21,7 @@ from typing import IO, TypeAlias
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import Response
+from httpx2 import Response
 from pydantic import ValidationError
 
 from scripts.sir_convert_a_lot.domain.specs import JobStatus

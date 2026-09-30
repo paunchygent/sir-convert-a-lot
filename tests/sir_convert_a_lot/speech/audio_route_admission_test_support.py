@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import IO, TypeAlias
 
 from fastapi.testclient import TestClient
-from httpx import Response
+from httpx2 import Response
 
 from scripts.sir_convert_a_lot.infrastructure.runtime_models import ServiceConfig
 from scripts.sir_convert_a_lot.interfaces.http_api import create_app

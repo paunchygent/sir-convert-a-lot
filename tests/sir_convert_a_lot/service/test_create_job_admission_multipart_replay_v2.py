@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import TypeAlias
 
-import httpx
+import httpx2
 import pytest
 from fastapi.testclient import TestClient
 from starlette._utils import AwaitableOrContextManager
@@ -79,12 +79,12 @@ def test_create_job_admission_uses_bound_multipart_parameters_without_replay(
     assert form_call_count == 1
 
 
-def _post_audio_job(*, client: TestClient) -> httpx.Response:
+def _post_audio_job(*, client: TestClient) -> httpx2.Response:
     files: _MultipartFiles = [
         ("file", ("teacher-meeting.m4a", b"audio bytes", "application/octet-stream")),
         ("job_spec", (None, json.dumps(_audio_job_spec()))),
     ]
-    response: httpx.Response = client.post(
+    response: httpx2.Response = client.post(
         "/v2/convert/jobs?wait_seconds=0",
         headers={
             "X-API-Key": _API_KEY,

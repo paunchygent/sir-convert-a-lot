@@ -24,7 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import IO, TypeAlias
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -676,13 +676,13 @@ def _post_audio_job(
     client: TestClient,
     idempotency_key: str,
     wait_seconds: int,
-) -> httpx.Response:
+) -> httpx2.Response:
     payload = _audio_job_spec()
     files: _MultipartFiles = [
         ("file", ("teacher-meeting.m4a", b"audio bytes", "application/octet-stream")),
         ("job_spec", (None, json.dumps(payload))),
     ]
-    response: httpx.Response = client.post(
+    response: httpx2.Response = client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers={**_headers(), "Idempotency-Key": idempotency_key},
         files=files,

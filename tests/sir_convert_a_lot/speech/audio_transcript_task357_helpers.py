@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import IO, TypeAlias
 
-import httpx
+import httpx2
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -76,14 +76,14 @@ def post_audio_job(
     client: TestClient,
     idempotency_key: str,
     wait_seconds: int,
-) -> httpx.Response:
+) -> httpx2.Response:
     """Submit a governed audio transcript job through Service API v2."""
 
     files: MultipartFiles = [
         ("file", ("teacher-meeting.m4a", b"audio bytes", "application/octet-stream")),
         ("job_spec", (None, json.dumps(audio_job_spec()))),
     ]
-    response: httpx.Response = client.post(
+    response: httpx2.Response = client.post(
         f"/v2/convert/jobs?wait_seconds={wait_seconds}",
         headers={**headers(), "Idempotency-Key": idempotency_key},
         files=files,
