@@ -87,16 +87,18 @@ includes TASK-SIRCON-07-04-01. Run it once per data volume with both
 `sir_convert_a_lot_prod` and `sir_convert_a_lot_gpu_worker` stopped.
 
 The command rewrites each retained generic manifest in place and drops the
-retired keys. It never deletes jobs, artifacts, or idempotency records. The
-default is a dry run; `--execute` writes. The report is JSON, and the exit code
-is `0` when the data root is current or was rewritten, `1` when a dry run found
-manifests to rewrite, and `2` when the migration is blocked:
+retired keys. It never deletes jobs, artifacts, or idempotency records, and it
+never rewrites idempotency records: because the request inputs are not
+persisted, a pre-retirement fingerprint cannot be recomputed, so the migration
+neither waits for nor blocks on records still inside their replay window. Those
+records expire on their normal schedule, and until then a same-key retry keeps
+returning its changed-payload conflict. The default is a dry run; `--execute`
+writes. The report is JSON, and the exit code is `0` when the data root is
+current or was rewritten, `1` when a dry run found manifests to rewrite, and
+`2` only when `unmigratable_jobs` is non-empty:
 
 - `unmigratable_jobs` lists exam jobs or manifests that stay invalid. Stop and
   escalate; do not delete them to unblock the start.
-- `live_idempotency_records` counts records still inside the 24-hour replay
-  window. Their fingerprints cannot be recomputed, because the request inputs
-  are never stored. Wait until `idempotency_window_closes_at` and rerun.
 
 The command runs inside the runtime image of the revision about to start,
 `sir-convert-a-lot-runtime:<40-character HEAD>`, because older images do not
@@ -120,9 +122,8 @@ sudo docker run --rm --entrypoint python \
 ```
 
 Use the volume name the first command prints if it differs from
-`sir-convert-a-lot_sir-convert-a-lot-prod-data`. Once production has served
-traffic on the new revision, its own fresh idempotency records make this
-command report `blocked`; it is a one-time pre-start step, not a routine check.
+`sir-convert-a-lot_sir-convert-a-lot-prod-data`. It is a one-time pre-start
+step, not a routine check.
 
 If it exits `1`, rerun the same command with `--execute` appended. Then run
 the dry run again: it must exit `0` with `"outcome": "clean"` before

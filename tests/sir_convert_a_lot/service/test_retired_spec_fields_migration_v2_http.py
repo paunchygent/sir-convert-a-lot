@@ -4,8 +4,8 @@ Purpose:
     Prove that retained manifests in the real pre-retirement schema break
     generic job reads and admission, that the one-time migration's dry run
     changes nothing, that `--execute` makes the store readable and admissible
-    again, that re-running it is a no-op, and that exam jobs and live
-    idempotency records block it without writes.
+    again, that re-running it is a no-op, that exam jobs block it without
+    writes, and that live idempotency records neither block it nor change.
 
 Relationships:
     - Exercises `infrastructure.retired_spec_fields_migration_v2` through
@@ -72,14 +72,14 @@ PRE_RETIREMENT_FINGERPRINT = "d35869ee0d3e07dac28097b45d2b6b0541f2d809aa7283e207
 
 
 def _retained_generic_job(tmp_path: Path) -> tuple[TestClient, FastAPI, str, Path]:
-    """Admit one generic job and rewrite its stored state to the pre-retirement shape."""
+    """Admit one generic job, rewrite it to the pre-retirement shape, and pin its live record."""
     _, app = build_client(tmp_path, run_jobs_on_submit=False)
     client = TestClient(app, raise_server_exceptions=False)
     created = post_create(client, idempotency_key="idem-retained-generic")
     assert created.status_code == 202
     job_id = created.json()["job"]["job_id"]
     manifest_path = _store_pre_retirement_spec(app, job_id, PRE_RETIREMENT_GENERIC_JOB_SPEC)
-    _age_idempotency_records(
+    _set_idempotency_record_fingerprint(
         app.state.runtime_v2.idempotency_store.dir, fingerprint=PRE_RETIREMENT_FINGERPRINT
     )
     return client, app, job_id, manifest_path
@@ -102,10 +102,16 @@ def _store_pre_retirement_spec(app: FastAPI, job_id: str, spec: dict[str, object
     return manifest_path
 
 
-def _age_idempotency_records(idempotency_dir: Path, *, fingerprint: str) -> None:
+def _set_idempotency_record_fingerprint(idempotency_dir: Path, *, fingerprint: str) -> None:
     for record_path in idempotency_dir.glob("*.json"):
         record = read_json(record_path)
         record["fingerprint"] = fingerprint
+        atomic_write_json(record_path, record)
+
+
+def _age_idempotency_records(idempotency_dir: Path) -> None:
+    for record_path in idempotency_dir.glob("*.json"):
+        record = read_json(record_path)
         record["created_at"] = dt_to_rfc3339(utc_now() - EXPIRED_RECORD_AGE)
         atomic_write_json(record_path, record)
 
@@ -167,6 +173,7 @@ def test_migrated_store_admits_and_replays_generic_requests(
     disable_run_job_async(monkeypatch)
     client, app, job_id, _ = _retained_generic_job(tmp_path)
     data_root = app.state.runtime_v2.job_store.data_root
+    _age_idempotency_records(app.state.runtime_v2.idempotency_store.dir)
     exit_code, _ = _run_migration(data_root, capsys, "--execute")
     assert exit_code == EXIT_CURRENT
 
@@ -232,7 +239,6 @@ def test_exam_job_blocks_migration_without_writes(
     )
     exam_manifest_path = _store_pre_retirement_spec(app, exam_job_id, exam_spec)
     runtime = app.state.runtime_v2
-    _age_idempotency_records(runtime.idempotency_store.dir, fingerprint=PRE_RETIREMENT_FINGERPRINT)
     generic_before = generic_manifest_path.read_bytes()
     exam_before = exam_manifest_path.read_bytes()
 
@@ -248,29 +254,39 @@ def test_exam_job_blocks_migration_without_writes(
     assert exam_manifest_path.read_bytes() == exam_before
 
 
-def test_live_idempotency_record_blocks_migration_without_writes(
+def test_live_idempotency_record_does_not_block_and_is_left_unchanged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     disable_run_job_async(monkeypatch)
-    _, app, _, manifest_path = _retained_generic_job(tmp_path)
+    client, app, job_id, manifest_path = _retained_generic_job(tmp_path)
     runtime = app.state.runtime_v2
-    live_created_at = utc_now() - timedelta(hours=1)
-    for record_path in runtime.idempotency_store.dir.glob("*.json"):
-        record = read_json(record_path)
-        record["created_at"] = dt_to_rfc3339(live_created_at)
-        atomic_write_json(record_path, record)
-    before = manifest_path.read_bytes()
+    record_dir = runtime.idempotency_store.dir
+    records_before = {path.name: path.read_bytes() for path in record_dir.glob("*.json")}
+    manifest_before = manifest_path.read_bytes()
+
+    exit_code, report = _run_migration(runtime.job_store.data_root, capsys)
+    assert exit_code == EXIT_REWRITE_REQUIRED
+    assert report["outcome"] == "rewrite_required"
+    assert report["jobs_rewritten"] == []
+    assert "live_idempotency_records" not in report
+    assert "idempotency_window_closes_at" not in report
+    assert manifest_path.read_bytes() == manifest_before
+    assert {path.name: path.read_bytes() for path in record_dir.glob("*.json")} == records_before
 
     exit_code, report = _run_migration(runtime.job_store.data_root, capsys, "--execute")
+    assert exit_code == EXIT_CURRENT
+    assert report["outcome"] == "rewritten"
+    assert report["jobs_rewritten"] == [job_id]
+    assert "live_idempotency_records" not in report
+    assert "idempotency_window_closes_at" not in report
+    assert {path.name: path.read_bytes() for path in record_dir.glob("*.json")} == records_before
 
-    assert exit_code == EXIT_BLOCKED
-    assert report["outcome"] == "blocked"
-    assert report["live_idempotency_records"] == 1
-    assert report["idempotency_window_closes_at"] == dt_to_rfc3339(
-        live_created_at + timedelta(hours=24)
+    retried = post_create(
+        client, idempotency_key="idem-retained-generic", file_bytes=b"# Changed\n"
     )
-    assert report["jobs_rewritten"] == []
-    assert manifest_path.read_bytes() == before
+    assert retried.status_code == 409
+    assert retried.json()["error"]["code"] == "idempotency_key_reused_with_different_payload"
+    assert {path.name: path.read_bytes() for path in record_dir.glob("*.json")} == records_before
 
 
 def _headers() -> dict[str, str]:

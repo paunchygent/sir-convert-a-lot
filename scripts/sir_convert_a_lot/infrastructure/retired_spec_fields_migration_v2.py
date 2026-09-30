@@ -12,9 +12,9 @@ Purpose:
     Idempotency records store only a request fingerprint hash. Its inputs (raw
     request JSON and upload hashes) are never persisted, so a pre-retirement
     fingerprint cannot be recomputed in the post-retirement encoding. The
-    migration therefore blocks while any idempotency record is still inside
-    its replay window and reports when that window closes; expired records are
-    already ignored and deleted by `IdempotencyStore.get`.
+    migration never recomputes fingerprints and neither waits for nor blocks
+    on records still inside their replay window; it never rewrites or deletes
+    them, and such records expire on their normal schedule.
 
 Relationships:
     - Runs against a stopped service data root through
@@ -29,7 +29,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -37,10 +36,7 @@ from pydantic import ValidationError
 from scripts.sir_convert_a_lot.domain.specs_v2 import JobSpecV2
 from scripts.sir_convert_a_lot.infrastructure.filesystem_journal import (
     atomic_write_json,
-    dt_from_rfc3339,
-    dt_to_rfc3339,
     read_json,
-    utc_now,
 )
 from scripts.sir_convert_a_lot.infrastructure.job_store_v2_core import JobStoreV2Core
 from scripts.sir_convert_a_lot.infrastructure.stored_job_spec_normalization_v2 import (
@@ -74,13 +70,11 @@ class RetiredSpecFieldsMigrationReport:
     jobs_rewritten: list[str] = field(default_factory=list)
     dropped_artifact_language_job_ids: list[str] = field(default_factory=list)
     unmigratable_jobs: list[UnmigratableJob] = field(default_factory=list)
-    live_idempotency_records: int = 0
-    idempotency_window_closes_at: str | None = None
 
     @property
     def blocked(self) -> bool:
         """Return whether the data root must not be served by the current runtime."""
-        return bool(self.unmigratable_jobs) or self.live_idempotency_records > 0
+        return bool(self.unmigratable_jobs)
 
 
 @dataclass(frozen=True)
@@ -92,13 +86,12 @@ class _ManifestPlan:
 def migrate_retired_spec_fields(
     *,
     data_root: Path,
-    idempotency_ttl_seconds: int,
     execute: bool,
 ) -> RetiredSpecFieldsMigrationReport:
     """Plan, and with `execute`, apply the stored-spec migration for one data root.
 
-    Nothing is written unless `execute` is set and no job or idempotency record
-    blocks the migration, so every run is either a full rewrite or a no-op.
+    Nothing is written unless `execute` is set and no job blocks the migration,
+    so every run is either a full rewrite or a no-op.
     """
     jobs_dir = data_root / "jobs_v2"
     if not jobs_dir.is_dir():
@@ -106,12 +99,6 @@ def migrate_retired_spec_fields(
     store = JobStoreV2Core(data_root=data_root, raw_ttl_seconds=0, artifact_ttl_seconds=0)
     report = RetiredSpecFieldsMigrationReport(
         data_root=str(data_root), mode="execute" if execute else "dry_run"
-    )
-    _scan_idempotency_records(
-        report=report,
-        idempotency_dir=data_root / "idempotency",
-        ttl=timedelta(seconds=idempotency_ttl_seconds),
-        now=utc_now(),
     )
     plans: dict[str, _ManifestPlan] = {}
     for job_id in sorted(path.name for path in jobs_dir.iterdir() if path.is_dir()):
@@ -144,28 +131,6 @@ def migrate_retired_spec_fields(
             report.jobs_rewritten.append(job_id)
     report.outcome = "blocked" if report.blocked else "rewritten"
     return report
-
-
-def _scan_idempotency_records(
-    *,
-    report: RetiredSpecFieldsMigrationReport,
-    idempotency_dir: Path,
-    ttl: timedelta,
-    now: datetime,
-) -> None:
-    if not idempotency_dir.is_dir():
-        return
-    latest_close: datetime | None = None
-    for record_path in sorted(idempotency_dir.glob("*.json")):
-        created_at = dt_from_rfc3339(read_json(record_path).get("created_at"))
-        if created_at is None or now - created_at > ttl:
-            continue
-        report.live_idempotency_records += 1
-        closes_at = created_at + ttl
-        if latest_close is None or closes_at > latest_close:
-            latest_close = closes_at
-    if latest_close is not None:
-        report.idempotency_window_closes_at = dt_to_rfc3339(latest_close)
 
 
 def _plan_manifest(
