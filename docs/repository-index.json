@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "7246b19a55f49a65af9ba7d01065378d844bcae5d19fe4eba766cda49f0ed2ac",
+  "source_set_digest": "cc9e7dc7fa507a72dcbe1fcd6fcc8584198c532dfc95757c660f5a102922bb0e",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3960,7 +3960,7 @@
       "type": "task",
       "title": "Type test-client responses with the httpx2 response type",
       "path": "docs/backlog/tasks/task-sircon-rep-0032-type-test-client-responses-with-the-httpx2-response-type.md",
-      "status": "in_progress",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -3970,7 +3970,11 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-reviewer",
+        "decided_at": "2026-09-30T22:47:29+02:00",
+        "approval_protocol": "agent-overseer:approved-review-closeout",
+        "approval_evidence": "Independent review (Pi invocation 6dc1d6f3) requested changes R1 (two touched speech tests over 500 lines) on 822b5ef2; T2 widened in 810330f3; split repair 98c05af1; independent rereview (Pi invocation 92aca639) approved with no remaining findings; check service and check speech pass including typecheck. Retained session 01a0f366-a539-743a-8ee1-9b99e06d1157 evidence/reviews/task-sircon-rep-0032-review.md."
       }
     },
     {

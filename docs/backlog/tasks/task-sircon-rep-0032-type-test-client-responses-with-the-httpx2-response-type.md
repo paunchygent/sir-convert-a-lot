@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-09-30'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-09-30T22:47:29+02:00'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: 'Independent review (Pi invocation 6dc1d6f3) requested changes R1 (two touched speech tests over 500 lines) on 822b5ef2; T2 widened in 810330f3; split repair 98c05af1; independent rereview (Pi invocation 92aca639) approved with no remaining findings; check service and check speech pass including typecheck. Retained session 01a0f366-a539-743a-8ee1-9b99e06d1157 evidence/reviews/task-sircon-rep-0032-review.md.'
 task_kind: repository
 acceptance_criteria:
   - The service and speech check typecheck phases pass with no httpx.Response annotation on a test-client response and no typing escape hatch
