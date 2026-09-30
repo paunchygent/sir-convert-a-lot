@@ -98,14 +98,31 @@ manifests to rewrite, and `2` when the migration is blocked:
   window. Their fingerprints cannot be recomputed, because the request inputs
   are never stored. Wait until `idempotency_window_closes_at` and rerun.
 
-From the Hemma Server repository root, with the target revision checked out and
-its runtime image present, run the dry run first:
+The command runs inside the runtime image of the revision about to start,
+`sir-convert-a-lot-runtime:<40-character HEAD>`, because older images do not
+contain the migration module. Today only `prod-start-bounded` builds that
+image, and it also starts services, so no committed command yet builds it on
+its own. Until one exists, stop here and escalate rather than starting services
+to get the image. This procedure has not yet been run on Hemma, because
+production has been offline since the retirement.
+
+From the Hemma Server repository root, with the target revision checked out,
+confirm the production data volume name (Compose prefixes it with the project
+name), then run the dry run:
 
 ```bash
-docker compose run --rm --no-deps --entrypoint python sir_convert_a_lot_prod \
+sudo docker volume ls --format '{{.Name}}' --filter name=sir-convert-a-lot-prod-data
+sudo docker run --rm --entrypoint python \
+  -v sir-convert-a-lot_sir-convert-a-lot-prod-data:/var/lib/sir-convert-a-lot/prod \
+  "sir-convert-a-lot-runtime:$(git rev-parse HEAD)" \
   -m scripts.sir_convert_a_lot.interfaces.cli_retired_spec_fields_migration_v2 \
   --data-root /var/lib/sir-convert-a-lot/prod
 ```
+
+Use the volume name the first command prints if it differs from
+`sir-convert-a-lot_sir-convert-a-lot-prod-data`. Once production has served
+traffic on the new revision, its own fresh idempotency records make this
+command report `blocked`; it is a one-time pre-start step, not a routine check.
 
 If it exits `1`, rerun the same command with `--execute` appended. Then run
 the dry run again: it must exit `0` with `"outcome": "clean"` before
