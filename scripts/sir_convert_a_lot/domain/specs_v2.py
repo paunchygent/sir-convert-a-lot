@@ -127,7 +127,6 @@ class ConversionSpecV2(BaseModel):
     pdf_layout: PdfLayoutV2 | None = None
     template: TemplateSelectorV2 | None = None
     reference_docx_filename: str | None = None
-    artifact_language: str | None = Field(default=None, min_length=2, max_length=8)
 
 
 class PdfOptionsV2(BaseModel):

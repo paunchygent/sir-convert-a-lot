@@ -12,22 +12,25 @@
   as `REF-SIRCON-GENERAL-exam-net-qti-import-contract-empirical-observations`
   (stems-in-prompt rule included), superseding the vendor-reported strategy
   reference. Four narrow empirical unknowns stay open in that reference.
+  The Sir exam runtime, including Exam.net export, has since been retired
+  under TASK-SIRCON-07-04-01.
 - [TASK-SIRCON-08-01-07](docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md)
-  is `done`: published revision `a1319739` runs GPT-5.6 Luna as the exam-lane
-  low-effort default with GLM-5.3-flash (OpenRouter) as a failover-only backup
-  under one 5,000,000 token/day non-refundable UTC lease. Credentialed Hemma
-  proofs covered Luna success, one-shot GLM failover with two leases, and
-  fail-closed exhaustion with zero provider calls while deterministic artifacts
-  continued; canonical API and worker runtime was restored healthy afterward.
+  is `done` as history: published revision `a1319739` ran GPT-5.6 Luna as the
+  exam-lane low-effort default with GLM-5.3-flash (OpenRouter) as a
+  failover-only backup under one 5,000,000 token/day non-refundable UTC lease,
+  with credentialed Hemma proofs of Luna success, one-shot GLM failover, and
+  fail-closed exhaustion. TASK-SIRCON-07-04-01 removed the Sir exam lane and
+  its answer-key provider runtime; exam conversion is Skriptoteket-owned.
 - Skriptoteket `EPIC-SKRIPT-39` (active, with accepted `ADR-SKRIPT-0090`) is
   porting the exam-conversion domain into Skriptoteket by incremental
   strangler. Its walking skeleton `TASK-SKRIPT-39-01-01` is `done`
   (2026-08-29): the exam domain chain ported from this repo at `41be61a6`
   produces a byte-identical QTI package (sha256 `f36a4ae3…`) behind a lane
   switch defaulting to the Sir Convert path, proven through the authenticated
-  HuleEdu ceremony. This repo stays the default lane until the cutover story;
-  Sir Convert then retains heavy OCR/STT behind a generic extraction contract
-  and the exam-specific cross-repo schema surface retires with that cutover.
+  HuleEdu ceremony. The cutover has happened: Skriptoteket executes exam
+  conversion locally, and the Sir exam runtime is retired under
+  TASK-SIRCON-07-04-01 (`in_progress`; review repair ongoing). Sir Convert
+  keeps generic OCR/STT.
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
@@ -40,8 +43,8 @@
   contract. The repository-declared `operations` scope and coverage gate pass.
   No Hemma switching or production mutation ran; the task remains
   `in_progress` pending separately authorized live acceptance.
-- Root quality has seven Git-derived scopes: `service`, `conversion`, `exam`,
-  `speech`, `operations`, `research`, and `repository`. Select the owning scope;
+- Root quality has six Git-derived scopes: `service`, `conversion`, `speech`,
+  `operations`, `research`, and `repository`. Select the owning scope;
   do not use the broad root aggregate as a routine commit gate.
 - Active product authority remains in the current backlog, ADRs, references,
   and runbooks reached through the generated documentation doorway.

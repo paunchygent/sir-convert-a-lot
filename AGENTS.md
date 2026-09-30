@@ -1,7 +1,7 @@
 # Sir Convert-a-Lot Agent Entrypoint
 
 Sir Convert-a-Lot is the canonical document-conversion platform for reliable,
-LLM-friendly PDF, DOCX, Markdown, HTML, and exam-migration workflows. It is a
+LLM-friendly PDF, DOCX, Markdown, HTML, and audio/speech-to-text workflows. It is a
 Python/PDM repository with Hemma offload, GPU-first runtime governance, and
 docs-as-code as planning and contract truth.
 

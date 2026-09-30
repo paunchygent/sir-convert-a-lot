@@ -21,6 +21,9 @@ State the observable condition that starts this procedure and who may run it.
 ## Preconditions
 
 - Required authority, system state, access, inputs, and safety checks.
+- Before the first Sir production start on a revision that includes
+  TASK-SIRCON-07-04-01, the pre-start stored job-spec migration below has
+  exited `0` against the production data volume.
 
 ## Steps
 
@@ -71,6 +74,44 @@ Operate Sir Convert-a-Lot on Hemma without duplicating HuleEdu or Skriptoteket r
   Use the wrapper from the local repo root. It is environment-aware: from a client machine it SSHes to Hemma; from the canonical Hemma Server checkout it runs directly after checking the hostname, repo root, and shared skill repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an operator deliberately needs the SSH path despite local Hemma detection. `run-hemma` does not forward local secrets by default; the GPU verifier is the committed exception and opts in to forwarding only `SIR_CONVERT_A_LOT_V2_API_KEY` for its remote process.
   Direct production and ROCm helpers such as `prod-*`, `prod-deps-rocm-build`, and `hemma-sync-prod-env-mirror` are Hemma Server-only. They fail before Docker or host env mutation when the session does not prove the canonical Hemma hostname, repo root, and shared skill repository.
 
+## Pre-Start Stored Job-Spec Migration
+
+TASK-SIRCON-07-04-01 removed the exam fields `conversion.targets`,
+`conversion.artifact_language`, and `digiexam_migration_options` from the v2
+job spec, and changed the request-fingerprint encoding. Job manifests written
+before that revision fail strict validation in the current runtime: reading
+the job returns HTTP 500, and so does every new admission while one such
+manifest exists. This migration is a required step before any Sir production
+start, including `hemma-workload start sir-production`, on a revision that
+includes TASK-SIRCON-07-04-01. Run it once per data volume with both
+`sir_convert_a_lot_prod` and `sir_convert_a_lot_gpu_worker` stopped.
+
+The command rewrites each retained generic manifest in place and drops the
+retired keys. It never deletes jobs, artifacts, or idempotency records. The
+default is a dry run; `--execute` writes. The report is JSON, and the exit code
+is `0` when the data root is current or was rewritten, `1` when a dry run found
+manifests to rewrite, and `2` when the migration is blocked:
+
+- `unmigratable_jobs` lists exam jobs or manifests that stay invalid. Stop and
+  escalate; do not delete them to unblock the start.
+- `live_idempotency_records` counts records still inside the 24-hour replay
+  window. Their fingerprints cannot be recomputed, because the request inputs
+  are never stored. Wait until `idempotency_window_closes_at` and rerun.
+
+From the Hemma Server repository root, with the target revision checked out and
+its runtime image present, run the dry run first:
+
+```bash
+docker compose run --rm --no-deps --entrypoint python sir_convert_a_lot_prod \
+  -m scripts.sir_convert_a_lot.interfaces.cli_retired_spec_fields_migration_v2 \
+  --data-root /var/lib/sir-convert-a-lot/prod
+```
+
+If it exits `1`, rerun the same command with `--execute` appended. Then run
+the dry run again: it must exit `0` with `"outcome": "clean"` before
+`prod-start-bounded` may run. Rerunning `--execute` on a migrated volume
+changes nothing. Keep the JSON reports as start evidence.
+
 ## Bounded Production Start
 
 `pdm run prod-start-bounded` is Hemma Server-only. It admits the current repository `HEAD` only with the exact, already-present hash-addressed ROCm dependency image and all three identity labels: dependency hash, recipe hash, and dependency-image hash. Before a selected service starts, the revision-tagged application image for that `HEAD` must prove its tag and image ID, OCI revision label, and dependency-hash label; injected runtime revision values are not provenance.
@@ -79,7 +120,7 @@ The command starts only `sir_convert_a_lot_prod` and `sir_convert_a_lot_gpu_work
 
 The command preserves the identities and states of excluded services and all volumes. It prints exactly one final `outcome=<value>` line: `succeeded`, `timed_out`, `dependency_unhealthy`, or `failed`; only `succeeded` exits zero.
 
-Stop when dependency ensure or build, a broad recreate, an excluded service action, a volume or data mutation, provider or Task 05 work, or a live conversion would be required. When executing the controlled stale-image proof, stop if a genuine older labeled application image is unavailable. Do not add recovery work beyond the accepted API-only stale repair.
+Stop when dependency ensure or build, a broad recreate, an excluded service action, a volume or data mutation, provider or Task 05 work, or a live conversion would be required. The pre-start stored job-spec migration is the one sanctioned data mutation; it runs separately, before this command, and never inside it. When executing the controlled stale-image proof, stop if a genuine older labeled application image is unavailable. Do not add recovery work beyond the accepted API-only stale repair.
 
 ## Shared GPU Workload Switching
 
