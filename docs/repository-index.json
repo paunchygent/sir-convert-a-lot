@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "e005ce7e22d3f9758f2bc217eb02c63e5d724548d351ee7d8e5f0f7c8a3cd8aa",
+  "source_set_digest": "b08c2b406f3de268805fddc2da75fc040e872d7b66a511cafd582e26cb425c8e",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -3938,6 +3938,24 @@
       "type": "task",
       "title": "Provide bounded Sir research image cleanup",
       "path": "docs/backlog/tasks/task-sircon-rep-0031-provide-bounded-sir-research-image-cleanup.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0032",
+      "type": "task",
+      "title": "Type test-client responses with the httpx2 response type",
+      "path": "docs/backlog/tasks/task-sircon-rep-0032-type-test-client-responses-with-the-httpx2-response-type.md",
       "status": "in_progress",
       "task_kind": "repository",
       "owners": [
