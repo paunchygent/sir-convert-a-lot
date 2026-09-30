@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-08-30'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-09-30T22:22:19+02:00'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: 'Independent review requested changes F1-F5; repairs 9ec42dd8 and a7f89f3c cleared F1 and F3-F5; T6 amended by user decision in 00a4c6c6 and implemented in 74a32254; independent rereview (Pi invocation 6dc1d6f3) approved with no open findings. No Hemma deploy or live proof per T8. Retained session 01a0f366-a539-743a-8ee1-9b99e06d1157 evidence/reviews/sir-exam-retirement-independent-review.md.'
 task_kind: story
 acceptance_criteria:
   - Delete the retired DigiExam, exam-authoring, Exam.net, answer-key, correction, and public-grant runtime and remove only their branches from shared job and artifact surfaces; preserve generic conversion, OCR, STT, job lifecycle, artifacts, workers, and offload.

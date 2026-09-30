@@ -34,6 +34,10 @@ typecheck phases pass.
   `tests/sir_convert_a_lot/speech/test_transcript_formatter_artifacts.py:326`,
   and `tests/sir_convert_a_lot/speech/test_transcript_formatter_replay_v2.py:425`.
 - Change test annotations and imports only; test behavior stays the same.
+- Split `tests/sir_convert_a_lot/speech/test_audio_transcript_bundle_runtime_v2.py`
+  and `tests/sir_convert_a_lot/speech/test_transcript_formatter_replay_v2.py`
+  below 500 lines each without dropping or changing any test (review finding
+  R1).
 
 ## Contract Inputs
 
@@ -60,8 +64,8 @@ performance stay unchanged.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------ |
-| T1  | Each test-client response is annotated with the response type the client returns, not suppressed.      |
-| T2  | Only test annotations and imports change; runtime code and dependencies stay unchanged.                |
-| T3  | Authorized by the user on 2026-09-30 ("fix them") after the TASK-SIRCON-07-04-01 rereview surfaced it. |
+| ID  | Decided contract term                                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1  | Each test-client response is annotated with the response type the client returns, not suppressed.                                                                                        |
+| T2  | Only test annotations and imports change, plus behavior-preserving splits of touched test files that exceed 500 lines (review finding R1); runtime code and dependencies stay unchanged. |
+| T3  | Authorized by the user on 2026-09-30 ("fix them") after the TASK-SIRCON-07-04-01 rereview surfaced it.                                                                                   |
