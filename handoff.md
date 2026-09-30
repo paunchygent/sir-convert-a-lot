@@ -29,8 +29,10 @@
   switch defaulting to the Sir Convert path, proven through the authenticated
   HuleEdu ceremony. The cutover has happened: Skriptoteket executes exam
   conversion locally, and the Sir exam runtime is retired under
-  TASK-SIRCON-07-04-01 (`in_progress`; review repair ongoing). Sir Convert
-  keeps generic OCR/STT.
+  TASK-SIRCON-07-04-01 (`done` 2026-09-30, with REP-0030 and REP-0032).
+  Sir Convert keeps generic OCR/STT; production and STT stay offline by user
+  decision. Before any restart, run the one-time retired-spec-fields migration
+  per the service-operations runbook.
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
