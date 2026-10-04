@@ -39,7 +39,7 @@
 - `TASK-SIRCON-01-05-04` has published its bounded API/GPU-worker startup
   implementation. Its separately authorized Hemma current/stale-image proof
   has not run, so the task remains `in_progress`.
-- `TASK-SIRCON-01-05-05` now pins `repository-governance` `0.11.25` at
+- `TASK-SIRCON-01-05-05` was introduced with `repository-governance` `0.11.25` at
   `1548765abc4f81e54cbe13f6112163da96fa8842` and contains the static
   Sir workload registry, adapters, inventory, CLI, focused tests, and operator
   contract. The repository-declared `operations` scope and coverage gate pass.
