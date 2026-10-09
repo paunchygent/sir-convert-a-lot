@@ -5,7 +5,7 @@
 groups = ["default", "dev", "tooling"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.1"
-content_hash = "sha256:846b201be44d2973f2ebd582f44a81497ea6f4d4e4c743e2050c3f4272cf885d"
+content_hash = "sha256:05fbf10aa4e768802c3a5efb2abb343c68f33eae6c104ad6ca56f72fb2a3ccf0"
 
 [[metadata.targets]]
 requires_python = ">=3.12,<3.14"
@@ -2887,12 +2887,12 @@ files = [
 
 [[package]]
 name = "repository-governance"
-version = "0.11.84"
+version = "0.11.85"
 requires_python = "<3.15,>=3.12"
 subdirectory = "packages/repository_governance"
 git = "https://github.com/paunchygent/skill-repository.git"
-ref = "305d61ca412673a87869cf022f9e5611ae3e526a"
-revision = "305d61ca412673a87869cf022f9e5611ae3e526a"
+ref = "6d45edc56435c3b2b95191e7e6922818807ddd4b"
+revision = "6d45edc56435c3b2b95191e7e6922818807ddd4b"
 summary = "Shared repository-governance and Docs-as-Code kernel."
 groups = ["tooling"]
 dependencies = [
