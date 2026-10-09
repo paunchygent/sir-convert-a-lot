@@ -23,6 +23,17 @@ retired_ids:
 
 ## Scope
 
+Superseded (2026-10-09): exam-artifact conversion and authoring is
+Skriptoteket-owned under Skriptoteket `EPIC-SKRIPT-39` with accepted
+`ADR-SKRIPT-0090`. The Sir exam runtime, including the Exam.net QTI/PDF
+export, was retired under `TASK-SIRCON-07-04-01` (`ST-SIRCON-07-04`,
+done). The authoritative empirical Exam.net QTI 3.0 import contract lives
+in the HuleEduOS repository (`.codex/skills/examnet-qti-import/`); the
+Exam.net importer is live (QTI 3.0 native, QTI 2.1/2.2 auto-converted),
+so this epic's "vendor-reported, still under development" claims are
+obsolete. This epic awaits governed terminal closure and must not be read
+as active Sir Convert exam scope.
+
 ## Epic Contract
 
 ## ADR Coverage
