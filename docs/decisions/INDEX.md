@@ -13,7 +13,3 @@
 - `ADR-SIRCON-0011` | [Service API v2 Current-State Authority and Extension Boundary](adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
 - `ADR-SIRCON-0012` | [Speech-to-Text Sidecar and Audio Ingestion Governance](adr-sircon-0012-speech-to-text-sidecar-and-audio-ingestion-governance.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
 - `ADR-SIRCON-0013` | [Cloudflare R2 job artifact storage boundary](adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md) | accepted | governing=- | governed_contracts=- | supersedes=- | superseded_by=-
-
-## Historical Coverage Debt
-
-- `ST-SIRCON-07-04` | [Retire the Sir exam-conversion runtime after Skriptoteket cutover](../backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md) | story | done

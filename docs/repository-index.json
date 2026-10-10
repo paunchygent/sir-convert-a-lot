@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "7b0f92f41ea54c7a5b2e15af268e58d244abad0ded33016aa48e2a368e3e7ed9",
+  "source_set_digest": "08147010b1618e21362e11364432a2b6ea9db6ea91fa37063f2fd7c75c8b29be",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -185,7 +185,9 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "not_required",
+        "approval_protocol": "agent-planning:user-closure-gate",
+        "approval_evidence": "probe"
       },
       "closeout_review": {
         "record": "inline",
@@ -5046,15 +5048,6 @@
         "governed_contracts": [],
         "supersedes": [],
         "superseded_by": null
-      }
-    ],
-    "historical_coverage_debt": [
-      {
-        "id": "ST-SIRCON-07-04",
-        "type": "story",
-        "title": "Retire the Sir exam-conversion runtime after Skriptoteket cutover",
-        "status": "done",
-        "path": "docs/backlog/stories/st-sircon-07-04-retire-the-sir-exam-conversion-runtime-after-skriptoteket-cutover.md"
       }
     ]
   }
