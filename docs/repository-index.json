@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "08147010b1618e21362e11364432a2b6ea9db6ea91fa37063f2fd7c75c8b29be",
+  "source_set_digest": "8ea70ea9939b9a6c43ded7b9211ad98a82cca07e8b99ae70fcd7947471620201",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -185,9 +185,7 @@
       ],
       "readiness_review": {
         "record": "inline",
-        "status": "not_required",
-        "approval_protocol": "agent-planning:user-closure-gate",
-        "approval_evidence": "probe"
+        "status": "not_started"
       },
       "closeout_review": {
         "record": "inline",
