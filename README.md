@@ -84,7 +84,6 @@ SSH path from an environment that otherwise looks like Hemma.
 - `pdm run new-story "<title>"`
 - `pdm run new-epic "<title>"`
 - `pdm run new-doc --type <type> --title "<title>"`
-- `pdm run docs-sync`
 - `pdm run docs-validate`
 
 ## Documentation & Contracts

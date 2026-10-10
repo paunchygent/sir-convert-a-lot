@@ -109,8 +109,8 @@ documents), `reference/` (52 documents), `runbooks/` (10 documents),
 `_generated/openapi/`, and `_meta/docs-contract.yaml`. Retired documents move to
 `.archive/docs/` through `pdm run archive-documents`.
 
-Generated indexes are refreshed by `pdm run docs-sync` and enforced by
-`pdm run docs-validate`; both scan `docs/` only, so `AGENTS.md` and `.codex/`
+Generated indexes are regenerated and enforced by `pdm run docs-validate`;
+it scans `docs/` only, so `AGENTS.md` and `.codex/`
 sit outside them. Scaffold governed documents with `pdm run new-task`,
 `new-story`, `new-epic`, `new-review`, and `new-doc`; never author frontmatter
 by hand.
@@ -136,7 +136,7 @@ by hand.
 
 `pdm run format`, `lint`, `typecheck`, `test`, and `check` for Python, with
 focused `pytest-root` runs and `coverage-gate` where conversion-core coverage
-applies; `docs-sync` and `docs-validate` for the `docs/` contract;
+applies; `docs-validate` for the `docs/` contract;
 `git diff --check` for diff hygiene. `AGENTS.md` states which set a given change
 closes on.
 

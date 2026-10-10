@@ -80,7 +80,7 @@ handling. Do not duplicate the shared transition protocol here.
 
 Default close-out:
 
-- Docs/governance change: `pdm run docs-sync`, `pdm run docs-validate`,
+- Docs/governance change: `pdm run docs-validate`,
   `pdm run skills-validate`, `pdm run handoff-validate`, and `git diff --check`
 - Python/backend change: inspect `pdm run check --plan <scope>`, then run only
   the owning named scope with `pdm run check <scope>`
