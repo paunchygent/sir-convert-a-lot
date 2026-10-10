@@ -23,6 +23,15 @@ retired_ids:
 
 ## Scope
 
+Superseded (2026-10-09): answer-key completion for exam conversion is
+Skriptoteket-owned (Skriptoteket `ST-SKRIPT-39-02`, done and independently
+verified, with the daily token lease carried over from
+`TASK-SIRCON-08-01-07`). The Sir exam lane and its answer-key provider
+runtime were removed under `TASK-SIRCON-07-04-01`, and the Qwen answer-key
+sidecar under `TASK-SIRCON-REP-0030` / Skriptoteket
+`TASK-SKRIPT-39-03-04`. This epic awaits governed terminal closure and
+must not be read as active Sir Convert exam scope.
+
 ## Epic Contract
 
 ## ADR Coverage
