@@ -68,7 +68,8 @@ Operate Sir Convert-a-Lot on Hemma without duplicating HuleEdu or Skriptoteket r
 - GPU runtime verify from a client checkout:
   `pdm run run-local-pdm hemma-verify-gpu-runtime`. The local launcher reuses `SIR_CONVERT_A_LOT_V2_API_KEY` loaded by `run-local-pdm` and forwards only that key through the `run-hemma` verifier opt-in; operators should not rediscover or routinely pass `--api-key` by hand.
   `hemma-deploy-and-verify` gates deploy success on revision/readiness parity,
-  metrics safety, and public-edge reserved state. The legacy V2 conversion smoke
+  and metrics safety over the selected private lane. It consumes source already
+  published by the parent; it does not push a branch. The legacy V2 conversion smoke
   is evidence only; `gpu_not_available` there is a conversion-worker finding,
   not a deploy failure.
   Use the wrapper from the local repo root. It is environment-aware: from a client machine it SSHes to Hemma; from the canonical Hemma Server checkout it runs directly after checking the hostname, repo root, and shared skill repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an operator deliberately needs the SSH path despite local Hemma detection. `run-hemma` does not forward local secrets by default; the GPU verifier is the committed exception and opts in to forwarding only `SIR_CONVERT_A_LOT_V2_API_KEY` for its remote process.
@@ -155,7 +156,7 @@ pdm run hemma-workload restore <target>
 | `sir-production`  | `sir_convert_a_lot_prod`, `sir_convert_a_lot_gpu_worker` | `restart=no`; start delegates to Task04 `prod-start-bounded`, and stop names only the GPU worker then API.                 |
 | `sir-stt-sidecar` | `sir_convert_a_lot_stt_sidecar`                          | `restart=unless-stopped`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
 
-Both targets claim `gpu:amdgpu` and conflict with each other. After the Hemma Server guard, the public command crosses one fixed `sudo -n` Python worker boundary; that root worker rechecks the guard, owns the provider transaction, and uses `sudo -n docker` for direct container inspection and control. The provider renders the terminal result as JSON; only `succeeded` exits zero. It owns `/var/lib/hemma/workload-switch/active-receipt.json` and `/var/lib/hemma/workload-switch/active.lock`, and recovery restores only the prior Sir services recorded in that receipt. The reserved edge remains untouched, and unknown GPU consumers cause refusal.
+Both targets claim `gpu:amdgpu` and conflict with each other. After the Hemma Server guard, the public command crosses one fixed `sudo -n` Python worker boundary; that root worker rechecks the guard, owns the provider transaction, and uses `sudo -n docker` for direct container inspection and control. The provider renders the terminal result as JSON; only `succeeded` exits zero. It owns `/var/lib/hemma/workload-switch/active-receipt.json` and `/var/lib/hemma/workload-switch/active.lock`, and recovery restores only the prior Sir services recorded in that receipt. The public reserved workload is retired; a lingering retired container or unknown GPU consumer causes refusal.
 
 ## Dependency Image Cleanup
 
@@ -177,8 +178,9 @@ If the canonical repo is missing, repair the `~/apps` checkout before continuing
 Canonical lanes:
 
 - Tunnel lane: `http://127.0.0.1:28085`
-- Gateway/public lane: disabled until the Gateway cutover explicitly re-enables
-  the intended public edge.
+- Direct public lane: retired under TASK-SIRCON-06-01-04 and ADR-SIRCON-0014.
+  Sir production remains stopped by user decision. Startup and GPU access still
+  require separate authority.
   Do not document `127.0.0.1:8085` or `127.0.0.1:18085` as client access lanes. Port `8085` is container-internal validation only.
   Tunnel check:
   `ssh hemma -L 28085:127.0.0.1:28085 -N curl -fsS http://127.0.0.1:28085/healthz`

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "9c3bcbbae2e93a5ca0ba3f4d3b4a09ae717eb0abeac276cca8a859f1c94d4ff2",
+  "source_set_digest": "f4c7ee33c03149ac36d225bb2917fcb6ece7b338abaa4591df8baee03945256b",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -2843,6 +2843,25 @@
       }
     },
     {
+      "id": "TASK-SIRCON-06-01-04",
+      "type": "task",
+      "title": "Retire the Sir Convert public edge and decouple the reserved default certificate",
+      "path": "docs/backlog/tasks/task-sircon-06-01-04-retire-the-sir-convert-public-edge-and-decouple-the-reserved-default-certificate.md",
+      "status": "in_progress",
+      "task_kind": "story",
+      "story": "ST-SIRCON-06-01",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
+      }
+    },
+    {
       "id": "TASK-SIRCON-06-02-01",
       "type": "task",
       "title": "Publish ADR-0009 for Gateway-fronted Sir Convert access",
@@ -4217,6 +4236,22 @@
       ]
     },
     {
+      "id": "ADR-SIRCON-0014",
+      "type": "adr",
+      "title": "Retire the direct Sir Convert public hostname",
+      "path": "docs/decisions/adr-sircon-0014-retire-the-direct-sir-convert-public-hostname.md",
+      "status": "accepted",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "links": {
+        "governing": []
+      }
+    },
+    {
       "id": "REF-SIRCON-DECISIONS-qwen3-tts-swedish-corpus-curation-policy",
       "type": "reference",
       "title": "Qwen3-TTS Swedish Corpus Curation Policy",
@@ -4941,6 +4976,19 @@
       ]
     },
     {
+      "id": "RUN-SIRCON-retire-the-sir-convert-public-edge-after-default-host-certificate-separation",
+      "type": "runbook",
+      "title": "Retire the Sir Convert public edge after default-host certificate separation",
+      "path": "docs/runbooks/run-sircon-retire-the-sir-convert-public-edge-after-default-host-certificate-separation-retire-the-sir-convert-public-edge-after-default-host-certificate-separation.md",
+      "status": "active",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ]
+    },
+    {
       "id": "RUN-SIRCON-v2-async-push-delivery-runbook",
       "type": "runbook",
       "title": "V2 Async Push Delivery Runbook",
@@ -5064,6 +5112,16 @@
         "title": "Cloudflare R2 job artifact storage boundary",
         "status": "accepted",
         "path": "docs/decisions/adr-sircon-0013-cloudflare-r2-job-artifact-storage-boundary.md",
+        "governing": [],
+        "governed_contracts": [],
+        "supersedes": [],
+        "superseded_by": null
+      },
+      {
+        "id": "ADR-SIRCON-0014",
+        "title": "Retire the direct Sir Convert public hostname",
+        "status": "accepted",
+        "path": "docs/decisions/adr-sircon-0014-retire-the-direct-sir-convert-public-hostname.md",
         "governing": [],
         "governed_contracts": [],
         "supersedes": [],

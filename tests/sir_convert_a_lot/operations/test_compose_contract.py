@@ -88,7 +88,7 @@ def test_compose_declares_prod_runtime_without_answer_key_sidecar() -> None:
     assert "sir_convert_a_lot_gpu_worker" in services_obj
     assert "sir_convert_a_lot_stt_sidecar" in services_obj
     assert "sir_convert_qwen_answer_key" not in services_obj
-    assert "sir_convert_a_lot_public_reserved" in services_obj
+    assert "sir_convert_a_lot_public_reserved" not in services_obj
     assert "sir_convert_a_lot_eval" not in services_obj
 
 

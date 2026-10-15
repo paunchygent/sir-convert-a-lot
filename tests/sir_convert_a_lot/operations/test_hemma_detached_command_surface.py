@@ -5,7 +5,7 @@ Purpose:
     Hemma deploy commands.
 
 Relationships:
-    - Protects public-edge verification production deploy recovery operations.
+    - Protects the detached production command and monitoring surfaces.
     - Exercises scripts/devops/hemma-command-*.sh contract wiring.
 """
 
@@ -21,9 +21,6 @@ LOCAL_MONITOR = REPO_ROOT / "scripts" / "devops" / "hemma-command-monitor.sh"
 LOCAL_PROD_RECREATE = REPO_ROOT / "scripts" / "devops" / "hemma-prod-recreate.sh"
 REMOTE_START = REPO_ROOT / "scripts" / "devops" / "hemma-command-start-remote.sh"
 REMOTE_MONITOR = REPO_ROOT / "scripts" / "devops" / "hemma-command-monitor-remote.sh"
-DEFAULT_HOST_REMEDIATE = (
-    REPO_ROOT / "scripts" / "devops" / "hemma-public-edge-default-host-remediate.sh"
-)
 
 
 def test_detached_hemma_command_scripts_are_exposed_as_pdm_surfaces() -> None:
@@ -32,10 +29,7 @@ def test_detached_hemma_command_scripts_are_exposed_as_pdm_surfaces() -> None:
 
     assert scripts["hemma-command-start"] == "bash scripts/devops/hemma-command-start.sh"
     assert scripts["hemma-command-monitor"] == "bash scripts/devops/hemma-command-monitor.sh"
-    assert (
-        scripts["hemma-public-edge-default-host-remediate"]
-        == "bash scripts/devops/hemma-public-edge-default-host-remediate.sh"
-    )
+    assert "hemma-public-edge-default-host-remediate" not in scripts
 
 
 def test_local_detached_launcher_delegates_through_run_hemma() -> None:
@@ -71,19 +65,3 @@ def test_remote_monitor_selects_detached_command_logs() -> None:
     assert ".artifacts/hemma-command-*.log" in monitor_text
     assert "tail_args=(-n 0 -F" in monitor_text
     assert "grep --line-buffered" in monitor_text
-
-
-def test_default_host_remediation_targets_shared_infrastructure_surface() -> None:
-    script_text = DEFAULT_HOST_REMEDIATE.read_text(encoding="utf-8")
-
-    assert "/home/paunchygent/infrastructure" in script_text
-    assert "docker-compose.yml" in script_text
-    assert "DEFAULT_HOST=hemma-reserved-default-host" in script_text
-    assert "VIRTUAL_HOST=hemma-reserved-default-host" in script_text
-    assert "CERT_NAME=convert.hule.education" in script_text
-    assert "PROXY_DEFAULT_SERVER=true" in script_text
-    assert "return 404" in script_text
-    assert 'printf "%s\\n", block' in script_text
-    assert "sudo docker compose -f" in script_text
-    assert "nginx-proxy" in script_text
-    assert "acme-companion" in script_text

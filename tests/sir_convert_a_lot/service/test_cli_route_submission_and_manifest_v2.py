@@ -283,7 +283,7 @@ def test_audio_route_submission_records_service_reattempt_metadata_without_extra
             output_dir=output_dir,
             route=route,
             source_files=(source_file,),
-            service_url="https://convert.hule.education",
+            service_url="https://example.invalid",
             api_key="dev-key",
             wait_seconds=0,
             max_poll_seconds=5,

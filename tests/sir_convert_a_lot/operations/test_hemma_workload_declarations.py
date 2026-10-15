@@ -74,7 +74,7 @@ class StatefulRunner:
         raise AssertionError(f"unexpected command: {argv}")
 
 
-def test_registry_declares_sir_gpu_workloads_and_passive_reserved_edge() -> None:
+def test_registry_declares_only_sir_gpu_workloads() -> None:
     registry = hemma_workload.sir_workload_registry(
         runner=QueueRunner([]), project_root=Path("/srv/sir")
     )
@@ -84,28 +84,19 @@ def test_registry_declares_sir_gpu_workloads_and_passive_reserved_edge() -> None
         {
             hemma_workload.PRODUCTION_WORKLOAD_ID,
             hemma_workload.STT_WORKLOAD_ID,
-            hemma_workload.RESERVED_EDGE_WORKLOAD_ID,
         }
     )
     production = registry.declaration(hemma_workload.PRODUCTION_WORKLOAD_ID)
     stt = registry.declaration(hemma_workload.STT_WORKLOAD_ID)
-    reserved_edge = registry.declaration(hemma_workload.RESERVED_EDGE_WORKLOAD_ID)
     assert production.service_identities == (
         hemma_workload.API_CONTAINER,
         hemma_workload.GPU_WORKER_CONTAINER,
     )
     assert stt.service_identities == (hemma_workload.STT_CONTAINER,)
-    assert reserved_edge.service_identities == (hemma_workload.RESERVED_EDGE_CONTAINER,)
     for declaration in (production, stt):
         assert declaration.resource_claims == frozenset({"gpu:amdgpu"})
         assert declaration.dependencies == ()
         assert declaration.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
-    assert reserved_edge.resource_claims == frozenset({hemma_workload.PRODUCT_RESOURCE_CLAIM})
-    assert reserved_edge.dependencies == ()
-    assert reserved_edge.conflicts == frozenset()
-    assert reserved_edge.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
-    assert hemma_workload.RESERVED_EDGE_CONTAINER not in hemma_workload.PRODUCTION_CONTAINERS
-    assert hemma_workload.RESERVED_EDGE_CONTAINER not in hemma_workload.DECLARED_GPU_CONTAINERS
     assert production.conflicts == frozenset({hemma_workload.STT_WORKLOAD_ID})
     assert stt.conflicts == frozenset({hemma_workload.PRODUCTION_WORKLOAD_ID})
 
@@ -280,6 +271,19 @@ def test_controller_uses_public_provider_and_owner_state_constants(tmp_path: Pat
     assert hemma_workload.LOCK_PATH == Path("/var/lib/hemma/workload-switch/active.lock")
     assert not (tmp_path / "active-receipt.json").exists()
     assert not (tmp_path / "active.lock").exists()
+
+
+def test_controller_refuses_retired_edge_without_host_commands(tmp_path: Path) -> None:
+    runner = QueueRunner([])
+    controller = hemma_workload.sir_workload_controller(
+        runner=runner, project_root=Path("/srv/sir"), state_root=tmp_path
+    )
+
+    with pytest.raises(ValueError, match="unknown workload identity 'sir-public-reserved-edge'"):
+        controller.start("sir-public-reserved-edge", "tx-retired")
+
+    assert runner.commands == []
+    assert not (tmp_path / "active-receipt.json").exists()
 
 
 def test_provider_controller_refuses_unknown_consumer_before_transaction(tmp_path: Path) -> None:

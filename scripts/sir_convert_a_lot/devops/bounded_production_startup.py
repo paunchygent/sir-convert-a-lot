@@ -34,12 +34,7 @@ TOTAL_TIMEOUT_SECONDS = 120.0
 API_SERVICE = "sir_convert_a_lot_prod"
 WORKER_SERVICE = "sir_convert_a_lot_gpu_worker"
 SELECTED_NAMES = frozenset((API_SERVICE, WORKER_SERVICE))
-EXPLICIT_EXCLUDED_NAMES = frozenset(
-    (
-        "sir_convert_a_lot_stt_sidecar",
-        "sir_convert_a_lot_public_reserved",
-    )
-)
+EXPLICIT_EXCLUDED_NAMES = frozenset(("sir_convert_a_lot_stt_sidecar",))
 DEPENDENCY_LABELS = (
     "sir-convert-a-lot.dependency-hash",
     "sir-convert-a-lot.recipe-hash",

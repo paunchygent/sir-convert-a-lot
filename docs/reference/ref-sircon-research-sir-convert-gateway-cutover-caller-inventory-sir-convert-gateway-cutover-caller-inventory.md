@@ -16,6 +16,11 @@ retired_ids:
 
 ## Research Purpose And Boundary
 
+Current retirement authority is ADR-SIRCON-0014 and TASK-SIRCON-06-01-04.
+On 2026-10-15 the user confirmed that Sir production and the direct public
+hostname are retired and unused. The inventory below records the former
+cutover; it does not require retaining that hostname, vhost or certificate.
+
 ## Evidence And Sources
 
 ## Findings And Interpretation
@@ -63,7 +68,7 @@ Each caller entry should capture:
 - migration decision;
 - blockers and follow-up tasks.
 
-### Known Current Facts
+### Historical Cutover Facts
 
 | Caller or surface                                  | Current evidence                                                                                                                                                                                                                                                                                                                                 | Current lane                                        | Target lane                                                                                                                                                                              | Migration note                                                                                                                                                                                                       |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

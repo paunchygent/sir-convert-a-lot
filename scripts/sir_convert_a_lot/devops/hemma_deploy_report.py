@@ -6,7 +6,7 @@ Purpose:
 
 Relationships:
     - Used by `scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify`.
-    - Documents Hemma deploy verification and public-edge verification evidence file surfaces.
+    - Documents private readiness, revision, smoke and metrics evidence files.
 """
 
 from __future__ import annotations
@@ -20,8 +20,6 @@ def build_report_markdown(report: dict[str, object]) -> str:
     forbidden = metrics_forbidden if isinstance(metrics_forbidden, list) else []
     expected_remote = checks_obj.get("expected_revision_matches_remote")
     service_remote = checks_obj.get("service_revision_matches_remote")
-    public_host = checks_obj.get("nginx_proxy_public_host_registered")
-    default_host = checks_obj.get("default_host_reserved_placeholder_passed")
 
     lines: list[str] = [
         "# Hemma Deploy and Verify Report",
@@ -42,10 +40,6 @@ def build_report_markdown(report: dict[str, object]) -> str:
         f"- live_smoke_passed: `{checks_obj.get('live_smoke_passed')}`",
         f"- live_smoke_required: `{checks_obj.get('live_smoke_required')}`",
         f"- metrics_scan_passed: `{checks_obj.get('metrics_scan_passed')}`",
-        f"- public_https_reserved_passed: `{checks_obj.get('public_https_reserved_passed')}`",
-        f"- public_tls_certificate_passed: `{checks_obj.get('public_tls_certificate_passed')}`",
-        f"- nginx_proxy_public_host_registered: `{public_host}`",
-        f"- default_host_reserved_placeholder_passed: `{default_host}`",
         f"- metrics_forbidden_substrings: `{forbidden}`",
         "",
     ]
@@ -64,12 +58,6 @@ def build_report_markdown(report: dict[str, object]) -> str:
             "- `readyz.json`",
             "- `metrics.prom`",
             "- `remote_head.txt`",
-            "- `public_edge.json`",
-            "- `public_host_response.txt`",
-            "- `public_tls.json`",
-            "- `nginx_proxy_default.conf`",
-            "- `nginx_proxy_env.txt`",
-            "- `unknown_host_response.txt`",
             "",
         ]
     )
