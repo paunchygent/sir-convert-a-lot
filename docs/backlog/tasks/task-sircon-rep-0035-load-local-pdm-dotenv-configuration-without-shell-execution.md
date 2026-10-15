@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-10-15'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-10-15T19:19:13Z'
+  approval_protocol: agent-implementation:approved-review-closeout
+  approval_evidence: Independent exact three-file rereview approved with no outstanding findings; shared retained root 01a1407e-c16a-70f5-9c1d-dc6019adb9fb evidence/review/sir0035-wrapper-rereview.md.
 task_kind: repository
 acceptance_criteria:
   - "Valid dotenv data reaches the requested existing PDM command without shell execution or exit127."
@@ -92,3 +96,7 @@ service restart, model download, paid job or runtime build is required.
 | D01 | Use the existing PDM dotenv owner for the existing wrapper, preserving explicit override, missing-file behavior, literal argv and child status without shell execution. |
 | D02 | Preserve all configuration/private work; run focused adversarial checks and actual corrected Mac/Hemma commands through normal parent-owned review/publication.         |
 | D03 | Sir production/STT remains offline; no provisioning, model download, dependency, parser or framework is part of this wrapper repair.                                    |
+
+## Delivery And Acceptance
+
+Published reviewed source through merge `894f3ff5839b940aeddd0965a76b1913f8e16afe` on 2026-10-15. The ordinary primary-checkout `pdm run run-local-pdm handoff-validate` completed with exit 0 on both Mac and Hemma. Before/after SHA-256 checks confirm both original `.env` files are unchanged. Sir production/STT remains offline. Three focused adversarial tests, focused mypy, Ruff and shell/TOML checks passed; no full-suite claim. Exact source review, native check receipts and actual command acceptance are retained under the shared session above.

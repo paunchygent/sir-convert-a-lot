@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "b713b457d19e82fe79f5ca30fdd9a9d1ba1f184e3e0a57170a067950c8a028c7",
+  "source_set_digest": "a0ddaaf827a31767b52474b6ecdc51a748c8687911dbc06db9461e8974ac2677",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4042,6 +4042,28 @@
       "closeout_review": {
         "record": "inline",
         "status": "not_started"
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0035",
+      "type": "task",
+      "title": "Load local PDM dotenv configuration without shell execution",
+      "path": "docs/backlog/tasks/task-sircon-rep-0035-load-local-pdm-dotenv-configuration-without-shell-execution.md",
+      "status": "done",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "approved",
+        "reviewer": "ruthless-reviewer",
+        "decided_at": "2026-10-15T19:19:13Z",
+        "approval_protocol": "agent-implementation:approved-review-closeout",
+        "approval_evidence": "Independent exact three-file rereview approved with no outstanding findings; shared retained root 01a1407e-c16a-70f5-9c1d-dc6019adb9fb evidence/review/sir0035-wrapper-rereview.md."
       }
     },
     {
