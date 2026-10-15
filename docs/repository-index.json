@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "f4c7ee33c03149ac36d225bb2917fcb6ece7b338abaa4591df8baee03945256b",
+  "source_set_digest": "b713b457d19e82fe79f5ca30fdd9a9d1ba1f184e3e0a57170a067950c8a028c7",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4024,6 +4024,24 @@
         "decided_at": "2026-10-15T10:31:38Z",
         "approval_protocol": "agent-implementation:approved-review-closeout",
         "approval_evidence": "Independent code R1-R3 rereview and prose R1-R3 rereview approved the exact source bytes; parent retained root 01a13b6a-e17a-7255-8b11-da4f26bf7427 holds both reports and manifests."
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0034",
+      "type": "task",
+      "title": "Accept equivalent Qwen bind backing and correct private route guidance",
+      "path": "docs/backlog/tasks/task-sircon-rep-0034-accept-equivalent-qwen-bind-backing-and-correct-private-route-guidance.md",
+      "status": "in_progress",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {

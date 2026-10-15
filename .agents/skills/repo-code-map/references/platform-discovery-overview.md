@@ -90,9 +90,10 @@ the service environment.
   `pdm run dev-start` and `compose.local.yaml`. Running
   `uvicorn scripts.sir_convert_a_lot.service:app` directly is not a supported
   lane.
-- Hemma tunnel: `127.0.0.1:28085`, the default target for downstream app
-  integration.
-- Public: `convert.hule.education`.
+- Private dev: the Mac tunnel at `127.0.0.1:28085`, or
+  `host.docker.internal:28085` for container clients.
+- Private prod: `sir_convert_a_lot_prod:8085` on `hule-network`.
+- Direct public hostname: retired under ADR-SIRCON-0014; no public lane.
 
 Hemma work runs through `pdm run run-hemma -- ...`; from a client session it
 SSHes to Hemma, and from the canonical Hemma Server repo it executes locally

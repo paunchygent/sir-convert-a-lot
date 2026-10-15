@@ -24,6 +24,9 @@ from scripts.sir_convert_a_lot.devops.qwen_docker_bind_roots_contracts import (
     match_bind_root,
     resolve_persistent_home_path,
 )
+from scripts.sir_convert_a_lot.devops.qwen_docker_bind_roots_runtime import (
+    bind_root_roundtrip_matches,
+)
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     MountResolution,
     QwenCacheSettings,
@@ -163,7 +166,9 @@ def _resolve_installed_persistent_home_path(canonical_root: Path) -> Path | None
     if match is None:
         return None
     bind_root, _ = match
-    if find_mount_source(bind_root.home_root) != bind_root.canonical_root.as_posix():
+    if find_mount_source(bind_root.home_root) is None:
+        return None
+    if not bind_root_roundtrip_matches(bind_root):
         return None
     resolved_home_path = resolve_persistent_home_path(canonical_root, bind_roots=bind_roots)
     if resolved_home_path is None:

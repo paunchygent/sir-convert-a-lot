@@ -1,5 +1,13 @@
 ## Current
 
+- `TASK-SIRCON-REP-0034` (owner: implementation lead `01a13ff5-237b`) repairs
+  Qwen producer and installed-home backing equivalence and the stale `.agents`
+  private-route codemap. Source proof passes 14 producer and 13 consumer tests,
+  focused lint/format and types. Next: parent `081d9763-a35c` routes independent
+  review of the branch commit. Hemma storage-migration hold:
+  no Hemma commands until explicit parent-relayed release. Deferred CONV
+  references remain parent-owned. [Contract](docs/backlog/tasks/task-sircon-rep-0034-accept-equivalent-qwen-bind-backing-and-correct-private-route-guidance.md).
+
 - `TASK-SIRCON-06-01-04` (owner: parent `081d9763-a35c`) removes the retired
   Sir public edge. Source changes await independent review on
   `fix/retire-convert-public-edge`; no live mutation has run. Next: independent

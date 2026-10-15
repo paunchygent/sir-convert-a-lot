@@ -63,11 +63,11 @@ def build_root_state(bind_root: QwenDockerBindRoot) -> QwenDockerBindRootState:
         canonical_exists=bind_root.canonical_root.exists(),
         home_exists=bind_root.home_root.exists(),
         mount_source=mount_source,
-        mounted_expected_source=_bind_root_roundtrip_matches(bind_root),
+        mounted_expected_source=bind_root_roundtrip_matches(bind_root),
     )
 
 
-def _bind_root_roundtrip_matches(bind_root: QwenDockerBindRoot) -> bool:
+def bind_root_roundtrip_matches(bind_root: QwenDockerBindRoot) -> bool:
     """Return whether writes through the home root appear at the canonical root."""
     if not bind_root.home_root.exists() or not bind_root.canonical_root.exists():
         return False
@@ -149,12 +149,12 @@ def _ensure_bind_root(bind_root: QwenDockerBindRoot) -> None:
     ensure_directory(bind_root.home_root, require_root=True)
     mount_source = find_mount_source(bind_root.home_root)
     expected_source = bind_root.canonical_root.as_posix()
-    if mount_source == expected_source:
-        return
-    if mount_source is not None and mount_source != expected_source:
+    if mount_source is not None:
+        if bind_root_roundtrip_matches(bind_root):
+            return
         raise SystemExit(
             f"Home bind root {bind_root.home_root} is already mounted from {mount_source}, "
-            f"not {expected_source}."
+            f"but its backing does not match {expected_source}."
         )
     run_root_checked(
         ["mount", "--bind", bind_root.canonical_root.as_posix(), bind_root.home_root.as_posix()],
