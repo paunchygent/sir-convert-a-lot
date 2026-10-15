@@ -92,8 +92,8 @@ def convert_command(
         "--service-url",
         help=(
             "Sir Convert-a-Lot base URL "
-            "(canonical lanes: tunnel http://127.0.0.1:28085 or "
-            "internet https://convert.hule.education)."
+            "(local development http://127.0.0.1:8085 or "
+            "canonical Hemma tunnel http://127.0.0.1:28085)."
         ),
     ),
     api_key: str | None = typer.Option(

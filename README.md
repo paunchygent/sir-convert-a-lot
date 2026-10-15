@@ -35,9 +35,9 @@ pdm run dev-logs
 ```
 
 This local `:8085` lane is for laptop debugging only. Default downstream app
-integration should still target Hemma through the tunnel lane
-(`127.0.0.1:28085`) or the public lane
-([convert.hule.education](https://convert.hule.education)).
+integration uses the Hemma tunnel lane (`127.0.0.1:28085`) when that runtime is
+explicitly enabled. Sir production and its public hostname are retired by user
+decision; the CLI has no direct public conversion lane.
 
 In another terminal, convert documents via the CLI:
 

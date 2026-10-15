@@ -1,7 +1,7 @@
 """Bind exact Sir GPU workloads to the shared Hemma transaction engine.
 
 Purpose:
-    Declare the Sir production, STT sidecar, and reserved-edge workloads,
+    Declare the Sir production and STT sidecar workloads,
     operate the production API and GPU worker as one workload, and build the
     shared workload registry and controller for the Hemma host.
 
@@ -57,13 +57,10 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
     HOST_IDENTITY,
     HOST_STATE_ROOT,
     LOCK_PATH,
-    PRODUCT_RESOURCE_CLAIM,
     PRODUCTION_CONTAINERS,
     PRODUCTION_RESTART_POLICY,
     PRODUCTION_WORKLOAD_ID,
     RECEIPT_PATH,
-    RESERVED_EDGE_CONTAINER,
-    RESERVED_EDGE_WORKLOAD_ID,
     SIDECAR_READINESS_INTERVAL_SECONDS,
     SIDECAR_READINESS_TIMEOUT_SECONDS,
     SIDECAR_RESTART_POLICY,
@@ -101,10 +98,7 @@ __all__ = [
     "PRODUCTION_CONTAINERS",
     "PRODUCTION_RESTART_POLICY",
     "PRODUCTION_WORKLOAD_ID",
-    "PRODUCT_RESOURCE_CLAIM",
     "RECEIPT_PATH",
-    "RESERVED_EDGE_CONTAINER",
-    "RESERVED_EDGE_WORKLOAD_ID",
     "SIDECAR_READINESS_INTERVAL_SECONDS",
     "SIDECAR_READINESS_TIMEOUT_SECONDS",
     "SIDECAR_RESTART_POLICY",
@@ -252,19 +246,6 @@ def sir_workload_registry(
                 frozenset({GPU_CLAIM}),
                 frozenset({PRODUCTION_WORKLOAD_ID}),
                 ContainerWorkloadAdapter(STT_WORKLOAD_ID, STT_CONTAINER, command_runner),
-                frozenset({TerminalOutcome.SUCCEEDED}),
-            ),
-            WorkloadDeclaration(
-                RESERVED_EDGE_WORKLOAD_ID,
-                (RESERVED_EDGE_CONTAINER,),
-                (),
-                frozenset({PRODUCT_RESOURCE_CLAIM}),
-                frozenset(),
-                ContainerWorkloadAdapter(
-                    RESERVED_EDGE_WORKLOAD_ID,
-                    RESERVED_EDGE_CONTAINER,
-                    command_runner,
-                ),
                 frozenset({TerminalOutcome.SUCCEEDED}),
             ),
         ),

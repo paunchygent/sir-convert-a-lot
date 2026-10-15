@@ -92,7 +92,7 @@ the service environment.
   lane.
 - Hemma tunnel: `127.0.0.1:28085`, the default target for downstream app
   integration.
-- Public: `convert.hule.education`.
+- Direct public hostname: retired under TASK-SIRCON-06-01-04; no public lane.
 
 Hemma work runs through `pdm run run-hemma -- ...`; from a client session it
 SSHes to Hemma, and from the canonical Hemma Server repo it executes locally

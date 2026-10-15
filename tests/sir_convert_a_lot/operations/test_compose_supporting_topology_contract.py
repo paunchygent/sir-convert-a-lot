@@ -1,7 +1,7 @@
 """Compose contracts for services outside the bounded startup selection.
 
 Purpose:
-    Verify supporting service and public-edge topology remains stable while
+    Verify supporting services stay private while
     the production API and GPU worker use bounded startup semantics.
 """
 
@@ -139,28 +139,24 @@ def test_compose_has_no_answer_key_sidecar() -> None:
         assert "8082" not in [str(item) for item in expose], service_name
 
 
-def test_compose_routes_public_host_to_reserved_edge_not_app() -> None:
+def test_compose_services_publish_no_public_vhost_or_certificate() -> None:
     compose = _load_compose()
-    reserved_service = _require_service(compose, "sir_convert_a_lot_public_reserved")
-
-    assert reserved_service.get("image") == "nginx:1.27-alpine"
-    assert reserved_service.get("container_name") == "sir_convert_a_lot_public_reserved"
-    assert reserved_service.get("restart") == "unless-stopped"
-    assert reserved_service.get("volumes") == [
-        "./docker/public-edge/reserved-default.conf:/etc/nginx/conf.d/default.conf:ro"
-    ]
-    assert reserved_service.get("expose") == ["8080"]
-
-    env_map = _service_env_map(reserved_service)
-    assert env_map["VIRTUAL_HOST"] == "${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}"
-    assert env_map["VIRTUAL_PORT"] == "8080"
-    assert env_map["LETSENCRYPT_HOST"] == "${SIR_CONVERT_A_LOT_PUBLIC_HOST:-convert.hule.education}"
-
-    reserved_config = (REPO_ROOT / "docker" / "public-edge" / "reserved-default.conf").read_text(
-        encoding="utf-8"
-    )
-    assert "return 421" in reserved_config
-    assert "sir-convert-a-lot-public-edge-reserved" in reserved_config
+    services = compose.get("services")
+    assert isinstance(services, dict)
+    assert "sir_convert_a_lot_public_reserved" not in services
+    for service_name in services:
+        environment = _require_service(compose, service_name).get("environment")
+        if isinstance(environment, dict):
+            keys = set(environment)
+        else:
+            assert environment is None or isinstance(environment, list)
+            keys = {
+                item.split("=", maxsplit=1)[0]
+                for item in environment or []
+                if isinstance(item, str)
+            }
+        assert "VIRTUAL_HOST" not in keys, service_name
+        assert "LETSENCRYPT_HOST" not in keys, service_name
 
 
 def test_compose_declares_rocm_build_args_without_api_gpu_passthrough() -> None:

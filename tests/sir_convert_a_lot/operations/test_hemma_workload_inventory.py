@@ -256,31 +256,21 @@ def test_inventory_reports_prefixed_container_and_unmapped_nonzero_vram_pid() ->
     assert snapshot.unknown_consumers == ("PID 123", "container sir_convert_unknown_gpu")
 
 
-def test_inventory_leaves_known_non_gpu_reserved_edge_outside_gpu_workloads() -> None:
-    runner = _inventory_runner(running=(hemma_workload.RESERVED_EDGE_CONTAINER,))
+def test_inventory_reports_lingering_retired_edge_as_unknown() -> None:
+    runner = _inventory_runner(running=("sir_convert_a_lot_public_reserved",))
 
     snapshot = hemma_workload.SirGpuInventory(runner).inspect(frozenset({hemma_workload.GPU_CLAIM}))
 
     assert snapshot.running_workloads == frozenset()
-    assert snapshot.unknown_consumers == ()
-
-
-def test_inventory_reports_reserved_edge_for_exact_product_claim() -> None:
-    runner = _inventory_runner(running=(hemma_workload.RESERVED_EDGE_CONTAINER,))
-
-    snapshot = hemma_workload.SirGpuInventory(runner).inspect(
-        frozenset({hemma_workload.PRODUCT_RESOURCE_CLAIM})
-    )
-
-    assert snapshot.running_workloads == frozenset({hemma_workload.RESERVED_EDGE_WORKLOAD_ID})
-    assert snapshot.unknown_consumers == ()
+    assert snapshot.unknown_consumers == ("container sir_convert_a_lot_public_reserved",)
 
 
 @pytest.mark.parametrize(
     "resource_claims",
     [
         frozenset(),
-        frozenset({hemma_workload.GPU_CLAIM, hemma_workload.PRODUCT_RESOURCE_CLAIM}),
+        frozenset({"product:sir"}),
+        frozenset({hemma_workload.GPU_CLAIM, "product:sir"}),
     ],
 )
 def test_inventory_refuses_nonexclusive_claim_sets(resource_claims: frozenset[str]) -> None:

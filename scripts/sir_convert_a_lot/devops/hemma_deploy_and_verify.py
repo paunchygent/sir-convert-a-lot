@@ -2,8 +2,8 @@
 
 Purpose:
     Execute Hemma revision parity and live verification in one deterministic
-    command: push -> remote pull -> production rebuild/recreate -> readiness
-    parity -> live smoke -> metrics safety scan.
+    command: remote pull of previously published source -> production
+    rebuild/recreate -> private readiness parity -> live smoke -> metrics scan.
 
 Relationships:
     - Exposed as `pdm run hemma-deploy-and-verify`.
@@ -34,11 +34,6 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
     resolve_api_key,
     scan_metrics_forbidden_substrings,
     service_url_for_lane,
-)
-from scripts.sir_convert_a_lot.devops.public_edge_verification import (
-    PublicEdgeVerificationError,
-    initialize_public_edge_artifacts,
-    verify_public_edge,
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/hemma-deploy-verify")
@@ -268,12 +263,11 @@ def _remote_recreate_service(remote_revision: str) -> None:
         "prod-recreate",
         "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
-        "sir_convert_a_lot_public_reserved",
     ]
     try:
         _run_remote(
             recreate_args,
-            label="remote pdm run prod-recreate public edge services",
+            label="remote pdm run prod-recreate private services",
         )
         return
     except CommandExecutionError as exc:
@@ -296,9 +290,8 @@ def _remote_recreate_service(remote_revision: str) -> None:
             "prod-recreate",
             "sir_convert_a_lot_gpu_worker",
             "sir_convert_a_lot_prod",
-            "sir_convert_a_lot_public_reserved",
         ],
-        label="remote sudo -n pdm run prod-recreate public edge services",
+        label="remote sudo -n pdm run prod-recreate private services",
     )
 
 
@@ -319,13 +312,8 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             "live_smoke_passed": False,
             "live_smoke_required": False,
             "metrics_scan_passed": False,
-            "public_https_reserved_passed": False,
-            "public_tls_certificate_passed": False,
-            "nginx_proxy_public_host_registered": False,
-            "default_host_reserved_placeholder_passed": False,
             "metrics_forbidden_substrings": [],
         },
-        "public_edge": None,
         "live_smoke_failure": None,
         "failure": None,
     }
@@ -333,10 +321,8 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
     report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path = (
         _initialize_artifacts(settings.output_root)
     )
-    public_edge_paths = initialize_public_edge_artifacts(settings.output_root)
 
     try:
-        _run_command(["git", "push", "origin", "HEAD"], label="git push origin HEAD")
         _run_remote(["git", "pull", "--ff-only"], label="remote git pull --ff-only")
 
         remote_revision = _run_remote(
@@ -417,26 +403,11 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         if isinstance(checks_obj, dict):
             checks_obj["metrics_scan_passed"] = True
 
-        public_edge_report = verify_public_edge(
-            paths=public_edge_paths,
-            remote_revision=remote_revision,
-            run_local=lambda command, label: _run_command(command, label=label),
-            run_remote=lambda command, label: _run_remote(command, label=label),
-        )
-        report["public_edge"] = public_edge_report
-        checks_obj = report["checks"]
-        if isinstance(checks_obj, dict):
-            checks_obj["public_https_reserved_passed"] = True
-            checks_obj["public_tls_certificate_passed"] = True
-            checks_obj["nginx_proxy_public_host_registered"] = True
-            checks_obj["default_host_reserved_placeholder_passed"] = True
-
         report["status"] = "passed"
         report["failure"] = None
     except (
         CommandExecutionError,
         VerificationContractError,
-        PublicEdgeVerificationError,
         json.JSONDecodeError,
     ) as exc:
         report["status"] = "failed"
@@ -473,17 +444,11 @@ def main(argv: list[str] | None = None) -> int:
                 "live_smoke_passed": False,
                 "live_smoke_required": False,
                 "metrics_scan_passed": False,
-                "public_https_reserved_passed": False,
-                "public_tls_certificate_passed": False,
-                "nginx_proxy_public_host_registered": False,
-                "default_host_reserved_placeholder_passed": False,
                 "metrics_forbidden_substrings": [],
             },
-            "public_edge": None,
             "live_smoke_failure": None,
             "failure": str(exc),
         }
-        initialize_public_edge_artifacts(output_root)
         _write_json(report_json_path, report)
         report_md_path.write_text(build_report_markdown(report) + "\n", encoding="utf-8")
         readyz_path.write_text("{}\n", encoding="utf-8")

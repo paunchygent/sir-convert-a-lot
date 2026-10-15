@@ -143,7 +143,7 @@ and path forwarding. Sir Convert does not expose `/sir-convert/v2/...` in its
 own runtime; it receives the forwarded downstream `/v2/convert/...` request
 with HuleEdu-signed identity headers.
 
-`convert.hule.education` remains reserved/fail-closed for browser product
+The direct public hostname is retired under ADR-SIRCON-0014 for browser product
 traffic. Reopening that host for a status page, external M2M API, or direct
 public conversion requires a separate accepted ADR/task.
 
@@ -252,7 +252,7 @@ containing those keys must fail the canonical HuleEdu v1 verifier.
 Service and operator contexts are lane-restricted:
 
 - accepted only on the internal Hemma service lane or sanctioned local tunnel;
-- rejected on direct public `convert.hule.education` traffic;
+- rejected on direct public traffic; the former convert hostname is retired;
 - rejected on public/browser Gateway routes unless that route is explicitly
   marked for service/operator administration by a later accepted decision;
 - logged by context kind, registered caller, subject, `session_id`, `jti`,
@@ -389,7 +389,7 @@ authorization tests:
 - malformed payloads with top-level `sir_convert_*` fields fail closed through
   the canonical HuleEdu v1 verifier;
 - service and operator contexts are rejected on public/browser routes and
-  direct public `convert.hule.education` traffic;
+  direct public traffic; the former convert hostname is retired;
 - Sir Convert rejects any context signed by a Sir-owned key, service self-owned
   key, operator CLI key, or unknown HuleEdu key id;
 - Gateway strips browser cookies, bearer tokens, CSRF headers, and

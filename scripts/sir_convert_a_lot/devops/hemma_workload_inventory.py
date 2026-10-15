@@ -1,4 +1,4 @@
-"""GPU and product-claim inventory for Sir Hemma workloads.
+"""GPU inventory for Sir Hemma workloads.
 
 Purpose:
     Inspect running Docker containers, ROCm KFD GPU processes, and declared
@@ -29,11 +29,8 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
     DECLARED_GPU_CONTAINERS,
     DOCKER_COMMAND,
     GPU_CLAIM,
-    PRODUCT_RESOURCE_CLAIM,
     PRODUCTION_CONTAINERS,
     PRODUCTION_WORKLOAD_ID,
-    RESERVED_EDGE_CONTAINER,
-    RESERVED_EDGE_WORKLOAD_ID,
     STT_CONTAINER,
     STT_WORKLOAD_ID,
 )
@@ -54,14 +51,6 @@ class SirGpuInventory:
 
     def inspect(self, resource_claims: frozenset[str]) -> InventorySnapshot:
         try:
-            if resource_claims == frozenset({PRODUCT_RESOURCE_CLAIM}):
-                running = _running_containers(self._runner)
-                product_workloads = (
-                    frozenset({RESERVED_EDGE_WORKLOAD_ID})
-                    if RESERVED_EDGE_CONTAINER in running
-                    else frozenset()
-                )
-                return InventorySnapshot(product_workloads, ())
             if resource_claims != frozenset({GPU_CLAIM}):
                 raise ValueError(f"Sir inventory cannot inspect claims {sorted(resource_claims)}")
             running = _running_containers(self._runner)
@@ -73,9 +62,7 @@ class SirGpuInventory:
                 workloads.add(PRODUCTION_WORKLOAD_ID)
             if STT_CONTAINER in running:
                 workloads.add(STT_WORKLOAD_ID)
-            declared_services = frozenset(
-                (*PRODUCTION_CONTAINERS, STT_CONTAINER, RESERVED_EDGE_CONTAINER)
-            )
+            declared_services = frozenset((*PRODUCTION_CONTAINERS, STT_CONTAINER))
             unknown = {
                 f"container {name}"
                 for name in running - declared_services

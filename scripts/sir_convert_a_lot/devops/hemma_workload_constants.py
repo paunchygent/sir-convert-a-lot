@@ -18,14 +18,11 @@ from pathlib import Path
 
 HOST_IDENTITY = "hemma"
 GPU_CLAIM = "gpu:amdgpu"
-PRODUCT_RESOURCE_CLAIM = "product:sir"
 PRODUCTION_WORKLOAD_ID = "sir-production"
 STT_WORKLOAD_ID = "sir-stt-sidecar"
-RESERVED_EDGE_WORKLOAD_ID = "sir-public-reserved-edge"
 API_CONTAINER = "sir_convert_a_lot_prod"
 GPU_WORKER_CONTAINER = "sir_convert_a_lot_gpu_worker"
 STT_CONTAINER = "sir_convert_a_lot_stt_sidecar"
-RESERVED_EDGE_CONTAINER = "sir_convert_a_lot_public_reserved"
 PRODUCTION_CONTAINERS = (API_CONTAINER, GPU_WORKER_CONTAINER)
 DECLARED_GPU_CONTAINERS = (GPU_WORKER_CONTAINER, STT_CONTAINER)
 HOST_STATE_ROOT = Path("/var/lib/hemma/workload-switch")

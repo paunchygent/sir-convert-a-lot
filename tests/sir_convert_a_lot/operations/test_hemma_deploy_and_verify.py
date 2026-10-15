@@ -12,11 +12,13 @@ Relationships:
 from __future__ import annotations
 
 import json
+import socket
+import ssl
 from pathlib import Path
 
 import pytest
 
-from scripts.sir_convert_a_lot.devops import hemma_deploy_and_verify, public_edge_verification
+from scripts.sir_convert_a_lot.devops import hemma_deploy_and_verify
 
 
 def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_error(
@@ -51,7 +53,6 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         "prod-recreate",
         "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
-        "sir_convert_a_lot_public_reserved",
     ]
     assert calls[1] == [
         "sudo",
@@ -67,7 +68,6 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         "prod-recreate",
         "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
-        "sir_convert_a_lot_public_reserved",
     ]
 
 
@@ -103,7 +103,6 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_erro
         "prod-recreate",
         "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
-        "sir_convert_a_lot_public_reserved",
     ]
     assert calls[1] == [
         "sudo",
@@ -119,7 +118,6 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_erro
         "prod-recreate",
         "sir_convert_a_lot_gpu_worker",
         "sir_convert_a_lot_prod",
-        "sir_convert_a_lot_public_reserved",
     ]
 
 
@@ -153,7 +151,6 @@ def test_remote_recreate_service_raises_on_non_permission_error(
             "prod-recreate",
             "sir_convert_a_lot_gpu_worker",
             "sir_convert_a_lot_prod",
-            "sir_convert_a_lot_public_reserved",
         ]
     ]
 
@@ -187,7 +184,6 @@ def test_remote_recreate_service_injects_verified_revision(
             "prod-recreate",
             "sir_convert_a_lot_gpu_worker",
             "sir_convert_a_lot_prod",
-            "sir_convert_a_lot_public_reserved",
         ]
     ]
 
@@ -226,24 +222,98 @@ def test_fetch_readyz_with_retry_handles_transient_failures(
     assert payload["ready"] is True
 
 
-def test_execute_workflow_records_public_edge_report(
+PRIVATE_ARTIFACTS = {"report.json", "report.md", "readyz.json", "metrics.prom", "remote_head.txt"}
+PRIVATE_CHECKS = {
+    "expected_revision_matches_remote",
+    "service_revision_matches_remote",
+    "live_smoke_passed",
+    "live_smoke_required",
+    "metrics_scan_passed",
+    "metrics_forbidden_substrings",
+}
+
+
+@pytest.fixture(autouse=True)
+def reject_public_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail on direct DNS, socket or certificate access outside command fakes."""
+
+    def reject(*args: object, **kwargs: object) -> None:
+        raise AssertionError("deploy verification must not inspect public DNS or TLS")
+
+    monkeypatch.setattr(socket, "gethostbyname", reject)
+    monkeypatch.setattr(socket, "getaddrinfo", reject)
+    monkeypatch.setattr(socket, "create_connection", reject)
+    monkeypatch.setattr(ssl, "create_default_context", reject)
+
+
+def assert_private_artifacts(output_root: Path, report: dict[str, object]) -> None:
+    assert {path.name for path in output_root.iterdir()} == PRIVATE_ARTIFACTS
+    checks = report["checks"]
+    assert isinstance(checks, dict)
+    assert set(checks) == PRIVATE_CHECKS
+    assert "public_edge" not in report
+    assert json.loads((output_root / "report.json").read_text()) == report
+    markdown = (output_root / "report.md").read_text()
+    for name in PRIVATE_ARTIFACTS:
+        assert f"`{name}`" in markdown
+    for retired in ("public_", "nginx", "unknown_host", "default_host", "convert.hule.education"):
+        assert retired not in markdown
+
+
+@pytest.mark.parametrize(
+    "scenario,expected_status",
+    [
+        ("success", "passed"),
+        ("smoke_failure", "passed"),
+        ("pull_failure", "failed"),
+        ("revision_mismatch", "failed"),
+        ("service_mismatch", "failed"),
+        ("unsafe_metrics", "failed"),
+    ],
+)
+def test_execute_workflow_uses_only_published_source_and_private_commands(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    scenario: str,
+    expected_status: str,
 ) -> None:
     remote_calls: list[list[str]] = []
-    recreated_revisions: list[str] = []
+    pull = ["git", "pull", "--ff-only"]
+    revision = ["git", "rev-parse", "HEAD"]
+    recreate = [
+        "env",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION=abc",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=abc",
+        "pdm",
+        "run",
+        "prod-recreate",
+        "sir_convert_a_lot_gpu_worker",
+        "sir_convert_a_lot_prod",
+    ]
+    readyz = ["curl", "-sS", "http://127.0.0.1:28085/readyz"]
+    smoke = [
+        "pdm",
+        "run",
+        "python",
+        "-m",
+        "scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions",
+        "--lane",
+        "host",
+        "--api-key",
+        "secret",
+        "--output-root",
+        "build/verification/hemma-deploy-verify/v2-smoke",
+    ]
+    metrics = ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]
 
-    def fake_run_command(
+    def reject_local(
         command: list[str],
         *,
         label: str,
         env: dict[str, str] | None = None,
         redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, env, redactions
-        if command == ["git", "push", "origin", "HEAD"]:
-            return ""
-        raise AssertionError(f"unexpected local command: {command!r}")
+        raise AssertionError(f"unexpected local/publication command: {command!r}")
 
     def fake_run_remote(
         remote_args: list[str],
@@ -251,91 +321,67 @@ def test_execute_workflow_records_public_edge_report(
         label: str,
         redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, redactions
         remote_calls.append(remote_args)
-        if remote_args == ["git", "pull", "--ff-only"]:
+        if remote_args == pull:
+            if scenario == "pull_failure":
+                raise hemma_deploy_and_verify.CommandExecutionError("pull failed")
             return ""
-        if remote_args == ["git", "rev-parse", "HEAD"]:
-            return "abc\n"
-        if remote_args[:4] == ["pdm", "run", "python", "-m"]:
+        if remote_args == revision:
+            return "wrong\n" if scenario == "revision_mismatch" else "abc\n"
+        if remote_args == recreate:
             return ""
-        if remote_args == ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]:
-            return "# safe metrics\n"
-        raise AssertionError(f"unexpected remote command: {remote_args!r}")
+        if remote_args == readyz:
+            return json.dumps(
+                {
+                    "ready": True,
+                    "service_revision": "wrong" if scenario == "service_mismatch" else "abc",
+                }
+            )
+        if remote_args == smoke:
+            assert redactions == ("secret",)
+            if scenario == "smoke_failure":
+                raise hemma_deploy_and_verify.CommandExecutionError("gpu_not_available")
+            return ""
+        if remote_args == metrics:
+            return 'jobs{job_id="unsafe"} 1\n' if scenario == "unsafe_metrics" else "# safe\n"
+        raise AssertionError(f"unexpected public/publication/remote command: {remote_args!r}")
 
-    def fake_verify_public_edge(
-        *,
-        paths: public_edge_verification.PublicEdgeArtifactPaths,
-        remote_revision: str,
-        run_local: public_edge_verification.CommandRunner,
-        run_remote: public_edge_verification.CommandRunner,
-    ) -> dict[str, object]:
-        del run_local, run_remote
-        assert remote_revision == "abc"
-        return {
-            "status": "passed",
-            "public_host": "convert.hule.education",
-            "nginx_proxy": {
-                "convert_server_name_registered": True,
-                "reserved_default_host_configured": True,
-            },
-            "unknown_host_probe": {
-                "allowed_status_observed": True,
-                "reserved_placeholder_observed": True,
-            },
-            "public_edge_artifact": paths.public_edge_json.name,
-        }
-
-    def fake_recreate_service(remote_revision: str) -> None:
-        recreated_revisions.append(remote_revision)
-
-    monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", reject_local)
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
-    monkeypatch.setattr(hemma_deploy_and_verify, "_remote_recreate_service", fake_recreate_service)
-    monkeypatch.setattr(
-        hemma_deploy_and_verify,
-        "_fetch_readyz_with_retry",
-        lambda service_url: {"ready": True, "service_revision": "abc"},
-    )
-    monkeypatch.setattr(
-        hemma_deploy_and_verify,
-        "verify_public_edge",
-        fake_verify_public_edge,
-    )
-
-    settings = hemma_deploy_and_verify.WorkflowSettings(
-        expected_revision="abc",
-        lane="host",
-        service_url="http://127.0.0.1:28085",
-        output_root=tmp_path,
-        api_key="secret",
-        api_key_source="cli",
-        allow_dev_key=False,
+    report = hemma_deploy_and_verify.execute_workflow(
+        hemma_deploy_and_verify.WorkflowSettings(
+            expected_revision="abc",
+            lane="host",
+            service_url="http://127.0.0.1:28085",
+            output_root=tmp_path,
+            api_key="secret",
+            api_key_source="cli",
+            allow_dev_key=False,
+        )
     )
 
-    report = hemma_deploy_and_verify.execute_workflow(settings)
-
-    assert report["status"] == "passed"
+    assert report["status"] == expected_status
+    assert_private_artifacts(tmp_path, report)
+    expected_calls = [pull, revision, recreate, readyz, smoke, metrics]
+    count = {"pull_failure": 1, "revision_mismatch": 2, "service_mismatch": 4}.get(scenario, 6)
+    assert remote_calls == expected_calls[:count]
     checks = report["checks"]
     assert isinstance(checks, dict)
-    assert checks["public_https_reserved_passed"] is True
-    assert checks["public_tls_certificate_passed"] is True
-    assert checks["nginx_proxy_public_host_registered"] is True
-    assert checks["default_host_reserved_placeholder_passed"] is True
     assert checks["live_smoke_required"] is False
-    assert report["live_smoke_failure"] is None
-    assert report["public_edge"] is not None
-    assert recreated_revisions == ["abc"]
+    if scenario in ("success", "smoke_failure"):
+        assert report["failure"] is None
+        assert checks["expected_revision_matches_remote"] is True
+        assert checks["service_revision_matches_remote"] is True
+        assert checks["metrics_scan_passed"] is True
+        assert checks["live_smoke_passed"] is (scenario == "success")
+    else:
+        assert report["failure"]
+    if scenario == "smoke_failure":
+        assert report["live_smoke_failure"] == "gpu_not_available"
+        assert "## Non-Blocking Evidence" in (tmp_path / "report.md").read_text()
 
-    report_payload = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
-    assert report_payload["checks"]["default_host_reserved_placeholder_passed"] is True
-    report_md = (tmp_path / "report.md").read_text(encoding="utf-8")
-    assert "public_edge.json" in report_md
-    assert (tmp_path / "public_edge.json").exists()
-    assert remote_calls[-1] == ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]
 
-
-def test_execute_workflow_records_live_smoke_failure_without_failing_deploy(
+def test_main_settings_failure_writes_only_private_artifacts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -346,67 +392,26 @@ def test_execute_workflow_records_live_smoke_failure_without_failing_deploy(
         env: dict[str, str] | None = None,
         redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, env, redactions
-        if command == ["git", "push", "origin", "HEAD"]:
-            return ""
-        raise AssertionError(f"unexpected local command: {command!r}")
-
-    def fake_run_remote(
-        remote_args: list[str],
-        *,
-        label: str,
-        redactions: tuple[str, ...] = (),
-    ) -> str:
-        del label, redactions
-        if remote_args == ["git", "pull", "--ff-only"]:
-            return ""
-        if remote_args == ["git", "rev-parse", "HEAD"]:
+        if command == ["git", "rev-parse", "HEAD^{commit}"]:
             return "abc\n"
-        if remote_args[:4] == ["pdm", "run", "python", "-m"]:
-            raise hemma_deploy_and_verify.CommandExecutionError(
-                "remote verify_hemma_v2_conversions failed (exit=1).\n"
-                "stdout:\n\nstderr:\nVerification failed: gpu_not_available"
-            )
-        if remote_args == ["curl", "-fsS", "http://127.0.0.1:28085/metrics"]:
-            return "# safe metrics\n"
-        raise AssertionError(f"unexpected remote command: {remote_args!r}")
+        raise AssertionError(f"unexpected publication/public/remote command: {command!r}")
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
-    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
-    monkeypatch.setattr(
-        hemma_deploy_and_verify,
-        "_remote_recreate_service",
-        lambda remote_revision: None,
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_V2_API_KEY", raising=False)
+    assert (
+        hemma_deploy_and_verify.main(
+            [
+                "--expected-revision",
+                "HEAD",
+                "--output-root",
+                str(tmp_path),
+            ]
+        )
+        == 1
     )
-    monkeypatch.setattr(
-        hemma_deploy_and_verify,
-        "_fetch_readyz_with_retry",
-        lambda service_url: {"ready": True, "service_revision": "abc"},
-    )
-    monkeypatch.setattr(
-        hemma_deploy_and_verify,
-        "verify_public_edge",
-        lambda **kwargs: {"status": "passed"},
-    )
-
-    settings = hemma_deploy_and_verify.WorkflowSettings(
-        expected_revision="abc",
-        lane="host",
-        service_url="http://127.0.0.1:28085",
-        output_root=tmp_path,
-        api_key="secret",
-        api_key_source="cli",
-        allow_dev_key=False,
-    )
-
-    report = hemma_deploy_and_verify.execute_workflow(settings)
-
-    checks = report["checks"]
-    assert isinstance(checks, dict)
-    assert report["status"] == "passed"
-    assert report["failure"] is None
-    assert checks["live_smoke_passed"] is False
-    assert checks["live_smoke_required"] is False
-    assert "gpu_not_available" in str(report["live_smoke_failure"])
-    report_md = (tmp_path / "report.md").read_text(encoding="utf-8")
-    assert "## Non-Blocking Evidence" in report_md
+    report = json.loads((tmp_path / "report.json").read_text())
+    assert "Missing API key" in report["failure"]
+    assert_private_artifacts(tmp_path, report)
+    assert json.loads((tmp_path / "readyz.json").read_text()) == {}
+    assert (tmp_path / "metrics.prom").read_text() == "# metrics not captured\n"
+    assert (tmp_path / "remote_head.txt").read_text() == "unavailable\n"

@@ -1,5 +1,15 @@
 ## Current
 
+- `TASK-SIRCON-06-01-04` (owner: parent `081d9763-a35c`) removes the retired
+  Sir public edge. Source changes await independent review on
+  `fix/retire-convert-public-edge`; no live mutation has run. Next: independent
+  review, main integration, then user-approved live retirement. Apply and prove
+  the Skill Repository default-host override before removing the Sir container
+  and certificate. The parent owns the shared source and two deferred reference
+  edits blocked by the shared docs hook. Namecheap CNAME deletion follows vhost
+  retirement proof. [Authority](docs/decisions/adr-sircon-0014-retire-the-direct-sir-convert-public-hostname.md)
+  and [task](docs/backlog/tasks/task-sircon-06-01-04-retire-the-sir-convert-public-edge-and-decouple-the-reserved-default-certificate.md).
+
 - Shared `TASK-SKILL-REP-0316` activation remains parent `01a13b6a-7e50`-owned.
   Sir source task `TASK-SIRCON-REP-0033` is done after independent code and prose
   approval; 52 operations and 28 Qwen tests, focused types and named operations
