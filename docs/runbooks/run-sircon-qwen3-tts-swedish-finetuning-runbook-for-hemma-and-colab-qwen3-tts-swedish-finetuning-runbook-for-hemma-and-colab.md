@@ -413,7 +413,7 @@ For recovery questions:
 ### Storage And Cutover
 
 TASK-SIRCON-REP-0033 implements source authority from TASK-SKILL-REP-0316
-D05/D09/D11. Nonvisual build/proof output defaults to Hot owner jobs at
+D05/D09/D11. Persistent build/proof output defaults to Hot owner jobs at
 `/home/paunchygent/.local/share/sir-convert-a-lot/jobs/build`. The parent cutover
 supplies Hot home backing and preserves repository `build/` and Docker-visible
 `~/.data/sir-convert-a-lot/build`. Existing symlinks refuse retargeting until
@@ -432,8 +432,15 @@ Legacy scratch candidates preserve the 12-hour age, newest 2/4 roots, 64/96 GiB
 free thresholds, protected paths, active-Qwen guard and manual block file.
 Selected trees evacuate with original-path symlinks into
 `/home/paunchygent/.local/share/sir-convert-a-lot/jobs/legacy-scratch-archive`,
-without automatic deletion or an archive TTL. `/srv/storage` is backup-only;
-scratch is visual-only. Both refuse nonvisual primary destinations.
+without automatic deletion or an archive TTL. `/srv/storage` is backup-only.
+Scratch is for short-lived disposable single-agent operational work of any
+file type, including temporary logs, raw downloads and visual intermediates.
+Promote useful results before retention or inter-agent handoff; retain Context
+on Hot with its seven-day inactivity lease. Persistent Qwen/Gemma models,
+build/proof assets, checkpoints and corpora remain Hot for their required
+lifetime. This classification changes no Qwen root, source default or runtime
+guard. Preserve active work and the existing producer cleanup rules; ordinary
+Scratch lifetimes do not authorize a whole-disk 24-hour TTL.
 
 Sir never prunes Docker. The shared weekly `hemma-docker-cleanup` owns that
 maintenance. `--prune-docker-state` and true runtime/timer settings refuse before
