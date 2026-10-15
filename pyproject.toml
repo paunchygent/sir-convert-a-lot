@@ -310,7 +310,7 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "benchmark:pdf-telemetry-overhead" = "python -m scripts.sir_convert_a_lot.pdf_telemetry_overhead_benchmark"
 "benchmark:scientific-corpus" = "python -m scripts.sir_convert_a_lot.benchmark_scientific_corpus"
 "validate:docling-gpu-live" = "python -m scripts.sir_convert_a_lot.live_docling_gpu_quality"
-"run-local-pdm" = "bash scripts/devops/run-local-pdm.sh"
+"run-local-pdm" = { cmd = "bash scripts/devops/run-local-pdm.sh", env_file = { override = ".env" } }
 "hemma-verify-gpu-runtime" = "bash scripts/devops/verify-hemma-gpu-runtime.sh"
 "hemma-workload" = "python -m scripts.sir_convert_a_lot.devops.hemma_workload_cli"
 "hemma-deploy-and-verify" = "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify"
