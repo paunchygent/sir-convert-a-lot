@@ -118,7 +118,7 @@ def test_run_scratch_maintenance_blocks_when_qwen_containers_are_active(
         target_free_bytes=30,
         candidate_min_age_hours=12.0,
         keep_most_recent=2,
-        prune_docker_state=True,
+        prune_docker_state=False,
     )
 
     assert report.status == "blocked"
@@ -182,10 +182,6 @@ def test_run_scratch_maintenance_archives_only_until_target_headroom(
         "scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_runtime.archive_scratch_paths",
         fake_archive,
     )
-    monkeypatch.setattr(
-        "scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_runtime.cleanup_non_active_docker_state",
-        lambda: pytest.fail("docker prune should not run when target is met after archive"),
-    )
 
     report = run_scratch_maintenance(
         scratch_root=tmp_path / "scratch",
@@ -197,7 +193,7 @@ def test_run_scratch_maintenance_archives_only_until_target_headroom(
         target_free_bytes=100,
         candidate_min_age_hours=12.0,
         keep_most_recent=2,
-        prune_docker_state=True,
+        prune_docker_state=False,
     )
 
     assert archived_calls == [[Path(first.source_path)]]
@@ -222,7 +218,7 @@ def test_render_service_unit_uses_qwen_scratch_policy_maintain_command(tmp_path:
         target_free_bytes=96,
         candidate_min_age_hours=12.0,
         keep_most_recent=2,
-        prune_docker_state=True,
+        prune_docker_state=False,
         timer_on_boot_sec="15min",
         timer_on_unit_active_sec="1h",
     )
@@ -230,7 +226,7 @@ def test_render_service_unit_uses_qwen_scratch_policy_maintain_command(tmp_path:
     rendered = render_service_unit(settings)
 
     assert "pdm run qwen-scratch-policy maintain" in rendered
-    assert "--prune-docker-state" in rendered
+    assert "--prune-docker-state" not in rendered
     assert f"WorkingDirectory={settings.repo_root.as_posix()}" in rendered
 
 
@@ -251,7 +247,7 @@ def test_render_timer_unit_keeps_future_trigger_after_timer_restart(tmp_path: Pa
         target_free_bytes=96,
         candidate_min_age_hours=12.0,
         keep_most_recent=2,
-        prune_docker_state=True,
+        prune_docker_state=False,
         timer_on_boot_sec="15min",
         timer_on_unit_active_sec="1h",
     )

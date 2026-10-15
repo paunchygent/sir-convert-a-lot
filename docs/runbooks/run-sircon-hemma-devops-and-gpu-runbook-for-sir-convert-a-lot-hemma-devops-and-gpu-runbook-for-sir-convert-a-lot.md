@@ -36,13 +36,14 @@ benchmark, and tunnel work.
 
 ### Route By Job
 
-| Job                                                                        | Read                                                    |
-| -------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Service placement, deploys, tunnels, health checks, prod env mirror        | `docs/runbooks/runbook-hemma-service-ops.md`            |
-| GPU checks, scratch-backed caches, vLLM, llama.cpp, Docling GPU validation | `docs/runbooks/runbook-hemma-gpu-runtime.md`            |
-| Conversion smoke tests, throughput, bottleneck triage                      | `docs/runbooks/runbook-hemma-conversion-benchmarks.md`  |
-| TTS sidecar and Swedish voice benchmark lanes                              | `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md` |
-| Public API or CLI contract behavior                                        | `docs/converters/` and `docs/decisions/`                |
+| Job                                                                 | Read                                                            |
+| ------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Storage placement, migration, backup and bind-root cutover          | [Storage Placement And Cutover](#storage-placement-and-cutover) |
+| Service placement, deploys, tunnels, health checks, prod env mirror | `docs/runbooks/runbook-hemma-service-ops.md`                    |
+| GPU checks, cache runtime, vLLM, llama.cpp, Docling GPU validation  | `docs/runbooks/runbook-hemma-gpu-runtime.md`                    |
+| Conversion smoke tests, throughput, bottleneck triage               | `docs/runbooks/runbook-hemma-conversion-benchmarks.md`          |
+| TTS sidecar and Swedish voice benchmark lanes                       | `docs/runbooks/runbook-hemma-tts-sidecar-benchmarks.md`         |
+| Public API or CLI contract behavior                                 | `docs/converters/` and `docs/decisions/`                        |
 
 ### Global Invariants
 
@@ -56,11 +57,24 @@ benchmark, and tunnel work.
 - Canonical client tunnel lane: `http://127.0.0.1:28085`.
 - Docker work uses BuildKit and Docker Compose v2.
 - GPU/offload work is GPU-first; no silent CPU fallback.
-- Long-lived Docker state, model caches, and generated active artifacts stay on
-  `/srv/scratch`, not the Hemma OS disk.
-- Raw corpora and cold completed artifacts belong on `/srv/storage`.
+- New storage placement follows [Storage Placement And Cutover](#storage-placement-and-cutover).
 - Runtime changes need governing backlog/reference/ADR authority before they are
   treated as product behavior.
+
+### Storage Placement And Cutover
+
+TASK-SIRCON-REP-0033 D01–D04 supersedes the former scratch build/cache and
+`/srv/storage` primary corpus/archive guidance. Hot holds Sir nonvisual build,
+proof, corpus and legacy archives; scratch is visual-only and `/srv/storage`
+is backup-only. Retain historical evidence paths and preserve logical paths
+through verified migration. Cache still has a separate legacy default and owner.
+
+Read `skill-repository/docs/runbooks/runbook-hemma-storage-migration-and-research-backups.md`
+through the harness's canonical `skill-repository` alias for the single shared
+host procedure. The parent owns writer-safe cutover, installation and physical
+backing/probe receipts; source-only adapter checks do not prove activation.
+Shared weekly `hemma-docker-cleanup` owns Docker cleanup. Sir defaults and
+producer protections are in the [Qwen storage section](run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md#storage-and-cutover).
 
 ### Closeout
 

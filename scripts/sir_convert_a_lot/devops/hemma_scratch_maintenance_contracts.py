@@ -2,7 +2,8 @@
 
 Purpose:
     Define the constants and immutable data contracts used by the recurring
-    scratch-maintenance policy for high-churn Qwen workloads on Hemma.
+    legacy scratch-evacuation policy on Hemma. These source candidate paths
+    intentionally address old data; new build/proof writes use Hot owner jobs.
 
 Relationships:
     - Used by `hemma_scratch_maintenance_runtime.py` as the runtime

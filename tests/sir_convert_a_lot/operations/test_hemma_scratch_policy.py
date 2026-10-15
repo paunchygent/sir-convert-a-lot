@@ -158,7 +158,7 @@ def test_runner_writes_audit_and_remediation_reports(
                 size_bytes=42,
             )
         ],
-        pruned_docker_state=True,
+        pruned_docker_state=False,
         docker_system_df_before="before",
         docker_system_df_after="after",
     )
@@ -192,9 +192,9 @@ def test_runner_writes_audit_and_remediation_reports(
         json.loads((output_root / "remediate.json").read_text(encoding="utf-8"))[
             "pruned_docker_state"
         ]
-        is True
+        is False
     )
     assert "Hemma Scratch Remediation" in (output_root / "remediate.md").read_text(encoding="utf-8")
     rendered_output = capsys.readouterr().out
     assert '"meets_required_headroom": true' in rendered_output
-    assert '"pruned_docker_state": true' in rendered_output
+    assert '"pruned_docker_state": false' in rendered_output

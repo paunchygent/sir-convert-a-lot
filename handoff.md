@@ -1,5 +1,14 @@
 ## Current
 
+- Shared `TASK-SKILL-REP-0316` activation remains parent `01a13b6a-7e50`-owned.
+  Sir source task `TASK-SIRCON-REP-0033` is done after independent code and prose
+  approval; 52 operations and 28 Qwen tests, focused types and named operations
+  checks pass. Parent owns merge-only integration/main-only publication.
+  Next: publish the shared procedure, then admit actual Hot backing and Docker
+  binds through the held migration boundary. Keep the hourly timer disabled;
+  this source closeout establishes no host, GPU or service activation.
+  [Source task and review pointers](docs/backlog/tasks/task-sircon-rep-0033-adapt-sir-storage-maintenance-to-hot-ownership-and-shared-docker-cleanup.md).
+
 - [TASK-SIRCON-REP-0029](docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md)
   is `done` and live-proven: integrated head `20797ab5` emits an
   `assessmentTest` with manifest dependency wiring, confirmed item lanes
@@ -14,6 +23,7 @@
   reference. Four narrow empirical unknowns stay open in that reference.
   The Sir exam runtime, including Exam.net export, has since been retired
   under TASK-SIRCON-07-04-01.
+
 - [TASK-SIRCON-08-01-07](docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md)
   is `done` as history: published revision `a1319739` ran GPT-5.6 Luna as the
   exam-lane low-effort default with GLM-5.3-flash (OpenRouter) as a
@@ -21,6 +31,7 @@
   with credentialed Hemma proofs of Luna success, one-shot GLM failover, and
   fail-closed exhaustion. TASK-SIRCON-07-04-01 removed the Sir exam lane and
   its answer-key provider runtime; exam conversion is Skriptoteket-owned.
+
 - Skriptoteket `EPIC-SKRIPT-39` (active, with accepted `ADR-SKRIPT-0090`) is
   porting the exam-conversion domain into Skriptoteket by incremental
   strangler. Its walking skeleton `TASK-SKRIPT-39-01-01` is `done`
@@ -33,21 +44,26 @@
   Sir Convert keeps generic OCR/STT; production and STT stay offline by user
   decision. Before any restart, run the one-time retired-spec-fields migration
   per the service-operations runbook.
+
 - [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
+
 - `TASK-SIRCON-01-05-04` has published its bounded API/GPU-worker startup
   implementation. Its separately authorized Hemma current/stale-image proof
   has not run, so the task remains `in_progress`.
+
 - `TASK-SIRCON-01-05-05` was introduced with `repository-governance` `0.11.25` at
   `1548765abc4f81e54cbe13f6112163da96fa8842` and contains the static
   Sir workload registry, adapters, inventory, CLI, focused tests, and operator
   contract. The repository-declared `operations` scope and coverage gate pass.
   No Hemma switching or production mutation ran; the task remains
   `in_progress` pending separately authorized live acceptance.
+
 - Root quality has six Git-derived scopes: `service`, `conversion`, `speech`,
   `operations`, `research`, and `repository`. Select the owning scope;
   do not use the broad root aggregate as a routine commit gate.
+
 - Active product authority remains in the current backlog, ADRs, references,
   and runbooks reached through the generated documentation doorway.
 

@@ -39,7 +39,7 @@ def _settings(tmp_path: Path) -> HemmaStorageSettings:
         new_qwen_data_root=tmp_path / "storage" / "sir-convert-a-lot" / "data" / "qwen",
         migrate_repo_build=True,
         migrate_qwen_data=True,
-        cleanup_docker_state=True,
+        cleanup_docker_state=False,
     )
 
 
@@ -91,12 +91,10 @@ def test_migrate_repo_build_to_scratch_allows_identical_duplicate_files(tmp_path
     assert target_artifact.read_text(encoding="utf-8") == "same"
 
 
-def test_cleanup_non_active_docker_state_prunes_expected_resources(
+def test_cleanup_non_active_docker_state_refuses_without_commands(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Hemma storage remediation cleanup should prune containers, images, volumes, and builder cache.
-    """
+    """Legacy cleanup must refuse without touching any Docker resource."""
     seen: list[tuple[list[str], str]] = []
 
     def _fake_run_checked(command: list[str], *, label: str) -> str:
@@ -108,17 +106,9 @@ def test_cleanup_non_active_docker_state_prunes_expected_resources(
         _fake_run_checked,
     )
 
-    cleanup_non_active_docker_state()
-
-    assert seen == [
-        (
-            ["sudo", "-n", "docker", "container", "prune", "-f"],
-            "docker container prune hemma-storage",
-        ),
-        (["sudo", "-n", "docker", "image", "prune", "-af"], "docker image prune hemma-storage"),
-        (["sudo", "-n", "docker", "volume", "prune", "-f"], "docker volume prune hemma-storage"),
-        (["sudo", "-n", "docker", "builder", "prune", "-af"], "docker builder prune hemma-storage"),
-    ]
+    with pytest.raises(SystemExit, match="shared weekly hemma-docker-cleanup"):
+        cleanup_non_active_docker_state()
+    assert seen == []
 
 
 def test_build_storage_report_resolves_symlink_targets(tmp_path: Path) -> None:
@@ -163,7 +153,7 @@ def test_runner_writes_report_after_remediation(
         new_qwen_data_root="/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus",
         migrated_repo_build=True,
         migrated_qwen_data=True,
-        cleaned_docker_state=True,
+        cleaned_docker_state=False,
         docker_system_df_before="docker before",
         docker_system_df_after="docker after",
         filesystem_df_before="fs before",
@@ -185,8 +175,9 @@ def test_runner_writes_report_after_remediation(
 
     assert exit_code == 0
     assert len(calls) == 1
+    assert calls[0].cleanup_docker_state is False
     report_json_path = output_root / "report.json"
     report_md_path = output_root / "report.md"
     assert json.loads(report_json_path.read_text(encoding="utf-8"))["repo_build_is_symlink"] is True
     assert "Hemma Storage Remediation Report" in report_md_path.read_text(encoding="utf-8")
-    assert '"cleaned_docker_state": true' in capsys.readouterr().out
+    assert '"cleaned_docker_state": false' in capsys.readouterr().out

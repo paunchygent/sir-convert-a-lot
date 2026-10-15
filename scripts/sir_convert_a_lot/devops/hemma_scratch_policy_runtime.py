@@ -1,9 +1,9 @@
 """Recurring Hemma scratch-governance helpers for high-churn Qwen workloads.
 
 Purpose:
-    Provide one committed audit and remediation runtime for the recurring
-    `/srv/scratch` pressure caused by detached Qwen proof lanes, large
-    checkpoint trees, and Docker churn on Hemma.
+    Audit legacy `/srv/scratch` occupants and evacuate selected nonvisual
+    artifacts into Hot owner jobs. New build/proof defaults use Hot; shared
+    host maintenance owns Docker cleanup.
 
 Relationships:
     - Used by `run_hemma_scratch_policy.py`.
@@ -20,8 +20,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import (
+    DEFAULT_HOT_ARCHIVE_ROOT,
+    DOCKER_CLEANUP_REFUSAL,
+    validate_hot_destination,
+    validate_migration_tree,
+)
 from scripts.sir_convert_a_lot.ml.qwen.common.storage import (
-    cleanup_non_active_docker_state,
     docker_system_df,
     migrate_tree_to_tier,
     replace_with_canonical_symlink,
@@ -29,7 +34,7 @@ from scripts.sir_convert_a_lot.ml.qwen.common.storage import (
 )
 
 DEFAULT_SCRATCH_ROOT = Path("/srv/scratch")
-DEFAULT_STORAGE_ARCHIVE_ROOT = Path("/srv/storage/sir-convert-a-lot/archive/scratch-mirror")
+DEFAULT_STORAGE_ARCHIVE_ROOT = DEFAULT_HOT_ARCHIVE_ROOT
 DEFAULT_REPO_SCRATCH_ROOT = DEFAULT_SCRATCH_ROOT / "sir-convert-a-lot"
 DEFAULT_RUNS_ROOT = DEFAULT_REPO_SCRATCH_ROOT / "build/runs"
 DEFAULT_VERIFICATION_ROOT = DEFAULT_REPO_SCRATCH_ROOT / "build/verification"
@@ -241,7 +246,8 @@ def archive_scratch_paths(
     storage_archive_root: Path = DEFAULT_STORAGE_ARCHIVE_ROOT,
 ) -> list[ArchivedScratchPath]:
     """Archive explicit scratch directories onto storage and symlink them back."""
-    archived_paths: list[ArchivedScratchPath] = []
+    validate_hot_destination(storage_archive_root)
+    migrations: list[tuple[Path, Path]] = []
     for source_path in source_paths:
         _validate_source_path(source_path, scratch_root=scratch_root)
         archive_path = archive_destination_for_source(
@@ -249,6 +255,10 @@ def archive_scratch_paths(
             scratch_root=scratch_root,
             storage_archive_root=storage_archive_root,
         )
+        validate_migration_tree(source_path, archive_path)
+        migrations.append((source_path, archive_path))
+    archived_paths: list[ArchivedScratchPath] = []
+    for source_path, archive_path in migrations:
         size_bytes = directory_size_bytes(source_path)
         migrate_tree_to_tier(source_path, archive_path)
         replace_with_canonical_symlink(source_path, archive_path)
@@ -270,7 +280,9 @@ def run_scratch_remediation(
     required_free_bytes: int = DEFAULT_REQUIRED_FREE_BYTES,
     prune_docker_state: bool,
 ) -> ScratchRemediationReport:
-    """Archive explicit paths and optionally prune Docker to recover scratch headroom."""
+    """Evacuate explicit legacy scratch paths into Hot owner jobs."""
+    if prune_docker_state:
+        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
     free_bytes_before = scratch_free_bytes(scratch_root)
     docker_before = _docker_system_df_or_error()
     archived_paths = archive_scratch_paths(
@@ -278,8 +290,6 @@ def run_scratch_remediation(
         scratch_root=scratch_root,
         storage_archive_root=storage_archive_root,
     )
-    if prune_docker_state:
-        cleanup_non_active_docker_state()
     free_bytes_after = scratch_free_bytes(scratch_root)
     docker_after = _docker_system_df_or_error()
     return ScratchRemediationReport(
@@ -291,7 +301,7 @@ def run_scratch_remediation(
         scratch_free_bytes_after=free_bytes_after,
         meets_required_headroom_after=free_bytes_after >= required_free_bytes,
         archived_paths=archived_paths,
-        pruned_docker_state=prune_docker_state,
+        pruned_docker_state=False,
         docker_system_df_before=docker_before,
         docker_system_df_after=docker_after,
     )

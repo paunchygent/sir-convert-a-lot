@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import validate_hot_destination
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
@@ -66,9 +67,7 @@ DEFAULT_RIXVOX_MAX_ROWS_PER_SPLIT: int | None = None
 DEFAULT_AUDIO_CODES_CHUNK_SIZE = 8
 DEFAULT_ROW_WORKER_COUNT = 1
 DEFAULT_GPU_ASR_WORKER_COUNT = 1
-DEFAULT_RUNS_ROOT = Path(
-    "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"
-)
+DEFAULT_RUNS_ROOT = DEFAULT_SCRATCH_BUILD / "runs/qwen3-tts-swedish-preprocessing"
 DEFAULT_STAGE = "row-processing"
 DEFAULT_FINALIZATION_FAMILIES = CANONICAL_MANIFEST_FAMILIES
 
@@ -323,6 +322,7 @@ def _build_report_markdown(
 def main(argv: list[str] | None = None) -> int:
     """Run containerized preprocessing and write deterministic evidence."""
     settings = _parse_args(argv)
+    validate_hot_destination(settings.scratch_build_root)
     report_json_path, report_md_path, failure_path = _prepare_output_root(settings.output_root)
     enforce_generated_output_path(report_json_path, label="containerized_preprocessing_report_json")
     enforce_generated_output_path(report_md_path, label="containerized_preprocessing_report_md")
@@ -330,11 +330,6 @@ def main(argv: list[str] | None = None) -> int:
 
     ensure_bulk_data_storage_path(settings.data_root, label="data_root")
     ensure_data_disk_path(settings.hf_cache_dir, label="hf_cache_dir")
-    if not settings.scratch_build_root.as_posix().startswith("/srv/scratch/"):
-        raise SystemExit(
-            "scratch_build_root must live on Hemma's SSD scratch tier, got "
-            f"`{settings.scratch_build_root.as_posix()}`."
-        )
     settings.scratch_build_root.mkdir(parents=True, exist_ok=True)
 
     repo_root = Path.cwd().resolve()

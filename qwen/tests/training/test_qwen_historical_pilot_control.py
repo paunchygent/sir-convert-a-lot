@@ -16,12 +16,77 @@ import json
 from pathlib import Path
 
 import pytest
+
 from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.training import qwen_historical_pilot_control as control
 from scripts.sir_convert_a_lot.ml.qwen.training.detached_runtime.settings_snapshot import (
     snapshot_settings,
 )
 from scripts.sir_convert_a_lot.ml.qwen.training.models import DetachedLaunch
 from scripts.sir_convert_a_lot.ml.qwen.training.qwen_historical_pilot_control import main
+
+
+def test_default_hot_build_reaches_bundle_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real Hot default must reach the next producer boundary without host writes."""
+    hot_build = Path("/home/paunchygent/.local/share/sir-convert-a-lot/jobs/build")
+    assert control.build_parser().parse_args(["launch"]).scratch_build_root == hot_build
+    original_mkdir = Path.mkdir
+    prepared_builds: list[Path] = []
+
+    def intercept_mkdir(path: Path, *args, **kwargs) -> None:
+        if path == hot_build:
+            prepared_builds.append(path)
+            return
+        assert path.is_relative_to(tmp_path)
+        original_mkdir(path, *args, **kwargs)
+
+    def stop_at_bundle_validation(*args, **kwargs) -> tuple[int, int]:
+        raise RuntimeError("bundle validation intercepted")
+
+    monkeypatch.setattr(Path, "mkdir", intercept_mkdir)
+    monkeypatch.setattr(control, "_validate_historical_bundle", stop_at_bundle_validation)
+    monkeypatch.setattr(control, "run_checked", lambda *a, **kw: pytest.fail("host call"))
+    with pytest.raises(RuntimeError, match="bundle validation intercepted"):
+        main(["launch", "--output-root", str(tmp_path / "launches")])
+    assert prepared_builds == [hot_build]
+
+
+@pytest.mark.parametrize("tier", ["/srv/scratch", "/srv/storage"])
+@pytest.mark.parametrize("alias", [False, True], ids=["direct", "alias"])
+@pytest.mark.parametrize("existing_output", [False, True], ids=["new-output", "retained-output"])
+def test_prohibited_build_refused_before_launch_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tier: str,
+    alias: bool,
+    existing_output: bool,
+) -> None:
+    """Invalid primary placement must preserve launch outputs and the latest pointer."""
+    build_root = Path(tier) / "sir-convert-a-lot/build"
+    if alias:
+        redirect = tmp_path / "build-alias"
+        redirect.symlink_to(build_root, target_is_directory=True)
+        build_root = redirect
+    output_root = tmp_path / "launches"
+    if existing_output:
+        output_root.mkdir()
+        (output_root / "latest-launch.json").write_text("retained pointer", encoding="utf-8")
+
+    def refuse_mkdir(path: Path, *args, **kwargs) -> None:
+        pytest.fail(f"mkdir before destination refusal: {path}")
+
+    monkeypatch.setattr(Path, "mkdir", refuse_mkdir)
+    monkeypatch.setattr(control, "run_checked", lambda *a, **kw: pytest.fail("host call"))
+    with pytest.raises(SystemExit, match="requires Hot owner storage"):
+        main(["launch", "--output-root", str(output_root), "--scratch-build-root", str(build_root)])
+    assert output_root.exists() == existing_output
+    if existing_output:
+        assert [path.name for path in output_root.iterdir()] == ["latest-launch.json"]
+        assert (output_root / "latest-launch.json").read_text(
+            encoding="utf-8"
+        ) == "retained pointer"
 
 
 def test_launch_writes_contract_diff_and_launch_metadata(

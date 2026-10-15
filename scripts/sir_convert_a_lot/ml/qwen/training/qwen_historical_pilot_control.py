@@ -19,6 +19,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import validate_hot_destination
 from scripts.sir_convert_a_lot.ml.qwen.common.runtime import run_checked
 from scripts.sir_convert_a_lot.ml.qwen.common.storage import DEFAULT_SCRATCH_BUILD_ROOT
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.acquisition import (
@@ -84,9 +85,7 @@ from scripts.sir_convert_a_lot.ml.qwen.training.text_embedding_mask_policy impor
 from scripts.sir_convert_a_lot.ml.qwen.training.trainer_runtime_support import count_jsonl_rows
 
 DEFAULT_COMMAND_NAME = "qwen-historical-pilot-control"
-DEFAULT_OUTPUT_ROOT = Path(
-    "/srv/scratch/sir-convert-a-lot/build/verification/qwen-historical-pilot-control"
-)
+DEFAULT_OUTPUT_ROOT = DEFAULT_SCRATCH_BUILD_ROOT / "verification/qwen-historical-pilot-control"
 DEFAULT_HISTORICAL_BUNDLE_ROOT = Path(
     "/srv/storage/sir-convert-a-lot/backups/reference/qwen3-tts-swedish-pilot-bundle-20260312h"
 )
@@ -197,11 +196,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "launch":
         launch_id = str(args.launch_id or _default_launch_id())
         current_launch_root = launch_root(Path(args.output_root), launch_id)
-        current_launch_root.mkdir(parents=True, exist_ok=False)
         settings = _build_settings_from_args(args)
         _validate_launch_environment(
             settings, historical_bundle_root=Path(args.historical_bundle_root)
         )
+        current_launch_root.mkdir(parents=True, exist_ok=False)
         train_rows, eval_rows = _validate_historical_bundle(
             Path(args.historical_bundle_root),
             train_manifest_family=settings.train_manifest_family,
@@ -335,13 +334,9 @@ def _validate_launch_environment(
     settings: TrainingSettings, *, historical_bundle_root: Path
 ) -> None:
     """Fail fast when historical-control paths drift off the intended Hemma storage tiers."""
+    validate_hot_destination(settings.scratch_build_root)
     ensure_bulk_data_storage_path(historical_bundle_root, label="historical_bundle_root")
     ensure_data_disk_path(settings.hf_cache_dir, label="hf_cache_dir")
-    if not settings.scratch_build_root.as_posix().startswith("/srv/scratch/"):
-        raise SystemExit(
-            "scratch_build_root must live on Hemma's SSD scratch tier, got "
-            f"`{settings.scratch_build_root.as_posix()}`."
-        )
     settings.scratch_build_root.mkdir(parents=True, exist_ok=True)
 
 

@@ -1,7 +1,7 @@
 """Contracts for persistent Hemma Docker-visible Qwen bind roots.
 
 Purpose:
-    Define the canonical scratch-backed build/cache bind roots, the installable
+    Define the canonical build/cache bind roots, the installable
     service contract, and the machine-readable reports for the permanent Hemma
     Docker bind-root surface.
 
@@ -33,7 +33,7 @@ DEFAULT_CACHE_HOME_ROOT = DEFAULT_HOME_BIND_ROOT / "cache"
 
 @dataclass(frozen=True)
 class QwenDockerBindRoot:
-    """One canonical scratch-backed root exposed through a Docker-visible home path."""
+    """One canonical root exposed through a stable Docker-visible home path."""
 
     label: str
     canonical_root: Path

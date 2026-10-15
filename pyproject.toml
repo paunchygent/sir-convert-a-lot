@@ -57,11 +57,23 @@ projects = [
 [tool.repository-governance.quality]
 projects = [
     { path = ".", format = ["scripts", "tests"], lint = ["scripts", "tests"], typecheck-diagnostic-producer = "root-typecheck", test-diagnostic-producer = "root-test" },
+    { path = "qwen", format = ["tests"], lint = ["tests"], typecheck-diagnostic-producer = "qwen-typecheck", test-diagnostic-producer = "qwen-test" },
 ]
 producers = [
     { name = "root-typecheck", intent = "typecheck", project = ".", command = "typecheck-all", arguments = [] },
     { name = "root-test", intent = "test", project = ".", command = "pytest-root", arguments = [] },
+    { name = "qwen-typecheck", intent = "typecheck", project = "qwen", command = "typecheck", arguments = [] },
+    { name = "qwen-test", intent = "test", project = "qwen", command = "test-scope", arguments = [] },
 ]
+
+[[tool.repository-governance.quality.cohorts]]
+name = "qwen"
+kind = "path"
+path = "qwen/tests"
+test-target = "recursive-tests"
+typecheck = "qwen-typecheck"
+test = "qwen-test"
+default-selected = false
 
 [[tool.repository-governance.quality.cohorts]]
 name = "conversion"

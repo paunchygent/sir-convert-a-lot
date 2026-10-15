@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
+from scripts.sir_convert_a_lot.cli.ml import qwen_containerized_preprocessing as preprocessing_cli
 from scripts.sir_convert_a_lot.cli.ml.qwen_containerized_preprocessing import (
     DEFAULT_AUDIO_CODES_CHUNK_SIZE,
     DEFAULT_DATA_ROOT_HOME_MOUNT,
@@ -30,6 +32,89 @@ from scripts.sir_convert_a_lot.ml.qwen.preprocessing.containerized import (
     build_containerized_preprocessing_command,
     run_containerized_preprocessing,
 )
+
+
+def test_default_hot_build_reaches_host_preflight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real default must pass placement validation without touching the host."""
+    hot_build = Path("/home/paunchygent/.local/share/sir-convert-a-lot/jobs/build")
+    assert _parse_args([]).scratch_build_root == hot_build
+    original_mkdir = Path.mkdir
+    prepared_builds: list[Path] = []
+
+    def intercept_mkdir(path: Path, *args, **kwargs) -> None:
+        if path == hot_build:
+            prepared_builds.append(path)
+            return
+        assert path.is_relative_to(tmp_path)
+        original_mkdir(path, *args, **kwargs)
+
+    def stop_at_host_preflight(command: list[str], *, label: str) -> str:
+        assert command[0] == "rocm-smi"
+        raise RuntimeError("host preflight intercepted")
+
+    monkeypatch.setattr(Path, "mkdir", intercept_mkdir)
+    monkeypatch.setattr(preprocessing_cli, "run_checked", stop_at_host_preflight)
+    with pytest.raises(RuntimeError, match="host preflight intercepted"):
+        preprocessing_cli.main(["--output-root", str(tmp_path / "report")])
+    assert prepared_builds == [hot_build]
+
+
+def test_default_preprocessing_paths_build_the_existing_container_command() -> None:
+    """Unmodified parser defaults must map the run beneath the mounted build root."""
+    settings = _parse_args([])
+    command = build_containerized_preprocessing_command(
+        settings,
+        repo_root=Path("/home/paunchygent/apps/sir-convert-a-lot"),
+        hf_mount=MountResolution(settings.hf_cache_dir, settings.hf_cache_dir, False),
+        data_mount=MountResolution(settings.data_root, settings.data_root, False),
+        scratch_mount=MountResolution(
+            settings.scratch_build_root, settings.scratch_build_root, False
+        ),
+    )
+    assert command[command.index("--runs-root") + 1] == (
+        "/app/build/runs/qwen3-tts-swedish-preprocessing"
+    )
+
+
+@pytest.mark.parametrize("tier", ["/srv/scratch", "/srv/storage"])
+@pytest.mark.parametrize("alias", [False, True], ids=["direct", "alias"])
+@pytest.mark.parametrize("existing_output", [False, True], ids=["new-output", "retained-output"])
+def test_prohibited_build_refused_before_output_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tier: str,
+    alias: bool,
+    existing_output: bool,
+) -> None:
+    """Retired tiers, including symlink redirects, cannot erase previous reports."""
+    build_root = Path(tier) / "sir-convert-a-lot/build"
+    if alias:
+        redirect = tmp_path / "build-alias"
+        redirect.symlink_to(build_root, target_is_directory=True)
+        build_root = redirect
+    output_root = tmp_path / "report"
+    reports = ("report.json", "report.md", "failure.txt")
+    if existing_output:
+        output_root.mkdir()
+        for name in reports:
+            (output_root / name).write_text("retained evidence", encoding="utf-8")
+
+    def refuse_mkdir(path: Path, *args, **kwargs) -> None:
+        pytest.fail(f"mkdir before destination refusal: {path}")
+
+    monkeypatch.setattr(Path, "mkdir", refuse_mkdir)
+    monkeypatch.setattr(preprocessing_cli, "run_checked", lambda *a, **kw: pytest.fail("host call"))
+    with pytest.raises(SystemExit, match="requires Hot owner storage"):
+        preprocessing_cli.main(
+            ["--output-root", str(output_root), "--scratch-build-root", str(build_root)]
+        )
+    assert output_root.exists() == existing_output
+    if existing_output:
+        assert {path.name for path in output_root.iterdir()} == set(reports)
+        for name in reports:
+            assert (output_root / name).read_text(encoding="utf-8") == "retained evidence"
 
 
 def test_containerized_preprocessing_parse_args_defaults() -> None:
@@ -73,7 +158,7 @@ def test_containerized_preprocessing_build_command_uses_repo_and_absolute_mounts
     """The containerized preprocessing command should reuse repo and data mounts."""
     settings = ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/qwen-containerized-preprocessing"),
-        runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        runs_root=DEFAULT_SCRATCH_BUILD / "runs/qwen3-tts-swedish-preprocessing",
         run_id="run-123",
         run_root=None,
         promote_on_success=False,
@@ -83,7 +168,7 @@ def test_containerized_preprocessing_build_command_uses_repo_and_absolute_mounts
         image="sir-convert-a-lot-qwen-finetune-hemma:latest",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
-        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_root=DEFAULT_SCRATCH_BUILD,
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
@@ -174,11 +259,9 @@ def test_containerized_preprocessing_parses_inner_report(
     """The runtime should parse the inner preprocessing report from mixed stdout."""
     settings = ContainerizedPreprocessingSettings(
         output_root=Path("build/verification/qwen-containerized-preprocessing"),
-        runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing"),
+        runs_root=DEFAULT_SCRATCH_BUILD / "runs/qwen3-tts-swedish-preprocessing",
         run_id=None,
-        run_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-preprocessing/manual-run"
-        ),
+        run_root=DEFAULT_SCRATCH_BUILD / "runs/qwen3-tts-swedish-preprocessing/manual-run",
         promote_on_success=True,
         stage="reports",
         finalization_families=("swedish_smoke_train", "swedish_pilot_train"),
@@ -186,7 +269,7 @@ def test_containerized_preprocessing_parses_inner_report(
         image="sir-convert-a-lot-qwen-finetune-hemma:latest",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
-        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_root=DEFAULT_SCRATCH_BUILD,
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         data_root=Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus"),
         data_root_home_mount=Path(
