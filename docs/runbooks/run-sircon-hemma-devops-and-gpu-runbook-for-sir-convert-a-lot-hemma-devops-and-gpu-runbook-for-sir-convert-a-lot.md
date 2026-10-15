@@ -64,9 +64,12 @@ benchmark, and tunnel work.
 ### Storage Placement And Cutover
 
 TASK-SIRCON-REP-0033 D01–D04 supersedes the former scratch build/cache and
-`/srv/storage` primary corpus/archive guidance. Hot holds Sir nonvisual build,
-proof, corpus and legacy archives; scratch is visual-only and `/srv/storage`
-is backup-only. Retain historical evidence paths and preserve logical paths
+`/srv/storage` primary corpus/archive guidance. Hot holds persistent Sir build,
+proof, model, corpus and legacy archive assets for their required lifetime.
+Scratch holds short-lived disposable single-agent operational work of any file
+type; promote useful results before retention or inter-agent handoff. Context
+and retained evidence remain Hot; `/srv/storage` is backup-only. Retain
+historical evidence paths and preserve logical paths
 through verified migration. Cache still has a separate legacy default and owner.
 
 Read `skill-repository/docs/runbooks/runbook-hemma-storage-migration-and-research-backups.md`

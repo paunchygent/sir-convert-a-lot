@@ -18,7 +18,7 @@ closeout_review:
 task_kind: repository
 acceptance_criteria:
   - Sir refuses legacy Docker cleanup requests before any mutation and delegates cleanup ownership to shared weekly hemma-docker-cleanup.
-  - Nonvisual build, proof and legacy archive defaults use Hot owner job storage while preserving logical paths and existing producer protections.
+  - Retained build, proof and legacy archive defaults use Hot owner job storage while preserving logical paths and existing producer protections.
   - Focused source checks pass and the unactivated runtime boundary is explicit.
 backlog_document_profile: contract-derived
 ---
@@ -30,7 +30,7 @@ storage contract. Remove overlapping container, image, volume and builder prune
 fallbacks. Refuse legacy cleanup flags at CLI and runtime/template boundaries
 before mutation. Keep report compatibility where useful.
 
-Place nonvisual generated build/proof and legacy evacuation archives under the
+Place retained generated build/proof and legacy evacuation archives under the
 Hot-backed home owner workspace, preserving repository and Docker-visible logical
 paths. The backup SSD is backup only. Preserve age, newest-count, free-space,
 pin and active-work protections; add no retention horizon or model classification.
@@ -77,13 +77,13 @@ or workload execution is required.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term                                                                                                                         |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| D01 | Closed: shared weekly hemma-docker-cleanup is the sole Docker cleanup owner; refuse Sir legacy cleanup requests (0316 D05).                   |
-| D02 | Closed: nonvisual build/proof/archive uses Hot owner jobs at preserved logical paths; scratch holds visual churn only (0316 D09).             |
-| D03 | Closed: backup SSD stores backups, never Sir primary archive; no new model classification or retention rule (0316 D11 and accepted plan).     |
-| D04 | Closed: source-only execution, existing producer protections preserved; parent owns publication and activation (explicit assignment).         |
-| D05 | Closed: repair missing Qwen quality ownership exposed by the required operations plan, using existing isolated producers and focused targets. |
+| ID  | Decided contract term                                                                                                                                                                                                         |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D01 | Closed: shared weekly hemma-docker-cleanup is the sole Docker cleanup owner; refuse Sir legacy cleanup requests (0316 D05).                                                                                                   |
+| D02 | Closed: retained build/proof/archive uses Hot owner jobs at preserved logical paths. Scratch holds disposable single-agent operational work of any file type; context and handoffs stay Hot (0316 D09, clarified 2026-10-15). |
+| D03 | Closed: backup SSD stores backups, never Sir primary archive; no new model classification or retention rule (0316 D11 and accepted plan).                                                                                     |
+| D04 | Closed: source-only execution, existing producer protections preserved; parent owns publication and activation (explicit assignment).                                                                                         |
+| D05 | Closed: repair missing Qwen quality ownership exposed by the required operations plan, using existing isolated producers and focused targets.                                                                                 |
 
 ## Source Closeout
 
