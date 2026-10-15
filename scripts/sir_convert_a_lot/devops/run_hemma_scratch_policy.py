@@ -62,6 +62,7 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_timer_runtime import (
     render_timer_unit,
     status_scratch_timer,
 )
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import DOCKER_CLEANUP_REFUSAL
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/hemma-scratch-policy-hemma-scratch-policy")
 
@@ -99,7 +100,7 @@ def _add_remediation_parser(
     """Register the explicit remediation command parser."""
     remediate = subparsers.add_parser(
         "remediate",
-        help="Archive explicit scratch paths and optionally prune non-active Docker state.",
+        help="Evacuate explicit legacy scratch paths into Hot owner jobs.",
     )
     remediate.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     remediate.add_argument("--scratch-root", type=Path, default=DEFAULT_SCRATCH_ROOT)
@@ -123,7 +124,7 @@ def _add_remediation_parser(
     remediate.add_argument(
         "--prune-docker-state",
         action="store_true",
-        help="Prune non-active Docker containers/images/volumes/builder cache after archiving.",
+        help="Unsupported: Docker cleanup belongs to shared weekly hemma-docker-cleanup.",
     )
 
 
@@ -152,7 +153,7 @@ def _add_maintenance_parser(
     maintain.add_argument(
         "--prune-docker-state",
         action="store_true",
-        help="Prune non-active Docker state if the target headroom is still not met.",
+        help="Unsupported: Docker cleanup belongs to shared weekly hemma-docker-cleanup.",
     )
 
 
@@ -193,7 +194,7 @@ def _add_install_timer_parser(
     install_timer.add_argument(
         "--prune-docker-state",
         action="store_true",
-        help="Allow the timer maintenance pass to prune non-active Docker state when needed.",
+        help="Unsupported: Docker cleanup belongs to shared weekly hemma-docker-cleanup.",
     )
     install_timer.add_argument("--timer-on-boot-sec", default=DEFAULT_TIMER_ON_BOOT_SEC)
     install_timer.add_argument(
@@ -223,7 +224,10 @@ def _add_status_timer_parser(
 
 def main(argv: list[str] | None = None) -> int:
     """Run the committed Hemma scratch-governance command surface."""
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if getattr(args, "prune_docker_state", False):
+        parser.error(DOCKER_CLEANUP_REFUSAL)
     output_root = Path(args.output_root)
     prepare_output_root(output_root)
 

@@ -46,7 +46,7 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_runtime import (
 from scripts.sir_convert_a_lot.devops.hemma_scratch_timer_runtime import (
     active_qwen_container_names,
 )
-from scripts.sir_convert_a_lot.ml.qwen.common.storage import cleanup_non_active_docker_state
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import DOCKER_CLEANUP_REFUSAL
 
 
 def _select_source_paths_to_archive(
@@ -96,7 +96,6 @@ def _maintenance_status(
     active_container_names: list[str],
     block_file_present: bool,
     archived_paths: list[ArchivedScratchPath],
-    pruned_docker_state: bool,
 ) -> tuple[str, str | None]:
     """Return the deterministic maintenance status and blocked reason."""
     if free_bytes_before >= target_free_bytes:
@@ -105,12 +104,8 @@ def _maintenance_status(
         return "blocked", "active-qwen-containers"
     if block_file_present:
         return "blocked", "manual-block-file"
-    if archived_paths and pruned_docker_state:
-        return "archived-and-pruned", None
     if archived_paths:
         return "archived", None
-    if pruned_docker_state:
-        return "pruned-docker-only", None
     return "no-candidates", None
 
 
@@ -128,12 +123,13 @@ def run_scratch_maintenance(
     prune_docker_state: bool,
 ) -> ScratchMaintenanceReport:
     """Archive cold artifacts only when Hemma is idle enough for safe cleanup."""
+    if prune_docker_state:
+        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
     free_bytes_before = scratch_free_bytes(scratch_root)
     active_container_names = active_qwen_container_names()
     block_file_present = block_file_path.exists()
     selected_candidates: list[MaintenanceCandidate] = []
     archived_paths: list[ArchivedScratchPath] = []
-    pruned = False
 
     if (
         free_bytes_before < target_free_bytes
@@ -159,9 +155,6 @@ def run_scratch_maintenance(
             storage_archive_root=storage_archive_root,
             target_free_bytes=target_free_bytes,
         )
-        if prune_docker_state and scratch_free_bytes(scratch_root) < target_free_bytes:
-            cleanup_non_active_docker_state()
-            pruned = True
 
     free_bytes_after = scratch_free_bytes(scratch_root)
     status, blocked_reason = _maintenance_status(
@@ -170,7 +163,6 @@ def run_scratch_maintenance(
         active_container_names=active_container_names,
         block_file_present=block_file_present,
         archived_paths=archived_paths,
-        pruned_docker_state=pruned,
     )
     return ScratchMaintenanceReport(
         checked_at=utc_now_iso(),
@@ -189,7 +181,7 @@ def run_scratch_maintenance(
         scratch_free_bytes_after=free_bytes_after,
         selected_candidates=selected_candidates,
         archived_paths=archived_paths,
-        pruned_docker_state=pruned,
+        pruned_docker_state=False,
         meets_target_after=(
             free_bytes_after >= target_free_bytes and free_bytes_after >= required_free_bytes
         ),

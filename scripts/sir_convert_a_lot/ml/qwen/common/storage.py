@@ -1,9 +1,8 @@
 """Storage remediation and tier-management helpers for Hemma.
 
 Purpose:
-    Provide committed logic for moving generated artifacts across storage tiers
-    (SSD scratch vs. HDD bulk storage), reclaiming disk space, and maintaining
-    canonical symlink stability.
+    Provide legacy evacuation into Hot owner storage and preserve canonical
+    symlink stability. Shared host maintenance owns Docker cleanup.
 
 Relationships:
     - Used by CLI remediation scripts.
@@ -18,11 +17,19 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import (
+    DEFAULT_HOT_BUILD_ROOT,
+    DEFAULT_HOT_QWEN_DATA_ROOT,
+    DOCKER_CLEANUP_REFUSAL,
+    validate_migration_source,
+    validate_migration_tree,
+)
+
 DEFAULT_REPO_ROOT = Path("/home/paunchygent/apps/sir-convert-a-lot")
 DEFAULT_REPO_BUILD_ROOT = DEFAULT_REPO_ROOT / "build"
-DEFAULT_SCRATCH_BUILD_ROOT = Path("/srv/scratch/sir-convert-a-lot/build")
+DEFAULT_SCRATCH_BUILD_ROOT = DEFAULT_HOT_BUILD_ROOT
 DEFAULT_OLD_QWEN_DATA_ROOT = Path("/srv/scratch/sir-convert-a-lot/data/qwen3-tts-swedish-corpus")
-DEFAULT_NEW_QWEN_DATA_ROOT = Path("/srv/storage/sir-convert-a-lot/data/qwen3-tts-swedish-corpus")
+DEFAULT_NEW_QWEN_DATA_ROOT = DEFAULT_HOT_QWEN_DATA_ROOT
 
 
 @dataclass(frozen=True)
@@ -84,6 +91,7 @@ def _migrate_tree(source: Path, destination: Path) -> None:
     """Move one tree between storage tiers, merging when the destination exists."""
     if not source.exists() or source.is_symlink():
         return
+    validate_migration_tree(source, destination)
     ensure_directory(destination.parent)
     try:
         if destination.exists():
@@ -91,7 +99,11 @@ def _migrate_tree(source: Path, destination: Path) -> None:
                 raise SystemExit(f"Refusing to merge into non-directory destination: {destination}")
             for child in sorted(source.iterdir()):
                 target_child = destination / child.name
-                if target_child.exists():
+                if target_child.exists() or target_child.is_symlink():
+                    if child.is_symlink() and target_child.is_symlink():
+                        if child.readlink() == target_child.readlink():
+                            child.unlink()
+                            continue
                     if child.is_dir() and target_child.is_dir():
                         _migrate_tree(child, target_child)
                         continue
@@ -99,8 +111,7 @@ def _migrate_tree(source: Path, destination: Path) -> None:
                         if filecmp.cmp(child.as_posix(), target_child.as_posix(), shallow=False):
                             child.unlink()
                             continue
-                    _sudo_rsync_tree(source=source, destination=destination)
-                    return
+                    raise SystemExit(f"Refusing migration collision at `{target_child}`.")
                 shutil.move(child.as_posix(), target_child.as_posix())
             source.rmdir()
             return
@@ -111,6 +122,7 @@ def _migrate_tree(source: Path, destination: Path) -> None:
 
 def _sudo_rsync_tree(*, source: Path, destination: Path) -> None:
     """Move one tree with sudo-backed rsync when user-space moves cannot succeed."""
+    validate_migration_tree(source, destination)
     run_checked(
         ["sudo", "-n", "mkdir", "-p", destination.as_posix()],
         label="sudo mkdir",
@@ -167,14 +179,16 @@ def replace_with_canonical_symlink(source_path: Path, target_path: Path) -> None
 
 
 def migrate_repo_build_to_scratch(settings: StorageSettings) -> None:
-    """Move the repo build tree onto SSD scratch and replace it with a symlink."""
+    """Move the repo build tree into Hot owner jobs, preserving its logical path."""
+    validate_migration_source(settings.repo_build_root, settings.scratch_build_root)
     ensure_directory(settings.scratch_build_root.parent)
     migrate_tree_to_tier(settings.repo_build_root, settings.scratch_build_root)
     replace_with_canonical_symlink(settings.repo_build_root, settings.scratch_build_root)
 
 
 def migrate_qwen_data_to_storage(settings: StorageSettings) -> None:
-    """Move raw Qwen corpus data from SSD scratch onto HDD storage and symlink back."""
+    """Evacuate legacy scratch corpus data to Hot and preserve its logical path."""
+    validate_migration_source(settings.old_qwen_data_root, settings.new_qwen_data_root)
     ensure_directory(settings.new_qwen_data_root.parent)
     migrate_tree_to_tier(settings.old_qwen_data_root, settings.new_qwen_data_root)
     replace_with_canonical_symlink(settings.old_qwen_data_root, settings.new_qwen_data_root)
@@ -191,23 +205,8 @@ def filesystem_df() -> str:
 
 
 def cleanup_non_active_docker_state() -> None:
-    """Prune non-active Docker state to reclaim root-disk space safely."""
-    run_checked(
-        ["sudo", "-n", "docker", "container", "prune", "-f"],
-        label="docker container prune",
-    )
-    run_checked(
-        ["sudo", "-n", "docker", "image", "prune", "-af"],
-        label="docker image prune",
-    )
-    run_checked(
-        ["sudo", "-n", "docker", "volume", "prune", "-f"],
-        label="docker volume prune",
-    )
-    run_checked(
-        ["sudo", "-n", "docker", "builder", "prune", "-af"],
-        label="docker builder prune",
-    )
+    """Refuse the retired Sir cleanup surface before executing any command."""
+    raise SystemExit(DOCKER_CLEANUP_REFUSAL)
 
 
 def build_storage_report(
@@ -252,14 +251,18 @@ def build_storage_report(
 
 def run_storage_remediation(settings: StorageSettings) -> StorageReport:
     """Execute the storage remediation and return one deterministic report."""
+    if settings.cleanup_docker_state:
+        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
+    if settings.migrate_repo_build:
+        validate_migration_source(settings.repo_build_root, settings.scratch_build_root)
+    if settings.migrate_qwen_data:
+        validate_migration_source(settings.old_qwen_data_root, settings.new_qwen_data_root)
     docker_before = docker_system_df()
     filesystem_before = filesystem_df()
     if settings.migrate_repo_build:
         migrate_repo_build_to_scratch(settings)
     if settings.migrate_qwen_data:
         migrate_qwen_data_to_storage(settings)
-    if settings.cleanup_docker_state:
-        cleanup_non_active_docker_state()
     docker_after = docker_system_df()
     filesystem_after = filesystem_df()
     return build_storage_report(

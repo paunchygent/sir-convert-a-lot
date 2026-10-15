@@ -15,7 +15,33 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from scripts.sir_convert_a_lot.ml.qwen.common.storage import replace_with_canonical_symlink
+
+from scripts.sir_convert_a_lot.ml.qwen.common.storage import (
+    migrate_tree_to_tier,
+    replace_with_canonical_symlink,
+)
+
+
+def test_migrate_tree_preserves_both_conflicting_checkpoints(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An occupied Hot destination cannot authorize losing either checkpoint."""
+    source, destination = tmp_path / "source", tmp_path / "hot"
+    source.mkdir()
+    destination.mkdir()
+    (source / "a-new").write_bytes(b"keep")
+    (source / "checkpoint").write_bytes(b"source")
+    (destination / "checkpoint").write_bytes(b"target")
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.ml.qwen.common.storage.run_checked",
+        lambda *_a, **_kw: pytest.fail("destructive fallback ran"),
+    )
+    with pytest.raises(SystemExit, match="collision"):
+        migrate_tree_to_tier(source, destination)
+    assert (source / "a-new").read_bytes() == b"keep"
+    assert (source / "checkpoint").read_bytes() == b"source"
+    assert (destination / "checkpoint").read_bytes() == b"target"
+    assert not (destination / "a-new").exists()
 
 
 def test_replace_with_canonical_symlink_falls_back_to_sudo_when_symlink_creation_is_denied(

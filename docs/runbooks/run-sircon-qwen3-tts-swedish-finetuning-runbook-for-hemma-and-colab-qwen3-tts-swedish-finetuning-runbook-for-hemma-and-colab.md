@@ -4,14 +4,14 @@ id: RUN-SIRCON-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab
 title: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 summary: Qwen3-TTS Swedish Finetuning Runbook for Hemma and Colab
 system: hemma.hule.education
 retired_ids:
-- RUN-qwen3-swedish-finetuning-on-hemma-and-colab
+  - RUN-qwen3-swedish-finetuning-on-hemma-and-colab
 ---
 
 ## Trigger
@@ -67,11 +67,15 @@ The target is:
 
 ### Frozen Pilot Dataset Rule
 
-The current canonical pilot-owned preprocessing source is:
+The retained pilot-owned preprocessing source is recorded at this historical path:
 
 - `/srv/storage/sir-convert-a-lot/backups/qwen-preprocessing-canonical/task140-qwen-pilot-frozen-20260311a`
 
-Training must use a deterministic training bundle projected from this root.
+Preserve this evidence path. New primary corpus placement uses
+`/home/paunchygent/.local/share/sir-convert-a-lot/data/qwen3-tts-swedish-corpus`;
+the backup SSD is not a new working corpus destination. The parent must verify
+the migrated source and preserved logical paths before training projects a
+deterministic bundle from it. See [Storage And Cutover](#storage-and-cutover).
 
 ### Current Runtime Separation
 
@@ -80,7 +84,7 @@ Use the current repo surfaces as two different lanes:
 1. Existing Qwen serving/benchmark lane:
    - `scripts/sir_convert_a_lot/cli/ml/qwen_benchmarks.py`
    - `vllm/vllm-omni-rocm`
-1. New Qwen fine-tuning lane:
+2. New Qwen fine-tuning lane:
    - `scripts/sir_convert_a_lot/ml/qwen/training/`
    - dedicated training runtime (`ml.qwen.common.runtime`)
 
@@ -228,17 +232,17 @@ Canonical repo surface for the preprocessing lane:
 
 1. **Verify Infrastructure:**
    - `pdm run run-hemma -- pdm run qwen-smoke`
-1. **Source Selection:**
+2. **Source Selection:**
    - `pdm run qwen-preprocess --stage source-selection --source-mode staged-public-corpus`
-1. **Row Processing (Detached):**
+3. **Row Processing (Detached):**
    - `pdm run qwen-preprocess --stage row-processing --row-worker-count 4`
-1. **Finalization (GPU-backed):**
+4. **Finalization (GPU-backed):**
    - `pdm run qwen-preprocess --stage finalization`
-1. **Bundle Materialization:**
+5. **Bundle Materialization:**
    - `pdm run qwen-bundle build`
-1. **Training Launch:**
+6. **Training Launch:**
    - `pdm run qwen-train launch`
-1. **Status Inspection:**
+7. **Status Inspection:**
    - `pdm run qwen-train status`
 
 ### Fault-Tolerant Resume
@@ -334,11 +338,11 @@ Operational consequence:
 
 Use one active question at a time:
 
-| Experiment class | Current active surface | Operator purpose |
-| --- | --- | --- |
-| `provenance` | `pdm run qwen-historical-pilot-control <launch|status|stop>` | Historical-contract recreation and control evidence |
-| `mechanism` | `pdm run qwen-stability-lab run` and `gate` | Bounded stabilization exploration and promotion gating |
-| `recovery` | governed `qwen-train launch/status` proof lane | Short fresh-start governed proof only after promotion |
+| Experiment class | Current active surface                                                     | Operator purpose                                       |
+| ---------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `provenance`     | `pdm run qwen-historical-pilot-control` with `launch`, `status`, or `stop` | Historical-contract recreation and control evidence    |
+| `mechanism`      | `pdm run qwen-stability-lab run` and `gate`                                | Bounded stabilization exploration and promotion gating |
+| `recovery`       | governed `qwen-train launch/status` proof lane                             | Short fresh-start governed proof only after promotion  |
 
 Operator rules:
 
@@ -369,7 +373,9 @@ For mechanism questions:
   - local or attached short run:
     `pdm run qwen-stability-lab run --skip-build`
   - attached Hemma short run through the canonical wrapper:
-    `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root /srv/scratch/sir-convert-a-lot/build/verification/qwen-stability-lab --skip-build`
+    `pdm run run-hemma -- pdm run qwen-stability-lab run --output-root build/verification/qwen-stability-lab --skip-build`
+- new runs require the parent-verified Hot backing for repository `build/`;
+  retained `/srv/scratch/...` run paths remain historical evidence addresses
 - the lab writes one compact matrix run under a single output root:
   - `results.json`
   - `results.md`
@@ -387,67 +393,11 @@ For mechanism questions:
 - use the parity probe result to decide whether `T227` remediates a verified
   trainer/runtime divergence or Story 31 continues through bounded stabilizer
   work
-- `T219` is now recorded as negative bounded evidence under
-  `task219-20260317t180700z-a1`
-- `T228` is now complete as the ranked closure of that family
-- `T229` is now complete as the narrowed rerun under
-  `task229-20260318t064712z-a1`
-- the target `sub_talker_loss` family localizes to
-  `talker_core.layer_16.input_layernorm`
-- `T230` is now complete as the negative bounded normalization-entry rerun
-  under `task230-20260318t082049z-a1`
-- `T231` is now complete as the explicit no-winner promotion decision
-- `T232` is now complete as the lane decision to stay in mechanism
-- `T233` is now complete as the normalization-internal rerun under
-  `task233-20260318t112544z-a1`
-- the first verified internal surface is now
-  `talker_core.layer_16.input_layernorm.output`
-- `T234` is now complete under `task234-20260318t123644z-a1`
-- no variant stayed finite or earned promotion; the strongest `0p5` member
-  shifted the pair and `line-13` `sub_talker_loss` cases to
-  `talker_core.layer_15.output`, while `line-4` still first broke at
-  `talker_core.layer_16.input_layernorm`
-- `T235` is now complete under `task235-20260318t140352z-a1`
-- the disagreement is repeatable: pair and `line-13` stay at
-  `talker_core.layer_15.output`, while `line-4` stays at
-  `talker_core.layer_16.input_layernorm`
-- `T236` is now complete under `task236-20260318t145434z-a1`
-- the outlier is a genuine row-local seam difference: pair and `line-13`
-  stay at `talker_core.layer_15.output`, while `line-4` stays at
-  `talker_core.layer_16.input_layernorm.output`
-- `T237` is now complete under `task237-20260318t154708z-a1`
-- the `1e3` fp32-output-cap winner converged pair, `line-13`, and `line-4`
-  `sub_talker_loss` to `talker_core.layer_15.output`
-- `T240` is now complete under `task240-20260318t165458z-a1`
-- all three normative `sub_talker_loss` rows first broke at
-  `talker_core.layer_15.output`, so the convergence class is
-  `converged_layer15_output`
-- `T241` is now complete under `task241-20260318t175714z-a1`
-- all three normative `sub_talker_loss` rows still first broke at
-  `talker_core.layer_15.output`, so the classification is
-  `converged_layer15_output_residual`
-- `T242` is now complete as the permanent Hemma bind-root contract:
-  install the persistent bind-root service with
-  `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`, then use
-  `status` and `probe` as the normal preflight before new Qwen runs
-- expected host truth after install:
-  - `/srv/scratch/sir-convert-a-lot/{build,cache}` remains canonical storage
-  - Docker still cannot use fresh `/srv/scratch/...` bind mounts directly
-  - `probe` should therefore report `canonical_probe_ok=false`,
-    `home_probe_ok=true`, and the preferred effective roots under
-    `/home/paunchygent/.data/sir-convert-a-lot/`
-- ad hoc runtime bind fallback is compatibility-only after `T242`
-- `T243` is now complete under `task243-20260318t190832z-a1`
-- all three normative `sub_talker_loss` rows first broke at
-  `talker_core.layer_15.output`, so the classification is
-  `converged_layer15_output_return`
-- `T244` is now complete under `task244-20260318t193736z-a1`
-- all three normative `sub_talker_loss` rows still first broke at
-  `talker_core.layer_15.output`, so the classification is
-  `converged_output_return`
-- `T245` is now complete under `task245-20260318t202916z-a1`
-- all three normative `sub_talker_loss` rows still first broke at
-  `talker_core.layer_15.output`, so the classification is `multiply_not_causal`
+- read the [pilot progress ledger](../reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15-qwen-training-eval-pilot-progress-ledger-2026-03-15.md)
+  for `T219`–`T245` run identifiers, classifications and historical `T242`
+  bind-root observations; those observations do not establish new Hot backing
+- ad hoc runtime bind fallback remains compatibility-only after `T242`;
+  installation and fresh physical probes follow [Storage And Cutover](#storage-and-cutover)
 - `T246` is now the immediate diagnosis-only mechanism action
 - `T246` must split the fp32-scaled layer-15 output result from the final
   emitted tensor before any new stabilizer family or promotion discussion
@@ -460,41 +410,50 @@ For recovery questions:
 - when recovery is authorized, use the existing governed `qwen-train`
   fresh-start proof lane rather than inventing a new proof wrapper
 
-### Story 29 Scratch Governance
+### Storage And Cutover
 
-Story 29 proof lanes are now governed by an explicit hot-versus-cold storage
-policy on Hemma:
+TASK-SIRCON-REP-0033 implements source authority from TASK-SKILL-REP-0316
+D05/D09/D11. Nonvisual build/proof output defaults to Hot owner jobs at
+`/home/paunchygent/.local/share/sir-convert-a-lot/jobs/build`. The parent cutover
+supplies Hot home backing and preserves repository `build/` and Docker-visible
+`~/.data/sir-convert-a-lot/build`. Existing symlinks refuse retargeting until
+their backing is migrated and verified. Cache retains its separate legacy source
+default `/srv/scratch/sir-convert-a-lot/cache`; its owner must reconcile placement
+under the shared contract before activation.
 
-- keep active proof/run roots on `/srv/scratch`
-- demote cold completed artifact trees onto `/srv/storage` while preserving
-  symlink-backed path stability at the original scratch path
-- prune only non-active Docker state when reclaiming scratch headroom
+The [Hemma operations doorway](run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md#storage-placement-and-cutover)
+routes to the authoritative shared migration and backup procedure. The parent
+owns bind-root installation with `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`
+and subsequent `status`/`probe` receipts during that cutover. Record actual
+backing and probe results; source defaults establish neither physical placement
+nor expected values of `canonical_probe_ok` and `home_probe_ok`.
 
-Canonical commands:
+Legacy scratch candidates preserve the 12-hour age, newest 2/4 roots, 64/96 GiB
+free thresholds, protected paths, active-Qwen guard and manual block file.
+Selected trees evacuate with original-path symlinks into
+`/home/paunchygent/.local/share/sir-convert-a-lot/jobs/legacy-scratch-archive`,
+without automatic deletion or an archive TTL. `/srv/storage` is backup-only;
+scratch is visual-only. Both refuse nonvisual primary destinations.
+
+Sir never prunes Docker. The shared weekly `hemma-docker-cleanup` owns that
+maintenance. `--prune-docker-state` and true runtime/timer settings refuse before
+mutation. The legacy storage command's `--skip-docker-cleanup` is a compatibility
+option; cleanup stays off regardless.
+
+Keep the hourly timer disabled during cutover. Execution history and dated host
+receipts belong with TASK-SIRCON-REP-0033 and its parent evidence.
+The parent owns writer-safe migration,
+replacement maintenance, installation and observed proof. Source checks do not
+prove activation. The exclusive private-Qwen GPU hold remains in force.
+
+`maintain` and `remediate` require separate host mutation authority. Inspect with:
 
 1. Audit current pressure:
    `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
 
-1. Run the recurring idle-safe maintenance pass first for routine headroom
-   recovery:
-   `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
-1. Archive explicit cold artifact trees and optionally prune Docker:
-   `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --source-path <scratch-path> [--source-path <scratch-path> ...] [--prune-docker-state]`
-1. Install the recurring timer once the maintenance policy is trusted on the
-   host:
-   `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
-1. Inspect timer state:
+2. Inspect timer state:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-   The timer is healthy only when `systemctl --user list-timers` reports a
-   concrete `NEXT` value. If the timer is enabled/active but `NEXT=-`, refresh
-   it from the repo command surface; the rendered unit must include
-   `OnActiveSec=1h` as well as `OnBootSec=15min` and `OnUnitActiveSec=1h`.
-Operator rule:
-- do not relaunch `T197` or `T198` until the scratch audit reports enough free
-  bytes for the proof wrapper headroom gate
-- do not let the recurring timer race an active proof or training lane; the
-  committed maintenance pass blocks itself when active `qwen-*` containers or
-  the explicit scratch-maintenance block file are present
-- when older proof/run roots must remain referenceable from docs, archive them
-  onto `/srv/storage` and keep a symlink at the original path instead of
-  deleting them blindly
+
+Before any separately authorized `T197`/`T198` launch, satisfy the proof wrapper
+headroom gate. Preserve referenceable proof bytes and logical paths; the backup
+owner covers actual research data independently.

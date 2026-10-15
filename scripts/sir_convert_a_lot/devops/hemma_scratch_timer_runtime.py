@@ -22,6 +22,7 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import
     ScratchTimerStatusReport,
     utc_now_iso,
 )
+from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import DOCKER_CLEANUP_REFUSAL
 
 
 def run_local_checked(command: list[str], *, label: str) -> str:
@@ -71,6 +72,8 @@ def _systemctl_user_bool(command: list[str]) -> bool:
 
 def render_service_unit(settings: ScratchTimerSettings) -> str:
     """Render the user-level systemd service unit for recurring maintenance."""
+    if settings.prune_docker_state:
+        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
     pdm_path = shutil.which("pdm") or str(Path.home() / ".local/bin/pdm")
     exec_parts = [
         pdm_path,
@@ -98,8 +101,6 @@ def render_service_unit(settings: ScratchTimerSettings) -> str:
         "--keep-most-recent",
         str(settings.keep_most_recent),
     ]
-    if settings.prune_docker_state:
-        exec_parts.append("--prune-docker-state")
     return "\n".join(
         [
             "[Unit]",
@@ -119,6 +120,8 @@ def render_service_unit(settings: ScratchTimerSettings) -> str:
 
 def render_timer_unit(settings: ScratchTimerSettings) -> str:
     """Render the user-level systemd timer unit for recurring maintenance."""
+    if settings.prune_docker_state:
+        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
     return "\n".join(
         [
             "[Unit]",
@@ -143,13 +146,15 @@ def install_scratch_timer(
     enable_linger: bool,
 ) -> ScratchTimerInstallReport:
     """Install or refresh the recurring user-level systemd timer."""
+    service_unit = render_service_unit(settings)
+    timer_unit = render_timer_unit(settings)
     username = Path.home().name
     lingering_before = _user_linger_enabled(username)
     settings.unit_dir.mkdir(parents=True, exist_ok=True)
     service_path = settings.unit_dir / settings.service_name
     timer_path = settings.unit_dir / settings.timer_name
-    service_path.write_text(render_service_unit(settings) + "\n", encoding="utf-8")
-    timer_path.write_text(render_timer_unit(settings) + "\n", encoding="utf-8")
+    service_path.write_text(service_unit + "\n", encoding="utf-8")
+    timer_path.write_text(timer_unit + "\n", encoding="utf-8")
     if enable_linger and not lingering_before:
         run_local_checked(
             ["sudo", "-n", "loginctl", "enable-linger", username],

@@ -15,28 +15,51 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.ml.qwen.common.models import MountResolution
+from scripts.sir_convert_a_lot.ml.qwen.common.storage import DEFAULT_SCRATCH_BUILD_ROOT
+from scripts.sir_convert_a_lot.ml.qwen.training import qwen_historical_pilot_control as control
 from scripts.sir_convert_a_lot.ml.qwen.training.models import TrainingSettings
 from scripts.sir_convert_a_lot.ml.qwen.training.qwen_historical_pilot_control_runtime import (
     build_detached_historical_control_command,
 )
 
 
+def test_default_historical_paths_build_the_existing_container_command() -> None:
+    """Default run and launch metadata paths must both map beneath the Hot build root."""
+    args = control.build_parser().parse_args(["launch"])
+    settings = control._build_settings_from_args(args)
+    command, _ = build_detached_historical_control_command(
+        settings,
+        repo_root=Path("/home/paunchygent/apps/sir-convert-a-lot"),
+        hf_mount=MountResolution(settings.hf_cache_dir, settings.hf_cache_dir, False),
+        scratch_mount=MountResolution(
+            settings.scratch_build_root, settings.scratch_build_root, False
+        ),
+        bundle_mount=MountResolution(
+            args.historical_bundle_root, args.historical_bundle_root, False
+        ),
+        launch_id="default-launch",
+        container_name="default-container",
+        launch_root=settings.output_root / "default-launch",
+    )
+    assert command[command.index("--launch-metadata-path") + 1] == (
+        "/app/build/verification/qwen-historical-pilot-control/default-launch/launch.json"
+    )
+
+
 def test_build_detached_historical_control_command_mounts_historical_bundle() -> None:
     """Historical control should mount the surviving historical bundle separately from scratch."""
     settings = TrainingSettings(
-        output_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/verification/qwen-historical-pilot-control"
-        ),
+        output_root=DEFAULT_SCRATCH_BUILD_ROOT / "verification/qwen-historical-pilot-control",
         image="sir-convert-a-lot-qwen-finetune-hemma:historical-control",
         hf_cache_dir=Path("/srv/scratch/sir-convert-a-lot/cache/huggingface"),
         hf_cache_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/cache/huggingface"),
-        scratch_build_root=Path("/srv/scratch/sir-convert-a-lot/build"),
+        scratch_build_root=DEFAULT_SCRATCH_BUILD_ROOT,
         scratch_build_home_mount=Path("/home/paunchygent/.data/sir-convert-a-lot/build"),
         pilot_bundle_root=Path(
             "/srv/storage/sir-convert-a-lot/backups/reference/"
             "qwen3-tts-swedish-pilot-bundle-20260312h"
         ),
-        runs_root=Path("/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune"),
+        runs_root=DEFAULT_SCRATCH_BUILD_ROOT / "runs/qwen3-tts-swedish-finetune",
         model_id="Qwen/Qwen3-TTS-12Hz-1.7B-Base",
         train_manifest_family="swedish_pilot_train",
         eval_manifest_family="swedish_checkpoint_dev",
@@ -80,10 +103,8 @@ def test_build_detached_historical_control_command_mounts_historical_bundle() ->
         bundle_mount=bundle_mount,
         launch_id="qwen-historical-control-20260317t190000z",
         container_name="qwen-historical-control-20260317t190000z-container",
-        launch_root=Path(
-            "/srv/scratch/sir-convert-a-lot/build/verification/"
-            "qwen-historical-pilot-control/qwen-historical-control-20260317t190000z"
-        ),
+        launch_root=DEFAULT_SCRATCH_BUILD_ROOT
+        / "verification/qwen-historical-pilot-control/qwen-historical-control-20260317t190000z",
     )
 
     assert run_root.as_posix().endswith("/qwen-historical-control-20260317t190000z")

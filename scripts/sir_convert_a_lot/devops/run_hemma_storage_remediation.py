@@ -1,9 +1,8 @@
 """Run the committed Hemma storage remediation surface.
 
 Purpose:
-    Provide one deterministic CLI entrypoint for moving hot Qwen build output
-    onto SSD scratch, moving raw Qwen corpus data onto HDD bulk storage, and
-    reclaiming root-disk space from non-active Docker state.
+    Provide a legacy migration CLI for Hot owner build/corpus storage while
+    preserving logical paths. Shared host tooling owns Docker cleanup.
 
 Relationships:
     - Wraps `hemma_storage_runtime.py`.
@@ -48,17 +47,17 @@ def _parse_args(argv: list[str] | None) -> tuple[Path, HemmaStorageSettings]:
     parser.add_argument(
         "--skip-build-migration",
         action="store_true",
-        help="Skip moving repo build output onto scratch.",
+        help="Skip moving repo build output into Hot owner jobs.",
     )
     parser.add_argument(
         "--skip-data-migration",
         action="store_true",
-        help="Skip moving raw Qwen corpus data onto storage.",
+        help="Skip moving legacy scratch corpus data into Hot owner storage.",
     )
     parser.add_argument(
         "--skip-docker-cleanup",
         action="store_true",
-        help="Skip pruning non-active Docker state.",
+        help="Compatibility option: Sir Docker cleanup is retired and never runs.",
     )
     args = parser.parse_args(argv)
     settings = HemmaStorageSettings(
@@ -69,7 +68,7 @@ def _parse_args(argv: list[str] | None) -> tuple[Path, HemmaStorageSettings]:
         new_qwen_data_root=Path(args.new_qwen_data_root),
         migrate_repo_build=not bool(args.skip_build_migration),
         migrate_qwen_data=not bool(args.skip_data_migration),
-        cleanup_docker_state=not bool(args.skip_docker_cleanup),
+        cleanup_docker_state=False,
     )
     return Path(args.output_root), settings
 
