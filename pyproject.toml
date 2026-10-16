@@ -38,7 +38,7 @@ dev = [
     "mdformat-frontmatter>=2.0.10",
 ]
 tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@a599288070fd512c54748121d53871030c560280#subdirectory=packages/repository_governance",
+    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@30a4bfb2d980c53abc6808e050da29c0e733f73c#subdirectory=packages/repository_governance",
 ]
 
 [tool.repository-governance]
