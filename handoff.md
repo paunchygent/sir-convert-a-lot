@@ -23,8 +23,9 @@
   approval; 52 operations and 28 Qwen tests, focused types and named operations
   checks pass. Parent owns merge-only integration/main-only publication.
   Next: publish the shared procedure, then admit actual Hot backing and Docker
-  binds through the held migration boundary. Keep the hourly timer disabled;
-  this source closeout establishes no host, GPU or service activation.
+  binds through the held migration boundary. This source closeout establishes no
+  host, GPU or service activation. The hourly scratch timer is retired
+  (TASK-SIRCON-REP-0036).
   [Source task and review pointers](docs/backlog/tasks/task-sircon-rep-0033-adapt-sir-storage-maintenance-to-hot-ownership-and-shared-docker-cleanup.md).
 
 - [TASK-SIRCON-REP-0029](docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md)
@@ -87,6 +88,11 @@
 
 ## Recent
 
+- [TASK-SIRCON-REP-0036](docs/backlog/tasks/task-sircon-rep-0036-retire-the-stale-sir-qwen-scratch-maintenance-user-timer.md)
+  retired the Qwen scratch maintenance user timer and service on Hemma on
+  2026-10-22 through the new `qwen-scratch-policy uninstall-timer`; code and
+  prose reviews approved. Scratch leftovers under `/srv/scratch/sir-convert-a-lot`
+  (`task-347` 8.9G, `tools`, `bin`, `data`) remain for a user decision.
 - TASK-SIRCON-REP-0024 adopted the seven derived quality scopes while keeping
   Qwen as a separate PDM project.
 - TASK-SIRCON-REP-0021 organized the root tests by behavior ownership and

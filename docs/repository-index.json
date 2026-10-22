@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "eb3a9be3aa626ae50df31a1b5f244a05fa0dcada355a9194fb1716f41ee66885",
+  "source_set_digest": "73bcf2fca274ce96aaf32c4c6412184f1108b5f2b9c0b316dd7fe9838fd87dec",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4071,7 +4071,7 @@
       "type": "task",
       "title": "Retire the stale Sir Qwen scratch maintenance user timer",
       "path": "docs/backlog/tasks/task-sircon-rep-0036-retire-the-stale-sir-qwen-scratch-maintenance-user-timer.md",
-      "status": "ready",
+      "status": "done",
       "task_kind": "repository",
       "owners": [
         {
@@ -4081,7 +4081,11 @@
       ],
       "closeout_review": {
         "record": "inline",
-        "status": "not_started"
+        "status": "approved",
+        "reviewer": "ruthless-reviewer and skill-prose-reviewer",
+        "decided_at": "2026-10-22T11:17:00Z",
+        "approval_protocol": "agent-implementation:approved-review-closeout",
+        "approval_evidence": "Code rereview 604209c5 approved 04b942c after F01-F03 repairs; prose rereview 850b2845 approved the repaired runbooks; Sir retained root 01a16345-8ce2-7602-8bc0-7900e7a9513f holds both records under evidence/reviews."
       }
     },
     {

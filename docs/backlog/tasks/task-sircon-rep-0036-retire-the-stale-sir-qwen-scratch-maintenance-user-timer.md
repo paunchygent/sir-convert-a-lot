@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-10-22'
-status: ready
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer and skill-prose-reviewer
+  decided_at: '2026-10-22T11:17:00Z'
+  approval_protocol: agent-implementation:approved-review-closeout
+  approval_evidence: Code rereview 604209c5 approved 04b942c after F01-F03 repairs; prose rereview 850b2845 approved the repaired runbooks; Sir retained root 01a16345-8ce2-7602-8bc0-7900e7a9513f holds both records under evidence/reviews.
 task_kind: repository
 acceptance_criteria:
   - The Sir user-scope Qwen scratch maintenance timer and service are disabled, stopped and removed from the Hemma user unit directory through the repository's uninstall-timer command.
@@ -79,3 +83,24 @@ and `systemctl --user` then reports neither unit. No performance concern.
 | D04 | Leave `sir-convert-a-lot-qwen-docker-bind-roots.service` and its drop-in unchanged.                                                                                       |
 | D05 | Do not delete the `/srv/scratch/sir-convert-a-lot` leftovers; record sizes, dates and consumers and report them.                                                          |
 | D06 | Repair the stale timer and Scratch-root guidance in the two runbooks in the same change.                                                                                  |
+
+## Closeout
+
+Integrated as `main` merge `52dcd46`. Code review `e479ae6` requested changes:
+F01 arbitrary unit names, F02 unchecked `systemctl` failures, F03 unchecked
+service enablement. Rereview approved repair `04b942c`. Prose review requested a
+correction of an unverified Hugging Face cache claim and a named storage-tier
+owner; its rereview approved after a full search of Hot, Cache and
+`/home/paunchygent` found no Granite FP8 cache. `pdm run check operations`
+passed with 52 tests.
+
+On 2026-10-22 at 11:18:22Z, `pdm run qwen-scratch-policy uninstall-timer` from the
+canonical checkout removed both unit files. Both units then reported
+`LoadState=not-found`, an empty `UnitFileState` and `ActiveState=inactive`.
+`list-unit-files` lists none, and `status-timer` reports the timer disabled and
+inactive. The bind-roots service stayed `active`/`exited`, and no Sir or Qwen
+container ran. The July backup file
+`sir-convert-a-lot-qwen-scratch-maintenance.timer.task205-onactive.bak` remains
+in the user unit directory; systemd does not load it. Evidence:
+`evidence/operations/host-retirement/` and `evidence/reviews/` in the Sir
+retained root above.
