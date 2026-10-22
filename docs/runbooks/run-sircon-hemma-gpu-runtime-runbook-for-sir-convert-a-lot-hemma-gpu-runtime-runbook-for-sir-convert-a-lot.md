@@ -63,10 +63,10 @@ in the harness configuration directory). Sir's backing, observed on 22 October
   Containers keep the logical `/srv/scratch/sir-convert-a-lot/...` paths only as
   in-container mount targets.
 - `/srv/scratch` holds short-lived disposable work only; no Sir build, cache or
-  maintenance timer lives there. The entries still in
-  `/srv/scratch/sir-convert-a-lot/` (`task-347`, `tools`, `bin`, `data`) are
-  March-June 2026 leftovers that no unit or running container uses; the Qwen
-  storage migration names `data/qwen3-tts-swedish-corpus` only as its old source.
+  maintenance timer lives there. `/srv/scratch/sir-convert-a-lot/` has been
+  empty since its unused March-June 2026 leftovers were deleted on 22 October
+  2026; the Qwen storage migration still names
+  `data/qwen3-tts-swedish-corpus` there only as its old source.
 - `/srv/storage` is backup-only.
 
 ## llama.cpp HIP Build Stability
