@@ -50,17 +50,20 @@ same Hemma storage and evidence contract.
 
 ## Storage Contract
 
-- `/srv/scratch`: active Docker root, BuildKit cache, Hugging Face/model caches,
-  active generated artifacts, and benchmark working roots.
-- `/srv/storage`: raw corpora and cold retained datasets or completed artifacts.
-- `/`: no long-lived Docker state, model cache, or generated artifact trees.
+The shared Hemma host runtime reference owns the storage tiers. Sir's current
+backing, observed on 22 October 2026:
 
-Canonical Sir Convert scratch roots:
-
-- `/srv/scratch/sir-convert-a-lot/build`
-- `/srv/scratch/sir-convert-a-lot/bin`
-- `/srv/scratch/sir-convert-a-lot/cache`
-- `/srv/scratch/sir-convert-a-lot/cache/huggingface`
+- Docker data root: `/var/snap/docker/common/var-lib-docker`, bound from Hot.
+- Retained build, proof and cache roots: `/home/paunchygent/.data/sir-convert-a-lot/`
+  on Hot (`build`, `cache`, `cache/huggingface`, `data`). Containers keep the
+  logical `/srv/scratch/sir-convert-a-lot/...` paths only as in-container mount
+  targets.
+- `/srv/scratch` holds short-lived disposable work only; no Sir build, cache or
+  maintenance timer lives there. The entries still in
+  `/srv/scratch/sir-convert-a-lot/` (`task-347`, `tools`, `bin`, `data`) are
+  March-June 2026 leftovers that no unit or running container uses; the Qwen
+  storage migration names `data/qwen3-tts-swedish-corpus` only as its old source.
+- `/srv/storage` is backup-only.
 
 ## llama.cpp HIP Build Stability
 
@@ -110,12 +113,11 @@ governing task. Do not silently switch to CPU execution.
 
 ## Model Cache Contract
 
-Granite FP8 vLLM runs reuse the same scratch-backed Hugging Face cache method as
+Granite FP8 vLLM runs reuse the same Hot-backed Hugging Face cache method as
 the HF-backed llama.cpp/Qwen/TTS lanes:
 
 ```text
-canonical_host_cache: /srv/scratch/sir-convert-a-lot/cache/huggingface
-docker_visible_cache: /home/paunchygent/.data/sir-convert-a-lot/cache/huggingface
+host_cache: /home/paunchygent/.data/sir-convert-a-lot/cache/huggingface
 container_mount: /cache/huggingface
 HF_HOME: /cache/huggingface
 HF_HUB_CACHE: /cache/huggingface/hub
@@ -130,7 +132,7 @@ The retained Granite FP8 cache must be visible inside the container at:
 
 Do not create a second long-lived vLLM cache tree. If the Docker bind-root
 preflight fails, stop and record the exception instead of redownloading into
-container-local or home-only paths.
+container-local paths.
 
 ## Docling GPU Validation
 

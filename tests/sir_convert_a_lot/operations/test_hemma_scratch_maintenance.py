@@ -1,8 +1,8 @@
 """Tests for recurring Hemma scratch maintenance and timer management.
 
 Purpose:
-    Verify the Hemma scratch maintenance selector, runtime orchestration, timer rendering, and
-    CLI reporting without touching real Hemma storage or systemd state.
+    Verify the Hemma scratch maintenance selector, runtime orchestration, retired-timer uninstall,
+    and CLI reporting without touching real Hemma storage or systemd state.
 
 Relationships:
     - Covers `hemma_scratch_maintenance_selection.py`.
@@ -19,14 +19,15 @@ from pathlib import Path
 
 import pytest
 
+from scripts.sir_convert_a_lot.devops import hemma_scratch_timer_runtime as timer_runtime
 from scripts.sir_convert_a_lot.devops import run_hemma_scratch_policy
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import (
     CandidateParent,
     MaintenanceCandidate,
     ScratchMaintenanceReport,
-    ScratchTimerInstallReport,
     ScratchTimerSettings,
     ScratchTimerStatusReport,
+    ScratchTimerUninstallReport,
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_runtime import (
     run_scratch_maintenance,
@@ -36,10 +37,6 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_selection import
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_runtime import (
     ArchivedScratchPath,
-)
-from scripts.sir_convert_a_lot.devops.hemma_scratch_timer_runtime import (
-    render_service_unit,
-    render_timer_unit,
 )
 
 
@@ -201,63 +198,79 @@ def test_run_scratch_maintenance_archives_only_until_target_headroom(
     assert report.archived_paths[0].source_path == first.source_path
 
 
-def test_render_service_unit_uses_qwen_scratch_policy_maintain_command(tmp_path: Path) -> None:
-    """Hemma scratch maintenance timer service should call the committed maintenance surface."""
+def _recording_systemctl(
+    monkeypatch: pytest.MonkeyPatch, *, active_units: set[str]
+) -> list[list[str]]:
+    """Record systemctl calls; units in `active_units` stay active after the uninstall."""
+    calls: list[list[str]] = []
+
+    def fake_optional(command: list[str]) -> tuple[int, str, str]:
+        calls.append(command)
+        return 1, "", "not loaded"
+
+    def fake_checked(command: list[str], *, label: str) -> str:
+        calls.append(command)
+        return ""
+
+    def fake_bool(command: list[str]) -> bool:
+        return command[0] == "is-active" and command[1] in active_units
+
+    monkeypatch.setattr(timer_runtime, "_run_local_optional", fake_optional)
+    monkeypatch.setattr(timer_runtime, "run_local_checked", fake_checked)
+    monkeypatch.setattr(timer_runtime, "_systemctl_user_bool", fake_bool)
+    return calls
+
+
+def test_uninstall_removes_only_the_named_units(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The retired timer uninstall removes its two units and leaves other user units alone."""
+    unit_dir = tmp_path / "systemd"
+    unit_dir.mkdir()
+    for name in ("timer.unit", "service.unit", "other.service", "timer.unit.d"):
+        (unit_dir / name).write_text(name, encoding="utf-8")
+    calls = _recording_systemctl(monkeypatch, active_units=set())
     settings = ScratchTimerSettings(
-        repo_root=tmp_path / "repo",
-        output_root=tmp_path / "build" / "verification",
-        unit_dir=tmp_path / "systemd",
-        service_name="service.unit",
-        timer_name="timer.unit",
-        scratch_root=Path("/srv/scratch"),
-        storage_archive_root=Path("/srv/storage/archive"),
-        runs_root=Path("/srv/scratch/runs"),
-        verification_root=Path("/srv/scratch/verification"),
-        block_file_path=Path("/srv/scratch/.block"),
-        required_free_bytes=64,
-        target_free_bytes=96,
-        candidate_min_age_hours=12.0,
-        keep_most_recent=2,
-        prune_docker_state=False,
-        timer_on_boot_sec="15min",
-        timer_on_unit_active_sec="1h",
+        unit_dir=unit_dir, service_name="service.unit", timer_name="timer.unit"
     )
 
-    rendered = render_service_unit(settings)
+    report = timer_runtime.uninstall_scratch_timer(settings)
 
-    assert "pdm run qwen-scratch-policy maintain" in rendered
-    assert "--prune-docker-state" not in rendered
-    assert f"WorkingDirectory={settings.repo_root.as_posix()}" in rendered
+    assert report.removed_paths == [
+        (unit_dir / "timer.unit").as_posix(),
+        (unit_dir / "service.unit").as_posix(),
+    ]
+    assert sorted(path.name for path in unit_dir.iterdir()) == ["other.service", "timer.unit.d"]
+    assert calls[0] == ["systemctl", "--user", "disable", "--now", "timer.unit", "service.unit"]
+    assert ["systemctl", "--user", "daemon-reload"] in calls
 
 
-def test_render_timer_unit_keeps_future_trigger_after_timer_restart(tmp_path: Path) -> None:
-    """Hemma scratch maintenance timer should recover a future trigger after restart."""
+def test_uninstall_succeeds_when_units_are_already_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second uninstall is a no-op that still reports the units as gone."""
+    _recording_systemctl(monkeypatch, active_units=set())
     settings = ScratchTimerSettings(
-        repo_root=tmp_path / "repo",
-        output_root=tmp_path / "build" / "verification",
-        unit_dir=tmp_path / "systemd",
-        service_name="service.unit",
-        timer_name="timer.unit",
-        scratch_root=Path("/srv/scratch"),
-        storage_archive_root=Path("/srv/storage/archive"),
-        runs_root=Path("/srv/scratch/runs"),
-        verification_root=Path("/srv/scratch/verification"),
-        block_file_path=Path("/srv/scratch/.block"),
-        required_free_bytes=64,
-        target_free_bytes=96,
-        candidate_min_age_hours=12.0,
-        keep_most_recent=2,
-        prune_docker_state=False,
-        timer_on_boot_sec="15min",
-        timer_on_unit_active_sec="1h",
+        unit_dir=tmp_path / "missing", service_name="service.unit", timer_name="timer.unit"
     )
 
-    rendered = render_timer_unit(settings)
+    report = timer_runtime.uninstall_scratch_timer(settings)
 
-    assert "OnActiveSec=1h" in rendered
-    assert "OnBootSec=15min" in rendered
-    assert "OnUnitActiveSec=1h" in rendered
-    assert "Persistent=true" in rendered
+    assert report.removed_paths == []
+    assert not (tmp_path / "missing").exists()
+
+
+def test_uninstall_fails_when_a_unit_stays_active(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A service that keeps running after the uninstall is reported as a failure."""
+    _recording_systemctl(monkeypatch, active_units={"service.unit"})
+    settings = ScratchTimerSettings(
+        unit_dir=tmp_path, service_name="service.unit", timer_name="timer.unit"
+    )
+
+    with pytest.raises(SystemExit, match="still enabled or active"):
+        timer_runtime.uninstall_scratch_timer(settings)
 
 
 def test_runner_writes_maintenance_and_timer_reports(
@@ -301,17 +314,15 @@ def test_runner_writes_maintenance_and_timer_reports(
         pruned_docker_state=False,
         meets_target_after=True,
     )
-    install_report = ScratchTimerInstallReport(
-        installed_at="2026-03-16T22:01:00Z",
+    uninstall_report = ScratchTimerUninstallReport(
+        uninstalled_at="2026-03-16T22:01:00Z",
         service_name="service.unit",
         timer_name="timer.unit",
         unit_dir="/home/user/.config/systemd/user",
-        service_path="/home/user/.config/systemd/user/service.unit",
-        timer_path="/home/user/.config/systemd/user/timer.unit",
-        lingering_enabled_before=False,
-        lingering_enabled_after=True,
-        timer_enabled=True,
-        timer_active=True,
+        removed_paths=["/home/user/.config/systemd/user/timer.unit"],
+        timer_enabled_after=False,
+        timer_active_after=False,
+        service_active_after=False,
     )
     status_report = ScratchTimerStatusReport(
         checked_at="2026-03-16T22:02:00Z",
@@ -331,37 +342,27 @@ def test_runner_writes_maintenance_and_timer_reports(
     )
     monkeypatch.setattr(
         run_hemma_scratch_policy,
-        "install_scratch_timer",
-        lambda *_args, **_kwargs: install_report,
+        "uninstall_scratch_timer",
+        lambda *_args, **_kwargs: uninstall_report,
     )
     monkeypatch.setattr(
         run_hemma_scratch_policy,
         "status_scratch_timer",
         lambda *_args, **_kwargs: status_report,
     )
-    monkeypatch.setattr(
-        run_hemma_scratch_policy,
-        "render_service_unit",
-        lambda _settings: "[Service]",
-    )
-    monkeypatch.setattr(
-        run_hemma_scratch_policy,
-        "render_timer_unit",
-        lambda _settings: "[Timer]",
-    )
 
     maintain_exit_code = run_hemma_scratch_policy.main(
         ["maintain", "--output-root", output_root.as_posix()]
     )
-    install_exit_code = run_hemma_scratch_policy.main(
-        ["install-timer", "--output-root", output_root.as_posix()]
+    uninstall_exit_code = run_hemma_scratch_policy.main(
+        ["uninstall-timer", "--output-root", output_root.as_posix()]
     )
     status_exit_code = run_hemma_scratch_policy.main(
         ["status-timer", "--output-root", output_root.as_posix()]
     )
 
     assert maintain_exit_code == 0
-    assert install_exit_code == 0
+    assert uninstall_exit_code == 0
     assert status_exit_code == 0
     assert (
         json.loads((output_root / "maintain.json").read_text(encoding="utf-8"))["status"]
@@ -370,13 +371,10 @@ def test_runner_writes_maintenance_and_timer_reports(
     assert "Hemma scratch maintenance Scratch Maintenance" in (
         output_root / "maintain.md"
     ).read_text(encoding="utf-8")
-    assert (
-        json.loads((output_root / "install-timer.json").read_text(encoding="utf-8"))[
-            "timer_enabled"
-        ]
-        is True
-    )
-    assert (output_root / "service.unit").read_text(encoding="utf-8") == "[Service]\n"
+    assert json.loads((output_root / "uninstall-timer.json").read_text(encoding="utf-8"))[
+        "removed_paths"
+    ] == ["/home/user/.config/systemd/user/timer.unit"]
+    assert "timer.unit" in (output_root / "uninstall-timer.md").read_text(encoding="utf-8")
     assert "timer output" in (output_root / "timer-status.md").read_text(encoding="utf-8")
     rendered_output = capsys.readouterr().out
     assert '"status": "archived"' in rendered_output

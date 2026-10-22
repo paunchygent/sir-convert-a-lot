@@ -8,8 +8,8 @@ Relationships:
     - Wraps `hemma_scratch_policy_runtime.py` for audit/remediation.
     - Wraps `hemma_scratch_maintenance_runtime.py` for idle-safe
       recurring maintenance.
-    - Wraps `hemma_scratch_timer_runtime.py` for timer installation and
-      status inspection.
+    - Wraps `hemma_scratch_timer_runtime.py` for retired-timer status and
+      uninstallation.
     - Writes deterministic evidence under `build/verification/`.
 """
 
@@ -27,8 +27,6 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import
     DEFAULT_SERVICE_NAME,
     DEFAULT_TARGET_FREE_BYTES,
     DEFAULT_TIMER_NAME,
-    DEFAULT_TIMER_ON_BOOT_SEC,
-    DEFAULT_TIMER_ON_UNIT_ACTIVE_SEC,
     DEFAULT_TIMER_OUTPUT_ROOT,
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_runtime import (
@@ -40,7 +38,7 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_reporting import (
     render_audit_markdown,
     render_maintenance_markdown,
     render_remediation_markdown,
-    render_timer_install_markdown,
+    render_timer_uninstall_markdown,
     write_json,
     write_markdown,
 )
@@ -56,11 +54,9 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_runtime import (
     run_scratch_remediation,
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_timer_runtime import (
-    install_scratch_timer,
-    render_service_unit,
     render_timer_status_markdown,
-    render_timer_unit,
     status_scratch_timer,
+    uninstall_scratch_timer,
 )
 from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import DOCKER_CLEANUP_REFUSAL
 
@@ -76,7 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_audit_parser(subparsers)
     _add_remediation_parser(subparsers)
     _add_maintenance_parser(subparsers)
-    _add_install_timer_parser(subparsers)
+    _add_uninstall_timer_parser(subparsers)
     _add_status_timer_parser(subparsers)
     return parser
 
@@ -157,55 +153,20 @@ def _add_maintenance_parser(
     )
 
 
-def _add_install_timer_parser(
+def _add_uninstall_timer_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
-    """Register the timer-install command parser."""
-    install_timer = subparsers.add_parser(
-        "install-timer",
-        help="Install or refresh the lightweight user-level systemd timer.",
+    """Register the retired-timer uninstall command parser."""
+    uninstall_timer = subparsers.add_parser(
+        "uninstall-timer",
+        help="Disable, stop and remove the retired user-level scratch-maintenance timer.",
     )
-    install_timer.add_argument("--output-root", type=Path, default=DEFAULT_TIMER_OUTPUT_ROOT)
-    install_timer.add_argument("--repo-root", type=Path, default=Path.cwd())
-    install_timer.add_argument(
+    uninstall_timer.add_argument("--output-root", type=Path, default=DEFAULT_TIMER_OUTPUT_ROOT)
+    uninstall_timer.add_argument(
         "--unit-dir", type=Path, default=Path.home() / ".config/systemd/user"
     )
-    install_timer.add_argument("--service-name", default=DEFAULT_SERVICE_NAME)
-    install_timer.add_argument("--timer-name", default=DEFAULT_TIMER_NAME)
-    install_timer.add_argument("--scratch-root", type=Path, default=DEFAULT_SCRATCH_ROOT)
-    install_timer.add_argument(
-        "--storage-archive-root", type=Path, default=DEFAULT_STORAGE_ARCHIVE_ROOT
-    )
-    install_timer.add_argument("--runs-root", type=Path, default=DEFAULT_RUNS_ROOT)
-    install_timer.add_argument("--verification-root", type=Path, default=DEFAULT_VERIFICATION_ROOT)
-    install_timer.add_argument(
-        "--block-file-path", type=Path, default=DEFAULT_MAINTENANCE_BLOCK_FILE
-    )
-    install_timer.add_argument(
-        "--required-free-bytes", type=int, default=DEFAULT_REQUIRED_FREE_BYTES
-    )
-    install_timer.add_argument("--target-free-bytes", type=int, default=DEFAULT_TARGET_FREE_BYTES)
-    install_timer.add_argument(
-        "--candidate-min-age-hours",
-        type=float,
-        default=DEFAULT_CANDIDATE_MIN_AGE_HOURS,
-    )
-    install_timer.add_argument("--keep-most-recent", type=int, default=DEFAULT_KEEP_MOST_RECENT)
-    install_timer.add_argument(
-        "--prune-docker-state",
-        action="store_true",
-        help="Unsupported: Docker cleanup belongs to shared weekly hemma-docker-cleanup.",
-    )
-    install_timer.add_argument("--timer-on-boot-sec", default=DEFAULT_TIMER_ON_BOOT_SEC)
-    install_timer.add_argument(
-        "--timer-on-unit-active-sec",
-        default=DEFAULT_TIMER_ON_UNIT_ACTIVE_SEC,
-    )
-    install_timer.add_argument(
-        "--enable-linger",
-        action="store_true",
-        help="Enable user lingering so the timer survives without an active login session.",
-    )
+    uninstall_timer.add_argument("--service-name", default=DEFAULT_SERVICE_NAME)
+    uninstall_timer.add_argument("--timer-name", default=DEFAULT_TIMER_NAME)
 
 
 def _add_status_timer_parser(
@@ -237,8 +198,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_remediation(args=args, output_root=output_root)
     if args.command == "maintain":
         return _run_maintenance(args=args, output_root=output_root)
-    if args.command == "install-timer":
-        return _run_install_timer(args=args, output_root=output_root)
+    if args.command == "uninstall-timer":
+        return _run_uninstall_timer(args=args, output_root=output_root)
     if args.command == "status-timer":
         return _run_status_timer(args=args, output_root=output_root)
     raise SystemExit(f"Unsupported command: {args.command}")
@@ -299,15 +260,12 @@ def _run_maintenance(*, args: argparse.Namespace, output_root: Path) -> int:
     return 0
 
 
-def _run_install_timer(*, args: argparse.Namespace, output_root: Path) -> int:
-    """Install or refresh the recurring user-level timer."""
-    settings = build_timer_settings(args)
-    report = install_scratch_timer(settings, enable_linger=bool(args.enable_linger))
+def _run_uninstall_timer(*, args: argparse.Namespace, output_root: Path) -> int:
+    """Uninstall the retired recurring user-level timer."""
+    report = uninstall_scratch_timer(build_timer_settings(args))
     payload = asdict(report)
-    write_json(output_root / "install-timer.json", payload)
-    write_markdown(output_root / "install-timer.md", render_timer_install_markdown(report))
-    write_markdown(output_root / "service.unit", render_service_unit(settings))
-    write_markdown(output_root / "timer.unit", render_timer_unit(settings))
+    write_json(output_root / "uninstall-timer.json", payload)
+    write_markdown(output_root / "uninstall-timer.md", render_timer_uninstall_markdown(report))
     print(json.dumps(payload, indent=2, ensure_ascii=False))
     return 0
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -15,15 +14,11 @@ from scripts.sir_convert_a_lot.devops import (
     hemma_scratch_policy_runtime as policy,
 )
 from scripts.sir_convert_a_lot.devops import (
-    hemma_scratch_timer_runtime as timer,
-)
-from scripts.sir_convert_a_lot.devops import (
     run_hemma_scratch_policy as cli,
 )
 from scripts.sir_convert_a_lot.devops import (
     run_hemma_storage_remediation as storage_cli,
 )
-from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_reporting import build_timer_settings
 from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import (
     DEFAULT_HOT_ARCHIVE_ROOT,
     DEFAULT_HOT_BUILD_ROOT,
@@ -69,7 +64,7 @@ def test_storage_cleanup_request_cannot_partially_migrate(
     assert list(tmp_path.iterdir()) == []
 
 
-@pytest.mark.parametrize("command", ["remediate", "maintain", "install-timer"])
+@pytest.mark.parametrize("command", ["remediate", "maintain"])
 def test_obsolete_cli_flag_cannot_create_output_or_units(command: str, tmp_path: Path) -> None:
     output = tmp_path / "build/verification/refused"
     with pytest.raises(SystemExit) as exc:
@@ -89,19 +84,12 @@ def test_direct_scratch_cleanup_requests_refuse_before_probing(
         maintenance.run_scratch_maintenance(prune_docker_state=True)
 
 
-def test_obsolete_timer_setting_refuses_before_host_actions(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    settings = build_timer_settings(cli.build_parser().parse_args(["install-timer"]))
-    settings = replace(settings, unit_dir=tmp_path / "units", prune_docker_state=True)
-    monkeypatch.setattr(timer, "_user_linger_enabled", lambda *_: pytest.fail("host probe ran"))
-    with pytest.raises(SystemExit, match="shared weekly hemma-docker-cleanup"):
-        timer.render_service_unit(settings)
-    with pytest.raises(SystemExit, match="shared weekly hemma-docker-cleanup"):
-        timer.render_timer_unit(settings)
-    with pytest.raises(SystemExit, match="shared weekly hemma-docker-cleanup"):
-        timer.install_scratch_timer(settings, enable_linger=True)
-    assert not settings.unit_dir.exists()
+def test_retired_timer_cannot_be_installed(tmp_path: Path) -> None:
+    output = tmp_path / "build/verification/refused"
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["install-timer", "--output-root", str(output)])
+    assert exc.value.code == 2
+    assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.parametrize("destination", ["/srv/storage/sir/archive", "/srv/scratch/sir/build"])

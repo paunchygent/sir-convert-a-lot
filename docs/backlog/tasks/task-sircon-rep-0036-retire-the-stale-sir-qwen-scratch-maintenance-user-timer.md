@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0036
 title: Retire the stale Sir Qwen scratch maintenance user timer
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-10-22'
 status: ready
 closeout_review:
@@ -71,11 +71,11 @@ and `systemctl --user` then reports neither unit. No performance concern.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term |
-| --- | --------------------- |
-| D01 | Retire the units; do not retarget them. A Hot retention horizon is a separate Sir planning decision. |
+| ID  | Decided contract term                                                                                                                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D01 | Retire the units; do not retarget them. A Hot retention horizon is a separate Sir planning decision.                                                                      |
 | D02 | Remove `install-timer`, its renderers and install report; add `uninstall-timer` touching only the two named unit files; keep audit, maintain, remediate and status-timer. |
-| D03 | Change the host only by running `uninstall-timer` from the canonical checkout after integration; no hand edits, no sudo. |
-| D04 | Leave `sir-convert-a-lot-qwen-docker-bind-roots.service` and its drop-in unchanged. |
-| D05 | Do not delete the `/srv/scratch/sir-convert-a-lot` leftovers; record sizes, dates and consumers and report them. |
-| D06 | Repair the stale timer and Scratch-root guidance in the two runbooks in the same change. |
+| D03 | Change the host only by running `uninstall-timer` from the canonical checkout after integration; no hand edits, no sudo.                                                  |
+| D04 | Leave `sir-convert-a-lot-qwen-docker-bind-roots.service` and its drop-in unchanged.                                                                                       |
+| D05 | Do not delete the `/srv/scratch/sir-convert-a-lot` leftovers; record sizes, dates and consumers and report them.                                                          |
+| D06 | Repair the stale timer and Scratch-root guidance in the two runbooks in the same change.                                                                                  |

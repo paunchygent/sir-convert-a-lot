@@ -1,8 +1,8 @@
 """Systemd timer runtime for recurring Hemma scratch maintenance.
 
 Purpose:
-    Install, render, and inspect the lightweight user-level systemd timer that
-    drives recurring idle-safe scratch maintenance on Hemma.
+    Inspect and uninstall the retired user-level systemd timer that once drove
+    recurring scratch maintenance on Hemma (TASK-SIRCON-REP-0036).
 
 Relationships:
     - Used by `run_hemma_scratch_policy.py` for timer commands.
@@ -12,17 +12,15 @@ Relationships:
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import (
-    ScratchTimerInstallReport,
     ScratchTimerSettings,
     ScratchTimerStatusReport,
+    ScratchTimerUninstallReport,
     utc_now_iso,
 )
-from scripts.sir_convert_a_lot.devops.hemma_storage_contracts import DOCKER_CLEANUP_REFUSAL
 
 
 def run_local_checked(command: list[str], *, label: str) -> str:
@@ -70,117 +68,36 @@ def _systemctl_user_bool(command: list[str]) -> bool:
     return returncode == 0
 
 
-def render_service_unit(settings: ScratchTimerSettings) -> str:
-    """Render the user-level systemd service unit for recurring maintenance."""
-    if settings.prune_docker_state:
-        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
-    pdm_path = shutil.which("pdm") or str(Path.home() / ".local/bin/pdm")
-    exec_parts = [
-        pdm_path,
-        "run",
-        "qwen-scratch-policy",
-        "maintain",
-        "--output-root",
-        settings.output_root.as_posix(),
-        "--scratch-root",
-        settings.scratch_root.as_posix(),
-        "--storage-archive-root",
-        settings.storage_archive_root.as_posix(),
-        "--runs-root",
-        settings.runs_root.as_posix(),
-        "--verification-root",
-        settings.verification_root.as_posix(),
-        "--block-file-path",
-        settings.block_file_path.as_posix(),
-        "--required-free-bytes",
-        str(settings.required_free_bytes),
-        "--target-free-bytes",
-        str(settings.target_free_bytes),
-        "--candidate-min-age-hours",
-        str(settings.candidate_min_age_hours),
-        "--keep-most-recent",
-        str(settings.keep_most_recent),
-    ]
-    return "\n".join(
-        [
-            "[Unit]",
-            "Description=Sir Convert-a-Lot Qwen scratch maintenance",
-            "After=default.target",
-            "",
-            "[Service]",
-            "Type=oneshot",
-            f"WorkingDirectory={settings.repo_root.as_posix()}",
-            f"ExecStart={' '.join(exec_parts)}",
-            "",
-            "[Install]",
-            "WantedBy=default.target",
-        ]
-    )
-
-
-def render_timer_unit(settings: ScratchTimerSettings) -> str:
-    """Render the user-level systemd timer unit for recurring maintenance."""
-    if settings.prune_docker_state:
-        raise SystemExit(DOCKER_CLEANUP_REFUSAL)
-    return "\n".join(
-        [
-            "[Unit]",
-            "Description=Run Sir Convert-a-Lot Qwen scratch maintenance on a light schedule",
-            "",
-            "[Timer]",
-            f"OnActiveSec={settings.timer_on_unit_active_sec}",
-            f"OnBootSec={settings.timer_on_boot_sec}",
-            f"OnUnitActiveSec={settings.timer_on_unit_active_sec}",
-            "Persistent=true",
-            f"Unit={settings.service_name}",
-            "",
-            "[Install]",
-            "WantedBy=timers.target",
-        ]
-    )
-
-
-def install_scratch_timer(
-    settings: ScratchTimerSettings,
-    *,
-    enable_linger: bool,
-) -> ScratchTimerInstallReport:
-    """Install or refresh the recurring user-level systemd timer."""
-    service_unit = render_service_unit(settings)
-    timer_unit = render_timer_unit(settings)
-    username = Path.home().name
-    lingering_before = _user_linger_enabled(username)
-    settings.unit_dir.mkdir(parents=True, exist_ok=True)
-    service_path = settings.unit_dir / settings.service_name
-    timer_path = settings.unit_dir / settings.timer_name
-    service_path.write_text(service_unit + "\n", encoding="utf-8")
-    timer_path.write_text(timer_unit + "\n", encoding="utf-8")
-    if enable_linger and not lingering_before:
-        run_local_checked(
-            ["sudo", "-n", "loginctl", "enable-linger", username],
-            label="enable linger hemma-scratch-maintenance",
-        )
+def uninstall_scratch_timer(settings: ScratchTimerSettings) -> ScratchTimerUninstallReport:
+    """Disable, stop and remove the retired user-level timer and its service."""
+    unit_names = [settings.timer_name, settings.service_name]
+    # An absent unit makes `disable` fail; the post-reload state check below
+    # is the authority for whether the units stopped.
+    _run_local_optional(["systemctl", "--user", "disable", "--now", *unit_names])
+    removed_paths: list[str] = []
+    for unit_name in unit_names:
+        unit_path = settings.unit_dir / unit_name
+        if unit_path.is_file() or unit_path.is_symlink():
+            unit_path.unlink()
+            removed_paths.append(unit_path.as_posix())
     run_local_checked(
         ["systemctl", "--user", "daemon-reload"],
         label="systemctl daemon-reload hemma-scratch-maintenance",
     )
-    run_local_checked(
-        ["systemctl", "--user", "enable", "--now", settings.timer_name],
-        label="systemctl enable timer hemma-scratch-maintenance",
-    )
-    lingering_after = _user_linger_enabled(username)
-    return ScratchTimerInstallReport(
-        installed_at=utc_now_iso(),
+    _run_local_optional(["systemctl", "--user", "reset-failed", *unit_names])
+    report = ScratchTimerUninstallReport(
+        uninstalled_at=utc_now_iso(),
         service_name=settings.service_name,
         timer_name=settings.timer_name,
         unit_dir=settings.unit_dir.as_posix(),
-        service_path=service_path.as_posix(),
-        timer_path=timer_path.as_posix(),
-        lingering_enabled_before=lingering_before,
-        lingering_enabled_after=lingering_after,
-        timer_enabled=_systemctl_user_bool(["is-enabled", settings.timer_name]),
-        timer_active=_systemctl_user_bool(["is-active", settings.timer_name]),
+        removed_paths=removed_paths,
+        timer_enabled_after=_systemctl_user_bool(["is-enabled", settings.timer_name]),
+        timer_active_after=_systemctl_user_bool(["is-active", settings.timer_name]),
+        service_active_after=_systemctl_user_bool(["is-active", settings.service_name]),
     )
+    if report.timer_enabled_after or report.timer_active_after or report.service_active_after:
+        raise SystemExit(f"Retired scratch timer is still enabled or active: {report}")
+    return report
 
 
 def status_scratch_timer(settings: ScratchTimerSettings) -> ScratchTimerStatusReport:
