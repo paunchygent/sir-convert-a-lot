@@ -19,25 +19,12 @@ from pathlib import Path
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import (
-    DEFAULT_CANDIDATE_MIN_AGE_HOURS,
-    DEFAULT_KEEP_MOST_RECENT,
-    DEFAULT_MAINTENANCE_BLOCK_FILE,
-    DEFAULT_SERVICE_NAME,
-    DEFAULT_TARGET_FREE_BYTES,
-    DEFAULT_TIMER_NAME,
-    DEFAULT_TIMER_ON_BOOT_SEC,
-    DEFAULT_TIMER_ON_UNIT_ACTIVE_SEC,
     MaintenanceCandidate,
     ScratchMaintenanceReport,
-    ScratchTimerInstallReport,
     ScratchTimerSettings,
+    ScratchTimerUninstallReport,
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_runtime import (
-    DEFAULT_REQUIRED_FREE_BYTES,
-    DEFAULT_RUNS_ROOT,
-    DEFAULT_SCRATCH_ROOT,
-    DEFAULT_STORAGE_ARCHIVE_ROOT,
-    DEFAULT_VERIFICATION_ROOT,
     ArchivedScratchPath,
     ScratchAuditReport,
     ScratchConsumer,
@@ -161,52 +148,35 @@ def render_maintenance_markdown(report: ScratchMaintenanceReport) -> str:
     )
 
 
-def render_timer_install_markdown(report: ScratchTimerInstallReport) -> str:
-    """Render one concise timer-install summary."""
+def render_timer_uninstall_markdown(report: ScratchTimerUninstallReport) -> str:
+    """Render one concise retired-timer uninstall summary."""
     return "\n".join(
         [
-            "# Hemma scratch maintenance Scratch Maintenance Timer Install",
+            "# Hemma scratch maintenance Retired Timer Uninstall",
             "",
-            f"- installed_at: `{report.installed_at}`",
-            f"- service_name: `{report.service_name}`",
-            f"- timer_name: `{report.timer_name}`",
+            f"- uninstalled_at: `{report.uninstalled_at}`",
             f"- unit_dir: `{report.unit_dir}`",
-            f"- service_path: `{report.service_path}`",
-            f"- timer_path: `{report.timer_path}`",
-            f"- lingering_enabled_before: `{report.lingering_enabled_before}`",
-            f"- lingering_enabled_after: `{report.lingering_enabled_after}`",
-            f"- timer_enabled: `{report.timer_enabled}`",
-            f"- timer_active: `{report.timer_active}`",
+            "",
+            "## Final unit states",
+            "",
+            *[
+                f"- `{name}`: " + ", ".join(f"{key}=`{value}`" for key, value in state.items())
+                for name, state in report.final_states.items()
+            ],
+            "",
+            "## Removed unit files",
+            "",
+            *([f"- `{path}`" for path in report.removed_paths] or ["- none"]),
         ]
     )
 
 
 def build_timer_settings(args: argparse.Namespace) -> ScratchTimerSettings:
-    """Build one normalized settings object for recurring timer operations."""
+    """Build one normalized settings object for retired-timer operations."""
     return ScratchTimerSettings(
-        repo_root=Path(getattr(args, "repo_root", Path.cwd())),
-        output_root=Path(args.output_root),
-        unit_dir=Path(getattr(args, "unit_dir", Path.home() / ".config/systemd/user")),
-        service_name=str(getattr(args, "service_name", DEFAULT_SERVICE_NAME)),
-        timer_name=str(getattr(args, "timer_name", DEFAULT_TIMER_NAME)),
-        scratch_root=Path(getattr(args, "scratch_root", DEFAULT_SCRATCH_ROOT)),
-        storage_archive_root=Path(
-            getattr(args, "storage_archive_root", DEFAULT_STORAGE_ARCHIVE_ROOT)
-        ),
-        runs_root=Path(getattr(args, "runs_root", DEFAULT_RUNS_ROOT)),
-        verification_root=Path(getattr(args, "verification_root", DEFAULT_VERIFICATION_ROOT)),
-        block_file_path=Path(getattr(args, "block_file_path", DEFAULT_MAINTENANCE_BLOCK_FILE)),
-        required_free_bytes=int(getattr(args, "required_free_bytes", DEFAULT_REQUIRED_FREE_BYTES)),
-        target_free_bytes=int(getattr(args, "target_free_bytes", DEFAULT_TARGET_FREE_BYTES)),
-        candidate_min_age_hours=float(
-            getattr(args, "candidate_min_age_hours", DEFAULT_CANDIDATE_MIN_AGE_HOURS)
-        ),
-        keep_most_recent=int(getattr(args, "keep_most_recent", DEFAULT_KEEP_MOST_RECENT)),
-        prune_docker_state=bool(getattr(args, "prune_docker_state", False)),
-        timer_on_boot_sec=str(getattr(args, "timer_on_boot_sec", DEFAULT_TIMER_ON_BOOT_SEC)),
-        timer_on_unit_active_sec=str(
-            getattr(args, "timer_on_unit_active_sec", DEFAULT_TIMER_ON_UNIT_ACTIVE_SEC)
-        ),
+        unit_dir=Path(args.unit_dir),
+        service_name=str(args.service_name),
+        timer_name=str(args.timer_name),
     )
 
 

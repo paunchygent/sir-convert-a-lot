@@ -1,8 +1,8 @@
 """Tests for recurring Hemma scratch maintenance and timer management.
 
 Purpose:
-    Verify the Hemma scratch maintenance selector, runtime orchestration, timer rendering, and
-    CLI reporting without touching real Hemma storage or systemd state.
+    Verify the Hemma scratch maintenance selector, runtime orchestration, retired-timer uninstall,
+    and CLI reporting without touching real Hemma storage or systemd state.
 
 Relationships:
     - Covers `hemma_scratch_maintenance_selection.py`.
@@ -15,18 +15,21 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from scripts.sir_convert_a_lot.devops import hemma_scratch_timer_runtime as timer_runtime
 from scripts.sir_convert_a_lot.devops import run_hemma_scratch_policy
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import (
+    DEFAULT_SERVICE_NAME,
+    DEFAULT_TIMER_NAME,
     CandidateParent,
     MaintenanceCandidate,
     ScratchMaintenanceReport,
-    ScratchTimerInstallReport,
-    ScratchTimerSettings,
     ScratchTimerStatusReport,
+    ScratchTimerUninstallReport,
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_runtime import (
     run_scratch_maintenance,
@@ -36,10 +39,6 @@ from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_selection import
 )
 from scripts.sir_convert_a_lot.devops.hemma_scratch_policy_runtime import (
     ArchivedScratchPath,
-)
-from scripts.sir_convert_a_lot.devops.hemma_scratch_timer_runtime import (
-    render_service_unit,
-    render_timer_unit,
 )
 
 
@@ -201,63 +200,160 @@ def test_run_scratch_maintenance_archives_only_until_target_headroom(
     assert report.archived_paths[0].source_path == first.source_path
 
 
-def test_render_service_unit_uses_qwen_scratch_policy_maintain_command(tmp_path: Path) -> None:
-    """Hemma scratch maintenance timer service should call the committed maintenance surface."""
-    settings = ScratchTimerSettings(
-        repo_root=tmp_path / "repo",
-        output_root=tmp_path / "build" / "verification",
-        unit_dir=tmp_path / "systemd",
-        service_name="service.unit",
-        timer_name="timer.unit",
-        scratch_root=Path("/srv/scratch"),
-        storage_archive_root=Path("/srv/storage/archive"),
-        runs_root=Path("/srv/scratch/runs"),
-        verification_root=Path("/srv/scratch/verification"),
-        block_file_path=Path("/srv/scratch/.block"),
-        required_free_bytes=64,
-        target_free_bytes=96,
-        candidate_min_age_hours=12.0,
-        keep_most_recent=2,
-        prune_docker_state=False,
-        timer_on_boot_sec="15min",
-        timer_on_unit_active_sec="1h",
+TIMER = DEFAULT_TIMER_NAME
+SERVICE = DEFAULT_SERVICE_NAME
+RETIRED_STATE = {"LoadState": "not-found", "UnitFileState": "", "ActiveState": "inactive"}
+
+
+class FakeUserSystemd:
+    """A `systemctl --user` stand-in at the subprocess boundary.
+
+    `show` reports `states`; `fail_verbs` makes a verb exit 1 with a bus error;
+    `sticky` keeps a unit's state after disable and reload, as a unit that
+    refuses to go away would.
+    """
+
+    def __init__(self, unit_dir: Path, states: dict[str, dict[str, str]]) -> None:
+        self.unit_dir = unit_dir
+        self.states = states
+        self.fail_verbs: set[str] = set()
+        self.sticky: dict[str, dict[str, str]] = {}
+        self.calls: list[list[str]] = []
+
+    def run(
+        self, command: list[str], *, check: bool, capture_output: bool, text: bool
+    ) -> subprocess.CompletedProcess[str]:
+        self.calls.append(command)
+        assert command[:2] == ["systemctl", "--user"], command
+        verb, args = command[2], command[3:]
+        if verb in self.fail_verbs:
+            return subprocess.CompletedProcess(command, 1, "", "Failed to connect to bus")
+        if verb == "show":
+            state = self.states.get(args[-1], RETIRED_STATE)
+            stdout = "\n".join(f"{key}={value}" for key, value in state.items())
+            return subprocess.CompletedProcess(command, 0, stdout, "")
+        if verb == "disable":
+            for name in args[1:]:
+                state = self.states[name]
+                state["UnitFileState"] = "disabled"
+                if state["ActiveState"] != "failed":
+                    state["ActiveState"] = "inactive"
+        if verb == "daemon-reload":
+            for name, state in list(self.states.items()):
+                if not (self.unit_dir / name).exists():
+                    # systemd keeps a failed unit loaded until reset-failed.
+                    self.states[name] = {**RETIRED_STATE, "ActiveState": state["ActiveState"]}
+            self.states.update({name: dict(state) for name, state in self.sticky.items()})
+        if verb == "reset-failed":
+            for name in args:
+                self.states[name] = dict(RETIRED_STATE)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+
+def _loaded(active: str = "inactive", enabled: str = "enabled") -> dict[str, str]:
+    return {"LoadState": "loaded", "UnitFileState": enabled, "ActiveState": active}
+
+
+def _install_fake(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, states: dict[str, dict[str, str]]
+) -> FakeUserSystemd:
+    unit_dir = tmp_path / "systemd"
+    unit_dir.mkdir()
+    for name in (TIMER, SERVICE, "other.service", f"{TIMER}.d"):
+        (unit_dir / name).write_text(name, encoding="utf-8")
+    fake = FakeUserSystemd(unit_dir, states)
+    monkeypatch.setattr(timer_runtime.subprocess, "run", fake.run)
+    return fake
+
+
+def test_uninstall_removes_only_the_retired_units(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The uninstall disables and removes the two retired units and nothing else."""
+    fake = _install_fake(
+        tmp_path, monkeypatch, {TIMER: _loaded("active"), SERVICE: _loaded("failed", "static")}
     )
 
-    rendered = render_service_unit(settings)
+    report = timer_runtime.uninstall_scratch_timer(fake.unit_dir)
 
-    assert "pdm run qwen-scratch-policy maintain" in rendered
-    assert "--prune-docker-state" not in rendered
-    assert f"WorkingDirectory={settings.repo_root.as_posix()}" in rendered
+    assert report.removed_paths == [
+        (fake.unit_dir / TIMER).as_posix(),
+        (fake.unit_dir / SERVICE).as_posix(),
+    ]
+    assert sorted(path.name for path in fake.unit_dir.iterdir()) == [
+        "other.service",
+        f"{TIMER}.d",
+    ]
+    assert ["systemctl", "--user", "disable", "--now", TIMER, SERVICE] in fake.calls
+    assert ["systemctl", "--user", "reset-failed", SERVICE] in fake.calls
+    assert report.final_states == {TIMER: RETIRED_STATE, SERVICE: RETIRED_STATE}
+    named_units = {
+        call[-1] for call in fake.calls if call[2] in ("show", "disable", "reset-failed")
+    }
+    assert named_units <= {TIMER, SERVICE}
 
 
-def test_render_timer_unit_keeps_future_trigger_after_timer_restart(tmp_path: Path) -> None:
-    """Hemma scratch maintenance timer should recover a future trigger after restart."""
-    settings = ScratchTimerSettings(
-        repo_root=tmp_path / "repo",
-        output_root=tmp_path / "build" / "verification",
-        unit_dir=tmp_path / "systemd",
-        service_name="service.unit",
-        timer_name="timer.unit",
-        scratch_root=Path("/srv/scratch"),
-        storage_archive_root=Path("/srv/storage/archive"),
-        runs_root=Path("/srv/scratch/runs"),
-        verification_root=Path("/srv/scratch/verification"),
-        block_file_path=Path("/srv/scratch/.block"),
-        required_free_bytes=64,
-        target_free_bytes=96,
-        candidate_min_age_hours=12.0,
-        keep_most_recent=2,
-        prune_docker_state=False,
-        timer_on_boot_sec="15min",
-        timer_on_unit_active_sec="1h",
+def test_uninstall_is_a_noop_when_the_units_are_already_gone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second uninstall touches nothing and still proves both units are gone."""
+    fake = _install_fake(tmp_path, monkeypatch, {})
+    for name in (TIMER, SERVICE):
+        (fake.unit_dir / name).unlink()
+
+    report = timer_runtime.uninstall_scratch_timer(fake.unit_dir)
+
+    assert report.removed_paths == []
+    assert not any(call[2] in ("disable", "reset-failed") for call in fake.calls)
+
+
+@pytest.mark.parametrize("verb", ["show", "disable", "daemon-reload", "reset-failed"])
+def test_uninstall_fails_on_any_systemctl_error(
+    verb: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bus or command failure is never reported as a completed retirement."""
+    fake = _install_fake(
+        tmp_path, monkeypatch, {TIMER: _loaded(), SERVICE: _loaded("failed", "static")}
     )
+    fake.fail_verbs.add(verb)
 
-    rendered = render_timer_unit(settings)
+    with pytest.raises(SystemExit, match="Failed to connect to bus"):
+        timer_runtime.uninstall_scratch_timer(fake.unit_dir)
+    if verb in ("show", "disable"):
+        assert (fake.unit_dir / TIMER).exists()
+        assert (fake.unit_dir / SERVICE).exists()
 
-    assert "OnActiveSec=1h" in rendered
-    assert "OnBootSec=15min" in rendered
-    assert "OnUnitActiveSec=1h" in rendered
-    assert "Persistent=true" in rendered
+
+@pytest.mark.parametrize(
+    ("unit", "state"),
+    [
+        (TIMER, _loaded("inactive", "enabled")),
+        (TIMER, _loaded("active", "disabled")),
+        (SERVICE, _loaded("inactive", "enabled")),
+        (SERVICE, _loaded("active", "disabled")),
+        (SERVICE, {"LoadState": "not-found", "UnitFileState": "", "ActiveState": "active"}),
+    ],
+)
+def test_uninstall_fails_when_a_unit_survives(
+    unit: str, state: dict[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Either unit still enabled, active or loaded after the uninstall is a failure."""
+    fake = _install_fake(tmp_path, monkeypatch, {TIMER: _loaded(), SERVICE: _loaded()})
+    fake.sticky[unit] = state
+
+    with pytest.raises(SystemExit, match="still present"):
+        timer_runtime.uninstall_scratch_timer(fake.unit_dir)
+
+
+def test_uninstall_cli_has_no_unit_name_options(tmp_path: Path) -> None:
+    """The uninstall target set cannot be widened from the command line."""
+    for option in ("--timer-name", "--service-name"):
+        with pytest.raises(SystemExit) as exc:
+            run_hemma_scratch_policy.main(
+                ["uninstall-timer", option, "other.service", "--output-root", str(tmp_path / "o")]
+            )
+        assert exc.value.code == 2
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_runner_writes_maintenance_and_timer_reports(
@@ -301,17 +397,11 @@ def test_runner_writes_maintenance_and_timer_reports(
         pruned_docker_state=False,
         meets_target_after=True,
     )
-    install_report = ScratchTimerInstallReport(
-        installed_at="2026-03-16T22:01:00Z",
-        service_name="service.unit",
-        timer_name="timer.unit",
+    uninstall_report = ScratchTimerUninstallReport(
+        uninstalled_at="2026-03-16T22:01:00Z",
         unit_dir="/home/user/.config/systemd/user",
-        service_path="/home/user/.config/systemd/user/service.unit",
-        timer_path="/home/user/.config/systemd/user/timer.unit",
-        lingering_enabled_before=False,
-        lingering_enabled_after=True,
-        timer_enabled=True,
-        timer_active=True,
+        removed_paths=["/home/user/.config/systemd/user/timer.unit"],
+        final_states={"timer.unit": {"LoadState": "not-found"}},
     )
     status_report = ScratchTimerStatusReport(
         checked_at="2026-03-16T22:02:00Z",
@@ -331,37 +421,27 @@ def test_runner_writes_maintenance_and_timer_reports(
     )
     monkeypatch.setattr(
         run_hemma_scratch_policy,
-        "install_scratch_timer",
-        lambda *_args, **_kwargs: install_report,
+        "uninstall_scratch_timer",
+        lambda *_args, **_kwargs: uninstall_report,
     )
     monkeypatch.setattr(
         run_hemma_scratch_policy,
         "status_scratch_timer",
         lambda *_args, **_kwargs: status_report,
     )
-    monkeypatch.setattr(
-        run_hemma_scratch_policy,
-        "render_service_unit",
-        lambda _settings: "[Service]",
-    )
-    monkeypatch.setattr(
-        run_hemma_scratch_policy,
-        "render_timer_unit",
-        lambda _settings: "[Timer]",
-    )
 
     maintain_exit_code = run_hemma_scratch_policy.main(
         ["maintain", "--output-root", output_root.as_posix()]
     )
-    install_exit_code = run_hemma_scratch_policy.main(
-        ["install-timer", "--output-root", output_root.as_posix()]
+    uninstall_exit_code = run_hemma_scratch_policy.main(
+        ["uninstall-timer", "--output-root", output_root.as_posix()]
     )
     status_exit_code = run_hemma_scratch_policy.main(
         ["status-timer", "--output-root", output_root.as_posix()]
     )
 
     assert maintain_exit_code == 0
-    assert install_exit_code == 0
+    assert uninstall_exit_code == 0
     assert status_exit_code == 0
     assert (
         json.loads((output_root / "maintain.json").read_text(encoding="utf-8"))["status"]
@@ -370,13 +450,10 @@ def test_runner_writes_maintenance_and_timer_reports(
     assert "Hemma scratch maintenance Scratch Maintenance" in (
         output_root / "maintain.md"
     ).read_text(encoding="utf-8")
-    assert (
-        json.loads((output_root / "install-timer.json").read_text(encoding="utf-8"))[
-            "timer_enabled"
-        ]
-        is True
-    )
-    assert (output_root / "service.unit").read_text(encoding="utf-8") == "[Service]\n"
+    assert json.loads((output_root / "uninstall-timer.json").read_text(encoding="utf-8"))[
+        "removed_paths"
+    ] == ["/home/user/.config/systemd/user/timer.unit"]
+    assert "timer.unit" in (output_root / "uninstall-timer.md").read_text(encoding="utf-8")
     assert "timer output" in (output_root / "timer-status.md").read_text(encoding="utf-8")
     rendered_output = capsys.readouterr().out
     assert '"status": "archived"' in rendered_output

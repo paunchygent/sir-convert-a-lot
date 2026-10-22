@@ -443,23 +443,28 @@ guard. Preserve active work and the existing producer cleanup rules; ordinary
 Scratch lifetimes do not authorize a whole-disk 24-hour TTL.
 
 Sir never prunes Docker. The shared weekly `hemma-docker-cleanup` owns that
-maintenance. `--prune-docker-state` and true runtime/timer settings refuse before
-mutation. The legacy storage command's `--skip-docker-cleanup` is a compatibility
-option; cleanup stays off regardless.
+maintenance. `--prune-docker-state` refuses before mutation. The legacy storage
+command's `--skip-docker-cleanup` is a compatibility option; cleanup stays off
+regardless.
 
-Keep the hourly timer disabled during cutover. Execution history and dated host
-receipts belong with TASK-SIRCON-REP-0033 and its parent evidence.
-The parent owns writer-safe migration,
-replacement maintenance, installation and observed proof. Source checks do not
-prove activation. The exclusive private-Qwen GPU hold remains in force.
+The hourly user timer `sir-convert-a-lot-qwen-scratch-maintenance.timer` is
+retired (TASK-SIRCON-REP-0036): its candidate roots left Scratch, and its user
+journal, which starts on 29 July 2026, records no completed run. The repository can no longer
+install it. The shared `hemma-scratch-work` maintenance owns Scratch cleanup,
+and it protects the `sir-convert-a-lot` entry by name. The exclusive
+private-Qwen GPU hold remains in force.
 
-`maintain` and `remediate` require separate host mutation authority. Inspect with:
+`maintain` and `remediate` require separate host mutation authority. Inspect
+or remove with:
 
 1. Audit current pressure:
    `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
 
-2. Inspect timer state:
+2. Confirm the retired timer is absent:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
+
+3. Remove the retired timer and service from a host that still has them:
+   `pdm run run-hemma -- pdm run qwen-scratch-policy uninstall-timer`
 
 Before any separately authorized `T197`/`T198` launch, satisfy the proof wrapper
 headroom gate. Preserve referenceable proof bytes and logical paths; the backup

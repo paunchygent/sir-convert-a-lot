@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "a0ddaaf827a31767b52474b6ecdc51a748c8687911dbc06db9461e8974ac2677",
+  "source_set_digest": "eb3a9be3aa626ae50df31a1b5f244a05fa0dcada355a9194fb1716f41ee66885",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4064,6 +4064,24 @@
         "decided_at": "2026-10-15T19:19:13Z",
         "approval_protocol": "agent-implementation:approved-review-closeout",
         "approval_evidence": "Independent exact three-file rereview approved with no outstanding findings; shared retained root 01a1407e-c16a-70f5-9c1d-dc6019adb9fb evidence/review/sir0035-wrapper-rereview.md."
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0036",
+      "type": "task",
+      "title": "Retire the stale Sir Qwen scratch maintenance user timer",
+      "path": "docs/backlog/tasks/task-sircon-rep-0036-retire-the-stale-sir-qwen-scratch-maintenance-user-timer.md",
+      "status": "ready",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {

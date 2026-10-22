@@ -35,8 +35,6 @@ DEFAULT_CANDIDATE_MIN_AGE_HOURS = 12.0
 DEFAULT_KEEP_MOST_RECENT = 2
 DEFAULT_TIMER_NAME = "sir-convert-a-lot-qwen-scratch-maintenance.timer"
 DEFAULT_SERVICE_NAME = "sir-convert-a-lot-qwen-scratch-maintenance.service"
-DEFAULT_TIMER_ON_BOOT_SEC = "15min"
-DEFAULT_TIMER_ON_UNIT_ACTIVE_SEC = "1h"
 PROTECTED_QWEN_PILOT_RUN_ROOT = Path(
     "/srv/scratch/sir-convert-a-lot/build/runs/qwen3-tts-swedish-finetune/qwen-finetune-20260313t102144z"
 )
@@ -91,19 +89,13 @@ class ScratchMaintenanceReport:
 
 
 @dataclass(frozen=True)
-class ScratchTimerInstallReport:
-    """Deterministic report for one timer install or refresh action."""
+class ScratchTimerUninstallReport:
+    """Deterministic report for one retired-timer uninstall action."""
 
-    installed_at: str
-    service_name: str
-    timer_name: str
+    uninstalled_at: str
     unit_dir: str
-    service_path: str
-    timer_path: str
-    lingering_enabled_before: bool
-    lingering_enabled_after: bool
-    timer_enabled: bool
-    timer_active: bool
+    removed_paths: list[str]
+    final_states: dict[str, dict[str, str]]
 
 
 @dataclass(frozen=True)
@@ -122,25 +114,11 @@ class ScratchTimerStatusReport:
 
 @dataclass(frozen=True)
 class ScratchTimerSettings:
-    """Normalized settings for the recurring user-level systemd timer."""
+    """Normalized settings for inspecting or uninstalling the retired user-level timer."""
 
-    repo_root: Path
-    output_root: Path
     unit_dir: Path
     service_name: str
     timer_name: str
-    scratch_root: Path
-    storage_archive_root: Path
-    runs_root: Path
-    verification_root: Path
-    block_file_path: Path
-    required_free_bytes: int
-    target_free_bytes: int
-    candidate_min_age_hours: float
-    keep_most_recent: int
-    prune_docker_state: bool
-    timer_on_boot_sec: str
-    timer_on_unit_active_sec: str
 
 
 def utc_now_iso() -> str:
