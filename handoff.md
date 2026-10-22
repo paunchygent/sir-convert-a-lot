@@ -91,8 +91,10 @@
 - [TASK-SIRCON-REP-0036](docs/backlog/tasks/task-sircon-rep-0036-retire-the-stale-sir-qwen-scratch-maintenance-user-timer.md)
   retired the Qwen scratch maintenance user timer and service on Hemma on
   2026-10-22 through the new `qwen-scratch-policy uninstall-timer`; code and
-  prose reviews approved. Scratch leftovers under `/srv/scratch/sir-convert-a-lot`
-  (`task-347` 8.9G, `tools`, `bin`, `data`) remain for a user decision.
+  prose reviews approved. On the user's instruction the same day, the unused
+  `/srv/scratch/sir-convert-a-lot` leftovers (`task-347` 8.9G, `tools`, `bin`,
+  `data`) and the July `.timer.task205-onactive.bak` were deleted; the directory
+  itself remains empty.
 - TASK-SIRCON-REP-0024 adopted the seven derived quality scopes while keeping
   Qwen as a separate PDM project.
 - TASK-SIRCON-REP-0021 organized the root tests by behavior ownership and
