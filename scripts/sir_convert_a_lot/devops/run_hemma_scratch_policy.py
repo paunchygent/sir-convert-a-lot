@@ -159,14 +159,12 @@ def _add_uninstall_timer_parser(
     """Register the retired-timer uninstall command parser."""
     uninstall_timer = subparsers.add_parser(
         "uninstall-timer",
-        help="Disable, stop and remove the retired user-level scratch-maintenance timer.",
+        help="Disable, stop and remove the retired scratch-maintenance timer and service.",
     )
     uninstall_timer.add_argument("--output-root", type=Path, default=DEFAULT_TIMER_OUTPUT_ROOT)
     uninstall_timer.add_argument(
         "--unit-dir", type=Path, default=Path.home() / ".config/systemd/user"
     )
-    uninstall_timer.add_argument("--service-name", default=DEFAULT_SERVICE_NAME)
-    uninstall_timer.add_argument("--timer-name", default=DEFAULT_TIMER_NAME)
 
 
 def _add_status_timer_parser(
@@ -262,7 +260,7 @@ def _run_maintenance(*, args: argparse.Namespace, output_root: Path) -> int:
 
 def _run_uninstall_timer(*, args: argparse.Namespace, output_root: Path) -> int:
     """Uninstall the retired recurring user-level timer."""
-    report = uninstall_scratch_timer(build_timer_settings(args))
+    report = uninstall_scratch_timer(Path(args.unit_dir))
     payload = asdict(report)
     write_json(output_root / "uninstall-timer.json", payload)
     write_markdown(output_root / "uninstall-timer.md", render_timer_uninstall_markdown(report))

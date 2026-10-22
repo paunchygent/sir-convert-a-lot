@@ -155,12 +155,14 @@ def render_timer_uninstall_markdown(report: ScratchTimerUninstallReport) -> str:
             "# Hemma scratch maintenance Retired Timer Uninstall",
             "",
             f"- uninstalled_at: `{report.uninstalled_at}`",
-            f"- service_name: `{report.service_name}`",
-            f"- timer_name: `{report.timer_name}`",
             f"- unit_dir: `{report.unit_dir}`",
-            f"- timer_enabled_after: `{report.timer_enabled_after}`",
-            f"- timer_active_after: `{report.timer_active_after}`",
-            f"- service_active_after: `{report.service_active_after}`",
+            "",
+            "## Final unit states",
+            "",
+            *[
+                f"- `{name}`: " + ", ".join(f"{key}=`{value}`" for key, value in state.items())
+                for name, state in report.final_states.items()
+            ],
             "",
             "## Removed unit files",
             "",

@@ -50,14 +50,18 @@ same Hemma storage and evidence contract.
 
 ## Storage Contract
 
-The shared Hemma host runtime reference owns the storage tiers. Sir's current
-backing, observed on 22 October 2026:
+The storage tiers are owned by the "Storage contract" section of the shared
+Hemma host runtime reference, `skills/hemma-devops/references/hemma-host-runtime.md`
+in the canonical skill repository (reached through the `skill-repository` alias
+in the harness configuration directory). Sir's backing, observed on 22 October
+2026:
 
 - Docker data root: `/var/snap/docker/common/var-lib-docker`, bound from Hot.
-- Retained build, proof and cache roots: `/home/paunchygent/.data/sir-convert-a-lot/`
-  on Hot (`build`, `cache`, `cache/huggingface`, `data`). Containers keep the
-  logical `/srv/scratch/sir-convert-a-lot/...` paths only as in-container mount
-  targets.
+- Retained build and data roots: `build` and `data` under
+  `/home/paunchygent/.data/sir-convert-a-lot/` on Hot. Its `cache` directory
+  exists and is empty; no Hugging Face cache has been placed there yet.
+  Containers keep the logical `/srv/scratch/sir-convert-a-lot/...` paths only as
+  in-container mount targets.
 - `/srv/scratch` holds short-lived disposable work only; no Sir build, cache or
   maintenance timer lives there. The entries still in
   `/srv/scratch/sir-convert-a-lot/` (`task-347`, `tools`, `bin`, `data`) are
@@ -113,8 +117,11 @@ governing task. Do not silently switch to CPU execution.
 
 ## Model Cache Contract
 
-Granite FP8 vLLM runs reuse the same Hot-backed Hugging Face cache method as
-the HF-backed llama.cpp/Qwen/TTS lanes:
+Granite FP8 vLLM runs use the same Hugging Face cache method as the HF-backed
+llama.cpp/Qwen/TTS lanes. The Compose default host directory below is on Hot,
+but it did not exist on 22 October 2026, and no Granite FP8 cache was found on
+Hot or Cache. Before a run that needs the retained cache, establish where the
+cache is and verify it, rather than assuming it is present:
 
 ```text
 host_cache: /home/paunchygent/.data/sir-convert-a-lot/cache/huggingface

@@ -16,6 +16,8 @@ import subprocess
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import (
+    DEFAULT_SERVICE_NAME,
+    DEFAULT_TIMER_NAME,
     ScratchTimerSettings,
     ScratchTimerStatusReport,
     ScratchTimerUninstallReport,
@@ -68,15 +70,54 @@ def _systemctl_user_bool(command: list[str]) -> bool:
     return returncode == 0
 
 
-def uninstall_scratch_timer(settings: ScratchTimerSettings) -> ScratchTimerUninstallReport:
-    """Disable, stop and remove the retired user-level timer and its service."""
-    unit_names = [settings.timer_name, settings.service_name]
-    # An absent unit makes `disable` fail; the post-reload state check below
-    # is the authority for whether the units stopped.
-    _run_local_optional(["systemctl", "--user", "disable", "--now", *unit_names])
+RETIRED_UNIT_NAMES = (DEFAULT_TIMER_NAME, DEFAULT_SERVICE_NAME)
+_UNIT_STATE_PROPERTIES = ("LoadState", "UnitFileState", "ActiveState")
+
+
+def _unit_state(unit_name: str) -> dict[str, str]:
+    """Return the load, enablement and activity state systemd reports for one user unit."""
+    output = run_local_checked(
+        [
+            "systemctl",
+            "--user",
+            "show",
+            f"--property={','.join(_UNIT_STATE_PROPERTIES)}",
+            unit_name,
+        ],
+        label=f"systemctl show {unit_name}",
+    )
+    state = dict(line.split("=", 1) for line in output.splitlines() if "=" in line)
+    missing = [name for name in _UNIT_STATE_PROPERTIES if name not in state]
+    if missing:
+        raise SystemExit(f"systemctl show {unit_name} omitted {missing}: {output!r}")
+    return state
+
+
+def _is_retired(state: dict[str, str]) -> bool:
+    """Return whether one unit is unloaded, without unit file, and inactive."""
+    return (
+        state["LoadState"] == "not-found"
+        and state["UnitFileState"] == ""
+        and state["ActiveState"] == "inactive"
+    )
+
+
+def uninstall_scratch_timer(unit_dir: Path) -> ScratchTimerUninstallReport:
+    """Disable, stop and remove the retired user-level timer and its service.
+
+    The target set is fixed to `RETIRED_UNIT_NAMES`; every systemctl failure
+    stops the uninstall, and success requires both units to end unloaded,
+    without a unit file and inactive.
+    """
+    loaded = [name for name in RETIRED_UNIT_NAMES if _unit_state(name)["LoadState"] != "not-found"]
+    if loaded:
+        run_local_checked(
+            ["systemctl", "--user", "disable", "--now", *loaded],
+            label="systemctl disable retired scratch maintenance units",
+        )
     removed_paths: list[str] = []
-    for unit_name in unit_names:
-        unit_path = settings.unit_dir / unit_name
+    for unit_name in RETIRED_UNIT_NAMES:
+        unit_path = unit_dir / unit_name
         if unit_path.is_file() or unit_path.is_symlink():
             unit_path.unlink()
             removed_paths.append(unit_path.as_posix())
@@ -84,20 +125,22 @@ def uninstall_scratch_timer(settings: ScratchTimerSettings) -> ScratchTimerUnins
         ["systemctl", "--user", "daemon-reload"],
         label="systemctl daemon-reload hemma-scratch-maintenance",
     )
-    _run_local_optional(["systemctl", "--user", "reset-failed", *unit_names])
-    report = ScratchTimerUninstallReport(
+    failed = [name for name in RETIRED_UNIT_NAMES if _unit_state(name)["ActiveState"] == "failed"]
+    if failed:
+        run_local_checked(
+            ["systemctl", "--user", "reset-failed", *failed],
+            label="systemctl reset-failed retired scratch maintenance units",
+        )
+    final_states = {name: _unit_state(name) for name in RETIRED_UNIT_NAMES}
+    remaining = {name: state for name, state in final_states.items() if not _is_retired(state)}
+    if remaining:
+        raise SystemExit(f"Retired scratch maintenance units are still present: {remaining}")
+    return ScratchTimerUninstallReport(
         uninstalled_at=utc_now_iso(),
-        service_name=settings.service_name,
-        timer_name=settings.timer_name,
-        unit_dir=settings.unit_dir.as_posix(),
+        unit_dir=unit_dir.as_posix(),
         removed_paths=removed_paths,
-        timer_enabled_after=_systemctl_user_bool(["is-enabled", settings.timer_name]),
-        timer_active_after=_systemctl_user_bool(["is-active", settings.timer_name]),
-        service_active_after=_systemctl_user_bool(["is-active", settings.service_name]),
+        final_states=final_states,
     )
-    if report.timer_enabled_after or report.timer_active_after or report.service_active_after:
-        raise SystemExit(f"Retired scratch timer is still enabled or active: {report}")
-    return report
 
 
 def status_scratch_timer(settings: ScratchTimerSettings) -> ScratchTimerStatusReport:

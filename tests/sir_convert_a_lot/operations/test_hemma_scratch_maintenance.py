@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,10 +23,11 @@ import pytest
 from scripts.sir_convert_a_lot.devops import hemma_scratch_timer_runtime as timer_runtime
 from scripts.sir_convert_a_lot.devops import run_hemma_scratch_policy
 from scripts.sir_convert_a_lot.devops.hemma_scratch_maintenance_contracts import (
+    DEFAULT_SERVICE_NAME,
+    DEFAULT_TIMER_NAME,
     CandidateParent,
     MaintenanceCandidate,
     ScratchMaintenanceReport,
-    ScratchTimerSettings,
     ScratchTimerStatusReport,
     ScratchTimerUninstallReport,
 )
@@ -198,79 +200,160 @@ def test_run_scratch_maintenance_archives_only_until_target_headroom(
     assert report.archived_paths[0].source_path == first.source_path
 
 
-def _recording_systemctl(
-    monkeypatch: pytest.MonkeyPatch, *, active_units: set[str]
-) -> list[list[str]]:
-    """Record systemctl calls; units in `active_units` stay active after the uninstall."""
-    calls: list[list[str]] = []
-
-    def fake_optional(command: list[str]) -> tuple[int, str, str]:
-        calls.append(command)
-        return 1, "", "not loaded"
-
-    def fake_checked(command: list[str], *, label: str) -> str:
-        calls.append(command)
-        return ""
-
-    def fake_bool(command: list[str]) -> bool:
-        return command[0] == "is-active" and command[1] in active_units
-
-    monkeypatch.setattr(timer_runtime, "_run_local_optional", fake_optional)
-    monkeypatch.setattr(timer_runtime, "run_local_checked", fake_checked)
-    monkeypatch.setattr(timer_runtime, "_systemctl_user_bool", fake_bool)
-    return calls
+TIMER = DEFAULT_TIMER_NAME
+SERVICE = DEFAULT_SERVICE_NAME
+RETIRED_STATE = {"LoadState": "not-found", "UnitFileState": "", "ActiveState": "inactive"}
 
 
-def test_uninstall_removes_only_the_named_units(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The retired timer uninstall removes its two units and leaves other user units alone."""
+class FakeUserSystemd:
+    """A `systemctl --user` stand-in at the subprocess boundary.
+
+    `show` reports `states`; `fail_verbs` makes a verb exit 1 with a bus error;
+    `sticky` keeps a unit's state after disable and reload, as a unit that
+    refuses to go away would.
+    """
+
+    def __init__(self, unit_dir: Path, states: dict[str, dict[str, str]]) -> None:
+        self.unit_dir = unit_dir
+        self.states = states
+        self.fail_verbs: set[str] = set()
+        self.sticky: dict[str, dict[str, str]] = {}
+        self.calls: list[list[str]] = []
+
+    def run(
+        self, command: list[str], *, check: bool, capture_output: bool, text: bool
+    ) -> subprocess.CompletedProcess[str]:
+        self.calls.append(command)
+        assert command[:2] == ["systemctl", "--user"], command
+        verb, args = command[2], command[3:]
+        if verb in self.fail_verbs:
+            return subprocess.CompletedProcess(command, 1, "", "Failed to connect to bus")
+        if verb == "show":
+            state = self.states.get(args[-1], RETIRED_STATE)
+            stdout = "\n".join(f"{key}={value}" for key, value in state.items())
+            return subprocess.CompletedProcess(command, 0, stdout, "")
+        if verb == "disable":
+            for name in args[1:]:
+                state = self.states[name]
+                state["UnitFileState"] = "disabled"
+                if state["ActiveState"] != "failed":
+                    state["ActiveState"] = "inactive"
+        if verb == "daemon-reload":
+            for name, state in list(self.states.items()):
+                if not (self.unit_dir / name).exists():
+                    # systemd keeps a failed unit loaded until reset-failed.
+                    self.states[name] = {**RETIRED_STATE, "ActiveState": state["ActiveState"]}
+            self.states.update({name: dict(state) for name, state in self.sticky.items()})
+        if verb == "reset-failed":
+            for name in args:
+                self.states[name] = dict(RETIRED_STATE)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+
+def _loaded(active: str = "inactive", enabled: str = "enabled") -> dict[str, str]:
+    return {"LoadState": "loaded", "UnitFileState": enabled, "ActiveState": active}
+
+
+def _install_fake(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, states: dict[str, dict[str, str]]
+) -> FakeUserSystemd:
     unit_dir = tmp_path / "systemd"
     unit_dir.mkdir()
-    for name in ("timer.unit", "service.unit", "other.service", "timer.unit.d"):
+    for name in (TIMER, SERVICE, "other.service", f"{TIMER}.d"):
         (unit_dir / name).write_text(name, encoding="utf-8")
-    calls = _recording_systemctl(monkeypatch, active_units=set())
-    settings = ScratchTimerSettings(
-        unit_dir=unit_dir, service_name="service.unit", timer_name="timer.unit"
+    fake = FakeUserSystemd(unit_dir, states)
+    monkeypatch.setattr(timer_runtime.subprocess, "run", fake.run)
+    return fake
+
+
+def test_uninstall_removes_only_the_retired_units(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The uninstall disables and removes the two retired units and nothing else."""
+    fake = _install_fake(
+        tmp_path, monkeypatch, {TIMER: _loaded("active"), SERVICE: _loaded("failed", "static")}
     )
 
-    report = timer_runtime.uninstall_scratch_timer(settings)
+    report = timer_runtime.uninstall_scratch_timer(fake.unit_dir)
 
     assert report.removed_paths == [
-        (unit_dir / "timer.unit").as_posix(),
-        (unit_dir / "service.unit").as_posix(),
+        (fake.unit_dir / TIMER).as_posix(),
+        (fake.unit_dir / SERVICE).as_posix(),
     ]
-    assert sorted(path.name for path in unit_dir.iterdir()) == ["other.service", "timer.unit.d"]
-    assert calls[0] == ["systemctl", "--user", "disable", "--now", "timer.unit", "service.unit"]
-    assert ["systemctl", "--user", "daemon-reload"] in calls
+    assert sorted(path.name for path in fake.unit_dir.iterdir()) == [
+        "other.service",
+        f"{TIMER}.d",
+    ]
+    assert ["systemctl", "--user", "disable", "--now", TIMER, SERVICE] in fake.calls
+    assert ["systemctl", "--user", "reset-failed", SERVICE] in fake.calls
+    assert report.final_states == {TIMER: RETIRED_STATE, SERVICE: RETIRED_STATE}
+    named_units = {
+        call[-1] for call in fake.calls if call[2] in ("show", "disable", "reset-failed")
+    }
+    assert named_units <= {TIMER, SERVICE}
 
 
-def test_uninstall_succeeds_when_units_are_already_absent(
+def test_uninstall_is_a_noop_when_the_units_are_already_gone(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A second uninstall is a no-op that still reports the units as gone."""
-    _recording_systemctl(monkeypatch, active_units=set())
-    settings = ScratchTimerSettings(
-        unit_dir=tmp_path / "missing", service_name="service.unit", timer_name="timer.unit"
-    )
+    """A second uninstall touches nothing and still proves both units are gone."""
+    fake = _install_fake(tmp_path, monkeypatch, {})
+    for name in (TIMER, SERVICE):
+        (fake.unit_dir / name).unlink()
 
-    report = timer_runtime.uninstall_scratch_timer(settings)
+    report = timer_runtime.uninstall_scratch_timer(fake.unit_dir)
 
     assert report.removed_paths == []
-    assert not (tmp_path / "missing").exists()
+    assert not any(call[2] in ("disable", "reset-failed") for call in fake.calls)
 
 
-def test_uninstall_fails_when_a_unit_stays_active(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("verb", ["show", "disable", "daemon-reload", "reset-failed"])
+def test_uninstall_fails_on_any_systemctl_error(
+    verb: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A service that keeps running after the uninstall is reported as a failure."""
-    _recording_systemctl(monkeypatch, active_units={"service.unit"})
-    settings = ScratchTimerSettings(
-        unit_dir=tmp_path, service_name="service.unit", timer_name="timer.unit"
+    """A bus or command failure is never reported as a completed retirement."""
+    fake = _install_fake(
+        tmp_path, monkeypatch, {TIMER: _loaded(), SERVICE: _loaded("failed", "static")}
     )
+    fake.fail_verbs.add(verb)
 
-    with pytest.raises(SystemExit, match="still enabled or active"):
-        timer_runtime.uninstall_scratch_timer(settings)
+    with pytest.raises(SystemExit, match="Failed to connect to bus"):
+        timer_runtime.uninstall_scratch_timer(fake.unit_dir)
+    if verb in ("show", "disable"):
+        assert (fake.unit_dir / TIMER).exists()
+        assert (fake.unit_dir / SERVICE).exists()
+
+
+@pytest.mark.parametrize(
+    ("unit", "state"),
+    [
+        (TIMER, _loaded("inactive", "enabled")),
+        (TIMER, _loaded("active", "disabled")),
+        (SERVICE, _loaded("inactive", "enabled")),
+        (SERVICE, _loaded("active", "disabled")),
+        (SERVICE, {"LoadState": "not-found", "UnitFileState": "", "ActiveState": "active"}),
+    ],
+)
+def test_uninstall_fails_when_a_unit_survives(
+    unit: str, state: dict[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Either unit still enabled, active or loaded after the uninstall is a failure."""
+    fake = _install_fake(tmp_path, monkeypatch, {TIMER: _loaded(), SERVICE: _loaded()})
+    fake.sticky[unit] = state
+
+    with pytest.raises(SystemExit, match="still present"):
+        timer_runtime.uninstall_scratch_timer(fake.unit_dir)
+
+
+def test_uninstall_cli_has_no_unit_name_options(tmp_path: Path) -> None:
+    """The uninstall target set cannot be widened from the command line."""
+    for option in ("--timer-name", "--service-name"):
+        with pytest.raises(SystemExit) as exc:
+            run_hemma_scratch_policy.main(
+                ["uninstall-timer", option, "other.service", "--output-root", str(tmp_path / "o")]
+            )
+        assert exc.value.code == 2
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_runner_writes_maintenance_and_timer_reports(
@@ -316,13 +399,9 @@ def test_runner_writes_maintenance_and_timer_reports(
     )
     uninstall_report = ScratchTimerUninstallReport(
         uninstalled_at="2026-03-16T22:01:00Z",
-        service_name="service.unit",
-        timer_name="timer.unit",
         unit_dir="/home/user/.config/systemd/user",
         removed_paths=["/home/user/.config/systemd/user/timer.unit"],
-        timer_enabled_after=False,
-        timer_active_after=False,
-        service_active_after=False,
+        final_states={"timer.unit": {"LoadState": "not-found"}},
     )
     status_report = ScratchTimerStatusReport(
         checked_at="2026-03-16T22:02:00Z",

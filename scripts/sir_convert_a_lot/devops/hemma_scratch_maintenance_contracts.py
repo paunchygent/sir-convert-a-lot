@@ -93,13 +93,9 @@ class ScratchTimerUninstallReport:
     """Deterministic report for one retired-timer uninstall action."""
 
     uninstalled_at: str
-    service_name: str
-    timer_name: str
     unit_dir: str
     removed_paths: list[str]
-    timer_enabled_after: bool
-    timer_active_after: bool
-    service_active_after: bool
+    final_states: dict[str, dict[str, str]]
 
 
 @dataclass(frozen=True)
