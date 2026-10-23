@@ -37,9 +37,6 @@ dev = [
     "types-pyyaml>=6.0.12.20250915",
     "mdformat-frontmatter>=2.0.10",
 ]
-tooling = [
-    "repository-governance @ git+https://github.com/paunchygent/skill-repository.git@ff89806bc7177717eaeb60d09598767de41d576d#subdirectory=packages/repository_governance",
-]
 
 [tool.repository-governance]
 schema-version = 3
@@ -50,7 +47,7 @@ service = ["sir-convert-a-lot"]
 
 [tool.repository-governance.setup]
 projects = [
-    { path = ".", groups = ["default", "tooling", "dev"] },
+    { path = ".", groups = ["default", "dev"] },
     { path = "qwen", groups = ["default", "dev"] },
 ]
 
