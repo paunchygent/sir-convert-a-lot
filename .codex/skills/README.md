@@ -20,6 +20,7 @@ Index repo-local skills for Sir Convert-a-Lot.
 
 ## Retained Repo-Local Skills
 
+- `.codex/skills/repo-code-map/SKILL.md`
 - `.codex/skills/sir-convert-a-lot-devops-hemma/SKILL.md`
 - `.codex/skills/sir-convert-a-lot-colab-hemma/SKILL.md`
 - `.codex/skills/sir-convert-a-lot-qwen-finetuning/SKILL.md`

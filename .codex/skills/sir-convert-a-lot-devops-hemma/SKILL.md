@@ -46,6 +46,10 @@ temporary provider routing is owned in Skriptoteket, not here.
 
 1. Confirm the governed task/reference/ADR surface before changing runtime behavior.
 2. Use `pdm run run-hemma -- ...` from the local repo root for remote commands.
+   `run-hemma` SSHes to Hemma from a client session and executes locally from
+   the canonical Hemma Server repo after host, root and skill-repository checks.
+   Use `pdm run run-hemma --shell ...` only for short probes that argv mode
+   cannot express; promote any non-trivial remote workflow to a committed script.
 3. Use committed detached runners for long Hemma jobs.
 4. Record durable findings in the governing task, reference, ADR, or runbook.
 5. Keep this `SKILL.md` as a router; do not add task logs or command dumps here.
@@ -64,7 +68,11 @@ temporary provider routing is owned in Skriptoteket, not here.
 - Do not change public proxy timeout, body-size, trust/key, or ingress knobs to
   mask STT failures before the upstream root cause is pinned and explicitly
   approved.
-- Docker work uses BuildKit and Docker Compose v2.
+- Docker work uses BuildKit and Docker Compose v2. Runtime changes use the named
+  compose wrappers, health checks, bounded logs and exact proof artifacts.
+- Long-running dev services, Docker volumes, Hemma jobs and generated artifact
+  trees are not stopped, reset, pruned or deleted unless the user asks or a
+  governing task authorizes it.
 - Long-lived Docker state, model caches, and generated working artifacts stay off
   the Hemma OS disk.
 - Public ports, secrets, student PII, and generated benchmark artifacts need

@@ -21,7 +21,7 @@ Top-level layout:
 
 | Path                 | Holds                                                                  |
 | -------------------- | ---------------------------------------------------------------------- |
-| `AGENTS.md`          | Repository route list and command policy; the boot router              |
+| `AGENTS.md`          | Repository identity, commands, product facts, and local routes         |
 | `README.md`          | Human quickstart, conversion routes, and core commands                 |
 | `scripts/`           | All application code, plus the docs-as-code and devops entry points    |
 | `services/`          | Ownership-scoped test packages (`api_gateway_service/tests`)           |
@@ -90,9 +90,10 @@ the service environment.
   `pdm run dev-start` and `compose.local.yaml`. Running
   `uvicorn scripts.sir_convert_a_lot.service:app` directly is not a supported
   lane.
-- Hemma tunnel: `127.0.0.1:28085`, the default target for downstream app
-  integration.
-- Direct public hostname: retired under TASK-SIRCON-06-01-04; no public lane.
+- Private dev: the Mac tunnel at `127.0.0.1:28085`, or
+  `host.docker.internal:28085` for container clients.
+- Private prod: `sir_convert_a_lot_prod:8085` on `hule-network`.
+- Direct public hostname: retired under ADR-SIRCON-0014; no public lane.
 
 Hemma work runs through `pdm run run-hemma -- ...`; from a client session it
 SSHes to Hemma, and from the canonical Hemma Server repo it executes locally
@@ -109,8 +110,8 @@ documents), `reference/` (52 documents), `runbooks/` (10 documents),
 `_generated/openapi/`, and `_meta/docs-contract.yaml`. Retired documents move to
 `.archive/docs/` through `pdm run archive-documents`.
 
-Generated indexes are refreshed by `pdm run docs-sync` and enforced by
-`pdm run docs-validate`; both scan `docs/` only, so `AGENTS.md` and `.codex/`
+Generated indexes are regenerated and enforced by `pdm run docs-validate`;
+it scans `docs/` only, so `AGENTS.md` and `.codex/`
 sit outside them. Scaffold governed documents with `pdm run new-task`,
 `new-story`, `new-epic`, `new-review`, and `new-doc`; never author frontmatter
 by hand.
@@ -123,8 +124,8 @@ by hand.
   orchestration skill. Shared workflows come from the canonical skill
   repository; repo facts belong in a shared skill's Sir Convert-a-Lot reference,
   never in a copied shared-skill body.
-- `.claude/skills` is a symlink to `.codex/skills`, so the Claude harness
-  discovers this lane at session start. The sanctioned symlink direction is
+- `.claude/skills` and `.agents/skills` are symlinks to `.codex/skills`, so the
+  Claude and Codex harnesses discover this lane at session start. The sanctioned symlink direction is
   local skill source into a harness configuration folder; installing
   shared-skill shims into this repository stays forbidden.
 - `build/`, `data/`, and generated artifact trees are evidence, not scratch. Do
@@ -136,7 +137,7 @@ by hand.
 
 `pdm run format`, `lint`, `typecheck`, `test`, and `check` for Python, with
 focused `pytest-root` runs and `coverage-gate` where conversion-core coverage
-applies; `docs-sync` and `docs-validate` for the `docs/` contract;
+applies; `docs-validate` for the `docs/` contract;
 `git diff --check` for diff hygiene. `AGENTS.md` states which set a given change
 closes on.
 

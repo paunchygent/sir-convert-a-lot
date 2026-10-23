@@ -21,7 +21,7 @@ read for orientation and the only map in this lane.
 The overview states topology and links onward. It does not restate routes,
 commands, or policy. For those, read the authority directly:
 
-- Repository routes, invariants, and command policy: `AGENTS.md`.
+- Repository identity, commands, product facts, and local routes: `AGENTS.md`.
 - Human quickstart, conversion routes, and core commands: `README.md`.
 - Client usage from other repositories: the shared `sir-convert-a-lot-client`
   skill.
