@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "sir-convert-a-lot",
-  "source_set_digest": "dbdad530ff0aee48096f82740d04a06966ac6c8ac5be4309be1ffb35143f5e0d",
+  "source_set_digest": "ed61d5924b19ee6afeba4e501a4ef82582b295416bf778c3318ce778e7bcfa29",
   "documents": [
     {
       "id": "EPIC-SIRCON-01",
@@ -4086,6 +4086,24 @@
         "decided_at": "2026-10-22T11:17:00Z",
         "approval_protocol": "agent-implementation:approved-review-closeout",
         "approval_evidence": "Code rereview 604209c5 approved 04b942c after F01-F03 repairs; prose rereview 850b2845 approved the repaired runbooks; Sir retained root 01a16345-8ce2-7602-8bc0-7900e7a9513f holds both records under evidence/reviews."
+      }
+    },
+    {
+      "id": "TASK-SIRCON-REP-0037",
+      "type": "task",
+      "title": "Add the governed pre-commit configuration and install hooks on both hosts",
+      "path": "docs/backlog/tasks/task-sircon-rep-0037-add-the-governed-pre-commit-configuration-and-install-hooks-on-both-hosts.md",
+      "status": "proposed",
+      "task_kind": "repository",
+      "owners": [
+        {
+          "kind": "service",
+          "id": "sir-convert-a-lot"
+        }
+      ],
+      "closeout_review": {
+        "record": "inline",
+        "status": "not_started"
       }
     },
     {
