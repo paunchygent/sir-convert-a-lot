@@ -1,0 +1,10 @@
+repos: 
+  - repo: local
+    hooks:
+      - id: markdown-format
+        name: Markdown format (staged Markdown files)
+        entry: pdm run format-md
+        language: system
+        types: [markdown]
+        exclude: ^docs/(index\.md|(backlog|decisions|reference|runbooks)/INDEX\.md)$
+        pass_filenames: true
