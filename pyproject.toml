@@ -36,6 +36,7 @@ dev = [
     "mypy>=1.18.2",
     "types-pyyaml>=6.0.12.20250915",
     "mdformat-frontmatter>=2.0.10",
+    "pre-commit>=4.0.0",
 ]
 
 [tool.repository-governance]
@@ -226,6 +227,7 @@ new-story = "new-story"
 new-task = "new-task"
 new-review = "new-review"
 docs-validate = "repository-governance-docs-validate"
+precommit-install = "/usr/bin/env -u PYTHONPATH -u PEP582_PACKAGES pdm run --project ${HOME}/.codex/repository-governance-runtime repository-governance-hooks-install --repo-root ${PDM_PROJECT_ROOT}"
 format-md = "format-md"
 check-md = "check-md"
 format-md-all = "format-md-all"
