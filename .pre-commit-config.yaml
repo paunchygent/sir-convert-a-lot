@@ -1,3 +1,4 @@
+default_install_hook_types: [pre-commit, pre-merge-commit, pre-push, pre-rebase, prepare-commit-msg, commit-msg]
 repos: 
   - repo: local
     hooks:
@@ -6,5 +7,57 @@ repos:
         entry: pdm run format-md
         language: system
         types: [markdown]
-        exclude: ^docs/(index\.md|(backlog|decisions|reference|runbooks)/INDEX\.md)$
+        exclude: ^(docs/(index\.md|(backlog|decisions|reference|runbooks)/INDEX\.md)$|provenance/)
         pass_filenames: true
+  - repo: local
+    hooks:
+      - id: out-of-domain-log-append-only
+        name: Out-of-domain log append-only check
+        entry: pdm run repository-governance-review-log-check
+        language: system
+        files: ^out-of-domain\.log$
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+      - id: task-merge-guard
+        name: Refuse merging a task branch into main unless its task is done
+        entry: pdm run repository-governance-task-merge-guard --stage merge
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-merge-commit, pre-commit]
+      - id: task-merge-guard-push
+        name: Refuse pushing main with a merged task branch whose task is not done
+        entry: pdm run repository-governance-task-merge-guard --stage push
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: git-guard-pre-rebase
+        name: Git guard (pre-rebase)
+        entry: pdm run repository-governance-git-guard --stage pre-rebase
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-rebase]
+      - id: git-guard-prepare-commit-msg
+        name: Git guard (prepare-commit-msg)
+        entry: pdm run repository-governance-git-guard --stage prepare-commit-msg
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [prepare-commit-msg]
+      - id: git-guard-commit-msg
+        name: Git guard (commit-msg)
+        entry: pdm run repository-governance-git-guard --stage commit-msg
+        language: system
+        pass_filenames: true
+        always_run: true
+        stages: [commit-msg]
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        name: secrets scan (unstage a secret with git restore --staged <file>; mark a known false positive with a gitleaks:allow comment)
+        stages: [pre-commit]
+        always_run: true
