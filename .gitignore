@@ -26,3 +26,11 @@ docs/reference/ref-production-pdf-md-scientific-corpus-validation.md
 .orchestration/context/
 
 .orchestration/
+
+# Generated docs indexes: each checkout regenerates them (skill-repository TASK-SKILL-REP-0601)
+/docs/index.md
+/docs/backlog/INDEX.md
+/docs/decisions/INDEX.md
+/docs/reference/INDEX.md
+/docs/runbooks/INDEX.md
+/docs/repository-index.json
