@@ -6,7 +6,7 @@
   focused lint/format and types. Next: parent `081d9763-a35c` routes independent
   review of the branch commit. Hemma storage-migration hold:
   no Hemma commands until explicit parent-relayed release. Deferred CONV
-  references remain parent-owned. [Contract](docs/backlog/tasks/task-sircon-rep-0034-accept-equivalent-qwen-bind-backing-and-correct-private-route-guidance.md).
+  references remain parent-owned. [Contract][a].
 
 - `TASK-SIRCON-06-01-04` (owner: parent `081d9763-a35c`) removes the retired
   Sir public edge. Source changes await independent review on
@@ -16,7 +16,7 @@
   and certificate. The parent owns the shared source and two deferred reference
   edits blocked by the shared docs hook. Namecheap CNAME deletion follows vhost
   retirement proof. [Authority](docs/decisions/adr-sircon-0014-retire-the-direct-sir-convert-public-hostname.md)
-  and [task](docs/backlog/tasks/task-sircon-06-01-04-retire-the-sir-convert-public-edge-and-decouple-the-reserved-default-certificate.md).
+  and task file `docs/backlog/tasks/task-sircon-06-01-04-*.md`.
 
 - Shared `TASK-SKILL-REP-0316` activation remains parent `01a13b6a-7e50`-owned.
   Sir source task `TASK-SIRCON-REP-0033` is done after independent code and prose
@@ -26,9 +26,9 @@
   binds through the held migration boundary. This source closeout establishes no
   host, GPU or service activation. The hourly scratch timer is retired
   (TASK-SIRCON-REP-0036).
-  [Source task and review pointers](docs/backlog/tasks/task-sircon-rep-0033-adapt-sir-storage-maintenance-to-hot-ownership-and-shared-docker-cleanup.md).
+  [Source task and review pointers][b].
 
-- [TASK-SIRCON-REP-0029](docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md)
+- [TASK-SIRCON-REP-0029][c]
   is `done` and live-proven: integrated head `20797ab5` emits an
   `assessmentTest` with manifest dependency wiring, confirmed item lanes
   (`map_response`, exact-sum positive mappings, per-gap score split,
@@ -43,7 +43,7 @@
   The Sir exam runtime, including Exam.net export, has since been retired
   under TASK-SIRCON-07-04-01.
 
-- [TASK-SIRCON-08-01-07](docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md)
+- [TASK-SIRCON-08-01-07][d]
   is `done` as history: published revision `a1319739` ran GPT-5.6 Luna as the
   exam-lane low-effort default with GLM-5.3-flash (OpenRouter) as a
   failover-only backup under one 5,000,000 token/day non-refundable UTC lease,
@@ -64,7 +64,7 @@
   decision. Before any restart, run the one-time retired-spec-fields migration
   per the service-operations runbook.
 
-- [TASK-SIRCON-REP-0025](docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md)
+- [TASK-SIRCON-REP-0025][e]
   completed the shared-governance cutover. Product, Hemma, GPU, conversion,
   deployment, and Qwen behavior remain unchanged.
 
@@ -88,7 +88,7 @@
 
 ## Recent
 
-- [TASK-SIRCON-REP-0036](docs/backlog/tasks/task-sircon-rep-0036-retire-the-stale-sir-qwen-scratch-maintenance-user-timer.md)
+- [TASK-SIRCON-REP-0036][f]
   retired the Qwen scratch maintenance user timer and service on Hemma on
   2026-10-22 through the new `qwen-scratch-policy uninstall-timer`; code and
   prose reviews approved. On the user's instruction the same day, the unused
@@ -119,3 +119,10 @@
 - [References](docs/reference/INDEX.md)
 - [Runbooks](docs/runbooks/INDEX.md)
 - [Durable session history](.codex/long-term-memory/index.md)
+
+[a]: docs/backlog/tasks/task-sircon-rep-0034-accept-equivalent-qwen-bind-backing-and-correct-private-route-guidance.md
+[b]: docs/backlog/tasks/task-sircon-rep-0033-adapt-sir-storage-maintenance-to-hot-ownership-and-shared-docker-cleanup.md
+[c]: docs/backlog/tasks/task-sircon-rep-0029-repair-exam-net-qti-export-to-the-confirmed-import-contract.md
+[d]: docs/backlog/tasks/task-sircon-08-01-07-adopt-remote-answer-key-model-profiles-with-a-daily-token-lease-budget.md
+[e]: docs/backlog/tasks/task-sircon-rep-0025-complete-operations-handoff-and-parity-gated-governance-retirement.md
+[f]: docs/backlog/tasks/task-sircon-rep-0036-retire-the-stale-sir-qwen-scratch-maintenance-user-timer.md
