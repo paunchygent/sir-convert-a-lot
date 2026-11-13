@@ -28,10 +28,7 @@ AUDIO_TRANSCRIPTION_CONTRACT_PATH = (
     REPO_ROOT
     / "docs"
     / "reference"
-    / (
-        "ref-sircon-general-audio-transcription-service-api-artifact-contract-"
-        "audio-transcription-service-api-artifact-contract.md"
-    )
+    / "ref-sircon-general-audio-transcription-service-api-artifact-contract.md"
 )
 
 
@@ -50,7 +47,7 @@ def test_audio_contract_initial_request_shape_is_admissible() -> None:
 
 def _json_block_after_heading(markdown: str, heading: str) -> dict[str, object]:
     heading_start = markdown.index(heading)
-    request_line = markdown[heading_start:].splitlines()[1]
+    request_line = next(line for line in markdown[heading_start:].splitlines()[1:] if line.strip())
     decoded = json.loads(request_line.strip("`"))
     if not isinstance(decoded, dict):
         raise AssertionError("Expected contract JSON example to decode to an object.")

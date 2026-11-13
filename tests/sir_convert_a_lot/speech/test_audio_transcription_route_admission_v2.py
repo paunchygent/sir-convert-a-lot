@@ -49,10 +49,7 @@ AUDIO_TRANSCRIPTION_CONTRACT_PATH = (
     Path(__file__).resolve().parents[3]
     / "docs"
     / "reference"
-    / (
-        "ref-sircon-general-audio-transcription-service-api-artifact-contract-"
-        "audio-transcription-service-api-artifact-contract.md"
-    )
+    / "ref-sircon-general-audio-transcription-service-api-artifact-contract.md"
 )
 
 
@@ -236,7 +233,7 @@ def test_existing_markdown_pdf_route_remains_registered() -> None:
 def _audio_contract_initial_request_shape() -> dict[str, object]:
     source = AUDIO_TRANSCRIPTION_CONTRACT_PATH.read_text(encoding="utf-8")
     section_start = source.index("## Initial Request Shape")
-    request_line = source[section_start:].splitlines()[1]
+    request_line = next(line for line in source[section_start:].splitlines()[1:] if line.strip())
     payload = json.loads(request_line.strip("`"))
     if not isinstance(payload, dict):
         raise AssertionError("Audio contract request shape must decode to a JSON object.")

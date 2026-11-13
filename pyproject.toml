@@ -37,6 +37,7 @@ dev = [
     "types-pyyaml>=6.0.12.20250915",
     "mdformat-frontmatter>=2.0.10",
     "pre-commit>=4.0.0",
+    "httpx2>=2.13.1",
 ]
 
 [tool.repository-governance]
