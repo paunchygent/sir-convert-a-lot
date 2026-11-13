@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "links": [
+    {
+      "source": ".archive/docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md",
+      "target": "../../reference/ref-review-02-qwen-dataloader-io-bottleneck-evidence.md"
+    },
+    {
+      "source": ".archive/docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md",
+      "target": "../../reference/ref-review-02-qwen-rocm-only-image-evidence.md"
+    },
+    {
+      "source": ".archive/docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md",
+      "target": "../../reference/ref-review-02-qwen-synchronous-cache-copy-evidence.md"
+    },
+    {
+      "source": ".archive/docs/backlog/reviews/review-02-review-of-qwen3-tts-swedish-finetuning-architecture.md",
+      "target": "../../reference/ref-review-02-qwen-ungraceful-detached-shutdown-evidence.md"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/devops/qwen_finetuning_patches/sft_12hz_talker_core_trace.py"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/sir_convert_a_lot/ml/qwen/training/backward_lineage_probe.py"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_bundle.py"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_detached.py"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/sir_convert_a_lot/ml/qwen/training/qwen_backward_lineage_hooks.py"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/sir_convert_a_lot/ml/qwen/training/qwen_freshstart_bundle.py"
+    },
+    {
+      "source": "docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md",
+      "target": "./scripts/sir_convert_a_lot/ml/qwen/training/qwen_freshstart_runtime.py"
+    },
+    {
+      "source": "docs/backlog/tasks/task-sircon-rep-0035-load-local-pdm-dotenv-configuration-without-shell-execution.md",
+      "target": "../../../.orchestration/context/sessions/01a140e5-f446-7105-b54c-68cba9b03a7a/evidence/planning/TASK-SIRCON-REP-0035/plan.md"
+    }
+  ]
+}
