@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-02-04
 title: Enable Triton flash attention for the Qwen Hemma sidecar benchmark
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,13 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-02
 task_kind: story
 acceptance_criteria:
-- Local tests cover the new default and the explicit fallback flag.
-- '`docs/runbooks/runbook-hemma-devops-and-gpu.md` reflects the new default.'
-- '`docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
-  reflects the new default.'
-- The change does not introduce a silent CPU fallback or a raw-host workaround path.
+  - Local tests cover the new default and the explicit fallback flag.
+  - '`docs/runbooks/runbook-hemma-devops-and-gpu.md` reflects the new default.'
+  - '`docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md` reflects the new default.'
+  - The change does not introduce a silent CPU fallback or a raw-host workaround path.
 retired_ids:
-- task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark
+  - task-99-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark
 ---
 
 ## Context

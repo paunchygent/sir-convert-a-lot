@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-06
-title: Increase Task 101 per-launch GPU work via bucketed batching and vectorized
-  codebook fusion
+title: Increase Task 101 per-launch GPU work via bucketed batching and vectorized codebook fusion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,27 +17,20 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] The revised `M0` produces a committed fit-opportunity audit for singleton\n\
-  \  rows in the `320-375` codec-frame band."
-- "[x] The revised `M0` explicitly distinguishes same-bucket ordering misses from\n\
-  \  adjacent-lower-bucket grouping misses on the rebuilt bundle."
-- "[x] If the quarantine replay precursor produces only baseline-equivalent\n  plans,\
-  \ the task records that null result explicitly and does not launch a\n  duplicate\
-  \ Hemma proof."
-- '[ ] `M1` lands exactly one targeted batching change promoted by the revised `M0`.'
-- '[x] `M1` lands exactly one targeted batching change promoted by the revised `M0`.'
-- "[x] If the promoted `M1` candidate is baseline-equivalent or worse in offline\n\
-  \  replay, the task records that null result explicitly and does not launch `M2`."
-- "[ ] `M2` launches exactly one promoted `M1` candidate and records whether it\n\
-  \  stays finite through `30` optimizer steps / first durable checkpoint."
-- "[ ] If `M2` stays finite, bounded Hemma evidence shows higher steady-state\n  train\
-  \ median GPU busy and better realized occupancy than the stable balanced\n  baseline."
-- "[ ] If `M2` stays finite, `M3` records whether ROCm launch/sync overhead\n  dropped\
-  \ relative to the March 13 baseline evidence."
-- '[x] Throughput profile metadata is surfaced in launch/status/report artifacts.'
+  - "[ ] The revised `M0` produces a committed fit-opportunity audit for singleton\n  rows in the `320-375` codec-frame band."
+  - "[x] The revised `M0` explicitly distinguishes same-bucket ordering misses from\n  adjacent-lower-bucket grouping misses on the rebuilt bundle."
+  - "[x] If the quarantine replay precursor produces only baseline-equivalent\n  plans, the task records that null result explicitly and does not launch a\n  duplicate Hemma proof."
+  - '[ ] `M1` lands exactly one targeted batching change promoted by the revised `M0`.'
+  - '[x] `M1` lands exactly one targeted batching change promoted by the revised `M0`.'
+  - "[x] If the promoted `M1` candidate is baseline-equivalent or worse in offline\n  replay, the task records that null result explicitly and does not launch `M2`."
+  - "[ ] `M2` launches exactly one promoted `M1` candidate and records whether it\n  stays finite through `30` optimizer steps / first durable checkpoint."
+  - "[ ] If `M2` stays finite, bounded Hemma evidence shows higher steady-state\n  train median GPU busy and better realized occupancy than the stable balanced\n  baseline."
+  - "[ ] If `M2` stays finite, `M3` records whether ROCm launch/sync overhead\n  dropped relative to the March 13 baseline evidence."
+  - '[x] Throughput profile metadata is surfaced in launch/status/report artifacts.'
 retired_ids:
-- task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion
+  - task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-172-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md

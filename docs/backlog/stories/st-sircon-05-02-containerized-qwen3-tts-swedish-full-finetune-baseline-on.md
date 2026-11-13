@@ -4,8 +4,8 @@ id: ST-SIRCON-05-02
 title: Containerized Qwen3-TTS Swedish full-finetune baseline on Hemma and Colab
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,37 +18,22 @@ epic: EPIC-SIRCON-05
 links:
   decisions: []
 acceptance_criteria:
-- Task 99 records the benchmark/runtime change making Triton flash attention the default
-  Qwen Hemma lane again.
-- Task 100 defines one containerized Qwen 1.7B runtime path on Hemma aligned with
-  ROCm and HF-cache discipline.
-- Task 101 records a real containerized Swedish full-finetune pilot on Hemma with
-  AdamW.
-- The first Task 101 pilot consumes a deterministic training bundle projected from
-  the frozen pilot root rather than the generic promoted preprocessing root.
-- A dedicated implementation task materializes that deterministic pilot bundle before
-  Task 101 launch, with T142 providing the committed surface.
-- A dedicated hardening task makes the pilot bundle relocation-safe, fails closed
-  on broken bundle-local paths, propagates held-out eval metadata, and T143 provides
-  that surface.
-- A dedicated task defines and proves robust resumable checkpointing before the first
-  long unattended Hemma training window.
-- A follow-on task bounds durable checkpoint retention and guards scratch capacity.
-- A follow-on refactor task splits remaining Task 101 and Qwen checkpoint god files
-  into SRP-aligned helpers.
-- Follow-on hardening covers graceful stop behavior, resumable cache sync, and cold-build
-  operator visibility, with T117 providing the committed surface.
-- A profiling follow-up task covers the dataloader and mel-precompute question before
-  architecture claims are settled.
-- A separate Colab activation task covers the CUDA runtime rather than overloading
-  the Hemma ROCm image.
-- 'The story documents proven Hemma memory reality: 32.06 GB total VRAM, clean idle
-  baseline around 0.06 GB, and an official Waxholm full-finetune step around 20.19
-  GB.'
-- The training objective remains future general Swedish support rather than a single
-  custom voice lane.
+  - Task 99 records the benchmark/runtime change making Triton flash attention the default Qwen Hemma lane again.
+  - Task 100 defines one containerized Qwen 1.7B runtime path on Hemma aligned with ROCm and HF-cache discipline.
+  - Task 101 records a real containerized Swedish full-finetune pilot on Hemma with AdamW.
+  - The first Task 101 pilot consumes a deterministic training bundle projected from the frozen pilot root rather than the generic promoted preprocessing root.
+  - A dedicated implementation task materializes that deterministic pilot bundle before Task 101 launch, with T142 providing the committed surface.
+  - A dedicated hardening task makes the pilot bundle relocation-safe, fails closed on broken bundle-local paths, propagates held-out eval metadata, and T143 provides that surface.
+  - A dedicated task defines and proves robust resumable checkpointing before the first long unattended Hemma training window.
+  - A follow-on task bounds durable checkpoint retention and guards scratch capacity.
+  - A follow-on refactor task splits remaining Task 101 and Qwen checkpoint god files into SRP-aligned helpers.
+  - Follow-on hardening covers graceful stop behavior, resumable cache sync, and cold-build operator visibility, with T117 providing the committed surface.
+  - A profiling follow-up task covers the dataloader and mel-precompute question before architecture claims are settled.
+  - A separate Colab activation task covers the CUDA runtime rather than overloading the Hemma ROCm image.
+  - 'The story documents proven Hemma memory reality: 32.06 GB total VRAM, clean idle baseline around 0.06 GB, and an official Waxholm full-finetune step around 20.19 GB.'
+  - The training objective remains future general Swedish support rather than a single custom voice lane.
 retired_ids:
-- story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab
+  - story-25-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab
 ---
 
 ## Context
@@ -106,20 +91,20 @@ that a real Swedish optimizer step fits on the R9700.
 
 ### Tasks (Ordered)
 
-1. `docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar.md`
-1. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
-1. `docs/backlog/tasks/task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project.md`
-1. `docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md`
-1. `docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md`
-1. `docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md`
-1. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
-1. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
-1. `docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md`
-1. `docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md`
-1. `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`
-1. `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`
-1. `docs/backlog/tasks/task-sircon-05-02-01-profile-the-qwen-finetuning-dataloader-and-decide-whether-to.md`
-1. `docs/backlog/tasks/task-sircon-05-02-02-activate-the-colab-h100-qwen-training-lane-with-a-cuda.md`
+01. `docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar.md`
+02. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
+03. `docs/backlog/tasks/task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project.md`
+04. `docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md`
+05. `docs/backlog/tasks/task-142-materialize-frozen-qwen-pilot-training-bundle-for-task-101.md`
+06. `docs/backlog/tasks/task-143-harden-qwen-pilot-training-eval-and-bundle-preflight-contracts.md`
+07. `docs/backlog/tasks/task-101-run-the-hemma-pilot-full-finetune-for-swedish-qwen3-tts-language-expansion.md`
+08. `docs/backlog/tasks/task-115-add-fault-tolerant-resumable-qwen-training-checkpoints-on-hemma.md`
+09. `docs/backlog/tasks/task-117-harden-the-qwen-hemma-training-runtime-for-graceful-stop-and-cold-start-safety.md`
+10. `docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md`
+11. `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`
+12. `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`
+13. `docs/backlog/tasks/task-sircon-05-02-01-profile-the-qwen-finetuning-dataloader-and-decide-whether-to.md`
+14. `docs/backlog/tasks/task-sircon-05-02-02-activate-the-colab-h100-qwen-training-lane-with-a-cuda.md`
 
 ### Acceptance Criteria
 

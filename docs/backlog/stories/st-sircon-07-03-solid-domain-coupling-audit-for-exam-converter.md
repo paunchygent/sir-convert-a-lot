@@ -4,8 +4,8 @@ id: ST-SIRCON-07-03
 title: SOLID domain coupling audit for exam converter implementation boundaries
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,26 +18,16 @@ epic: EPIC-SIRCON-07
 links:
   decisions: []
 acceptance_criteria:
-- Task 312 no longer carries the cross-domain audit appendix.
-- A separate audit task and reference document define the broader SOLID domain-coupling
-  lens beyond model/provider coupling.
-- The audit classifies findings by business-policy entanglement, not by the mere existence
-  of an `if` statement.
-- Follow-up tasks are split by refactor boundary rather than grouped under one broad
-  cleanup bucket.
-- Task 315 is the next governed PDF-layout decoupling slice and preserves the boundary
-  that export concerns consume IR state without changing, owning, or serializing IR/effective-IR
-  state semantics. It must not re-home accepted-current-state authoring/correction
-  behavior inside PDF strategies except as deleted/historical behavior until a future
-  export-only request contract exists.
-- Exam.net PDF item rendering policy is protocol/strategy-driven instead of centralized
-  in an item-type branch ladder.
-- Target readiness rows are built from typed readiness decisions rather than artifact
-  availability strings and target-name branches.
-- Answer-key eligibility/output-mode and source-evidence provenance mappings have
-  one owned domain decision surface per concern.
+  - Task 312 no longer carries the cross-domain audit appendix.
+  - A separate audit task and reference document define the broader SOLID domain-coupling lens beyond model/provider coupling.
+  - The audit classifies findings by business-policy entanglement, not by the mere existence of an `if` statement.
+  - Follow-up tasks are split by refactor boundary rather than grouped under one broad cleanup bucket.
+  - Task 315 is the next governed PDF-layout decoupling slice and preserves the boundary that export concerns consume IR state without changing, owning, or serializing IR/effective-IR state semantics. It must not re-home accepted-current-state authoring/correction behavior inside PDF strategies except as deleted/historical behavior until a future export-only request contract exists.
+  - Exam.net PDF item rendering policy is protocol/strategy-driven instead of centralized in an item-type branch ladder.
+  - Target readiness rows are built from typed readiness decisions rather than artifact availability strings and target-name branches.
+  - Answer-key eligibility/output-mode and source-evidence provenance mappings have one owned domain decision surface per concern.
 retired_ids:
-- story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries
+  - story-50-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries
 ---
 
 ## Context

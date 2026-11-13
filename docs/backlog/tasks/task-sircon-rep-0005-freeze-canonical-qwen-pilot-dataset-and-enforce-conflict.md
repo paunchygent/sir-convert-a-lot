@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-REP-0005
-title: Freeze canonical qwen pilot dataset and enforce conflict exclusions in shard
-  allocation
+title: Freeze canonical qwen pilot dataset and enforce conflict exclusions in shard allocation
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,15 +16,14 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- "[x] One immutable canonical processed root can be treated as the frozen pilot\n\
-  \  dataset without additional operator bookkeeping."
-- "[x] Quarantined conflicts are serialized into one machine-readable row-key\n  manifest."
-- "[x] `build-shard-registry` can exclude row keys from explicit manifests in\n  addition\
-  \ to completed run roots and already-issued manifests."
-- '[x] The conflict-exclusion path is visible from the canonical docs/runbook.'
+  - "[x] One immutable canonical processed root can be treated as the frozen pilot\n  dataset without additional operator bookkeeping."
+  - "[x] Quarantined conflicts are serialized into one machine-readable row-key\n  manifest."
+  - "[x] `build-shard-registry` can exclude row keys from explicit manifests in\n  addition to completed run roots and already-issued manifests."
+  - '[x] The conflict-exclusion path is visible from the canonical docs/runbook.'
 retired_ids:
-- task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation
+  - task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-140-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md

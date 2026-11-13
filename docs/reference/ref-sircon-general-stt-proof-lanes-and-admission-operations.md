@@ -4,14 +4,14 @@ id: REF-SIRCON-GENERAL-stt-proof-lanes-and-admission-operations
 title: STT Proof Lanes and Admission Operations
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 summary: STT Proof Lanes and Admission Operations
 retired_ids:
-- REF-stt-proof-lanes-and-admission-operations
+  - REF-stt-proof-lanes-and-admission-operations
 ---
 
 ## Overview
@@ -45,9 +45,9 @@ policy.
 Task 365 STT proof order is fixed:
 
 1. Run local/downstream proof through the fenced Hemma `remote-proof` lane.
-1. Diagnose and fix until that proof works.
-1. Run native Hemma production proof.
-1. Start external/ruthless review only after both live proofs pass.
+2. Diagnose and fix until that proof works.
+3. Run native Hemma production proof.
+4. Start external/ruthless review only after both live proofs pass.
 
 The local/downstream proof may use a local Skriptoteket browser/dev service,
 but it must not require laptop-local Whisper, Pyannote, or other heavy model

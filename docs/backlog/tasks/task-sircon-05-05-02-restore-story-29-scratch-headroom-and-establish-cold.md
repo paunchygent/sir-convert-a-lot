@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-05-02
-title: Restore Story 29 scratch headroom and establish cold-artifact demotion policy
-  on Hemma
+title: Restore Story 29 scratch headroom and establish cold-artifact demotion policy on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,19 +17,13 @@ closeout_review:
 story: ST-SIRCON-05-05
 task_kind: story
 acceptance_criteria:
-- '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy audit` writes one deterministic
-  audit artifact and reports the current headroom truth.'
-- '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy remediate ...` can archive
-  explicit scratch roots onto `/srv/storage` while preserving symlink stability at
-  the original path.'
-- '- [ ] `qwen-fallback-proof` and `qwen-fallback-accumulation-proof` refuse launch
-  when Hemma scratch free bytes are below the required threshold.'
-- '- [ ] The selected remediation frees enough space that the next accumulation-`2`
-  replay is not blocked by the same checkpoint-save headroom failure.'
-- '- [ ] Runbook/current-story/reference docs record the recurring policy and the
-  specific `T198` storage-blocker outcome.'
+  - '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy audit` writes one deterministic audit artifact and reports the current headroom truth.'
+  - '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy remediate ...` can archive explicit scratch roots onto `/srv/storage` while preserving symlink stability at the original path.'
+  - '- [ ] `qwen-fallback-proof` and `qwen-fallback-accumulation-proof` refuse launch when Hemma scratch free bytes are below the required threshold.'
+  - '- [ ] The selected remediation frees enough space that the next accumulation-`2` replay is not blocked by the same checkpoint-save headroom failure.'
+  - '- [ ] Runbook/current-story/reference docs record the recurring policy and the specific `T198` storage-blocker outcome.'
 retired_ids:
-- task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma
+  - task-204-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma
 ---
 
 ## Context
@@ -93,8 +86,8 @@ So the missing contract is not another one-shot migration. It is recurring
 scratch governance:
 
 1. fail early when proof lanes do not have enough headroom
-1. keep only hot/active proof artifacts on scratch
-1. demote cold completed artifact trees onto `/srv/storage` while preserving
+2. keep only hot/active proof artifacts on scratch
+3. demote cold completed artifact trees onto `/srv/storage` while preserving
    stable path references
 
 ### PR Scope
@@ -151,11 +144,11 @@ scratch governance:
 
 1. Audit current scratch pressure:
    `pdm run run-hemma -- pdm run qwen-scratch-policy audit`
-1. Archive explicit cold artifact roots:
+2. Archive explicit cold artifact roots:
    `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --source-path <scratch-path> ...`
-1. Add Docker cleanup if needed:
+3. Add Docker cleanup if needed:
    `pdm run run-hemma -- pdm run qwen-scratch-policy remediate --prune-docker-state ...`
-1. Rerun the accumulation-`2` proof only after headroom is restored:
+4. Rerun the accumulation-`2` proof only after headroom is restored:
    `pdm run qwen-fallback-accumulation-proof prepare --proof-id <proof-id> --skip-build`
 
 ### Checklist

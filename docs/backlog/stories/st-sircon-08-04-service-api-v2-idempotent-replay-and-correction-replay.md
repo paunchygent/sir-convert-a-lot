@@ -4,8 +4,8 @@ id: ST-SIRCON-08-04
 title: Service API v2 idempotent replay and correction replay hardening
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,28 +18,17 @@ epic: EPIC-SIRCON-08
 links:
   decisions: []
 acceptance_criteria:
-- Same-key/same-fingerprint `succeeded` replays remain strict only when the active
-  job satisfies the current route artifact compatibility contract.
-- A legacy DigiExam `succeeded` job that lacks `answer_key_review_state_report` is
-  not returned as a strict replay for a fresh upload of the same file/key.
-- The stale-success remediation preserves lineage to the old job and records a typed,
-  content-safe reason for the service-owned reattempt or fail-closed response.
-- Same-key/different-fingerprint conflicts and retryable failed service reattempts
-  keep the Task 368 behavior.
-- Idempotency/correction replay business policy is centralized in domain/application
-  services with protocol ports; HTTP routes and filesystem stores do not own replay
-  decisions.
-- Correction apply fails closed when a signed source binding points to a missing or
-  inaccessible source job.
-- Correction replay artifacts are request-scoped and cannot be overwritten or aliased
-  by a later correction apply for the same source job.
-- Contract docs and OpenAPI are synchronized for any new admission reason, replay
-  action, route compatibility, or artifact-reference shape.
-- Deployed production proof covers a stale incompatible DigiExam replay, a compatible
-  strict replay, correction apply missing-source fail-closed behavior, and request-scoped
-  correction replay downloads.
+  - Same-key/same-fingerprint `succeeded` replays remain strict only when the active job satisfies the current route artifact compatibility contract.
+  - A legacy DigiExam `succeeded` job that lacks `answer_key_review_state_report` is not returned as a strict replay for a fresh upload of the same file/key.
+  - The stale-success remediation preserves lineage to the old job and records a typed, content-safe reason for the service-owned reattempt or fail-closed response.
+  - Same-key/different-fingerprint conflicts and retryable failed service reattempts keep the Task 368 behavior.
+  - Idempotency/correction replay business policy is centralized in domain/application services with protocol ports; HTTP routes and filesystem stores do not own replay decisions.
+  - Correction apply fails closed when a signed source binding points to a missing or inaccessible source job.
+  - Correction replay artifacts are request-scoped and cannot be overwritten or aliased by a later correction apply for the same source job.
+  - Contract docs and OpenAPI are synchronized for any new admission reason, replay action, route compatibility, or artifact-reference shape.
+  - Deployed production proof covers a stale incompatible DigiExam replay, a compatible strict replay, correction apply missing-source fail-closed behavior, and request-scoped correction replay downloads.
 retired_ids:
-- story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening
+  - story-58-service-api-v2-idempotent-replay-and-correction-replay-hardening
 ---
 
 ## Context
@@ -116,14 +105,14 @@ Sir Convert as the product-neutral producer of route artifact contracts.
 1. `docs/backlog/tasks/task-375-centralize-protocol-first-idempotent-replay-policy-in-service-api-v2.md`
    creates the shared policy spine, ports, and DI seam. Implementation is
    approved in retained Review 60.
-1. `docs/backlog/tasks/task-376-gate-idempotent-succeeded-replays-on-route-artifact-contract-compatibility.md`
+2. `docs/backlog/tasks/task-376-gate-idempotent-succeeded-replays-on-route-artifact-contract-compatibility.md`
    is implemented and approved in retained Review 61 for route artifact
    compatibility inspection and stale succeeded replay remediation.
-1. `docs/backlog/tasks/task-377-fail-closed-when-correction-replay-source-jobs-are-unavailable.md`
+3. `docs/backlog/tasks/task-377-fail-closed-when-correction-replay-source-jobs-are-unavailable.md`
    is implemented and review-ready after Review 62 missing-grant remediation.
-1. `docs/backlog/tasks/task-378-bind-correction-replay-artifacts-to-request-scoped-identity.md`
+4. `docs/backlog/tasks/task-378-bind-correction-replay-artifacts-to-request-scoped-identity.md`
    makes replay artifact references request-scoped and non-aliasing.
-1. `docs/backlog/tasks/task-379-retain-story-58-live-replay-closeout-proof.md`
+5. `docs/backlog/tasks/task-379-retain-story-58-live-replay-closeout-proof.md`
    adds the retained Story 58 proof-runner support for live Service API replay
    evidence without mutating production idempotency or artifact state.
 

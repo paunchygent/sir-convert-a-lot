@@ -4,13 +4,13 @@ id: REF-SIRCON-PRD-sir-convert-a-lot-product-description-v1-0
 title: Sir Convert-a-Lot Product Description v1.0
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: draft
 reference_kind: prd
 retired_ids:
-- PDR-sir-convert-a-lot-v1.0
+  - PDR-sir-convert-a-lot-v1.0
 summary: Sir Convert-a-Lot Product Description v1.0
 ---
 

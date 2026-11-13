@@ -4,14 +4,14 @@ id: RUN-SIRCON-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot
 title: Hemma Conversion Benchmark Runbook for Sir Convert-a-Lot
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 summary: Hemma Conversion Benchmark Runbook for Sir Convert-a-Lot
 system: hemma.hule.education
 retired_ids:
-- RUN-hemma-conversion-benchmarks
+  - RUN-hemma-conversion-benchmarks
 ---
 
 ## Trigger
@@ -76,10 +76,10 @@ the decision-relevant result in docs.
 ### Triage Order
 
 1. Confirm service health and route.
-1. Confirm artifact intake and manifest.
-1. Confirm parser/OCR/runtime logs.
-1. Confirm CPU/GPU utilization and memory pressure.
-1. Confirm output contract, manifest, and manual-follow-up semantics.
+2. Confirm artifact intake and manifest.
+3. Confirm parser/OCR/runtime logs.
+4. Confirm CPU/GPU utilization and memory pressure.
+5. Confirm output contract, manifest, and manual-follow-up semantics.
 
 If a repeated benchmark needs a stable command, promote it to a committed script
 before the next run.

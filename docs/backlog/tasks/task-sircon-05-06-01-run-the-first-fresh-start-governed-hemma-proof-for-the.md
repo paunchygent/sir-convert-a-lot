@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-06-01
 title: Run the first fresh-start governed Hemma proof for the talker-core stabilization lane
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,13 +17,13 @@ closeout_review:
 story: ST-SIRCON-05-06
 task_kind: story
 acceptance_criteria:
-- '- [ ] The proof does not reuse replay checkpoints or inherited-state rescue framing.'
-- '- [ ] The proof is only launched for a promoted exploration winner.'
-- '- [ ] The exact stabilization posture is recorded in proof metadata.'
-- '- [ ] The result is written into `current.md` and the Task 101 reference ledger before any broader restart decision.'
-- '- [ ] `T199` remains blocked unless this proof provides an explicit positive basis for a larger clean-start proof lane.'
+  - '- [ ] The proof does not reuse replay checkpoints or inherited-state rescue framing.'
+  - '- [ ] The proof is only launched for a promoted exploration winner.'
+  - '- [ ] The exact stabilization posture is recorded in proof metadata.'
+  - '- [ ] The result is written into `current.md` and the Task 101 reference ledger before any broader restart decision.'
+  - '- [ ] `T199` remains blocked unless this proof provides an explicit positive basis for a larger clean-start proof lane.'
 retired_ids:
-- task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane
+  - task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane
 ---
 
 ## Context

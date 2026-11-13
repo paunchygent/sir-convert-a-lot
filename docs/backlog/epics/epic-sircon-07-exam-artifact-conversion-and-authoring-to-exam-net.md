@@ -4,8 +4,8 @@ id: EPIC-SIRCON-07
 title: Exam artifact conversion and authoring to Exam.net-compatible targets
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,7 +18,7 @@ links:
   decisions: []
 outcome: Exam artifact conversion and authoring to Exam.net-compatible targets
 retired_ids:
-- epic-10-digiexam-to-exam-net-exam-migration-pipeline
+  - epic-10-digiexam-to-exam-net-exam-migration-pipeline
 ---
 
 ## Scope
@@ -150,51 +150,51 @@ artifacts.
 The initial PDF research evidence has been reviewed for the completed PDF
 fallback parser lane. Planned lanes, in dependency order:
 
-1. `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`
-   for DigiExam PDF parser v1 with regression fixtures and confidence
-   reporting.
-1. `docs/backlog/stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md`
-   for `.dxe` source parsing and optional graded-result PDF answer-key
-   enrichment.
-1. `docs/backlog/stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md`
-   for the Sir Convert intermediate exam representation and manifest schema.
-1. `docs/backlog/stories/story-42-digiexam-renderer-neutral-embedded-asset-support.md`
-   for `.dxe` embedded image extraction, asset binding, and manifest asset
-   parity before renderer implementation.
-1. Task 276 embedded asset support, completing IR v2 and manifest v2 before
-   renderer implementation.
-1. `docs/backlog/stories/story-43-digiexam-exam-net-oriented-pdf-renderer.md`
-   for the Exam.net-oriented PDF renderer and live validation lane.
-1. `docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md`
-   for the completed authenticated API, artifact bundle, and Skriptoteket
-   ownership contract gate.
-1. `docs/backlog/stories/st-sircon-07-01-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md`
-   for Exam.net-origin teacher artifact authoring bundles, including QTI,
-   editable DOCX, source-role classification, and the shared Swedish
-   PDF-to-exam renderer profile.
-1. Completed Task 280 for deterministic QTI sample packages and
-   validation-report gate: MCQ, free text, image-bearing MCQ/free text,
-   unsupported-resource omission, and proof-gated matching before any service
-   runtime exposure.
-1. `docs/backlog/stories/st-sircon-07-02-service-source-simplification-and-active-surface-truth.md`
-   for the governed cleanup tranche that must precede more Exam.net runtime
-   work: docs-state reconciliation, route-handler registry, runtime/CLI hotspot
-   extraction, experiment-surface demotion, Task 200 scaffold closeout, and a
-   validated onboarding map.
-1. `docs/backlog/stories/st-sircon-07-03-solid-domain-coupling-audit-for-exam-converter.md`
-   for the governed audit and follow-up refactors where exam-converter business
-   policy is entangled with implementation branch mechanics.
-1. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay.md`
-   for the Service API v2 replay/idempotency hardening that prevents stale
-   succeeded DigiExam jobs from masking current route artifact contracts and
-   makes correction replay artifacts request-scoped.
-1. Full QTI/native import lane, implemented behind the accepted API/artifact
-   contracts and Task 280 validation foundation.
-1. Service API exposure and Skriptoteket adapter/UI workflow.
-1. `docs/backlog/epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md`
-   for optional teacher overlay and policy-gated machine-marked answer-key
-   completion that preserves this epic's source-bound parser semantics.
-1. Bulk migration workflow and parity report.
+01. `docs/backlog/stories/story-38-digiexam-pdf-parser-v1-fixtures-and-confidence-reporting.md`
+    for DigiExam PDF parser v1 with regression fixtures and confidence
+    reporting.
+02. `docs/backlog/stories/story-40-digiexam-dxe-source-parser-and-answer-key-provenance.md`
+    for `.dxe` source parsing and optional graded-result PDF answer-key
+    enrichment.
+03. `docs/backlog/stories/story-41-digiexam-renderer-neutral-intermediate-exam-representation-and-manifest-schema.md`
+    for the Sir Convert intermediate exam representation and manifest schema.
+04. `docs/backlog/stories/story-42-digiexam-renderer-neutral-embedded-asset-support.md`
+    for `.dxe` embedded image extraction, asset binding, and manifest asset
+    parity before renderer implementation.
+05. Task 276 embedded asset support, completing IR v2 and manifest v2 before
+    renderer implementation.
+06. `docs/backlog/stories/story-43-digiexam-exam-net-oriented-pdf-renderer.md`
+    for the Exam.net-oriented PDF renderer and live validation lane.
+07. `docs/backlog/stories/story-44-digiexam-migration-api-and-skriptoteket-artifact-delivery-contract.md`
+    for the completed authenticated API, artifact bundle, and Skriptoteket
+    ownership contract gate.
+08. `docs/backlog/stories/st-sircon-07-01-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md`
+    for Exam.net-origin teacher artifact authoring bundles, including QTI,
+    editable DOCX, source-role classification, and the shared Swedish
+    PDF-to-exam renderer profile.
+09. Completed Task 280 for deterministic QTI sample packages and
+    validation-report gate: MCQ, free text, image-bearing MCQ/free text,
+    unsupported-resource omission, and proof-gated matching before any service
+    runtime exposure.
+10. `docs/backlog/stories/st-sircon-07-02-service-source-simplification-and-active-surface-truth.md`
+    for the governed cleanup tranche that must precede more Exam.net runtime
+    work: docs-state reconciliation, route-handler registry, runtime/CLI hotspot
+    extraction, experiment-surface demotion, Task 200 scaffold closeout, and a
+    validated onboarding map.
+11. `docs/backlog/stories/st-sircon-07-03-solid-domain-coupling-audit-for-exam-converter.md`
+    for the governed audit and follow-up refactors where exam-converter business
+    policy is entangled with implementation branch mechanics.
+12. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay.md`
+    for the Service API v2 replay/idempotency hardening that prevents stale
+    succeeded DigiExam jobs from masking current route artifact contracts and
+    makes correction replay artifacts request-scoped.
+13. Full QTI/native import lane, implemented behind the accepted API/artifact
+    contracts and Task 280 validation foundation.
+14. Service API exposure and Skriptoteket adapter/UI workflow.
+15. `docs/backlog/epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md`
+    for optional teacher overlay and policy-gated machine-marked answer-key
+    completion that preserves this epic's source-bound parser semantics.
+16. Bulk migration workflow and parity report.
 
 ### Acceptance Criteria
 

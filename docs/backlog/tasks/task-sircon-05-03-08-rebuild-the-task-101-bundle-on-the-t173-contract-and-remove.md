@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-08
-title: Rebuild the Task 101 bundle on the T173 contract and remove legacy-bundle fallbacks
-  after stable throughput proof
+title: Rebuild the Task 101 bundle on the T173 contract and remove legacy-bundle fallbacks after stable throughput proof
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,16 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] A real Hemma run launched from the rebuilt bundle succeeds without any\n  legacy-bundle\
-  \ fallback logic."
-- "[ ] The rebuilt-bundle run preserves the post-`T172` throughput gain for at\n \
-  \ least `24` hours of observed training."
-- "[ ] Bundle-building no longer depends on a fallback from empty\n  `reference_audio_24k_paths`\
-  \ to row audio because the upstream row contract is\n  uniform and explicit."
-- "[ ] The repo no longer contains temporary legacy-bundle compatibility trees\n \
-  \ introduced only to bridge pre-`T173` bundles."
+  - "[ ] A real Hemma run launched from the rebuilt bundle succeeds without any\n  legacy-bundle fallback logic."
+  - "[ ] The rebuilt-bundle run preserves the post-`T172` throughput gain for at\n  least `24` hours of observed training."
+  - "[ ] Bundle-building no longer depends on a fallback from empty\n  `reference_audio_24k_paths` to row audio because the upstream row contract is\n  uniform and explicit."
+  - "[ ] The repo no longer contains temporary legacy-bundle compatibility trees\n  introduced only to bridge pre-`T173` bundles."
 retired_ids:
-- task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof
+  - task-174-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof
 ---
 
 ## Context
@@ -76,7 +71,7 @@ permanent architecture.
 This task has two phases:
 
 1. rebuild the canonical bundle now on the governed `T173` contract
-1. remove the temporary legacy fallback trees only after the rebuilt-bundle
+2. remove the temporary legacy fallback trees only after the rebuilt-bundle
    lane has proven stable throughput gain on Hemma
 
 ### Current Progress

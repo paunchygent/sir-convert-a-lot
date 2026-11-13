@@ -4,14 +4,14 @@ id: REF-SIRCON-RESEARCH-review-02-qwen-dataloader-i-o-bottleneck-evidence
 title: Review 02 Qwen Dataloader I/O Bottleneck Evidence
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: Review 02 Qwen Dataloader I/O Bottleneck Evidence
 retired_ids:
-- REF-review-02-qwen-dataloader-io-bottleneck-evidence
+  - REF-review-02-qwen-dataloader-io-bottleneck-evidence
 ---
 
 ## Research Purpose And Boundary

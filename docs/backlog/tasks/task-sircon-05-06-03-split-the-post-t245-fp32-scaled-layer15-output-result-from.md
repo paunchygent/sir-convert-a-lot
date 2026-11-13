@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-06-03
-title: Split the post-T245 fp32-scaled layer15 output result from the final emitted
-  tensor before any new stabilizer family
+title: Split the post-T245 fp32-scaled layer15 output result from the final emitted tensor before any new stabilizer family
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-06
 task_kind: story
 acceptance_criteria:
-- '- [ ] The task uses only the fixed T245 confirmation variant and does not compare
-  alternate variants.'
-- '- [ ] The task keeps the full Story 32 state vector fixed apart from the narrowed
-  post-multiply output trace corridor.'
-- '- [ ] The result ends with exactly one diagnosis classification and one next diagnosis
-  rule.'
+  - '- [ ] The task uses only the fixed T245 confirmation variant and does not compare alternate variants.'
+  - '- [ ] The task keeps the full Story 32 state vector fixed apart from the narrowed post-multiply output trace corridor.'
+  - '- [ ] The result ends with exactly one diagnosis classification and one next diagnosis rule.'
 retired_ids:
-- task-246-split-the-post-t245-fp32-scaled-layer15-output-result-from-the-final-emitted-tensor-before-any-new-stabilizer-family
+  - task-246-split-the-post-t245-fp32-scaled-layer15-output-result-from-the-final-emitted-tensor-before-any-new-stabilizer-family
 ---
 
 ## Context

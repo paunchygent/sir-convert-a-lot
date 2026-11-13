@@ -4,16 +4,16 @@ id: ADR-SIRCON-0002
 title: V2 Async Push Delivery with SSE Webhooks and Polling Fallback
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 deciders:
-- platform
+  - platform
 links:
   governing: []
 retired_ids:
-- ADR-0003
+  - ADR-0003
 ---
 
 ## Context

@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-03-09
 title: Close the remaining Task 101 throughput truth gaps from the review alignment
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,17 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] A bounded Hemma proof run shows realized occupancy evidence consistent\n  with\
-  \ the selected throughput profile rather than hidden batch collapse."
-- "[ ] A bounded Hemma proof run can attribute ref-input activity truthfully and\n\
-  \  distinguish persisted-load behavior from runtime extraction behavior."
-- "[ ] Train-phase utilization summaries exclude export/checkpoint windows in a\n\
-  \  way that remains consistent with the phase history artifacts."
-- "[ ] The repo no longer allows saturation claims from runs that silently fell\n\
-  \  back to legacy runtime ref-input preparation after the rebuilt bundle became\n\
-  \  canonical."
+  - "[ ] A bounded Hemma proof run shows realized occupancy evidence consistent\n  with the selected throughput profile rather than hidden batch collapse."
+  - "[ ] A bounded Hemma proof run can attribute ref-input activity truthfully and\n  distinguish persisted-load behavior from runtime extraction behavior."
+  - "[ ] Train-phase utilization summaries exclude export/checkpoint windows in a\n  way that remains consistent with the phase history artifacts."
+  - "[ ] The repo no longer allows saturation claims from runs that silently fell\n  back to legacy runtime ref-input preparation after the rebuilt bundle became\n  canonical."
 retired_ids:
-- task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment
+  - task-175-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment
 ---
 
 ## Context

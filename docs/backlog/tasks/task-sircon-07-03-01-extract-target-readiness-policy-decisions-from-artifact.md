@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-07-03-01
-title: Extract target readiness policy decisions from artifact availability and target
-  string branches
+title: Extract target readiness policy decisions from artifact availability and target string branches
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,18 +17,13 @@ closeout_review:
 story: ST-SIRCON-07-03
 task_kind: story
 acceptance_criteria:
-- Adding a new target does not require adding target-name branches to `_rows_for_target`
-  or `_accepted_current_state_reason_code`.
-- Item-level readiness rows still carry target, item binding, reason code, `export_enabled`,
-  `teacher_action`, retryability, and message key.
-- Accepted-current-state rows are not part of the durable readiness policy. Existing
-  rows, if still present at task start, are isolated as legacy behavior and removed
-  by Task 337 rather than normalized into the new policy surface.
-- Unsupported multi-gap/open-cloze behavior stays fail-closed unless a governed target
-  profile explicitly supports it.
-- Existing API/artifact contracts and generated OpenAPI schemas remain additive-compatible.
+  - Adding a new target does not require adding target-name branches to `_rows_for_target` or `_accepted_current_state_reason_code`.
+  - Item-level readiness rows still carry target, item binding, reason code, `export_enabled`, `teacher_action`, retryability, and message key.
+  - Accepted-current-state rows are not part of the durable readiness policy. Existing rows, if still present at task start, are isolated as legacy behavior and removed by Task 337 rather than normalized into the new policy surface.
+  - Unsupported multi-gap/open-cloze behavior stays fail-closed unless a governed target profile explicitly supports it.
+  - Existing API/artifact contracts and generated OpenAPI schemas remain additive-compatible.
 retired_ids:
-- task-316-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches
+  - task-316-extract-target-readiness-policy-decisions-from-artifact-availability-and-target-string-branches
 ---
 
 ## Context

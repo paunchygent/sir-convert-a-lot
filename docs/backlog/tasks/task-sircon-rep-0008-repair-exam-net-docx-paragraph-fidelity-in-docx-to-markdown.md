@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0008
 title: Repair Exam.net DOCX paragraph fidelity in docx-to-markdown v2 route
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,13 +16,11 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '- [ ] The v2 `docx -> md` path no longer collapses Exam.net-style paragraph blocks
-  into single paragraphs with literal `\ \` artifacts.'
-- '- [ ] Ordinary DOCX conversions are not broadly reinterpreted; the repair is guarded
-  by a strong content signature.'
-- '- [ ] Focused tests pass for the converter wrapper and repaired output path.'
+  - '- [ ] The v2 `docx -> md` path no longer collapses Exam.net-style paragraph blocks into single paragraphs with literal `\ \` artifacts.'
+  - '- [ ] Ordinary DOCX conversions are not broadly reinterpreted; the repair is guarded by a strong content signature.'
+  - '- [ ] Focused tests pass for the converter wrapper and repaired output path.'
 retired_ids:
-- task-238-repair-exam-net-docx-paragraph-fidelity-in-docx-to-markdown-v2-route
+  - task-238-repair-exam-net-docx-paragraph-fidelity-in-docx-to-markdown-v2-route
 ---
 
 ## Context

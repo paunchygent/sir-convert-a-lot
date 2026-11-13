@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-01-01-01
-title: Scientific-paper workload evidence harness + Hemma tunnel acceptance report
-  (10/10 corpus)
+title: Scientific-paper workload evidence harness + Hemma tunnel acceptance report (10/10 corpus)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,24 +17,14 @@ closeout_review:
 story: ST-SIRCON-01-01
 task_kind: story
 acceptance_criteria:
-- 'Evidence uses this exact external corpus path (do not vendor PDFs into this repo):
-  - `/Users/olofs_mba/Documents/Repos/huleedu/docs/research/research_papers/llm_as_a_annotater`'
-- Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and
-  summary generated under `build/benchmarks/task-12-scientific-corpus/`. All resulting
-  .mds are high quality and pass manual review for accuracy, completeness, and formatting.
-- 'Backend decision for scientific PDFs is explicitly quality-first: - A/B comparison
-  is recorded for available backend paths on the same 10/10 corpus. - Manual review
-  verdict is required for layout fidelity + information retention + legibility. -
-  Latency/throughput are descriptive evidence only and must not auto-select winner/recommendation.'
-- 'Evidence artifacts include: - service revision (git SHA), - backend and acceleration
-  usage, - normalization mode used (width 100 strict strong-reflow when strict selected),
-  - any retries and warnings.'
-- 'Selected backend path remains governance-compatible: - no silent policy bypasses,
-  - deterministic validation behavior for incompatible options, - truthful conversion
-  metadata (`backend_used`, `acceleration_used`, `ocr_enabled`).'
-- Quality gates pass (format/lint/typecheck/tests + docs validators and backlog index).
+  - 'Evidence uses this exact external corpus path (do not vendor PDFs into this repo): - `/Users/olofs_mba/Documents/Repos/huleedu/docs/research/research_papers/llm_as_a_annotater`'
+  - Hemma tunnel acceptance run converts 10/10 PDFs successfully, with artifacts and summary generated under `build/benchmarks/task-12-scientific-corpus/`. All resulting .mds are high quality and pass manual review for accuracy, completeness, and formatting.
+  - 'Backend decision for scientific PDFs is explicitly quality-first: - A/B comparison is recorded for available backend paths on the same 10/10 corpus. - Manual review verdict is required for layout fidelity + information retention + legibility. - Latency/throughput are descriptive evidence only and must not auto-select winner/recommendation.'
+  - 'Evidence artifacts include: - service revision (git SHA), - backend and acceleration usage, - normalization mode used (width 100 strict strong-reflow when strict selected), - any retries and warnings.'
+  - 'Selected backend path remains governance-compatible: - no silent policy bypasses, - deterministic validation behavior for incompatible options, - truthful conversion metadata (`backend_used`, `acceleration_used`, `ocr_enabled`).'
+  - Quality gates pass (format/lint/typecheck/tests + docs validators and backlog index).
 retired_ids:
-- task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus
+  - task-12-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus
 ---
 
 ## Context
@@ -77,8 +66,8 @@ Hemma through the tunnel workflow.
 Lock evaluation priority for this task:
 
 1. Layout fidelity + information retention + legibility.
-1. Stability/reliability under realistic workload conditions.
-1. Latency/throughput as secondary tie-breakers.
+2. Stability/reliability under realistic workload conditions.
+3. Latency/throughput as secondary tie-breakers.
 
 ### Decision Lock (2026-02-14)
 
@@ -86,13 +75,13 @@ Lock evaluation priority for this task:
    - Use dual-lane execution:
      - acceptance lane (production-lock tunnel path),
      - evaluation lane (A/B backend comparison).
-1. Acceptance lane profile (governance-compatible default):
+2. Acceptance lane profile (governance-compatible default):
    - `backend_strategy=auto`
    - `ocr_mode=auto`
    - `table_mode=accurate`
    - `normalize=standard`
    - `acceleration_policy=gpu_required`
-1. Evaluation lane profiles:
+3. Evaluation lane profiles:
    - Docling:
      - `backend_strategy=docling`
      - `ocr_mode=auto`
@@ -105,10 +94,10 @@ Lock evaluation priority for this task:
      - `table_mode=accurate`
      - `normalize=standard`
      - `acceleration_policy=cpu_only`
-1. Artifact policy:
+4. Artifact policy:
    - Generated A/B markdown/meta/json outputs are written under `build/` and are not committed.
    - `docs/reference/` remains reserved for curated, human-maintained reference docs.
-1. Decision policy:
+5. Decision policy:
    - No automatic quality winner or weighted ranking is allowed.
    - Backend selection must come from explicit manual review notes/verdict on generated artifacts.
    - If manual quality winner conflicts with production governance constraints, keep
@@ -120,10 +109,10 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 
 1. Run Hemma verification:
    - `pdm run run-local-pdm hemma-verify-gpu-runtime`
-1. If runtime probe fails (`runtime_kind!=rocm` or `is_available=false`), run remediation:
+2. If runtime probe fails (`runtime_kind!=rocm` or `is_available=false`), run remediation:
    - `pdm run run-local-pdm hemma-repair-rocm-runtime`
-1. Re-run verification and block Task 12 lane execution unless verification passes.
-1. Verification must prove:
+3. Re-run verification and block Task 12 lane execution unless verification passes.
+4. Verification must prove:
    - deterministic probe outcome (`runtime_kind=rocm`, `is_available=true`),
    - successful GPU-required Docling conversion with
      `conversion_metadata.acceleration_used="cuda"`,
@@ -133,10 +122,10 @@ Before any Hemma acceptance/evaluation lane execution, enforce fail-closed GPU r
 ### Execution Plan
 
 1. Add Task 12 harness module and evaluation-only service entrypoint.
-1. Add deterministic output schema/report generation and artifact writing.
-1. Add unit tests for ordering, metrics, lane behavior, decision tie-breakers, and report sections.
-1. Run local quality/docs gates and targeted Hemma lane runs.
-1. Commit evidence JSON/report/artifacts and close-out docs updates.
+2. Add deterministic output schema/report generation and artifact writing.
+3. Add unit tests for ordering, metrics, lane behavior, decision tie-breakers, and report sections.
+4. Run local quality/docs gates and targeted Hemma lane runs.
+5. Commit evidence JSON/report/artifacts and close-out docs updates.
 
 ### PR Scope
 

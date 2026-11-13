@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0006
 title: Repair the Hemma HWE 6.17 package state in an idle window with DKMS evidence and stop rules
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,20 +16,15 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '- [ ] The repair is attempted only when all of the following are true: - no live Task 174 bundle process/container exists
-  - no live Qwen training process/container exists - `/srv/scratch` is writable - Docker is healthy'
-- '- [ ] Pre-repair evidence is captured before the first mutating repair command: - `dpkg --audit` - package states for `linux-*`
-  and `dkms` - `dkms status` - current `amdgpu-dkms` build log tail'
-- '- [ ] First repair step is: - `dpkg --configure --pending`'
-- '- [ ] `apt-get -f install` is used only if package dependency repair is explicitly required after the first `dpkg` pass.'
-- '- [ ] If the repair stops specifically in DKMS for `6.17.0-14-generic`, the operator does not loop `dpkg` blindly and instead
-  captures the DKMS failure evidence before any targeted `dkms autoinstall` attempt.'
-- '- [ ] Success means: - `dpkg --audit` is clean - no `iU`, `iF`, or `it` package states remain for the pending `6.17` HWE
-  line - `dkms status` is consistent with the repaired package state'
-- '- [ ] Failure is still acceptable if it is bounded and documented: - the exact failing DKMS step is captured - package
-  state after the attempt is recorded - no uncontrolled repeated repair loop is performed'
+  - '- [ ] The repair is attempted only when all of the following are true: - no live Task 174 bundle process/container exists - no live Qwen training process/container exists - `/srv/scratch` is writable - Docker is healthy'
+  - '- [ ] Pre-repair evidence is captured before the first mutating repair command: - `dpkg --audit` - package states for `linux-*` and `dkms` - `dkms status` - current `amdgpu-dkms` build log tail'
+  - '- [ ] First repair step is: - `dpkg --configure --pending`'
+  - '- [ ] `apt-get -f install` is used only if package dependency repair is explicitly required after the first `dpkg` pass.'
+  - '- [ ] If the repair stops specifically in DKMS for `6.17.0-14-generic`, the operator does not loop `dpkg` blindly and instead captures the DKMS failure evidence before any targeted `dkms autoinstall` attempt.'
+  - '- [ ] Success means: - `dpkg --audit` is clean - no `iU`, `iF`, or `it` package states remain for the pending `6.17` HWE line - `dkms status` is consistent with the repaired package state'
+  - '- [ ] Failure is still acceptable if it is bounded and documented: - the exact failing DKMS step is captured - package state after the attempt is recorded - no uncontrolled repeated repair loop is performed'
 retired_ids:
-- task-177-repair-the-hemma-hwe-6-17-package-state-in-an-idle-window-with-dkms-evidence-and-stop-rules
+  - task-177-repair-the-hemma-hwe-6-17-package-state-in-an-idle-window-with-dkms-evidence-and-stop-rules
 ---
 
 ## Context
@@ -187,14 +182,14 @@ Capture and persist:
 ### Repair Order
 
 1. `sudo dpkg --configure --pending`
-1. If `dpkg` reports broken dependencies rather than a DKMS-only failure:
+2. If `dpkg` reports broken dependencies rather than a DKMS-only failure:
    - `sudo apt-get -f install`
-1. If the failure is specifically the DKMS path for the pending kernel:
+3. If the failure is specifically the DKMS path for the pending kernel:
    - inspect `dkms status`
    - inspect the `amdgpu-dkms` build log
    - then, and only then:
      - `sudo dkms autoinstall -k 6.17.0-14-generic`
-1. Re-run:
+4. Re-run:
    - `sudo dpkg --configure --pending`
 
 ### Stop Rules

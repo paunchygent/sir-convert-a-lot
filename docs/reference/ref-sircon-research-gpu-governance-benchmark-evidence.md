@@ -4,13 +4,13 @@ id: REF-SIRCON-RESEARCH-gpu-governance-benchmark-evidence
 title: GPU Governance Benchmark Evidence
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 retired_ids:
-- REF-gpu-governance-benchmark-evidence
+  - REF-gpu-governance-benchmark-evidence
 summary: GPU Governance Benchmark Evidence
 ---
 

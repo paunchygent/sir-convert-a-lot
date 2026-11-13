@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-02-02
 title: Activate the Colab H100 Qwen training lane with a CUDA Dockerfile
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,14 +17,14 @@ closeout_review:
 story: ST-SIRCON-05-02
 task_kind: story
 acceptance_criteria:
-- The Colab lane uses a dedicated CUDA image rather than the ROCm image.
-- The repo docs explain when to choose Hemma versus Colab.
-- The CUDA image keeps the same patched Qwen training code path unless a documented
-  CUDA-specific divergence is required.
-- The task records at least one reproducible bounded validation result.
+  - The Colab lane uses a dedicated CUDA image rather than the ROCm image.
+  - The repo docs explain when to choose Hemma versus Colab.
+  - The CUDA image keeps the same patched Qwen training code path unless a documented CUDA-specific divergence is required.
+  - The task records at least one reproducible bounded validation result.
 retired_ids:
-- task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile
+  - task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md
@@ -61,9 +61,9 @@ Source record: docs/backlog/tasks/task-119-activate-the-colab-h100-qwen-training
 > Expected implementation order:
 >
 > 1. define the CUDA image contract and dependency baseline
-> 1. add a bounded smoke or pilot surface for the Colab lane
-> 1. update the runbook with exact lane-selection guidance
-> 1. record one reproducible validation result before calling the lane active
+> 2. add a bounded smoke or pilot surface for the Colab lane
+> 3. update the runbook with exact lane-selection guidance
+> 4. record one reproducible validation result before calling the lane active
 
 ### Expected Colab-Specific Decisions
 

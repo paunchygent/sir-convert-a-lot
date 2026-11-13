@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-04
 title: Benchmark Chatterbox Multilingual Swedish cloning sidecar on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,29 +17,17 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- 'The benchmark uses the official multilingual Chatterbox class rather than an inferred
-  or community-only wrapper: - `chatterbox.mtl_tts.ChatterboxMultilingualTTS`'
-- The benchmark proves whether official `language_id="sv"` synthesis works on Hemma
-  with the approved teacher reference clip.
-- The sidecar exposes the normalized capability contract from ADR-0007 rather than
-  a Chatterbox-native benchmark-only surface.
-- 'Same-language Swedish cloning is benchmarked with: - the approved teacher reference
-  clip, - `language_id="sv"`, - recorded `cfg_weight` and `exaggeration`, - saved
-  `24 kHz` output artifacts.'
-- The benchmark records that Chatterbox does not require a reference transcript for
-  cloning.
-- If cross-language cloning is benchmarked, it uses an explicitly approved English
-  reference clip and records the official Chatterbox guidance to set `cfg_weight=0`
-  to reduce accent bleed.
-- 'The benchmark records actual Hemma runtime truth instead of assumptions: - model
-  download/cache behavior, - package/runtime versions, - GPU memory/utilization, -
-  synthesis latency.'
-- Watermarking is recorded explicitly as a production-governance consideration because
-  the official model embeds PerTh watermarks in generated output.
-- 'The task ends with a clear recommendation: - Chatterbox becomes the new lead Swedish
-  cloning candidate, or - Chatterbox is rejected with explicit evidence.'
+  - 'The benchmark uses the official multilingual Chatterbox class rather than an inferred or community-only wrapper: - `chatterbox.mtl_tts.ChatterboxMultilingualTTS`'
+  - The benchmark proves whether official `language_id="sv"` synthesis works on Hemma with the approved teacher reference clip.
+  - The sidecar exposes the normalized capability contract from ADR-0007 rather than a Chatterbox-native benchmark-only surface.
+  - 'Same-language Swedish cloning is benchmarked with: - the approved teacher reference clip, - `language_id="sv"`, - recorded `cfg_weight` and `exaggeration`, - saved `24 kHz` output artifacts.'
+  - The benchmark records that Chatterbox does not require a reference transcript for cloning.
+  - If cross-language cloning is benchmarked, it uses an explicitly approved English reference clip and records the official Chatterbox guidance to set `cfg_weight=0` to reduce accent bleed.
+  - 'The benchmark records actual Hemma runtime truth instead of assumptions: - model download/cache behavior, - package/runtime versions, - GPU memory/utilization, - synthesis latency.'
+  - Watermarking is recorded explicitly as a production-governance consideration because the official model embeds PerTh watermarks in generated output.
+  - 'The task ends with a clear recommendation: - Chatterbox becomes the new lead Swedish cloning candidate, or - Chatterbox is rejected with explicit evidence.'
 retired_ids:
-- task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma
+  - task-86-benchmark-chatterbox-multilingual-swedish-cloning-sidecar-on-hemma
 ---
 
 ## Context

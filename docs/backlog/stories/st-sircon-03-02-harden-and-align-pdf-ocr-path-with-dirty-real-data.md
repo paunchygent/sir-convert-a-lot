@@ -4,8 +4,8 @@ id: ST-SIRCON-03-02
 title: Harden and align PDF OCR path with dirty real-data performance gate
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,48 +18,14 @@ epic: EPIC-SIRCON-03
 links:
   decisions: []
 acceptance_criteria:
-- 'The review finding is closed with a deterministic regression test: - a PDF OCR
-  job with all chunks already checkpointed finalizes without reprocessing, - terminal
-  metadata still reports truthful `backend_used`, `acceleration_used`, `ocr_enabled`,
-  `ocr_engine_used`, `ocr_languages_used`, warnings, and phase timings.'
-- 'Checkpoint state can explain terminal OCR metadata: - per-chunk or explicitly aggregated
-  metadata is persisted, - mixed OCR/non-OCR chunk outcomes are represented without
-  lying, - resumed/finalized jobs are byte-identical to the canonical artifact.'
-- 'OCR metadata contract is aligned: - v2 API docs, CLI docs, result payloads, smoke
-  evidence, and tests agree on the same field names and null/empty-list semantics,
-  - result `ocr_languages_used` is `[]` for PDF routes where OCR was applicable but
-  not executed, and `null` only where OCR is not applicable, - completed Story 21
-  and Task 77 docs no longer publish false guarantees for `ocr_languages_requested`
-  or `ocr_acceleration_used`, - Task 269 applies selected Outcome B by explicitly
-  deferring or superseding both fields everywhere they appear in active/completed
-  contract language.'
-- 'The real-data gate exists and is mandatory: - a corpus manifest describes each
-  dirty input class, page count, source hash, OCR language expectation, and privacy/sanitization
-  state, - at least one benchmark report is generated from hard/dirty real PDFs, -
-  the report records `source_hashes_verified=true` and `executed_entry_count=entry_count`,
-  - story completion is blocked if only synthetic fixtures have been run.'
-- 'Performance requirements are hard gates: - accepted benchmark evidence runs against
-  the production service on Hemma, - the Task 271 production-service result is the
-  current baseline for follow-up optimization; do not rerun a serial baseline unless
-  a later governed decision explicitly asks for it, - Task 273 evaluates `chunk_size_pages=8`
-  against the Task 271 baseline with warm-up excluded and credible GPU/resource sampling,
-  - the operator 150 PDF-page proof target remains visible: \<= 60 minutes on the
-  tuned Hemma profile for a manifest-verified dirty corpus with at least 150 executed
-  PDF pages unless a later governed decision revises it, - dirty-corpus benchmarking
-  extends the Task 74 report schema and command surface, - Task 76 parity evidence
-  is required for the exact revision under benchmark, - unsafe profiles, including
-  the removed 4-worker ROCm HIP OOM profile, fail closed unless Task 74 is updated
-  by a later governed decision.'
-- 'Quality requirements are hard gates: - Swedish diacritics survive OCR in real dirty
-  inputs where expected, - `<!-- formula-not-decoded -->` markers are repaired through
-  a bounded formula-aware final pass or reported as explicit residual quality debt,
-  - bare `<!-- image -->` placeholders are replaced with linked retained image/object
-  artifacts when extractable visual content exists, - low-confidence/sparse output
-  and OCR retry warnings are visible in reports, - failures are classified by input
-  quality, engine/runtime availability, timeout, GPU/resource pressure, or conversion
-  bug.'
+  - 'The review finding is closed with a deterministic regression test: - a PDF OCR job with all chunks already checkpointed finalizes without reprocessing, - terminal metadata still reports truthful `backend_used`, `acceleration_used`, `ocr_enabled`, `ocr_engine_used`, `ocr_languages_used`, warnings, and phase timings.'
+  - 'Checkpoint state can explain terminal OCR metadata: - per-chunk or explicitly aggregated metadata is persisted, - mixed OCR/non-OCR chunk outcomes are represented without lying, - resumed/finalized jobs are byte-identical to the canonical artifact.'
+  - 'OCR metadata contract is aligned: - v2 API docs, CLI docs, result payloads, smoke evidence, and tests agree on the same field names and null/empty-list semantics, - result `ocr_languages_used` is `[]` for PDF routes where OCR was applicable but not executed, and `null` only where OCR is not applicable, - completed Story 21 and Task 77 docs no longer publish false guarantees for `ocr_languages_requested` or `ocr_acceleration_used`, - Task 269 applies selected Outcome B by explicitly deferring or superseding both fields everywhere they appear in active/completed contract language.'
+  - 'The real-data gate exists and is mandatory: - a corpus manifest describes each dirty input class, page count, source hash, OCR language expectation, and privacy/sanitization state, - at least one benchmark report is generated from hard/dirty real PDFs, - the report records `source_hashes_verified=true` and `executed_entry_count=entry_count`, - story completion is blocked if only synthetic fixtures have been run.'
+  - 'Performance requirements are hard gates: - accepted benchmark evidence runs against the production service on Hemma, - the Task 271 production-service result is the current baseline for follow-up optimization; do not rerun a serial baseline unless a later governed decision explicitly asks for it, - Task 273 evaluates `chunk_size_pages=8` against the Task 271 baseline with warm-up excluded and credible GPU/resource sampling, - the operator 150 PDF-page proof target remains visible: \<= 60 minutes on the tuned Hemma profile for a manifest-verified dirty corpus with at least 150 executed PDF pages unless a later governed decision revises it, - dirty-corpus benchmarking extends the Task 74 report schema and command surface, - Task 76 parity evidence is required for the exact revision under benchmark, - unsafe profiles, including the removed 4-worker ROCm HIP OOM profile, fail closed unless Task 74 is updated by a later governed decision.'
+  - 'Quality requirements are hard gates: - Swedish diacritics survive OCR in real dirty inputs where expected, - `<!-- formula-not-decoded -->` markers are repaired through a bounded formula-aware final pass or reported as explicit residual quality debt, - bare `<!-- image -->` placeholders are replaced with linked retained image/object artifacts when extractable visual content exists, - low-confidence/sparse output and OCR retry warnings are visible in reports, - failures are classified by input quality, engine/runtime availability, timeout, GPU/resource pressure, or conversion bug.'
 retired_ids:
-- story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate
+  - story-39-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate
 ---
 
 ## Context
@@ -172,21 +138,21 @@ record the outcome in the relevant task doc:
    - Option B: add per-chunk metadata and derive terminal aggregate metadata.
    - Recommendation: Option B. It preserves chunk provenance, supports mixed OCR
      outcomes, and keeps resume/finalization auditable.
-1. Real-data corpus handling:
+2. Real-data corpus handling:
    - Option A: commit sanitized PDFs only.
    - Option B: use a private operator corpus with a committed manifest schema
      and sanitized benchmark reports.
    - Recommendation: Option B plus a tiny committed fixture set for unit
      regressions. The production performance claim must come from real dirty
      data without committing private documents.
-1. Performance gate placement:
+3. Performance gate placement:
    - Option A: keep this story as a correctness-only blocker and leave all
      performance proof to Task 74.
    - Option B: make dirty real-data performance a hard gate for this story and
      let Task 74 publish the final tuning report from the same evidence.
    - Recommendation: Option B. The OCR path is not aligned until it survives the
      corpus that will actually hurt it.
-1. OCR metadata contract drift:
+4. OCR metadata contract drift:
    - Decision: use Task 269 Outcome B.
    - Rationale: `ocr_languages_requested` is request/configuration echo already
      represented by `pdf_options.ocr_languages`, while

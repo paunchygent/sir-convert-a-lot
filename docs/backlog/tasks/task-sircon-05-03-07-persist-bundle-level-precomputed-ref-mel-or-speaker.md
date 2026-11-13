@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-03-07
 title: Persist bundle-level precomputed ref-mel or speaker-embedding inputs for Task 101
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,11 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- '- [ ] Runtime `ref_mel` extraction no longer appears as a dominant hot-path operation in bounded profiling traces.'
-- '- [ ] Bounded Hemma run with precomputed inputs improves steady-state train GPU median over the `T161` cache-on baseline.'
-- '- [x] Contracts and local docs remain explicit about artifact provenance and deterministic bundle ownership.'
+  - '- [ ] Runtime `ref_mel` extraction no longer appears as a dominant hot-path operation in bounded profiling traces.'
+  - '- [ ] Bounded Hemma run with precomputed inputs improves steady-state train GPU median over the `T161` cache-on baseline.'
+  - '- [x] Contracts and local docs remain explicit about artifact provenance and deterministic bundle ownership.'
 retired_ids:
-- task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101
+  - task-173-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101
 ---
 
 ## Context

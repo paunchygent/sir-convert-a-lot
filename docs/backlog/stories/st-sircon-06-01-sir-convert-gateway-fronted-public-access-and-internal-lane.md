@@ -4,8 +4,8 @@ id: ST-SIRCON-06-01
 title: Sir Convert gateway-fronted public access and internal lane migration
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,18 +18,16 @@ epic: EPIC-SIRCON-06
 links:
   decisions: []
 acceptance_criteria:
-- HuleEdu and Skriptoteket consumer cutover decisions are recorded.
-- Direct public conversion routes are removed, blocked, or deliberately reduced after
-  consumers move.
-- Browser-derived backend jobs do not collapse to global service-key ownership.
-- Internal and local operator lanes remain usable.
-- Public-edge and default-host behavior remain fail-closed.
-- Pre-final testing keeps the direct public Sir Convert web surface disabled or fail-closed.
-- Final live testing deliberately re-enables the intended public edge and proves only
-  approved Gateway/internal/operator lanes work.
-- Final proof covers all target lanes.
+  - HuleEdu and Skriptoteket consumer cutover decisions are recorded.
+  - Direct public conversion routes are removed, blocked, or deliberately reduced after consumers move.
+  - Browser-derived backend jobs do not collapse to global service-key ownership.
+  - Internal and local operator lanes remain usable.
+  - Public-edge and default-host behavior remain fail-closed.
+  - Pre-final testing keeps the direct public Sir Convert web surface disabled or fail-closed.
+  - Final live testing deliberately re-enables the intended public edge and proves only approved Gateway/internal/operator lanes work.
+  - Final proof covers all target lanes.
 retired_ids:
-- story-33-sir-convert-gateway-fronted-public-access-and-internal-lane-migration
+  - story-33-sir-convert-gateway-fronted-public-access-and-internal-lane-migration
 ---
 
 ## Context

@@ -4,15 +4,16 @@ id: REF-SIRCON-RESEARCH-espeak-ng-swedish-phoneme-integration-research-for-chatt
 title: eSpeak NG Swedish Phoneme Integration Research for Chatterbox
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 retired_ids:
-- REF-espeak-ng-swedish-phoneme-integration-for-chatterbox
+  - REF-espeak-ng-swedish-phoneme-integration-for-chatterbox
 summary: eSpeak NG Swedish Phoneme Integration Research for Chatterbox
 ---
+
 ## Research Purpose And Boundary
 
 Source record: docs/reference/ref-espeak-ng-swedish-phoneme-integration-for-chatterbox.md
@@ -114,15 +115,15 @@ Source record: docs/reference/ref-espeak-ng-swedish-phoneme-integration-for-chat
 >    - confirm API reality
 >    - confirm Swedish verification steps
 >    - decide the integration boundary
-> 1. follow-on design task:
+> 2. follow-on design task:
 >    - define the exact repo contract for optional phoneme preprocessing
 >    - document whether the output is phoneme text, alternate normalized text, or
 >      benchmark-only evidence
-> 1. implementation task:
+> 3. implementation task:
 >    - add the bounded preprocessing surface in the chosen boundary
-> 1. benchmark task:
+> 4. benchmark task:
 >    - run Swedish A/B comparisons against the current Chatterbox baseline
-> 1. follow-on quality task:
+> 5. follow-on quality task:
 >    - add sentence and prosodic segmentation
 >    - add chunk batching
 >    - add deterministic stitching or cross-fade

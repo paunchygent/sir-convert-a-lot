@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-04-02
 title: Migrate Qwen Training and Detached Orchestration to Domain-Centric Modules
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,11 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-04
 task_kind: story
 acceptance_criteria:
-- '[ ] All training logic is located under `ml/qwen/training/`.'
-- '[ ] Training unit tests pass after import refactoring.'
-- '[ ] Training logic remains behaviorally identical to the task-prefixed version.'
+  - '[ ] All training logic is located under `ml/qwen/training/`.'
+  - '[ ] Training unit tests pass after import refactoring.'
+  - '[ ] Training logic remains behaviorally identical to the task-prefixed version.'
 retired_ids:
-- task-168-migrate-qwen-training-and-detached-orchestration-to-domain-centric-modules
+  - task-168-migrate-qwen-training-and-detached-orchestration-to-domain-centric-modules
 ---
 
 ## Context

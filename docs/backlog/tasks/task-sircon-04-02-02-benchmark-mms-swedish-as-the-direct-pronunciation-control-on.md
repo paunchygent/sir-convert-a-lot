@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-02
 title: Benchmark MMS Swedish as the direct-pronunciation control on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,17 +17,15 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- MMS Swedish sidecar boots on Hemma and synthesizes Swedish sample text deterministically.
-- The sidecar exposes the normalized capability contract from ADR-0007 and explicitly
-  reports cloning as unsupported in `/capabilities`.
-- Evidence records runtime/dependency reality, cache/storage layout, and sample artifacts.
-- Report explicitly states that lack of cloning keeps MMS Swedish out of primary backend
-  consideration even if pronunciation quality is strong.
-- The task produces a control baseline that helps compare OpenVoice V2 and XTTS-v2
-  against direct Swedish narration quality.
+  - MMS Swedish sidecar boots on Hemma and synthesizes Swedish sample text deterministically.
+  - The sidecar exposes the normalized capability contract from ADR-0007 and explicitly reports cloning as unsupported in `/capabilities`.
+  - Evidence records runtime/dependency reality, cache/storage layout, and sample artifacts.
+  - Report explicitly states that lack of cloning keeps MMS Swedish out of primary backend consideration even if pronunciation quality is strong.
+  - The task produces a control baseline that helps compare OpenVoice V2 and XTTS-v2 against direct Swedish narration quality.
 retired_ids:
-- task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma
+  - task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md

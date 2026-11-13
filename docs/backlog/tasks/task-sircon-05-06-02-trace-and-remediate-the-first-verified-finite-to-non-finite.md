@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-06-02
-title: Trace and remediate the first verified finite-to-non-finite divergence before
-  resuming Story 31 stabilizer candidates
+title: Trace and remediate the first verified finite-to-non-finite divergence before resuming Story 31 stabilizer candidates
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,15 +17,13 @@ closeout_review:
 story: ST-SIRCON-05-06
 task_kind: story
 acceptance_criteria:
-- '- [ ] The task acts only on a divergence that `T226` verified at a named checkpoint.'
-- '- [ ] Any remediation is the smallest justified patch, not a broad recipe sweep.'
-- '- [ ] If no divergence is verified, the docs explicitly say so and return the lane
-  to `T219`.'
-- '- [ ] `T217` remains blocked regardless of the outcome of this task alone.'
-- '- [ ] The result is recorded in Story 31, `current.md`, and the Task 101 live ledger
-  before downstream work resumes.'
+  - '- [ ] The task acts only on a divergence that `T226` verified at a named checkpoint.'
+  - '- [ ] Any remediation is the smallest justified patch, not a broad recipe sweep.'
+  - '- [ ] If no divergence is verified, the docs explicitly say so and return the lane to `T219`.'
+  - '- [ ] `T217` remains blocked regardless of the outcome of this task alone.'
+  - '- [ ] The result is recorded in Story 31, `current.md`, and the Task 101 live ledger before downstream work resumes.'
 retired_ids:
-- task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates
+  - task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates
 ---
 
 ## Context

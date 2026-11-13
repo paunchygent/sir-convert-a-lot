@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-03
-title: Persist precomputed Qwen reference mels in the pilot bundle and training manifest
-  contract
+title: Persist precomputed Qwen reference mels in the pilot bundle and training manifest contract
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,13 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- '[ ] The task lands only if `T161` documented that cache-only is insufficient.'
-- "[ ] The deterministic pilot-bundle contract remains reviewable and\n  relocation-safe\
-  \ after the new artifact family is added."
-- "[ ] A bounded Hemma comparison shows that precomputed bundle-level mels\n  materially\
-  \ improve throughput over runtime-only mel extraction."
+  - '[ ] The task lands only if `T161` documented that cache-only is insufficient.'
+  - "[ ] The deterministic pilot-bundle contract remains reviewable and\n  relocation-safe after the new artifact family is added."
+  - "[ ] A bounded Hemma comparison shows that precomputed bundle-level mels\n  materially improve throughput over runtime-only mel extraction."
 retired_ids:
-- task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract
+  - task-164-persist-precomputed-task-101-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract
 ---
 
 ## Context
@@ -124,35 +121,49 @@ residual risk. The `closeout_review` frontmatter mapping is the machine authorit
 for gate status and approval evidence.
 
 PR-sized execution unit; may be linked to a story or standalone.
+
 ### Objective
+
 Expand the Task 101 pilot-bundle contract to include precomputed reference mels only if the earlier cache-and-dataloader tasks still fail to meet the story’s saturation target.
+
 ### Why This Exists
+
 `T161` is the intentionally lower-risk first attempt to eliminate duplicate `ref_mel` work. If cache-only optimization still leaves the steady-state GPU busy below the story gate, the next coherent move is to precompute and persist the reference mels in the deterministic pilot bundle rather than recomputing them at runtime forever.
+
 ### PR Scope
+
 - Extend the deterministic Task 101 pilot-bundle materialization path to write
-precomputed reference-mel artifacts for the stable canonical speaker refs.
+  precomputed reference-mel artifacts for the stable canonical speaker refs.
 - Extend the prepared-manifest or related training-row contract so the trainer
-can load precomputed mels when present.
+  can load precomputed mels when present.
 - Keep legacy bundle compatibility explicit:
   - either via fallback runtime mel extraction,
   - or via a fail-closed contract bump that is clearly documented.
 - Measure the storage impact and bundle-build cost of the new artifact family.
+
 ### Non-Goals
+
 - Do not open this task before `T161` explicitly concludes that cache-only is
-insufficient.
+  insufficient.
 - Do not broaden the bundle contract to unrelated feature tensors here.
+
 ### Deliverables
+
 - [ ] Precomputed reference-mel artifact contract defined.
 - [ ] Task 101 bundle builder writes the new artifacts.
 - [ ] Task 101 trainer consumes precomputed mels when available.
 - [ ] Storage-cost and throughput evidence are documented.
+
 ### Acceptance Criteria
+
 - [ ] The task lands only if `T161` documented that cache-only is insufficient.
 - [ ] The deterministic pilot-bundle contract remains reviewable and
-relocation-safe after the new artifact family is added.
+  relocation-safe after the new artifact family is added.
 - [ ] A bounded Hemma comparison shows that precomputed bundle-level mels
-materially improve throughput over runtime-only mel extraction.
+  materially improve throughput over runtime-only mel extraction.
+
 ### Validation
+
 - [ ] `pdm run format-all`
 - [ ] `pdm run lint-fix`
 - [ ] `pdm run typecheck-all`
@@ -161,7 +172,9 @@ materially improve throughput over runtime-only mel extraction.
 - [ ] `pdm run validate-docs`
 - [ ] `pdm run index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
 - [ ] Bounded Hemma evidence records bundle-size cost and runtime gain.
+
 ### Checklist
+
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated

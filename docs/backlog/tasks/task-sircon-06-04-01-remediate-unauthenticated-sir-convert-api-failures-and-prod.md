@@ -4,8 +4,8 @@ id: TASK-SIRCON-06-04-01
 title: Remediate unauthenticated Sir Convert API failures and prod metadata exposure
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,12 +17,12 @@ closeout_review:
 story: ST-SIRCON-06-04
 task_kind: story
 acceptance_criteria:
-- '- [ ] No unauthenticated API request returns `500`.'
-- '- [ ] Public production docs/OpenAPI/metrics are blocked or gated.'
-- '- [ ] Detailed readiness metadata is no longer broadly public unless ADR-0009 explicitly keeps a reduced public status.'
-- '- [ ] Standard security headers are present.'
+  - '- [ ] No unauthenticated API request returns `500`.'
+  - '- [ ] Public production docs/OpenAPI/metrics are blocked or gated.'
+  - '- [ ] Detailed readiness metadata is no longer broadly public unless ADR-0009 explicitly keeps a reduced public status.'
+  - '- [ ] Standard security headers are present.'
 retired_ids:
-- task-258-fix-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure
+  - task-258-fix-unauthenticated-sir-convert-api-failures-and-prod-metadata-exposure
 ---
 
 ## Context

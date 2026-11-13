@@ -4,14 +4,14 @@ id: RUN-SIRCON-chatterbox-multilingual-tuning-runbook-for-hemma
 title: Chatterbox Multilingual Tuning Runbook for Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 summary: Chatterbox Multilingual Tuning Runbook for Hemma
 system: hemma.hule.education
 retired_ids:
-- RUN-chatterbox-multilingual-tuning-on-hemma
+  - RUN-chatterbox-multilingual-tuning-on-hemma
 ---
 
 ## Trigger
@@ -200,7 +200,7 @@ This is a quality-first tuning runbook, not a latency-minimization runbook.
 For future maximal-quality work, this runbook now has two phases:
 
 1. tune the current single-pass path
-1. implement segmentation, batching, and stitching as a separate follow-on
+2. implement segmentation, batching, and stitching as a separate follow-on
    slice
 
 ### Task 89 Result and Current Decision
@@ -470,13 +470,13 @@ reference audio path must also be captured in the report.
 Use this order when judging a tuning lane:
 
 1. Confirm the lane stayed on the official multilingual runtime.
-1. Confirm the lane used the intended Swedish-only probe text.
-1. Confirm only one tuning variable changed.
-1. Listen for:
+2. Confirm the lane used the intended Swedish-only probe text.
+3. Confirm only one tuning variable changed.
+4. Listen for:
    - cloning similarity
    - Swedish intelligibility
    - pacing
    - start/end artifacts
    - instability or accent bleed
-1. Keep the winning lane only if it is audibly better than the baseline,
+5. Keep the winning lane only if it is audibly better than the baseline,
    not merely different.

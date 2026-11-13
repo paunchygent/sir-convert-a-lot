@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-08
 title: Expose F5 tuning controls and exact voice-tag support on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,19 +17,13 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- '`benchmark:f5-tts-smoke` accepts and records `speed`, `fix_duration`, `cross_fade_duration`,
-  `target_rms`, and `load_vocoder_from_local`.'
-- The generated F5 TOML can use file-backed prompt text (`gen_file`) while preserving
-  the normalized sidecar contract.
-- 'The docs record the exact accepted voice-tag form from the installed CLI: `[voice_name]`
-  with names constrained by the upstream regex rather than an inferred free-form tag
-  syntax.'
-- The implementation does not falsely claim support for paralinguistic tags, SSML,
-  or IPA unless code-grounded evidence exists in the installed upstream runtime.
-- One new Hemma sample is generated with the Christian Hedlund reference clip and
-  synced locally for listening review.
+  - '`benchmark:f5-tts-smoke` accepts and records `speed`, `fix_duration`, `cross_fade_duration`, `target_rms`, and `load_vocoder_from_local`.'
+  - The generated F5 TOML can use file-backed prompt text (`gen_file`) while preserving the normalized sidecar contract.
+  - 'The docs record the exact accepted voice-tag form from the installed CLI: `[voice_name]` with names constrained by the upstream regex rather than an inferred free-form tag syntax.'
+  - The implementation does not falsely claim support for paralinguistic tags, SSML, or IPA unless code-grounded evidence exists in the installed upstream runtime.
+  - One new Hemma sample is generated with the Christian Hedlund reference clip and synced locally for listening review.
 retired_ids:
-- task-95-expose-f5-tuning-controls-and-exact-voice-tag-support-on-hemma
+  - task-95-expose-f5-tuning-controls-and-exact-voice-tag-support-on-hemma
 ---
 
 ## Context

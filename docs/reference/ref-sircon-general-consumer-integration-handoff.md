@@ -4,13 +4,13 @@ id: REF-SIRCON-GENERAL-consumer-integration-handoff
 title: Consumer Integration Handoff
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 retired_ids:
-- REF-consumer-integration-handoff
+  - REF-consumer-integration-handoff
 summary: Consumer Integration Handoff
 ---
 
@@ -85,11 +85,11 @@ with SirConvertALotClientV2(base_url="http://127.0.0.1:28085", api_key="...") as
 ### Consumer Adoption Checklist
 
 1. Import adapter profile helpers from this repo or mirror exactly.
-1. Bind profile explicitly (`huledu` or `skriptoteket`).
-1. Route submit/poll/result via canonical Service API v2 endpoints.
-1. Preserve returned `job_id` for background completion workflows.
-1. Run conformance scenarios against canonical service before merge.
-1. Validate demanding scientific-paper workload in consumer context before Story 003c close-out.
+2. Bind profile explicitly (`huledu` or `skriptoteket`).
+3. Route submit/poll/result via canonical Service API v2 endpoints.
+4. Preserve returned `job_id` for background completion workflows.
+5. Run conformance scenarios against canonical service before merge.
+6. Validate demanding scientific-paper workload in consumer context before Story 003c close-out.
 
 ### Validation and Smoke Flow
 
@@ -100,9 +100,9 @@ Primary gate (automated):
 Supporting smoke path (manual, non-invasive):
 
 1. Start/verify service on Hemma according to runbook.
-1. Open local tunnel:
+2. Open local tunnel:
    - `ssh hemma -L 28085:127.0.0.1:28085 -N`
-1. Submit sample file with adapter helper and verify:
+3. Submit sample file with adapter helper and verify:
    - `submit -> poll -> result` succeeds
    - correlation behavior and error propagation match contract
 

@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-02-01
-title: Profile the Qwen finetuning dataloader and decide whether to precompute ref
-  mels
+title: Profile the Qwen finetuning dataloader and decide whether to precompute ref mels
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-02
 task_kind: story
 acceptance_criteria:
-- The task records real timing/profiling evidence rather than intuition.
-- The decision explicitly covers GPU starvation risk, CPU cost, and storage impact.
-- 'The result clearly says one of: - keep current runtime mel extraction, - implement
-  Task 103 precompute in a later PR.'
-- The runbook/reference docs are updated if the recommendation changes the planned
-  architecture.
+  - The task records real timing/profiling evidence rather than intuition.
+  - The decision explicitly covers GPU starvation risk, CPU cost, and storage impact.
+  - 'The result clearly says one of: - keep current runtime mel extraction, - implement Task 103 precompute in a later PR.'
+  - The runbook/reference docs are updated if the recommendation changes the planned architecture.
 retired_ids:
-- task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels
+  - task-118-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels
 ---
 
 ## Context
@@ -96,9 +93,9 @@ This task should land as an evidence PR, not an architecture-change PR.
 The planned execution order is:
 
 1. add lightweight timing/profiling hooks around the current dataloader path
-1. collect one bounded Hemma training trace on the current runtime
-1. decide whether the current lane is actually GPU-starved
-1. only then decide whether a follow-up implementation task is justified
+2. collect one bounded Hemma training trace on the current runtime
+3. decide whether the current lane is actually GPU-starved
+4. only then decide whether a follow-up implementation task is justified
 
 The expected result is one of:
 

@@ -4,13 +4,13 @@ id: REF-SIRCON-RESEARCH-pdf-parallel-throughput-evidence
 title: PDF Parallel Throughput Evidence
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 retired_ids:
-- REF-pdf-parallel-throughput-evidence
+  - REF-pdf-parallel-throughput-evidence
 summary: PDF Parallel Throughput Evidence
 ---
 

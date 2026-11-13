@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-01-02
 title: Split Qwen preprocessing into disk-backed row processing and finalization
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,17 +17,15 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- Row preprocessing persists durable row records to disk as work completes.
-- Finalization consumes disk-backed row results rather than requiring a whole-run
-  in-memory accumulator.
-- The canonical artifact layout remains deterministic and documented.
-- The containerized Hemma runtime remains the only supported execution unit for this
-  lane.
-- The task documents restart and rerun expectations clearly enough for later `rixvox`
-  scale-up work.
+  - Row preprocessing persists durable row records to disk as work completes.
+  - Finalization consumes disk-backed row results rather than requiring a whole-run in-memory accumulator.
+  - The canonical artifact layout remains deterministic and documented.
+  - The containerized Hemma runtime remains the only supported execution unit for this lane.
+  - The task documents restart and rerun expectations clearly enough for later `rixvox` scale-up work.
 retired_ids:
-- task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization
+  - task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-backed-row-processing-and-finalization.md
@@ -134,10 +132,10 @@ Source record: docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-ba
 >    - allocate one immutable run id and run root on scratch
 >    - write `run.json` and initial `status.json`
 >    - do not write directly into the canonical shared corpus path
-> 1. inventory
+> 2. inventory
 >    - deterministic source-row inventory only
 >    - no Whisper, no Qwen tokenizer work
-> 1. row-processing
+> 3. row-processing
 >    - one row at a time from source row to durable spool record
 >    - outputs:
 >      - normalized `audio_24k`
@@ -148,15 +146,15 @@ Source record: docs/backlog/tasks/task-110-split-qwen-preprocessing-into-disk-ba
 >      - speaker-quality gate
 >      - manifest-family targets
 >      - row-complete spool record
-> 1. curated projection
+> 4. curated projection
 >    - rebuild `curated/*.jsonl` from the durable spool only
-> 1. manifest finalization
+> 5. manifest finalization
 >    - rebuild raw/prepared manifests from the durable spool only
 >    - generate `audio_codes` in bounded chunks, never as one family-sized
 >      all-at-once batch
-> 1. reports
+> 6. reports
 >    - write report surfaces last from deterministic on-disk state
-> 1. promotion
+> 7. promotion
 >    - only after successful completion
 >    - update the canonical shared corpus pointer or promoted tree
 >    - failed runs are never promoted

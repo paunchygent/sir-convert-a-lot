@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-01-02
 title: Live-validate Granite answer-key completion on versioned DigiExam DXE corpus
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,45 +17,27 @@ closeout_review:
 story: ST-SIRCON-08-01
 task_kind: story
 acceptance_criteria:
-- The validation corpus uses only the versioned pure DigiExam DXE fixture set at `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/`.
-- The moved raw `.dxe` files are committed as the versioned fixture corpus; manifest-only
-  validation is not an acceptable substitute.
-- Every scored item has a teacher-verified golden; schema success without a golden
-  is reported separately and is not counted as correctness.
-- Multiple-choice and multiple-response requests use vLLM `choice` values whenever
-  candidate selection is clear and bounded.
-- Hemma preflight proves remote revision, ROCm/GPU state, scratch-backed cache path,
-  port `8017`, vLLM `/v1/models`, disabled request logging, localhost-only exposure,
-  and no CPU fallback.
-- Long-run execution uses a committed detached runner/status surface and retains structured
-  reports outside git.
-- The persistent Granite/vLLM container is left running after validation, with status,
-  hardening evidence, and explicit stop instructions documented for later operator
-  use.
-- The full corpus validation runs in-process first, and a small deployed service-backed
-  smoke proves the service path without making auth/public-edge readiness a first-pass
-  variable.
-- A successful first pass produces or updates the follow-up plan for a strict service-backed
-  mirror validation where auth/public-edge readiness is intentionally included.
-- Task 309's initial run does not use force-eval over source-keyed items; any force-eval
-  mode is reserved for the later service-backed mirror validation and must be explicit.
-- Detached resource monitoring runs alongside the live validation and is linked from
-  the retained report.
-- Advisory mode produces no source IR mutation and no effective IR mutation.
-- Retained artifacts contain zero raw prompts and zero raw provider responses.
-- Malformed output is never counted as success.
-- Unknown IDs and duplicate IDs are counted explicitly and must be zero for promotion.
-- Wrong-but-valid answers are the primary safety metric; promotion should require
-  zero wrong-but-valid answers unless a later governed decision accepts a narrower
-  risk posture.
-- Manual follow-up is acceptable and safer than plausible wrong answer-key completion.
-- Persistent failure paths are documented across the run without item-specific prompt
-  tweaking. Any retry policy must be generalized by item type or failure class in
-  a later governed task.
-- The reviewed-apply probe proves apply mode does not call the provider and writes
-  only effective answer-key provenance and candidate lineage.
+  - The validation corpus uses only the versioned pure DigiExam DXE fixture set at `inputs/examples/digiexam-dxe-fixtures/2026-05-12-onedrive-pure-dxe/`.
+  - The moved raw `.dxe` files are committed as the versioned fixture corpus; manifest-only validation is not an acceptable substitute.
+  - Every scored item has a teacher-verified golden; schema success without a golden is reported separately and is not counted as correctness.
+  - Multiple-choice and multiple-response requests use vLLM `choice` values whenever candidate selection is clear and bounded.
+  - Hemma preflight proves remote revision, ROCm/GPU state, scratch-backed cache path, port `8017`, vLLM `/v1/models`, disabled request logging, localhost-only exposure, and no CPU fallback.
+  - Long-run execution uses a committed detached runner/status surface and retains structured reports outside git.
+  - The persistent Granite/vLLM container is left running after validation, with status, hardening evidence, and explicit stop instructions documented for later operator use.
+  - The full corpus validation runs in-process first, and a small deployed service-backed smoke proves the service path without making auth/public-edge readiness a first-pass variable.
+  - A successful first pass produces or updates the follow-up plan for a strict service-backed mirror validation where auth/public-edge readiness is intentionally included.
+  - Task 309's initial run does not use force-eval over source-keyed items; any force-eval mode is reserved for the later service-backed mirror validation and must be explicit.
+  - Detached resource monitoring runs alongside the live validation and is linked from the retained report.
+  - Advisory mode produces no source IR mutation and no effective IR mutation.
+  - Retained artifacts contain zero raw prompts and zero raw provider responses.
+  - Malformed output is never counted as success.
+  - Unknown IDs and duplicate IDs are counted explicitly and must be zero for promotion.
+  - Wrong-but-valid answers are the primary safety metric; promotion should require zero wrong-but-valid answers unless a later governed decision accepts a narrower risk posture.
+  - Manual follow-up is acceptable and safer than plausible wrong answer-key completion.
+  - Persistent failure paths are documented across the run without item-specific prompt tweaking. Any retry policy must be generalized by item type or failure class in a later governed task.
+  - The reviewed-apply probe proves apply mode does not call the provider and writes only effective answer-key provenance and candidate lineage.
 retired_ids:
-- task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus
+  - task-309-live-validate-granite-answer-key-completion-on-versioned-digiexam-dxe-corpus
 ---
 
 ## Context

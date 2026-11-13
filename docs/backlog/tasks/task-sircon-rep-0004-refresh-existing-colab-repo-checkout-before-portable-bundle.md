@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0004
 title: Refresh existing Colab repo checkout before portable bundle lookup
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,13 +16,11 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- "[x] Re-entering the notebook from an already-cloned `/content/sir-convert-a-lot`\n\
-  \  path performs `fetch` / `checkout main` / `pull --ff-only`."
-- '[x] A newly cloned repo still works without a second manual refresh step.'
-- "[x] The portable bundle lookup no longer fails simply because the Colab repo\n\
-  \  clone predates the latest committed bundle."
+  - "[x] Re-entering the notebook from an already-cloned `/content/sir-convert-a-lot`\n  path performs `fetch` / `checkout main` / `pull --ff-only`."
+  - '[x] A newly cloned repo still works without a second manual refresh step.'
+  - "[x] The portable bundle lookup no longer fails simply because the Colab repo\n  clone predates the latest committed bundle."
 retired_ids:
-- task-130-refresh-existing-colab-repo-checkout-before-portable-bundle-lookup
+  - task-130-refresh-existing-colab-repo-checkout-before-portable-bundle-lookup
 ---
 
 ## Context

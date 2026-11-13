@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-01-06
 title: Run OpenAI mini/nano answer-key evaluation gate before provider promotion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,28 +17,16 @@ closeout_review:
 story: ST-SIRCON-08-01
 task_kind: story
 acceptance_criteria:
-- Both OpenAI snapshots are evaluated against the same corpus boundary, expected-answer
-  set, scoring categories, and manual-follow-up semantics as the local model evaluations.
-- 'The comparison baseline is the retained Review 18 Qwen3.6 result: 41 correct, 3
-  wrong-but-valid, 0 manual-follow-up, and 273 skipped items.'
-- The report includes at least correct, wrong-but-valid, manual-follow-up, invalid-schema,
-  refusal, timeout, provider-failure, latency, and token-budget counts for each OpenAI
-  profile and the current Qwen3.6 baseline.
-- The report retains provider-run metadata for provider family, provider profile ID,
-  pinned model snapshot, schema version, output mode, route decision, settings version,
-  code revision, and corpus revision.
-- Wrong-but-valid answers remain the primary safety metric. An OpenAI profile with
-  unacceptable wrong-but-valid behavior is not promoted even if it has fewer manual-follow-up
-  outcomes.
-- Raw diagnostic eval artifacts are retained only under ignored `build/verification/`
-  roots; committed docs and fixtures retain summaries, hashes, and aggregate metrics
-  only.
-- No API key, owner metadata, student data, or other secret appears in eval artifacts,
-  logs, fixtures, or docs.
-- If live OpenAI execution cannot run through the sanctioned credential path, the
-  task records the blocker and remains incomplete; Task 325 remains blocked from done/promotion.
+  - Both OpenAI snapshots are evaluated against the same corpus boundary, expected-answer set, scoring categories, and manual-follow-up semantics as the local model evaluations.
+  - 'The comparison baseline is the retained Review 18 Qwen3.6 result: 41 correct, 3 wrong-but-valid, 0 manual-follow-up, and 273 skipped items.'
+  - The report includes at least correct, wrong-but-valid, manual-follow-up, invalid-schema, refusal, timeout, provider-failure, latency, and token-budget counts for each OpenAI profile and the current Qwen3.6 baseline.
+  - The report retains provider-run metadata for provider family, provider profile ID, pinned model snapshot, schema version, output mode, route decision, settings version, code revision, and corpus revision.
+  - Wrong-but-valid answers remain the primary safety metric. An OpenAI profile with unacceptable wrong-but-valid behavior is not promoted even if it has fewer manual-follow-up outcomes.
+  - Raw diagnostic eval artifacts are retained only under ignored `build/verification/` roots; committed docs and fixtures retain summaries, hashes, and aggregate metrics only.
+  - No API key, owner metadata, student data, or other secret appears in eval artifacts, logs, fixtures, or docs.
+  - If live OpenAI execution cannot run through the sanctioned credential path, the task records the blocker and remains incomplete; Task 325 remains blocked from done/promotion.
 retired_ids:
-- task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion
+  - task-326-run-openai-mini-nano-answer-key-evaluation-gate-before-provider-promotion
 ---
 
 ## Context
@@ -224,11 +212,11 @@ Corrected Task 326 results after the coverage/evaluator fixes, the fresh
 2026-05-18 rerun using output roots suffixed `rerun-2026-05-18`, and
 teacher adjudication of the mini failure rows:
 
-| Profile | Correct | Wrong-but-valid | Manual follow-up | Skipped | Coverage |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Qwen3.6 retained baseline | 41 | 3 | 0 | 273 | 44/44 eligible |
-| `gpt-5.4-mini-2026-03-17` | 43 | 1 | 0 | 273 | 44/44 eligible |
-| `gpt-5.4-nano-2026-03-17` | 36 | 8 | 0 | 273 | 44/44 eligible |
+| Profile                   | Correct | Wrong-but-valid | Manual follow-up | Skipped | Coverage       |
+| ------------------------- | ------: | --------------: | ---------------: | ------: | -------------- |
+| Qwen3.6 retained baseline |      41 |               3 |                0 |     273 | 44/44 eligible |
+| `gpt-5.4-mini-2026-03-17` |      43 |               1 |                0 |     273 | 44/44 eligible |
+| `gpt-5.4-nano-2026-03-17` |      36 |               8 |                0 |     273 | 44/44 eligible |
 
 Active analysis state: mini now clears the retained Qwen3.6 result on the
 corrected golden set, with one remaining wrong-but-valid item. Nano remains
@@ -266,18 +254,18 @@ Wrong-but-valid investigation notes:
 The 2026-05-18 rerun plus teacher adjudication leaves 9 unique
 wrong-but-valid items across mini and nano, only one of which belongs to mini:
 
-| Source / item | Profiles | Evaluation |
-| --- | --- | --- |
-| `1776888013-ak7-lag-och-ratt.dxe` / `item-001` | nano | Legal-role gap fill. Nano swaps `polis`/`åklagare`/`advokat` on investigative and prosecution actions. Mini now gets this right; the item remains role-ambiguous enough that weaker models drift. |
-| `1776888013-ak7-lag-och-ratt.dxe` / `item-002` | nano | Multiple-response sanctions item. Golden now accepts `Fotboja`; nano still selects all choices, including non-sanctions such as `Indragen veckopeng` and `Kvarsittning`. |
-| `1792907597-manniskokroppen-prov-e-vt-26.dxe` / `item-003` | nano | Cell organelle gap fill. Nano answers `kärnan` where the golden accepts `cellkärna/cellkärnan`. This is likely a golden-alias review item, not a production-schema issue. |
-| `1811577114-ekologiprov-v-49-25d-e.dxe` / `item-013` | cleared | Image-backed ecology matching item. Golden now accepts definitions/concepts alongside `a`-`e` labels because a teacher would accept either during key enrichment. This remains an OCR-enrichment candidate, but not a mini failure. |
-| `1813537086-25c-manniskokroppen-prov-eca.dxe` / `item-009` | nano | Text matching item says to write the correct number, but nano returns the matched terms. This is answer-format instruction following, not an image/OCR gap. |
-| `1813567093-23c-e-syror-oh-baser-vt-26.dxe` / `item-007` | nano | Classification gap fill asks for `stark/svag syra/bas`; nano returns the example substances. The model follows row labels instead of the visible answer class bank. |
-| `1815387758-23c-energi-och-effekt-e.dxe` / `item-002` | nano | Single-choice physics item. Nano chooses an incorrect formula-like distractor for mechanics' golden rule. This is a straightforward model error. |
-| `1821017157-prov-biologi-genetik-v2.dxe` / `item-005` | nano | Single-choice biology term fragment. Correct answer is `skräddarsydda grödor`; nano selects `varierad odlingsföljd`. The stem is fragmentary, but the miss is mostly model selection quality. |
-| `1821017157-prov-biologi-genetik-v2.dxe` / `item-016` | mini | Genetics gap fill. Mini answers `baser` where golden expects `baspar`. The answer is related but target-invalid; this remains the only mini wrong-but-valid item after adjudication. |
-| `1821017157-prov-biologi-genetik-v2.dxe` / `item-017` | nano | Golden now accepts `arvsmassan` for both gaps; nano still has one wrong gap with `DNA`. |
+| Source / item                                              | Profiles | Evaluation                                                                                                                                                                                                                          |
+| ---------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1776888013-ak7-lag-och-ratt.dxe` / `item-001`             | nano     | Legal-role gap fill. Nano swaps `polis`/`åklagare`/`advokat` on investigative and prosecution actions. Mini now gets this right; the item remains role-ambiguous enough that weaker models drift.                                   |
+| `1776888013-ak7-lag-och-ratt.dxe` / `item-002`             | nano     | Multiple-response sanctions item. Golden now accepts `Fotboja`; nano still selects all choices, including non-sanctions such as `Indragen veckopeng` and `Kvarsittning`.                                                            |
+| `1792907597-manniskokroppen-prov-e-vt-26.dxe` / `item-003` | nano     | Cell organelle gap fill. Nano answers `kärnan` where the golden accepts `cellkärna/cellkärnan`. This is likely a golden-alias review item, not a production-schema issue.                                                           |
+| `1811577114-ekologiprov-v-49-25d-e.dxe` / `item-013`       | cleared  | Image-backed ecology matching item. Golden now accepts definitions/concepts alongside `a`-`e` labels because a teacher would accept either during key enrichment. This remains an OCR-enrichment candidate, but not a mini failure. |
+| `1813537086-25c-manniskokroppen-prov-eca.dxe` / `item-009` | nano     | Text matching item says to write the correct number, but nano returns the matched terms. This is answer-format instruction following, not an image/OCR gap.                                                                         |
+| `1813567093-23c-e-syror-oh-baser-vt-26.dxe` / `item-007`   | nano     | Classification gap fill asks for `stark/svag syra/bas`; nano returns the example substances. The model follows row labels instead of the visible answer class bank.                                                                 |
+| `1815387758-23c-energi-och-effekt-e.dxe` / `item-002`      | nano     | Single-choice physics item. Nano chooses an incorrect formula-like distractor for mechanics' golden rule. This is a straightforward model error.                                                                                    |
+| `1821017157-prov-biologi-genetik-v2.dxe` / `item-005`      | nano     | Single-choice biology term fragment. Correct answer is `skräddarsydda grödor`; nano selects `varierad odlingsföljd`. The stem is fragmentary, but the miss is mostly model selection quality.                                       |
+| `1821017157-prov-biologi-genetik-v2.dxe` / `item-016`      | mini     | Genetics gap fill. Mini answers `baser` where golden expects `baspar`. The answer is related but target-invalid; this remains the only mini wrong-but-valid item after adjudication.                                                |
+| `1821017157-prov-biologi-genetik-v2.dxe` / `item-017`      | nano     | Golden now accepts `arvsmassan` for both gaps; nano still has one wrong gap with `DNA`.                                                                                                                                             |
 
 Promotion decision: mini is accepted as the temporary default provider for dev
 and Hemma production so the Qwen3.6 container can be stopped to save GPU VRAM.

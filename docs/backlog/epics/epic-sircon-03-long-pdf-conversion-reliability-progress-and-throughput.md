@@ -4,8 +4,8 @@ id: EPIC-SIRCON-03
 title: Long PDF conversion reliability progress and throughput scaling
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,10 +18,8 @@ links:
   decisions: []
 outcome: Long PDF conversion reliability progress and throughput scaling
 retired_ids:
-- epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling
+  - epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling
 ---
-
-
 
 ## Scope
 
@@ -86,14 +84,19 @@ machine authority for gate status and approval evidence.
 ## Source Body Preservation
 
 Major capability increment managed through linked stories.
+
 ## Goal
+
 Turn long PDF OCR conversions from opaque all-or-nothing jobs into a resilient, observable, and high-throughput pipeline with:
+
 - page-level progress visibility,
 - partial artifacts/checkpoints,
 - cancel-with-save and resume semantics,
 - explicit stall detection,
 - parallel execution tuned for Hemma GPU/CPU resources.
+
 ## In Scope
+
 - Progress contract and telemetry:
   - page-aware status fields (`total_pages`, `processed_pages`, `failed_pages`, `percent_complete`),
   - page throughput and ETA (`pages_per_minute`, `eta_seconds`),
@@ -109,24 +112,30 @@ Turn long PDF OCR conversions from opaque all-or-nothing jobs into a resilient, 
   - bounded parallel worker pool model for OCR/conversion chunks,
   - stage-level timing and bottleneck observability (OCR, layout, normalization, persist),
   - benchmark-driven tuning and published runbook guidance.
+
 ## Out of Scope
+
 - New conversion domains unrelated to long PDF OCR throughput/reliability.
 - Re-architecting the whole API versioning strategy.
 - UI frontend implementation work outside required API/CLI/manifest contract changes.
+
 ## Stories (Ordered)
+
 - [x] `S00` `docs/backlog/stories/story-17-progress-aware-timeout-for-long-running-conversion-jobs.md`
-(requires `T67`)
+  (requires `T67`)
 - [x] `S01` `docs/backlog/stories/story-18-page-level-progress-and-stall-telemetry-contract.md`
-(requires `T68-T69`)
+  (requires `T68-T69`)
 - [x] `S02` `docs/backlog/stories/story-19-checkpointed-partial-results-and-resumable-ocr-pipeline.md`
-(requires `T70-T71`)
+  (requires `T70-T71`)
 - [ ] `S03` `docs/backlog/stories/st-sircon-03-01-parallel-execution-and-bottleneck-elimination-for-pdf-ocr.md`
-(requires `T72-T74` plus `T76` preflight hardening gate)
+  (requires `T72-T74` plus `T76` preflight hardening gate)
 - [x] `S04` `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
-(requires `T77` and should land before `T74` benchmark/report)
+  (requires `T77` and should land before `T74` benchmark/report)
 - [ ] `S05` `docs/backlog/stories/st-sircon-03-02-harden-and-align-pdf-ocr-path-with-dirty-real-data.md`
-(requires OCR checkpoint metadata truth, contract alignment, and dirty real-data performance proof before `T74` can be treated as final tuning evidence)
+  (requires OCR checkpoint metadata truth, contract alignment, and dirty real-data performance proof before `T74` can be treated as final tuning evidence)
+
 ## Tasks (Ordered)
+
 - [x] `T67` `docs/backlog/tasks/task-67-detect-stalled-conversions-separately-from-active-long-running-jobs.md`
 - [x] `T68` `docs/backlog/tasks/task-68-publish-adr-for-progress-checkpoint-and-resume-contract.md`
 - [x] `T69` `docs/backlog/tasks/task-69-add-page-level-progress-fields-to-v2-jobs-api.md`
@@ -147,50 +156,56 @@ Turn long PDF OCR conversions from opaque all-or-nothing jobs into a resilient, 
 - [x] `T350` `docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md`
 - [ ] `T345` `docs/backlog/tasks/task-sircon-03-02-03-make-source-layer-formula-evidence-authoritative-for-born.md`
 - [ ] `T74` `docs/backlog/tasks/task-sircon-03-01-03-run-throughput-benchmark-and-publish-performance-tuning.md`
+
 ## Execution Plan (Implementation Order)
+
 This epic is intentionally ordered to reduce risk and prevent wasted work.
-1. `T67` (client semantics first):
-   - make “timeout” progress-aware using heartbeat-only fallback,
-   - ensures long jobs do not look failed while they are still active.
-1. `T68` (ADR locks contract):
-   - unblocks implementation without contract drift,
-   - locks page progress fields + partial/checkpoint + cancel-with-save + resume semantics.
-1. `T69` (contract + API surfaces):
-   - add page-level progress fields to polling payloads and async push channels (SSE/webhooks).
-1. `T70` (checkpoints + partial artifacts):
-   - incremental persistence + partial artifact retrieval, with bounded retention/cleanup.
-1. `T71` (cancel-with-save + resume):
-   - resume creates a new job id; preserved provenance from source job/checkpoint.
-1. `T73` (telemetry before tuning):
-   - stage timings + queue/worker saturation + GPU evidence for real bottleneck diagnosis.
-1. `T76` (deploy/verification hardening gate):
-   - enforce deploy parity and stable live-verification workflow before throughput tuning.
-1. `T72` (parallelization with caps):
-   - introduce bounded worker pools and GPU concurrency caps after telemetry exists.
-1. `S05` / `story-39` (OCR path hardening gate):
-   - close checkpoint/resume OCR metadata truth gaps,
-   - align OCR metadata across API docs, CLI docs, runtime metadata, smoke reports, and tests,
-   - define and run a hard/dirty real-data corpus gate so performance claims are not fixture-only,
-   - execute through `T268` -> `T269` -> `T270` -> `T271` before treating `T74` as final evidence.
-1. `T342` / `T343` / `T344` / `T346` / `T345` (incident-driven visibility, diagnosis, candidate evaluation, and authority):
-   - close the CLI/user-feedback blind spots that made long jobs appear stuck,
-   - inspect and tune the current quality pipeline before changing defaults,
-   - isolate the page-window unit-of-work and head-of-line-blocking pathology exposed by the
-2026-06-04 incident before using chunk-size tuning as benchmark evidence,
-   - run the no-fuss Task 346 pre-infrastructure candidate evaluation on the
-established pages/crops before promoting any specialist formula/OCR model or formula-lane infrastructure,
-   - make source-layer formula evidence authoritative for born-digital PDFs so
-Task 344's generation-stability fix is not mistaken for formula-output correctness, and so Task 343's decision model has formula-specific source-evidence metrics before final throughput benchmarking,
-   - land Task 345's formula evidence/authority data model before Task 342
-presentation work or Task 343 decision-policy work reuses those signals; later tasks must consume the Task 345 model instead of reimplementing formula source-layer extraction or formula authority decisions,
-   - keep best-effort artifact production as the conversion invariant: formula
-gates must choose the least-lossy representation and warnings, not create a new path for silently missing or dropped formula regions. 1. `T74` (benchmark/report):
-   - run baseline vs tuned profiles and publish operational defaults + rollback criteria,
-   - consume the story-39 dirty-corpus evidence or explicitly document any remaining blocker,
-   - preserve the Task 76 parity requirement and safe 2-worker tuning boundary unless a later governed
-decision updates Task 74.
+
+01. `T67` (client semantics first):
+    - make “timeout” progress-aware using heartbeat-only fallback,
+    - ensures long jobs do not look failed while they are still active.
+02. `T68` (ADR locks contract):
+    - unblocks implementation without contract drift,
+    - locks page progress fields + partial/checkpoint + cancel-with-save + resume semantics.
+03. `T69` (contract + API surfaces):
+    - add page-level progress fields to polling payloads and async push channels (SSE/webhooks).
+04. `T70` (checkpoints + partial artifacts):
+    - incremental persistence + partial artifact retrieval, with bounded retention/cleanup.
+05. `T71` (cancel-with-save + resume):
+    - resume creates a new job id; preserved provenance from source job/checkpoint.
+06. `T73` (telemetry before tuning):
+    - stage timings + queue/worker saturation + GPU evidence for real bottleneck diagnosis.
+07. `T76` (deploy/verification hardening gate):
+    - enforce deploy parity and stable live-verification workflow before throughput tuning.
+08. `T72` (parallelization with caps):
+    - introduce bounded worker pools and GPU concurrency caps after telemetry exists.
+09. `S05` / `story-39` (OCR path hardening gate):
+    - close checkpoint/resume OCR metadata truth gaps,
+    - align OCR metadata across API docs, CLI docs, runtime metadata, smoke reports, and tests,
+    - define and run a hard/dirty real-data corpus gate so performance claims are not fixture-only,
+    - execute through `T268` -> `T269` -> `T270` -> `T271` before treating `T74` as final evidence.
+10. `T342` / `T343` / `T344` / `T346` / `T345` (incident-driven visibility, diagnosis, candidate evaluation, and authority):
+    - close the CLI/user-feedback blind spots that made long jobs appear stuck,
+    - inspect and tune the current quality pipeline before changing defaults,
+    - isolate the page-window unit-of-work and head-of-line-blocking pathology exposed by the
+      2026-06-04 incident before using chunk-size tuning as benchmark evidence,
+    - run the no-fuss Task 346 pre-infrastructure candidate evaluation on the
+      established pages/crops before promoting any specialist formula/OCR model or formula-lane infrastructure,
+    - make source-layer formula evidence authoritative for born-digital PDFs so
+      Task 344's generation-stability fix is not mistaken for formula-output correctness, and so Task 343's decision model has formula-specific source-evidence metrics before final throughput benchmarking,
+    - land Task 345's formula evidence/authority data model before Task 342
+      presentation work or Task 343 decision-policy work reuses those signals; later tasks must consume the Task 345 model instead of reimplementing formula source-layer extraction or formula authority decisions,
+    - keep best-effort artifact production as the conversion invariant: formula
+      gates must choose the least-lossy representation and warnings, not create a new path for silently missing or dropped formula regions. 1. `T74` (benchmark/report):
+    - run baseline vs tuned profiles and publish operational defaults + rollback criteria,
+    - consume the story-39 dirty-corpus evidence or explicitly document any remaining blocker,
+    - preserve the Task 76 parity requirement and safe 2-worker tuning boundary unless a later governed
+      decision updates Task 74.
+
 ## Per-Task Closeout Checklist (Mandatory)
+
 When completing any task in this epic, keep status and checkboxes synchronized in strict order and always include verification evidence.
+
 - [ ] Run quality gates (minimum):
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`
@@ -208,18 +223,20 @@ When completing any task in this epic, keep status and checkboxes synchronized i
 - [ ] For major slices (after `T69`, `T71`, `T74`):
   - update `.codex/handoff.md`,
   - keep volatile active-session state in `.codex/handoff.md` and move durable
-history to governed docs or long-term memory.
+    history to governed docs or long-term memory.
+
 ## Acceptance Criteria
+
 - [ ] A running long PDF job exposes page-aware progress and ETA fields in v2 job status.
 - [ ] `job_timeout` semantics are reserved for stalled jobs; active heartbeating jobs are not
-misclassified as failed timeouts.
+  misclassified as failed timeouts.
 - [ ] Partial markdown/checkpoint artifacts are accessible while conversion is still running.
 - [ ] Canceling a long job preserves completed work and exposes a deterministic partial artifact.
 - [ ] Resuming from checkpoint avoids full re-OCR of already completed chunks/pages.
 - [ ] Resumed/finalized PDF OCR jobs preserve truthful backend, acceleration, OCR engine,
-OCR language, warning, and timing metadata even when no new chunks are converted during the finalizing run.
+  OCR language, warning, and timing metadata even when no new chunks are converted during the finalizing run.
 - [ ] Partial/checkpoint storage is bounded (explicit retention/cleanup policy; no unbounded disk
-growth under repeated long conversions).
+  growth under repeated long conversions).
 - [ ] GPU-first governance remains invariant:
   - acceleration-policy requests are honored (no silent CPU fallback when GPU is requested/required),
   - any fallback behavior is explicit in job metadata and client/manifest messaging.
@@ -231,13 +248,13 @@ growth under repeated long conversions).
 - [ ] Dirty real-data performance is a hard completion gate:
   - synthetic fixtures alone cannot close the OCR performance lane,
   - scanned, mixed scanned/text, low-contrast, rotated/skewed, table/form-heavy, Swedish-diacritic,
-and long-document inputs are represented by a governed corpus manifest,
+    and long-document inputs are represented by a governed corpus manifest,
   - private or PII-bearing inputs remain untracked while sanitized evidence records hashes,
-page counts, timings, warnings, and safe excerpts,
+    page counts, timings, warnings, and safe excerpts,
   - dirty-corpus evidence extends the committed Task 74 report schema and command surface,
   - Task 76 parity evidence is required for the exact revision under benchmark,
   - unsafe profiles, including the removed 4-worker ROCm HIP OOM profile, fail closed unless a later
-governed decision updates Task 74.
+    governed decision updates Task 74.
 - [ ] Required quality and docs gates pass:
   - `pdm run run-local-pdm format-all`
   - `pdm run run-local-pdm lint-fix`
@@ -246,8 +263,9 @@ governed decision updates Task 74.
   - `pdm run run-local-pdm validate-tasks`
   - `pdm run run-local-pdm validate-docs`
   - `pdm run run-local-pdm index-tasks --root "$(pwd)/docs/backlog" --out "/tmp/sir_tasks_index.md" --fail-on-missing`
+
 ## Checklist
+
 - [x] Stories linked
 - [x] Acceptance criteria defined
 - [x] Execution gate defined
-

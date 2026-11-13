@@ -4,8 +4,8 @@ id: ST-SIRCON-06-03
 title: Preserve internal service and local operator Sir Convert lanes
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,16 +18,14 @@ epic: EPIC-SIRCON-06
 links:
   decisions: []
 acceptance_criteria:
-- Internal backend callers have a documented direct lane that does not require browser
-  Gateway routing.
-- Direct internal callers use the Sir Convert `InternalIdentityContextV1` authorization
-  profile for job and artifact authorization.
-- Local operator tunnel lane remains documented and tested.
-- Operator credentials are explicit and never persisted in reports.
-- GPU-backed conversion proof still works through the local lane.
-- Docs no longer confuse direct local, internal, and public lanes.
+  - Internal backend callers have a documented direct lane that does not require browser Gateway routing.
+  - Direct internal callers use the Sir Convert `InternalIdentityContextV1` authorization profile for job and artifact authorization.
+  - Local operator tunnel lane remains documented and tested.
+  - Operator credentials are explicit and never persisted in reports.
+  - GPU-backed conversion proof still works through the local lane.
+  - Docs no longer confuse direct local, internal, and public lanes.
 retired_ids:
-- story-35-preserve-internal-service-and-local-operator-sir-convert-lanes
+  - story-35-preserve-internal-service-and-local-operator-sir-convert-lanes
 ---
 
 ## Context

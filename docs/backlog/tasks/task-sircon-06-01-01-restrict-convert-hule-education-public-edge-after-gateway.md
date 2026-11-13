@@ -4,8 +4,8 @@ id: TASK-SIRCON-06-01-01
 title: Restrict convert.hule.education public edge after gateway cutover
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,15 +17,13 @@ closeout_review:
 story: ST-SIRCON-06-01
 task_kind: story
 acceptance_criteria:
-- '- [ ] Public anonymous traffic cannot create, read, or download jobs/artifacts.'
-- '- [ ] `convert.hule.education` returns the ADR-0009 fail-closed/reserved posture.
-  Any status page or external M2M API is blocked unless a separate accepted ADR exists.'
-- '- [ ] Product/browser access continues through Gateway.'
-- '- [ ] Internal and local operator lanes are unaffected.'
-- '- [ ] Linked HuleEdu/Skriptoteket route implementation and consumer migration signoffs
-  exist before this task changes the public host.'
+  - '- [ ] Public anonymous traffic cannot create, read, or download jobs/artifacts.'
+  - '- [ ] `convert.hule.education` returns the ADR-0009 fail-closed/reserved posture. Any status page or external M2M API is blocked unless a separate accepted ADR exists.'
+  - '- [ ] Product/browser access continues through Gateway.'
+  - '- [ ] Internal and local operator lanes are unaffected.'
+  - '- [ ] Linked HuleEdu/Skriptoteket route implementation and consumer migration signoffs exist before this task changes the public host.'
 retired_ids:
-- task-262-restrict-convert-hule-education-public-edge-after-gateway-cutover
+  - task-262-restrict-convert-hule-education-public-edge-after-gateway-cutover
 ---
 
 ## Context

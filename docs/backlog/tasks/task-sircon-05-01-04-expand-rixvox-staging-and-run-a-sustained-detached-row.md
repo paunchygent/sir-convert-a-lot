@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-01-04
-title: Expand RixVox staging and run a sustained detached row-processing window for
-  the bounded Hemma pilot
+title: Expand RixVox staging and run a sustained detached row-processing window for the bounded Hemma pilot
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,17 +17,15 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- The staged raw train pool includes `train_0` plus `train_1` through `train_23`.
-- The next long preprocessing run uses `row-processing` only.
-- The run launches detached and survives local client disconnects.
-- 'The worker settings are exactly: - `row_worker_count=4` - `gpu_asr_worker_count=2`'
-- The first `2` hour health gate is recorded from detached evidence.
-- If healthy, the same run is allowed to continue into the `8` to `10` hour window
-  instead of being restarted.
-- The resulting spool/train yield is large enough to inform the next pilot finalization
-  decision.
+  - The staged raw train pool includes `train_0` plus `train_1` through `train_23`.
+  - The next long preprocessing run uses `row-processing` only.
+  - The run launches detached and survives local client disconnects.
+  - 'The worker settings are exactly: - `row_worker_count=4` - `gpu_asr_worker_count=2`'
+  - The first `2` hour health gate is recorded from detached evidence.
+  - If healthy, the same run is allowed to continue into the `8` to `10` hour window instead of being restarted.
+  - The resulting spool/train yield is large enough to inform the next pilot finalization decision.
 retired_ids:
-- task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot
+  - task-116-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot
 ---
 
 ## Context

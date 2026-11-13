@@ -4,16 +4,16 @@ id: ADR-SIRCON-0004
 title: V2 Long-Job Progress, Checkpoints, Partials, Cancel-with-Save, Resume, and Retention
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 deciders:
-- platform
+  - platform
 links:
   governing: []
 retired_ids:
-- ADR-0005
+  - ADR-0005
 ---
 
 ## Context
@@ -53,11 +53,11 @@ This ADR locks semantics before implementation work lands (`T69-T71`) to prevent
 Adopt the following v2 long-job contract rules for PDF conversions:
 
 1. Add **page-aware progress fields** to polling and async push (SSE/webhooks) payloads.
-1. Introduce **checkpoint + partial markdown** persistence during execution (chunk-based).
-1. Define **partial artifact retrieval** for running and canceled jobs.
-1. Define **cancel-with-save** as the default cancellation semantics for long PDF jobs.
-1. Define **resume-from-checkpoint** as a first-class v2 workflow that produces a new `job_id`.
-1. Bound storage growth via explicit **retention and cleanup** rules.
+2. Introduce **checkpoint + partial markdown** persistence during execution (chunk-based).
+3. Define **partial artifact retrieval** for running and canceled jobs.
+4. Define **cancel-with-save** as the default cancellation semantics for long PDF jobs.
+5. Define **resume-from-checkpoint** as a first-class v2 workflow that produces a new `job_id`.
+6. Bound storage growth via explicit **retention and cleanup** rules.
 
 ### 3. Scope and Versioning
 
@@ -75,14 +75,14 @@ Adopt the following v2 long-job contract rules for PDF conversions:
 
 Extend `job.progress` with optional PDF-only fields:
 
-| Field | Type | Rules |
-| --- | --- | --- |
-| `total_pages` | `int \| null` | Total pages discovered; set once known. |
-| `processed_pages` | `int \| null` | Monotonic; never decreases; `<= total_pages`. |
-| `failed_pages` | `int \| null` | Monotonic; never decreases; `<= total_pages`. |
-| `percent_complete` | `float \| null` | Monotonic non-decreasing; range `0..100`. |
-| `pages_per_minute` | `float \| null` | Non-negative; best-effort estimate. |
-| `eta_seconds` | `int \| null` | Non-negative; best-effort estimate. |
+| Field              | Type            | Rules                                         |
+| ------------------ | --------------- | --------------------------------------------- |
+| `total_pages`      | `int \| null`   | Total pages discovered; set once known.       |
+| `processed_pages`  | `int \| null`   | Monotonic; never decreases; `<= total_pages`. |
+| `failed_pages`     | `int \| null`   | Monotonic; never decreases; `<= total_pages`. |
+| `percent_complete` | `float \| null` | Monotonic non-decreasing; range `0..100`.     |
+| `pages_per_minute` | `float \| null` | Non-negative; best-effort estimate.           |
+| `eta_seconds`      | `int \| null`   | Non-negative; best-effort estimate.           |
 
 Existing progress diagnostics remain:
 
@@ -146,7 +146,7 @@ Add new endpoints:
    - `200`: returns partial markdown bytes (when available), for `running` or `canceled` jobs.
    - `202`: job exists but no partial artifact is available yet.
    - `404`: job not found/expired.
-1. `GET /v2/convert/jobs/{job_id}/checkpoint`
+2. `GET /v2/convert/jobs/{job_id}/checkpoint`
    - `200`: returns checkpoint metadata JSON (when available).
    - `202`: job exists but no checkpoint is available yet.
    - `404`: job not found/expired.

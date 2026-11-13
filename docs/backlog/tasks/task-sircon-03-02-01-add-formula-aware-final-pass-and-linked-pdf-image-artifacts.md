@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-03-02-01
-title: Add formula-aware final pass and linked PDF/image artifacts for dirty PDF OCR
-  outputs
+title: Add formula-aware final pass and linked PDF/image artifacts for dirty PDF OCR outputs
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,40 +17,22 @@ closeout_review:
 story: ST-SIRCON-03-02
 task_kind: story
 acceptance_criteria:
-- '- [ ] A PDF-to-Markdown job that emits `<!-- formula-not-decoded -->` after the
-  fast pass schedules one final formula-aware pass for all affected pages/chunks together,
-  not one load/unload cycle per marker or per normal chunk.'
-- '- [ ] If formula enrichment improves output, terminal Markdown contains the improved
-  formula-aware content and records which chunks/pages were replaced.'
-- '- [ ] If formula enrichment cannot decode some formulas, the remaining placeholder
-  count is surfaced in warnings/metadata and the job does not silently look clean.'
-- '- [ ] Bare `<!-- image -->` markers are replaced by deterministic relative links
-  or Markdown image references when extractable image/object artifacts exist.'
-- '- [ ] Full OCR PDF companion and extracted image/object artifacts are retained
-  in `GET /v2/convert/jobs/{job_id}/artifact/bundle` with content type `application/zip`.'
-- '- [ ] The OCR PDF companion contains all source pages in original order, strips
-  original metadata/attachments/comments/private filenames, and exposes a searchable
-  OCR text layer where the selected implementation supports one.'
-- '- [ ] `GET /v2/convert/jobs/{job_id}/artifact` remains Markdown-only and byte-compatible
-  with the primary `output.md` member in the bundle.'
-- '- [ ] `artifact-manifest.json` contains only relative bundle paths, content types,
-  sizes, sha256 digests, page numbers, extraction statuses, safe reason codes, and
-  privacy booleans.'
-- '- [ ] Existing `/v2` clients can still retrieve the primary Markdown artifact;
-  the new bundle route is documented and tested.'
-- '- [ ] Tests prove artifact paths are relative, stable, and do not leak private
-  source roots or original private filenames.'
-- '- [ ] Tests prove companion artifacts inherit primary artifact authorization and
-  job retention/pinning/deletion behavior.'
-- '- [ ] Tests prove checkpoint payloads do not expose terminal companion artifact
-  paths before finalization.'
-- '- [ ] Tests prove the final-pass strategy is disabled for clean documents and bounded
-  for documents with many markers.'
-- '- [ ] Dirty-corpus quality evidence reports before/after counts for `formula-not-decoded`,
-  image placeholders, remaining warnings, and Swedish diacritic counts without storing
-  OCR excerpts in git.'
+  - '- [ ] A PDF-to-Markdown job that emits `<!-- formula-not-decoded -->` after the fast pass schedules one final formula-aware pass for all affected pages/chunks together, not one load/unload cycle per marker or per normal chunk.'
+  - '- [ ] If formula enrichment improves output, terminal Markdown contains the improved formula-aware content and records which chunks/pages were replaced.'
+  - '- [ ] If formula enrichment cannot decode some formulas, the remaining placeholder count is surfaced in warnings/metadata and the job does not silently look clean.'
+  - '- [ ] Bare `<!-- image -->` markers are replaced by deterministic relative links or Markdown image references when extractable image/object artifacts exist.'
+  - '- [ ] Full OCR PDF companion and extracted image/object artifacts are retained in `GET /v2/convert/jobs/{job_id}/artifact/bundle` with content type `application/zip`.'
+  - '- [ ] The OCR PDF companion contains all source pages in original order, strips original metadata/attachments/comments/private filenames, and exposes a searchable OCR text layer where the selected implementation supports one.'
+  - '- [ ] `GET /v2/convert/jobs/{job_id}/artifact` remains Markdown-only and byte-compatible with the primary `output.md` member in the bundle.'
+  - '- [ ] `artifact-manifest.json` contains only relative bundle paths, content types, sizes, sha256 digests, page numbers, extraction statuses, safe reason codes, and privacy booleans.'
+  - '- [ ] Existing `/v2` clients can still retrieve the primary Markdown artifact; the new bundle route is documented and tested.'
+  - '- [ ] Tests prove artifact paths are relative, stable, and do not leak private source roots or original private filenames.'
+  - '- [ ] Tests prove companion artifacts inherit primary artifact authorization and job retention/pinning/deletion behavior.'
+  - '- [ ] Tests prove checkpoint payloads do not expose terminal companion artifact paths before finalization.'
+  - '- [ ] Tests prove the final-pass strategy is disabled for clean documents and bounded for documents with many markers.'
+  - '- [ ] Dirty-corpus quality evidence reports before/after counts for `formula-not-decoded`, image placeholders, remaining warnings, and Swedish diacritic counts without storing OCR excerpts in git.'
 retired_ids:
-- task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs
+  - task-272-add-formula-aware-final-pass-and-linked-pdf-image-artifacts-for-dirty-pdf-ocr-outputs
 ---
 
 ## Context
@@ -187,10 +168,10 @@ dirty textbook OCR.
     docstrings.
 - Execute in this required internal order:
   1. Update API docs and tests for the selected bundle/manifest contract.
-  1. Add a small companion-artifact manifest/bundle module.
-  1. Add formula-placeholder page/chunk selection and final-pass merge modules.
-  1. Wire the terminal artifact route and result metadata.
-  1. Run the Hemma dirty-corpus quality probe.
+  2. Add a small companion-artifact manifest/bundle module.
+  3. Add formula-placeholder page/chunk selection and final-pass merge modules.
+  4. Wire the terminal artifact route and result metadata.
+  5. Run the Hemma dirty-corpus quality probe.
 
 ### Out Of Scope
 

@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-01-03
 title: Add validation-only force-eval mode for source-keyed answer-key live validation
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,18 +17,15 @@ closeout_review:
 story: ST-SIRCON-08-01
 task_kind: story
 acceptance_criteria:
-- Force-eval cannot run unless explicitly requested by a validation command or validation-only
-  flag.
-- Default production advisory behavior still skips source-keyed items.
-- Provider prompts/payloads never contain the trusted source answer key.
-- Source IR and effective IR remain unchanged.
-- Force-eval metrics are reported separately from Task 309 missing-key advisory metrics.
-- Malformed output, unknown IDs, duplicate IDs, and wrong-but-valid answers are evaluated
-  with the same strict safety semantics as Task 309.
-- The mode is suitable for Task 311's service-backed mirror preflight but is not exposed
-  as a public user feature.
+  - Force-eval cannot run unless explicitly requested by a validation command or validation-only flag.
+  - Default production advisory behavior still skips source-keyed items.
+  - Provider prompts/payloads never contain the trusted source answer key.
+  - Source IR and effective IR remain unchanged.
+  - Force-eval metrics are reported separately from Task 309 missing-key advisory metrics.
+  - Malformed output, unknown IDs, duplicate IDs, and wrong-but-valid answers are evaluated with the same strict safety semantics as Task 309.
+  - The mode is suitable for Task 311's service-backed mirror preflight but is not exposed as a public user feature.
 retired_ids:
-- task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation
+  - task-310-add-validation-only-force-eval-mode-for-source-keyed-answer-key-live-validation
 ---
 
 ## Context

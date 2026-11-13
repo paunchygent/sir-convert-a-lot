@@ -4,15 +4,16 @@ id: REF-SIRCON-RESEARCH-reference-dockerized-hemma-gpu-passthrough-gap-2026-02-1
 title: 'Reference: Dockerized Hemma GPU passthrough gap (2026-02-16)'
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 retired_ids:
-- REF-dockerized-hemma-gpu-passthrough-gap-2026-02-16
+  - REF-dockerized-hemma-gpu-passthrough-gap-2026-02-16
 summary: 'Reference: Dockerized Hemma GPU passthrough gap (2026-02-16)'
 ---
+
 ## Research Purpose And Boundary
 
 Source record: docs/reference/ref-dockerized-hemma-gpu-passthrough-gap-2026-02-16.md

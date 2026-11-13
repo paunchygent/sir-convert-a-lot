@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0013
 title: Defer PDF OCR GPU runtime preflight from enqueue-only prod API to GPU worker
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -16,16 +16,14 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '`gpu_required` PDF/OCR create-job admission succeeds on an enqueue-only runtime
-  with `gpu_available=false`, `run_jobs_on_submit=false`, and `enable_supervisor=false`.'
-- '`gpu_required` PDF/OCR create-job admission still fails on a runtime that will
-  execute locally when `gpu_available=false` and CPU fallback is not allowed.'
-- Hemma prod conversion through the tunnel succeeds with `acceleration_policy=gpu_required`,
-  processed by the private GPU worker.
-- No CPU fallback is introduced.
+  - '`gpu_required` PDF/OCR create-job admission succeeds on an enqueue-only runtime with `gpu_available=false`, `run_jobs_on_submit=false`, and `enable_supervisor=false`.'
+  - '`gpu_required` PDF/OCR create-job admission still fails on a runtime that will execute locally when `gpu_available=false` and CPU fallback is not allowed.'
+  - Hemma prod conversion through the tunnel succeeds with `acceleration_policy=gpu_required`, processed by the private GPU worker.
+  - No CPU fallback is introduced.
 retired_ids:
-- task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker
+  - task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-339-defer-pdf-ocr-gpu-runtime-preflight-from-enqueue-only-prod-api-to-gpu-worker.md

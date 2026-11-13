@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-01
-title: Add ref-mel caching and a promotion decision for precomputed Qwen reference
-  mels
+title: Add ref-mel caching and a promotion decision for precomputed Qwen reference mels
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,15 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[x] Duplicate rows sharing the same canonical `ref_audio` no longer\n  recompute\
-  \ `ref_mel` blindly during the same run."
-- "[ ] The cache path measurably improves throughput or GPU-busy behavior over\n \
-  \ the uncached baseline."
-- "[x] The task concludes with one explicit statement:\n  - “cache-only is sufficient\
-  \ for the current story”, or\n  - “proceed with `T164` bundle-level precomputed\
-  \ mels”."
+  - "[x] Duplicate rows sharing the same canonical `ref_audio` no longer\n  recompute `ref_mel` blindly during the same run."
+  - "[ ] The cache path measurably improves throughput or GPU-busy behavior over\n  the uncached baseline."
+  - "[x] The task concludes with one explicit statement:\n  - “cache-only is sufficient for the current story”, or\n  - “proceed with `T164` bundle-level precomputed mels”."
 retired_ids:
-- task-161-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-task-101-qwen-reference-mels
+  - task-161-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-task-101-qwen-reference-mels
 ---
 
 ## Context

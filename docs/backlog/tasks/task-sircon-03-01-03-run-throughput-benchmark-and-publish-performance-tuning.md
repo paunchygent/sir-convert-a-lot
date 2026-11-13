@@ -4,8 +4,8 @@ id: TASK-SIRCON-03-01-03
 title: Run throughput benchmark and publish performance tuning report
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,25 +17,19 @@ closeout_review:
 story: ST-SIRCON-03-01
 task_kind: story
 acceptance_criteria:
-- '- [ ] Benchmark report is reproducible with documented command surface and dataset profile.'
-- '- [ ] Final benchmark evidence is captured on Hemma against the current pushed revision after a passing `T76` deploy-parity
-  run on that same revision.'
-- '- [ ] The report documents the exact benchmark matrix used (profile names + worker/chunk/GPU caps) and the runtime surface
-  declaration (`mode`, lane/parity note, revision).'
-- '- [ ] Tuned profile demonstrates >= 40% median runtime improvement vs baseline.'
-- '- [ ] The final evidence bundle records `success_rate=1.0` for the recommended profile on the benchmark corpus; any lower
-  success rate blocks task closeout.'
-- '- [ ] Recommended defaults include explicit safety limits (workers/chunk size/memory).'
-- '- [ ] Recommended defaults are justified by recorded queue/worker saturation and GPU busy/memory evidence, not by latency
-  alone.'
-- '- [ ] If safe 2-worker tuning still fails to reach the >= 40% target, the service default remains serial and parallel execution
-  is exposed only through explicit `.env` override.'
-- '- [ ] Metrics-safety evidence is explicit: no forbidden high-cardinality metric labels are present (`contains_job_id_label=false`).'
-- '- [ ] Parallel tuning evidence includes explicit determinism/non-regression proof against the serial baseline (artifact
-  digest or equivalent stable-output check).'
-- '- [ ] Report includes rollback path when runtime conditions deviate from benchmark assumptions.'
+  - '- [ ] Benchmark report is reproducible with documented command surface and dataset profile.'
+  - '- [ ] Final benchmark evidence is captured on Hemma against the current pushed revision after a passing `T76` deploy-parity run on that same revision.'
+  - '- [ ] The report documents the exact benchmark matrix used (profile names + worker/chunk/GPU caps) and the runtime surface declaration (`mode`, lane/parity note, revision).'
+  - '- [ ] Tuned profile demonstrates >= 40% median runtime improvement vs baseline.'
+  - '- [ ] The final evidence bundle records `success_rate=1.0` for the recommended profile on the benchmark corpus; any lower success rate blocks task closeout.'
+  - '- [ ] Recommended defaults include explicit safety limits (workers/chunk size/memory).'
+  - '- [ ] Recommended defaults are justified by recorded queue/worker saturation and GPU busy/memory evidence, not by latency alone.'
+  - '- [ ] If safe 2-worker tuning still fails to reach the >= 40% target, the service default remains serial and parallel execution is exposed only through explicit `.env` override.'
+  - '- [ ] Metrics-safety evidence is explicit: no forbidden high-cardinality metric labels are present (`contains_job_id_label=false`).'
+  - '- [ ] Parallel tuning evidence includes explicit determinism/non-regression proof against the serial baseline (artifact digest or equivalent stable-output check).'
+  - '- [ ] Report includes rollback path when runtime conditions deviate from benchmark assumptions.'
 retired_ids:
-- task-74-run-throughput-benchmark-and-publish-performance-tuning-report
+  - task-74-run-throughput-benchmark-and-publish-performance-tuning-report
 ---
 
 ## Context
@@ -146,7 +140,7 @@ Measurement rules (must be explicit in report):
 
 1. Re-run `T76` on the current pushed revision and record the exact `expected_revision`,
    `remote_revision`, and `service_revision`.
-1. Execute the canonical `T74` profile matrix against the production service on Hemma with
+2. Execute the canonical `T74` profile matrix against the production service on Hemma with
    GPU-backed settings:
    - `page_counts=120,180,240`
    - `acceleration_policy=gpu_required`
@@ -154,7 +148,7 @@ Measurement rules (must be explicit in report):
    - `ocr_engine=easyocr`
    - `ocr_languages=sv,en`
    - `profile matrix = serial_baseline + parallel_conservative` only
-1. Capture one evidence bundle containing:
+3. Capture one evidence bundle containing:
    - benchmark JSON,
    - markdown report,
    - profile matrix and recommended profile,
@@ -162,12 +156,12 @@ Measurement rules (must be explicit in report):
    - resource evidence (`peak_jobs_queued`, worker/chunk saturation, GPU busy/memory),
    - metrics-safety result (`contains_job_id_label`),
    - determinism evidence for recommended parallel profile vs baseline behavior.
-1. Derive recommended defaults and rollback thresholds from the evidence bundle, then update
+4. Derive recommended defaults and rollback thresholds from the evidence bundle, then update
    `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`.
-1. If the first Hemma benchmark misses the target without stability regressions, run the bounded
+5. If the first Hemma benchmark misses the target without stability regressions, run the bounded
    2-worker sweep to evaluate chunk-size and bounded GPU-cap variants before deciding whether the
    service default can move off serial.
-1. Only after the above is complete, terminalize `T74`, then Story 20, then Epic 06 in strict
+6. Only after the above is complete, terminalize `T74`, then Story 20, then Epic 06 in strict
    status/checkbox order.
 
 ### Implementation Checklist

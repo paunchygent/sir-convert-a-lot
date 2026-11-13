@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0016
 title: Bootstrap shared governance package facts and walking skeleton
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,9 +16,9 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- TBD
+  - TBD
 retired_ids:
-- task-385-bootstrap-shared-governance-package-facts-and-walking-skeleton
+  - task-385-bootstrap-shared-governance-package-facts-and-walking-skeleton
 ---
 
 ## Context

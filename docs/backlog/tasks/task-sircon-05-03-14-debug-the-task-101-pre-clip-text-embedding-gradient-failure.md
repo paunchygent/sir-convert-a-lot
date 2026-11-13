@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-03-14
 title: Debug the Task 101 pre-clip text-embedding gradient failure at step 1405
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,28 +17,16 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] A focused test proves the new RCA surface can emit token/row attribution\n\
-  \  without depending on live ad hoc inspection."
-- "[ ] A focused test proves the RCA surface can distinguish:\n  - non-finite `input_text_embedding`\
-  \ gradient before parameter-gradient\n    corruption\n  - parameter-gradient corruption\
-  \ with still-finite forward activations\n  - accumulation-only corruption versus\
-  \ single-microbatch corruption"
-- "[ ] A focused test proves the near-boundary diagnostic state can be reused to\n\
-  \  run a bounded micro-window replay without re-running the full `1238 -> 1405`\n\
-  \  lane."
-- "[ ] One bounded Hemma or deterministic replay artifact for optimizer step\n  `1405`\
-  \ or `1417` captures:\n  - the failing microbatch ids / provenance rows\n  - the\
-  \ first non-finite text-embedding row ids\n  - the associated token ids / decoded\
-  \ text context\n  - whether the first bad backward surface is pre-parameter or parameter-level"
-- "[ ] The resulting operator conclusion is specific enough to choose the next\n \
-  \ remediation without another blind training retry."
-- "[ ] The resulting remediation order explicitly distinguishes:\n  - the primary\
-  \ structural countermeasure to test first on the `1406` replay\n    window\n  -\
-  \ the secondary accumulation/optimization ablations to test only if the\n    primary\
-  \ countermeasure does not resolve the instability"
+  - "[ ] A focused test proves the new RCA surface can emit token/row attribution\n  without depending on live ad hoc inspection."
+  - "[ ] A focused test proves the RCA surface can distinguish:\n  - non-finite `input_text_embedding` gradient before parameter-gradient\n    corruption\n  - parameter-gradient corruption with still-finite forward activations\n  - accumulation-only corruption versus single-microbatch corruption"
+  - "[ ] A focused test proves the near-boundary diagnostic state can be reused to\n  run a bounded micro-window replay without re-running the full `1238 -> 1405`\n  lane."
+  - "[ ] One bounded Hemma or deterministic replay artifact for optimizer step\n  `1405` or `1417` captures:\n  - the failing microbatch ids / provenance rows\n  - the first non-finite text-embedding row ids\n  - the associated token ids / decoded text context\n  - whether the first bad backward surface is pre-parameter or parameter-level"
+  - "[ ] The resulting operator conclusion is specific enough to choose the next\n  remediation without another blind training retry."
+  - "[ ] The resulting remediation order explicitly distinguishes:\n  - the primary structural countermeasure to test first on the `1406` replay\n    window\n  - the secondary accumulation/optimization ablations to test only if the\n    primary countermeasure does not resolve the instability"
 retired_ids:
-- task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405
+  - task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md
@@ -117,7 +105,7 @@ Source record: docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embe
 > replay cost for every hypothesis:
 >
 > 1. Mint one reusable near-boundary diagnostic state.
-> 1. Reuse that state for many cheap micro-window experiments around the failing
+> 2. Reuse that state for many cheap micro-window experiments around the failing
 >    optimizer step.
 >
 > The intended implementation shape is:
@@ -235,12 +223,12 @@ Source record: docs/backlog/tasks/task-194-debug-the-task-101-pre-clip-text-embe
 >    narrow the active `text_embedding_mask` to the true text span only, or
 >    equivalently zero/detach the codec-span text-pad positions, then replay the
 >    bounded `1406 -> 1418` window again.
-> 1. Secondary ablation:
+> 2. Secondary ablation:
 >    if the mask-only proof is not enough, reduce
 >    `gradient_accumulation_steps` for the same bounded replay window to
 >    determine how much of the remaining instability is accumulation pressure
 >    rather than structural pad amplification.
-> 1. Tertiary mitigation:
+> 3. Tertiary mitigation:
 >    only after the first two proofs, consider narrower numeric mitigations such
 >    as a smaller text-embedding learning rate or row-specific sanitization for
 >    diagnostic purposes.

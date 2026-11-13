@@ -4,14 +4,14 @@ id: REF-SIRCON-RESEARCH-qwen-training-eval-pilot-progress-ledger-2026-03-15
 title: Qwen Training/Eval Pilot Progress Ledger (2026-03-15)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: Qwen Training/Eval Pilot Progress Ledger (2026-03-15)
 retired_ids:
-- REF-qwen-training-eval-pilot-progress-2026-03-15
+  - REF-qwen-training-eval-pilot-progress-2026-03-15
 ---
 
 ## Research Purpose And Boundary
@@ -45,23 +45,23 @@ It records:
 
 Every active Qwen Qwen pilot run must belong to exactly one experiment class.
 
-| Experiment class | Question it may answer | Current active surface |
-| --- | --- | --- |
-| `provenance` | Why did the historical lane behave the way it did? | `qwen-historical-pilot-control` |
-| `mechanism` | Where does the current failure originate and which bounded stabilizer changes that mechanism? | `qwen-stability-lab` |
-| `recovery` | Which recipe now trains stably enough to justify a governed proof? | governed `qwen-train launch/status` proof lane after promotion |
+| Experiment class | Question it may answer                                                                        | Current active surface                                         |
+| ---------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `provenance`     | Why did the historical lane behave the way it did?                                            | `qwen-historical-pilot-control`                                |
+| `mechanism`      | Where does the current failure originate and which bounded stabilizer changes that mechanism? | `qwen-stability-lab`                                           |
+| `recovery`       | Which recipe now trains stably enough to justify a governed proof?                            | governed `qwen-train launch/status` proof lane after promotion |
 
 ### Active Surface Matrix
 
-| Surface | Experiment class | Status | Operator meaning |
-| --- | --- | --- | --- |
-| `qwen-historical-pilot-control` | `provenance` | `active` | Historical-contract recreation and control evidence only |
-| `qwen-stability-lab` | `mechanism` | `active` | Bounded stabilization exploration and promotion gating |
-| governed `qwen-train launch/status` fresh-start proof | `recovery` | `active but blocked until promotion` | Short governed proof only after a mechanism candidate passes |
-| `qwen-freshstart-proof` | `mechanism` | `legacy-readonly` | Historical fresh-start proof surface; not a current operator default |
-| `qwen-backward-lineage` | `mechanism` | `legacy-readonly` | Historical causal-localization surface; not a current operator default |
-| `qwen-fallback-proof` | `mechanism` | `deprecated` | Historical Story 29 replay evidence; not for new work |
-| `qwen-fallback-accumulation-proof` | `mechanism` | `deprecated` | Historical Story 29 accumulation/fallback evidence; not for new work |
+| Surface                                               | Experiment class | Status                               | Operator meaning                                                       |
+| ----------------------------------------------------- | ---------------- | ------------------------------------ | ---------------------------------------------------------------------- |
+| `qwen-historical-pilot-control`                       | `provenance`     | `active`                             | Historical-contract recreation and control evidence only               |
+| `qwen-stability-lab`                                  | `mechanism`      | `active`                             | Bounded stabilization exploration and promotion gating                 |
+| governed `qwen-train launch/status` fresh-start proof | `recovery`       | `active but blocked until promotion` | Short governed proof only after a mechanism candidate passes           |
+| `qwen-freshstart-proof`                               | `mechanism`      | `legacy-readonly`                    | Historical fresh-start proof surface; not a current operator default   |
+| `qwen-backward-lineage`                               | `mechanism`      | `legacy-readonly`                    | Historical causal-localization surface; not a current operator default |
+| `qwen-fallback-proof`                                 | `mechanism`      | `deprecated`                         | Historical Story 29 replay evidence; not for new work                  |
+| `qwen-fallback-accumulation-proof`                    | `mechanism`      | `deprecated`                         | Historical Story 29 accumulation/fallback evidence; not for new work   |
 
 ### Canonical Qwen Experiment Spec
 
@@ -280,14 +280,14 @@ The next canonical action is a bounded no-projection mitigation proof from
 `state-step-00001406`:
 
 1. reuse `state-step-00001406` as the canonical RCA checkpoint
-1. narrow the active `text_embedding_mask` to the true text span only, or
+2. narrow the active `text_embedding_mask` to the true text span only, or
    equivalently zero/detach the codec-span text-pad positions
-1. rerun only the bounded `1406 -> 1418` replay window
-1. treat reduced `gradient_accumulation_steps` as the secondary ablation if the
+3. rerun only the bounded `1406 -> 1418` replay window
+4. treat reduced `gradient_accumulation_steps` as the secondary ablation if the
    mask-only mitigation does not remove the instability
-1. prefer proving the mitigated lane all the way to step `1500` and completing
+5. prefer proving the mitigated lane all the way to step `1500` and completing
    the scheduled eval there before allowing the next clean restart
-1. if `1500` still fails after the structural fix and planned accumulation
+6. if `1500` still fails after the structural fix and planned accumulation
    ablations, use the fallback gate:
    - clear `1406 -> 1470`
    - mint the `1470` checkpoint

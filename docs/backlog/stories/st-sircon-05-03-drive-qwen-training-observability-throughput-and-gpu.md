@@ -4,8 +4,8 @@ id: ST-SIRCON-05-03
 title: Drive Qwen training observability throughput and GPU saturation on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,29 +18,20 @@ epic: EPIC-SIRCON-05
 links:
   decisions: []
 acceptance_criteria:
-- Qwen pilot runtime emits first-class tracker artifacts during live training, with
-  MLflow primary and TensorBoard event files available for loss inspection.
-- Task 101 live status exposes truthful current-step, phase, latest-checkpoint, and
-  tracker-run metadata.
-- Long Qwen pilot runs emit high-resolution resource evidence at no more than 1.0
-  second sampling and distinguish steady-state from checkpoint-save windows.
-- Durable checkpoint cadence is no longer 2 steps by default and step accounting distinguishes
-  loop iterations from optimizer updates.
-- Dataloader and host-to-device paths expose evidence-backed Hemma defaults rather
-  than synchronous single-process defaults.
-- Duplicate ref_audio rows do not recompute ref_mel blindly, with an explicit decision
-  on bundle-level mels.
-- Bounded PyTorch and ROCm profiling surfaces produce reviewable traces without ad
-  hoc shell payloads.
-- Canonical Task 101 performs real in-training held-out evaluation against swedish_checkpoint_dev
-  and persists eval loss in tracker, status, and terminal reports.
-- One Hemma verification run demonstrates at least 90 percent median GPU busy during
-  a steady-state non-checkpoint window lasting at least 10 contiguous minutes.
-- Story, epic, runbook, and reference docs agree on the saturation-oriented acceptance
-  posture.
+  - Qwen pilot runtime emits first-class tracker artifacts during live training, with MLflow primary and TensorBoard event files available for loss inspection.
+  - Task 101 live status exposes truthful current-step, phase, latest-checkpoint, and tracker-run metadata.
+  - Long Qwen pilot runs emit high-resolution resource evidence at no more than 1.0 second sampling and distinguish steady-state from checkpoint-save windows.
+  - Durable checkpoint cadence is no longer 2 steps by default and step accounting distinguishes loop iterations from optimizer updates.
+  - Dataloader and host-to-device paths expose evidence-backed Hemma defaults rather than synchronous single-process defaults.
+  - Duplicate ref_audio rows do not recompute ref_mel blindly, with an explicit decision on bundle-level mels.
+  - Bounded PyTorch and ROCm profiling surfaces produce reviewable traces without ad hoc shell payloads.
+  - Canonical Task 101 performs real in-training held-out evaluation against swedish_checkpoint_dev and persists eval loss in tracker, status, and terminal reports.
+  - One Hemma verification run demonstrates at least 90 percent median GPU busy during a steady-state non-checkpoint window lasting at least 10 contiguous minutes.
+  - Story, epic, runbook, and reference docs agree on the saturation-oriented acceptance posture.
 retired_ids:
-- story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma
+  - story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma
 ---
+
 ## Context
 
 Source record: docs/backlog/stories/story-26-drive-task-101-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md
@@ -103,13 +94,13 @@ Source record: docs/backlog/stories/story-26-drive-task-101-qwen-training-observ
 > Execution order and ownership are fixed to keep SRP/LoC/complexity bounded:
 >
 > 1. `T161` runtime `ref_mel` cache and promotion decision.
-> 1. `T162` bounded profiling surfaces.
-> 1. `T163` launch profiles plus saturation gate.
-> 1. Full local quality gates and docs gates.
-> 1. Commit/push before any live pilot stop or relaunch.
-> 1. Stop the active pilot only after the new code is pushed.
-> 1. Pull on Hemma with `run-hemma` and relaunch through governed surfaces.
-> 1. Verify the `>= 90%` saturation gate from monitor-backed evidence.
+> 2. `T162` bounded profiling surfaces.
+> 3. `T163` launch profiles plus saturation gate.
+> 4. Full local quality gates and docs gates.
+> 5. Commit/push before any live pilot stop or relaunch.
+> 6. Stop the active pilot only after the new code is pushed.
+> 7. Pull on Hemma with `run-hemma` and relaunch through governed surfaces.
+> 8. Verify the `>= 90%` saturation gate from monitor-backed evidence.
 >
 > Planned module ownership:
 >
@@ -197,28 +188,28 @@ Source record: docs/backlog/stories/story-26-drive-task-101-qwen-training-observ
 
 ### Tasks (Ordered)
 
-> 1. `docs/backlog/tasks/task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training.md`
-> 1. `docs/backlog/tasks/task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime.md`
-> 1. `docs/backlog/tasks/task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs.md`
-> 1. `docs/backlog/tasks/task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs.md`
-> 1. `docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed.md`
-> 1. `docs/backlog/tasks/task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-07-persist-bundle-level-precomputed-ref-mel-or-speaker.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-08-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-09-close-the-remaining-task-101-throughput-truth-gaps-from-the.md`
-> 1. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
-> 1. `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-13-restore-the-upstream-qwen-fine-tune-graph-and-add-clip.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-14-debug-the-task-101-pre-clip-text-embedding-gradient-failure.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-11-add-real-in-training-held-out-eval-loop-to-qwen-training.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-12-add-standalone-eval-and-scheduled-train-stop-resume-control.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-10-bound-the-rebuilt-bundle-task-101-non-finite-loss-window.md`
+> 01. `docs/backlog/tasks/task-156-activate-first-class-mlflow-and-accelerate-tracking-for-task-101-qwen-training.md`
+> 02. `docs/backlog/tasks/task-157-add-truthful-live-heartbeat-and-phase-accounting-to-the-task-101-qwen-pilot-runtime.md`
+> 03. `docs/backlog/tasks/task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs.md`
+> 04. `docs/backlog/tasks/task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs.md`
+> 05. `docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md`
+> 06. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed.md`
+> 07. `docs/backlog/tasks/task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution.md`
+> 08. `docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and.md`
+> 09. `docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle.md`
+> 10. `docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task.md`
+> 11. `docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead.md`
+> 12. `docs/backlog/tasks/task-sircon-05-03-07-persist-bundle-level-precomputed-ref-mel-or-speaker.md`
+> 13. `docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching.md`
+> 14. `docs/backlog/tasks/task-sircon-05-03-08-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove.md`
+> 15. `docs/backlog/tasks/task-sircon-05-03-09-close-the-remaining-task-101-throughput-truth-gaps-from-the.md`
+> 16. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
+> 17. `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
+> 18. `docs/backlog/tasks/task-sircon-05-03-13-restore-the-upstream-qwen-fine-tune-graph-and-add-clip.md`
+> 19. `docs/backlog/tasks/task-sircon-05-03-14-debug-the-task-101-pre-clip-text-embedding-gradient-failure.md`
+> 20. `docs/backlog/tasks/task-sircon-05-03-11-add-real-in-training-held-out-eval-loop-to-qwen-training.md`
+> 21. `docs/backlog/tasks/task-sircon-05-03-12-add-standalone-eval-and-scheduled-train-stop-resume-control.md`
+> 22. `docs/backlog/tasks/task-sircon-05-03-10-bound-the-rebuilt-bundle-task-101-non-finite-loss-window.md`
 
 ## Decision And Assumption Ledger
 

@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-07-03-02
-title: Unify answer-key eligibility and source-evidence mapping decisions across manifests
-  and adapters
+title: Unify answer-key eligibility and source-evidence mapping decisions across manifests and adapters
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,21 +17,14 @@ closeout_review:
 story: ST-SIRCON-07-03
 task_kind: story
 acceptance_criteria:
-- Choice, multiple-response, and gap-fill eligibility are classified in one domain
-  service or policy object rather than duplicated in manifest code.
-- Task 309 output-mode counts still distinguish vLLM choice from JSON Schema exactly
-  as the governed planner policy requires.
-- Text-only validation/advisory policy keeps embedded-asset rows skipped as `unsupported_assets`;
-  Qwen3.6 vision-capable policy can include supported PNG/JPEG embedded assets without
-  changing source provenance.
-- Adding a new source-evidence family requires changing one mapper, not multiple string-check
-  helpers.
-- LLM completion lineage remains candidate metadata and never becomes parser/source
-  provenance.
-- No raw prompt, provider response, item text, alternative text, or gap text is introduced
-  into retained artifacts.
+  - Choice, multiple-response, and gap-fill eligibility are classified in one domain service or policy object rather than duplicated in manifest code.
+  - Task 309 output-mode counts still distinguish vLLM choice from JSON Schema exactly as the governed planner policy requires.
+  - Text-only validation/advisory policy keeps embedded-asset rows skipped as `unsupported_assets`; Qwen3.6 vision-capable policy can include supported PNG/JPEG embedded assets without changing source provenance.
+  - Adding a new source-evidence family requires changing one mapper, not multiple string-check helpers.
+  - LLM completion lineage remains candidate metadata and never becomes parser/source provenance.
+  - No raw prompt, provider response, item text, alternative text, or gap text is introduced into retained artifacts.
 retired_ids:
-- task-317-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters
+  - task-317-unify-answer-key-eligibility-and-source-evidence-mapping-decisions-across-manifests-and-adapters
 ---
 
 ## Context

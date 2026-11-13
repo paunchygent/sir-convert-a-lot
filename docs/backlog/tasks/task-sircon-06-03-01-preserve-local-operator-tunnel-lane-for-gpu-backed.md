@@ -4,8 +4,8 @@ id: TASK-SIRCON-06-03-01
 title: Preserve local operator tunnel lane for GPU-backed conversions
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,12 +17,13 @@ closeout_review:
 story: ST-SIRCON-06-03
 task_kind: story
 acceptance_criteria:
-- '- [ ] Local operator conversion remains possible without public direct API exposure.'
-- '- [ ] Heavy/GPU-dependent work can still be offloaded to Hemma.'
-- '- [ ] The lane is documented as internal/operator-only.'
+  - '- [ ] Local operator conversion remains possible without public direct API exposure.'
+  - '- [ ] Heavy/GPU-dependent work can still be offloaded to Hemma.'
+  - '- [ ] The lane is documented as internal/operator-only.'
 retired_ids:
-- task-261-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions
+  - task-261-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-261-preserve-local-operator-tunnel-lane-for-gpu-backed-conversions.md

@@ -4,14 +4,14 @@ id: REF-SIRCON-DECISIONS-qwen3-tts-swedish-corpus-curation-policy
 title: Qwen3-TTS Swedish Corpus Curation Policy
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: decisions
 summary: Qwen3-TTS Swedish Corpus Curation Policy
 retired_ids:
-- REF-qwen3-tts-swedish-corpus-curation-policy
+  - REF-qwen3-tts-swedish-corpus-curation-policy
 ---
 
 ## Outcome And Purpose
@@ -57,11 +57,11 @@ This policy closes `T102` by naming:
 
 ## Dataset Inventory
 
-| Dataset | Approximate volume | Speaker situation | Transcript caveats | Canonical role |
-| --- | --- | --- | --- | --- |
-| `KBLab/rixvox` | about `5493h` total, with about `5383h` train | about `1194` speakers across split-defined train/validation/test | transcripts are not always verbatim speech and alignments are automatic | dominant training backbone after filtering |
-| `google/fleurs` Swedish (`sv_se`) | about `10h` train plus dev/test | speaker-disjoint train versus dev/test by dataset design | read speech, comparatively clean and stable | dev/test quantitative evaluation and control prompts, not main training backbone |
-| `KTH/waxholm` | about `2h 16m` total | small multi-speaker dialogue corpus | some files lack labels and must be excluded; usable files have stronger manual labeling/alignment trust | smoke/control evaluation only, not backbone training |
+| Dataset                           | Approximate volume                            | Speaker situation                                                | Transcript caveats                                                                                      | Canonical role                                                                   |
+| --------------------------------- | --------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `KBLab/rixvox`                    | about `5493h` total, with about `5383h` train | about `1194` speakers across split-defined train/validation/test | transcripts are not always verbatim speech and alignments are automatic                                 | dominant training backbone after filtering                                       |
+| `google/fleurs` Swedish (`sv_se`) | about `10h` train plus dev/test               | speaker-disjoint train versus dev/test by dataset design         | read speech, comparatively clean and stable                                                             | dev/test quantitative evaluation and control prompts, not main training backbone |
+| `KTH/waxholm`                     | about `2h 16m` total                          | small multi-speaker dialogue corpus                              | some files lack labels and must be excluded; usable files have stronger manual labeling/alignment trust | smoke/control evaluation only, not backbone training                             |
 
 ## Canonical Role Assignment
 
@@ -113,15 +113,15 @@ bounded pilot training pool.
 The filtering contract for `T102` is:
 
 1. keep only rows with usable Swedish speech and non-empty normalized text
-1. exclude rows with obvious protocol-only or stage-direction content
-1. exclude rows with missing or unusable speaker identity for per-speaker
+2. exclude rows with obvious protocol-only or stage-direction content
+3. exclude rows with missing or unusable speaker identity for per-speaker
    reference selection
-1. prefer `speaker_from_id=True` rows for the smoke subset and bounded Hemma
+4. prefer `speaker_from_id=True` rows for the smoke subset and bounded Hemma
    pilot; quarantine the rest until manual review proves they are safe
-1. exclude suspected multi-speaker contamination or diarization failures
-1. apply transcript-mismatch filtering with Swedish ASR during `T103`
-1. apply a boilerplate-text dedup pass before speaker caps are counted
-1. cap per-speaker contribution so a few parliamentary voices do not dominate
+5. exclude suspected multi-speaker contamination or diarization failures
+6. apply transcript-mismatch filtering with Swedish ASR during `T103`
+7. apply a boilerplate-text dedup pass before speaker caps are counted
+8. cap per-speaker contribution so a few parliamentary voices do not dominate
 
 ### Transcript-Mismatch Policy
 

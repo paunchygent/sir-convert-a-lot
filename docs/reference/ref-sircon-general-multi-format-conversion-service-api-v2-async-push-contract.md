@@ -4,13 +4,13 @@ id: REF-SIRCON-GENERAL-multi-format-conversion-service-api-v2-async-push-contrac
 title: Multi-format Conversion Service API v2 Async Push Contract
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 retired_ids:
-- CONV-multi-format-conversion-service-api-v2-async-push
+  - CONV-multi-format-conversion-service-api-v2-async-push
 summary: Multi-format Conversion Service API v2 Async Push Contract
 ---
 

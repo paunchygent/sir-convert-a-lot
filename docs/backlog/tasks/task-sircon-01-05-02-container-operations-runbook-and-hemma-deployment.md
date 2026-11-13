@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-01-05-02
-title: Container operations runbook and Hemma deployment verification for dockerized
-  service
+title: Container operations runbook and Hemma deployment verification for dockerized service
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,13 +17,12 @@ closeout_review:
 story: ST-SIRCON-01-05
 task_kind: story
 acceptance_criteria:
-- '- [ ] Operator can follow runbook only and reach healthy ready services on Hemma.'
-- '- [ ] Verification catches stale revision or profile/data-root mismatch deterministically.'
-- '- [ ] GPU-first invariant remains enforced under containerized startup/restart
-  flow.'
-- '- [ ] Manual smoke conversion via tunnel is documented and evidenced.'
+  - '- [ ] Operator can follow runbook only and reach healthy ready services on Hemma.'
+  - '- [ ] Verification catches stale revision or profile/data-root mismatch deterministically.'
+  - '- [ ] GPU-first invariant remains enforced under containerized startup/restart flow.'
+  - '- [ ] Manual smoke conversion via tunnel is documented and evidenced.'
 retired_ids:
-- task-24-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service
+  - task-24-container-operations-runbook-and-hemma-deployment-verification-for-dockerized-service
 ---
 
 ## Context

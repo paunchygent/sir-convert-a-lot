@@ -4,8 +4,8 @@ id: TASK-SIRCON-03-01-01
 title: Investigate PDF conversion decision logic and GPU CPU performance attribution
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,27 +17,15 @@ closeout_review:
 story: ST-SIRCON-03-01
 task_kind: story
 acceptance_criteria:
-- 'The investigation identifies every major stage that can plausibly dominate wall-clock:
-  preflight, PDF splitting, Docling layout, OCR, table structure, formula enrichment,
-  ordering fallback, normalization, checkpoint/artifact persistence, and queue/worker
-  wait.'
-- The report distinguishes GPU availability from GPU utilization and includes CPU/GPU
-  attribution methods.
-- The current pipeline is explicitly inspected and tuned where evidence supports it;
-  the investigation must not declare route selection or bypass as a solution at any
-  point.
-- Every tuning proposal is linked to a measured bottleneck and includes a parity-preserving
-  validation gate. Random sweeps or undocumented trial-and-error parameter changes
-  do not satisfy this task.
-- The conversion decision model records input features, selected processing settings,
-  decision reasons, parity evidence, and user-visible explanation when heavy processing
-  is required.
-- 'Recommendations are evidence-backed and conservative: no production default changes
-  without passing Task 76 parity plus benchmark/profiler gates.'
-- Product decision questions are explicitly closed or carried forward as blockers
-  before implementation.
+  - 'The investigation identifies every major stage that can plausibly dominate wall-clock: preflight, PDF splitting, Docling layout, OCR, table structure, formula enrichment, ordering fallback, normalization, checkpoint/artifact persistence, and queue/worker wait.'
+  - The report distinguishes GPU availability from GPU utilization and includes CPU/GPU attribution methods.
+  - The current pipeline is explicitly inspected and tuned where evidence supports it; the investigation must not declare route selection or bypass as a solution at any point.
+  - Every tuning proposal is linked to a measured bottleneck and includes a parity-preserving validation gate. Random sweeps or undocumented trial-and-error parameter changes do not satisfy this task.
+  - The conversion decision model records input features, selected processing settings, decision reasons, parity evidence, and user-visible explanation when heavy processing is required.
+  - 'Recommendations are evidence-backed and conservative: no production default changes without passing Task 76 parity plus benchmark/profiler gates.'
+  - Product decision questions are explicitly closed or carried forward as blockers before implementation.
 retired_ids:
-- task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution
+  - task-343-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution
 ---
 
 ## Context
@@ -92,7 +80,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
      within the approved quality pipeline. Do not use this as route-bypass
      authority.
 
-1. Current pipeline tuning is under-specified.
+2. Current pipeline tuning is under-specified.
 
    - Current behavior: the service has a working Docling/OCR/checkpoint path,
      but the repo does not prove that its low-level settings match Hemma's
@@ -104,7 +92,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
      model reuse behavior, chunk scheduling, CPU thread pressure, warm-up,
      ROCm/PyTorch profiler traces, and GPU memory/busy sampling.
 
-1. "GPU accelerated" does not prove efficient GPU utilization.
+3. "GPU accelerated" does not prove efficient GPU utilization.
 
    - Current behavior: GPU availability is probed and Docling is configured
      with an accelerator device, but previous benchmarks show long wall-clock
@@ -116,7 +104,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
      CPU/GPU stage timings, ROCm sampling, and PyTorch profiler evidence for
      bounded representative runs.
 
-1. Docling performance knobs are not explicit in the runtime profile.
+4. Docling performance knobs are not explicit in the runtime profile.
 
    - Current code uses `PdfPipelineOptions` and sets device, OCR, table
      structure, formula enrichment, and layout model.
@@ -128,7 +116,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
    - Recommendation: benchmark current `PdfPipelineOptions` against a bounded
      `ThreadedPdfPipelineOptions` candidate matrix before adopting any default.
 
-1. OCR batching and EasyOCR behavior are opaque.
+5. OCR batching and EasyOCR behavior are opaque.
 
    - EasyOCR supports GPU mode, model storage, `batch_size`, `workers`, and
      batched inference surfaces.
@@ -139,7 +127,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
      OCR settings only inside the approved pipeline. Do not introduce
      selectable-text or PyMuPDF bypass routing as a remediation path.
 
-1. Formula/table/layout quality features may be expensive but are always tied
+6. Formula/table/layout quality features may be expensive but are always tied
    to broad presets.
 
    - Current behavior: accurate table mode enables formula enrichment; ordering
@@ -151,7 +139,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
    - Recommendation: preserve these quality features, but attribute their cost
      explicitly and use input-aware decisioning for when each is required.
 
-1. Source-layer formula evidence is not part of conversion decisioning.
+7. Source-layer formula evidence is not part of conversion decisioning.
 
    - Current behavior: formula VLM enrichment can run on born-digital PDFs even
      when OCR is disabled and the PDF source layer exposes usable formula/text
@@ -166,7 +154,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
      must consume the shared Task 345 evidence/authority model and must not
      reimplement formula source-layer extraction or formula-authority policy.
 
-1. Specialist formula/OCR candidate evidence is not yet separated from
+8. Specialist formula/OCR candidate evidence is not yet separated from
    infrastructure choices.
 
    - Current behavior: the conversion lane has concrete Granite/Docling
@@ -180,7 +168,7 @@ around the current quality pipeline is not an acceptable remediation outcome.
      measurements for later decision policy, but must not duplicate the Task
      346 evaluation harness or Task 345 formula-authority policy.
 
-1. Benchmark tasks are close but not enough for root-cause attribution.
+9. Benchmark tasks are close but not enough for root-cause attribution.
 
    - Task 74 and Task 273 define throughput and chunk-size tuning evidence.
    - Gap: they do not yet require library-level profiling or conversion
@@ -377,13 +365,13 @@ threaded/batch-size tuning remain open.
    - Tuning must be hypothesis-driven and measurement-backed, not trial and
      error.
 
-1. `auto` is quality-first.
+2. `auto` is quality-first.
 
    - Performance must not be solved by lowering output quality.
    - Adaptive processing decisions may tune settings only inside the approved
      quality pipeline, and only when quality and output parity are preserved.
 
-1. Product profiles are a good direction, but not a shortcut for this task.
+3. Product profiles are a good direction, but not a shortcut for this task.
 
    - Normal users should get profiles instead of raw backend/OCR/table flags in
      a later product slice.
@@ -391,12 +379,12 @@ threaded/batch-size tuning remain open.
      current issue.
    - Raw flags remain available only when explicitly requested by operators.
 
-1. No quality loss is acceptable for this remediation.
+4. No quality loss is acceptable for this remediation.
 
    - Sir Convert is not running a scrape operation. Faster processing is valid
      only when it preserves quality and output parity.
 
-1. Selectable-text PDFs should avoid unnecessary heavy processing only inside
+5. Selectable-text PDFs should avoid unnecessary heavy processing only inside
    the approved quality pipeline when heavy stages are not needed.
 
    - This is required to preserve quality and output parity without wasting
@@ -407,12 +395,12 @@ threaded/batch-size tuning remain open.
    - This does not permit PyMuPDF bypass, selectable-text bypass, or any route
      around the current quality pipeline as remediation.
 
-1. The benchmark matrix should include Docling threaded/batch-size profiles.
+6. The benchmark matrix should include Docling threaded/batch-size profiles.
 
    - Include them only after a profiler-backed candidate matrix proves the
      settings are valid on Hemma ROCm.
 
-1. Do not frame this as a "slow lane."
+7. Do not frame this as a "slow lane."
 
    - The user-facing explanation should say why heavy processing is required,
      what evidence led to that decision, and what progress/runtime signals are

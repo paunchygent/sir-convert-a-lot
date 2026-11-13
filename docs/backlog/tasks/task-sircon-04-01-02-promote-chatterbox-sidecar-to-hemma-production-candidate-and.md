@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-04-01-02
-title: Promote Chatterbox sidecar to Hemma production candidate and mark experimental
-  sidecars explicitly
+title: Promote Chatterbox sidecar to Hemma production candidate and mark experimental sidecars explicitly
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,15 +17,12 @@ closeout_review:
 story: ST-SIRCON-04-01
 task_kind: story
 acceptance_criteria:
-- The repo has one explicit Hemma production-candidate TTS container.
-- The experiment containers are clearly marked as non-deployable for Hemma production
-  service work.
-- Story 22 and Epic 07 planning now point to Chatterbox as the active production-candidate
-  sidecar path.
-- Hemma operations docs no longer leave the Chatterbox-vs-experimental deployment
-  boundary implicit.
+  - The repo has one explicit Hemma production-candidate TTS container.
+  - The experiment containers are clearly marked as non-deployable for Hemma production service work.
+  - Story 22 and Epic 07 planning now point to Chatterbox as the active production-candidate sidecar path.
+  - Hemma operations docs no longer leave the Chatterbox-vs-experimental deployment boundary implicit.
 retired_ids:
-- task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly
+  - task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly
 ---
 
 ## Context

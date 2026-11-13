@@ -4,8 +4,8 @@ id: TASK-SIRCON-03-02-02
 title: Run chunk-size 8 production baseline tuning proof with warm-up and GPU sampling
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,35 +17,19 @@ closeout_review:
 story: ST-SIRCON-03-02
 task_kind: story
 acceptance_criteria:
-- '- [ ] Task 76 parity passes for the exact revision and deployed configuration before
-  the candidate benchmark.'
-- '- [ ] The candidate run is captured against the production service on Hemma with
-  `runtime_surface.mode=production_service`.'
-- '- [ ] Candidate config records: - `max_chunk_workers=2`, - `chunk_size_pages=8`,
-  - `gpu_stage_max_concurrency=2`, - MIOpen cache/scratch settings unchanged from
-  Task 271.'
-- '- [ ] The benchmark includes a warm-up conversion whose timing is excluded from
-  the candidate wall-clock proof.'
-- '- [ ] The report compares candidate wall-clock, success rate, warnings, placeholder
-  counts, Swedish diacritic counts, and resource evidence against the Task 271 baseline.'
-- '- [ ] Candidate success rate is `1.0`; any failed job blocks promotion.'
-- '- [ ] Candidate wall-clock is evaluated against the numeric gates: - `<=1961.1`
-  seconds may promote if all other gates pass, - `>2070.0` seconds keeps `chunk_size_pages=4`,
-  - intermediate results require a blocker or one more governed candidate.'
-- '- [ ] Candidate output quality does not regress: - `<!-- formula-not-decoded -->`
-  count `<=168`, - bare `<!-- image -->` marker count does not exceed the Task 271
-  baseline measured from the same artifact set, - long-document Swedish diacritic
-  count `>=17684`, - total warning count `<=4`, - no new engine/runtime, timeout,
-  GPU/resource, or conversion-bug failures.'
-- '- [ ] Resource sampling passes the required sample-count and field gates; all missing,
-  placeholder-only, unparsable, all-zero-without-alternate-proof, or `>90%` GPU-memory-pressure
-  evidence blocks promotion.'
-- '- [ ] Metrics safety remains true: no forbidden high-cardinality job labels.'
-- '- [ ] The final recommendation is explicit and conservative: promote `chunk_size_pages=8`
-  only if it improves wall-clock while preserving quality and resource safety; otherwise
-  keep `4` as the baseline.'
+  - '- [ ] Task 76 parity passes for the exact revision and deployed configuration before the candidate benchmark.'
+  - '- [ ] The candidate run is captured against the production service on Hemma with `runtime_surface.mode=production_service`.'
+  - '- [ ] Candidate config records: - `max_chunk_workers=2`, - `chunk_size_pages=8`, - `gpu_stage_max_concurrency=2`, - MIOpen cache/scratch settings unchanged from Task 271.'
+  - '- [ ] The benchmark includes a warm-up conversion whose timing is excluded from the candidate wall-clock proof.'
+  - '- [ ] The report compares candidate wall-clock, success rate, warnings, placeholder counts, Swedish diacritic counts, and resource evidence against the Task 271 baseline.'
+  - '- [ ] Candidate success rate is `1.0`; any failed job blocks promotion.'
+  - '- [ ] Candidate wall-clock is evaluated against the numeric gates: - `<=1961.1` seconds may promote if all other gates pass, - `>2070.0` seconds keeps `chunk_size_pages=4`, - intermediate results require a blocker or one more governed candidate.'
+  - '- [ ] Candidate output quality does not regress: - `<!-- formula-not-decoded -->` count `<=168`, - bare `<!-- image -->` marker count does not exceed the Task 271 baseline measured from the same artifact set, - long-document Swedish diacritic count `>=17684`, - total warning count `<=4`, - no new engine/runtime, timeout, GPU/resource, or conversion-bug failures.'
+  - '- [ ] Resource sampling passes the required sample-count and field gates; all missing, placeholder-only, unparsable, all-zero-without-alternate-proof, or `>90%` GPU-memory-pressure evidence blocks promotion.'
+  - '- [ ] Metrics safety remains true: no forbidden high-cardinality job labels.'
+  - '- [ ] The final recommendation is explicit and conservative: promote `chunk_size_pages=8` only if it improves wall-clock while preserving quality and resource safety; otherwise keep `4` as the baseline.'
 retired_ids:
-- task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling
+  - task-273-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling
 ---
 
 ## Context

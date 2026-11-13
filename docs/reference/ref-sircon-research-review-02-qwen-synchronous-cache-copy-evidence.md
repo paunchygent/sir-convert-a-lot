@@ -4,14 +4,14 @@ id: REF-SIRCON-RESEARCH-review-02-qwen-synchronous-cache-copy-evidence
 title: Review 02 Qwen Synchronous Cache Copy Evidence
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: Review 02 Qwen Synchronous Cache Copy Evidence
 retired_ids:
-- REF-review-02-qwen-synchronous-cache-copy-evidence
+  - REF-review-02-qwen-synchronous-cache-copy-evidence
 ---
 
 ## Research Purpose And Boundary

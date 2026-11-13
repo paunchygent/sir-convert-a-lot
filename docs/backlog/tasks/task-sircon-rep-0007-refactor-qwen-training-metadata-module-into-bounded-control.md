@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-REP-0007
-title: Refactor Qwen training metadata module into bounded control-plane modules without
-  compatibility shims
+title: Refactor Qwen training metadata module into bounded control-plane modules without compatibility shims
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,18 +16,13 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- "[ ] No behavior change in launch/resume/eval/diagnose/schedule/status/stop\n  command\
-  \ outcomes."
-- "[ ] No legacy shim, alias module, pass-through wrapper, or compatibility\n  bridge\
-  \ remains for the old `metadata.py` surface."
-- "[ ] All touched hot-path modules remain under the Story 28 / RULE-095 line\n  caps."
-- "[ ] Existing artifact shape contracts (`launch.json`, `status.json`,\n  `status.md`,\
-  \ `stop.json`, `latest-launch.json`, `latest_checkpoint.json`)\n  are preserved."
-- "[ ] Validation gates pass:\n  - `pdm run format-all`\n  - `pdm run lint-fix`\n\
-  \  - `pdm run typecheck-all`\n  - focused pytest for Qwen training control-plane/reporting\
-  \ metadata\n  - `pdm run validate-tasks`\n  - `pdm run validate-docs`"
+  - "[ ] No behavior change in launch/resume/eval/diagnose/schedule/status/stop\n  command outcomes."
+  - "[ ] No legacy shim, alias module, pass-through wrapper, or compatibility\n  bridge remains for the old `metadata.py` surface."
+  - "[ ] All touched hot-path modules remain under the Story 28 / RULE-095 line\n  caps."
+  - "[ ] Existing artifact shape contracts (`launch.json`, `status.json`,\n  `status.md`, `stop.json`, `latest-launch.json`, `latest_checkpoint.json`)\n  are preserved."
+  - "[ ] Validation gates pass:\n  - `pdm run format-all`\n  - `pdm run lint-fix`\n  - `pdm run typecheck-all`\n  - focused pytest for Qwen training control-plane/reporting metadata\n  - `pdm run validate-tasks`\n  - `pdm run validate-docs`"
 retired_ids:
-- task-200-refactor-qwen-training-metadata-module-into-bounded-control-plane-modules-without-compatibility-shims
+  - task-200-refactor-qwen-training-metadata-module-into-bounded-control-plane-modules-without-compatibility-shims
 ---
 
 ## Context

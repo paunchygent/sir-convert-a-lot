@@ -4,8 +4,8 @@ id: EPIC-SIRCON-06
 title: Gateway cutover and internal access contract for Sir Convert-a-Lot
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,8 +18,9 @@ links:
   decisions: []
 outcome: Gateway cutover and internal access contract for Sir Convert-a-Lot
 retired_ids:
-- epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot
+  - epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot
 ---
+
 ## Scope
 
 Source record: docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md
@@ -67,12 +68,12 @@ Source record: docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-co
 ### Stories
 
 > 1. `docs/backlog/stories/st-sircon-06-02-adr-and-contract-authority-for-sir-convert-gateway-cutover.md`
-> 1. `docs/backlog/stories/st-sircon-06-01-sir-convert-gateway-fronted-public-access-and-internal-lane.md`
-> 1. `docs/backlog/stories/st-sircon-06-04-sir-convert-internal-auth-and-metadata-hardening-before.md`
-> 1. `docs/backlog/stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md`
+> 2. `docs/backlog/stories/st-sircon-06-01-sir-convert-gateway-fronted-public-access-and-internal-lane.md`
+> 3. `docs/backlog/stories/st-sircon-06-04-sir-convert-internal-auth-and-metadata-hardening-before.md`
+> 4. `docs/backlog/stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md`
 >    (completed Sir Convert-side handoff; implementation authority moved to
 >    HuleEdu `ST-01-07`)
-> 1. `docs/backlog/stories/st-sircon-06-03-preserve-internal-service-and-local-operator-sir-convert.md`
+> 5. `docs/backlog/stories/st-sircon-06-03-preserve-internal-service-and-local-operator-sir-convert.md`
 
 ## Epic Verification Plan
 

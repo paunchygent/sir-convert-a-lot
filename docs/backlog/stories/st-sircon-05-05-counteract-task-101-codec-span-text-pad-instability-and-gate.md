@@ -1,12 +1,11 @@
 ---
 type: story
 id: ST-SIRCON-05-05
-title: Counteract Task 101 codec-span text-pad instability and gate the next clean
-  restart
+title: Counteract Task 101 codec-span text-pad instability and gate the next clean restart
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -19,26 +18,16 @@ epic: EPIC-SIRCON-05
 links:
   decisions: []
 acceptance_criteria:
-- Story 29 is the explicit restart gate for the preserved Task 101 lane.
-- 'The preferred proof target is documented and enforced: - clear the mitigated `1406
-  -> 1418` replay - then reach `1500` - then complete the scheduled eval at `1500`'
-- 'The fallback proof target is documented and enforced: - only after the structural
-  mitigation and accumulation ablations - clear `1406 -> 1470` - then run standalone
-  held-out eval from the `1470` checkpoint'
-- No fresh clean base restart is allowed before either the preferred or fallback proof
-  gate is met.
-- Any auxiliary codebook-fusion helper change in the proof lane is either separately
-  proven beneficial and acceptable for mixed-precision hot-path use on the Hemma ROCm
-  stack, or removed before `T197` proof artifacts are treated as canonical.
-- The training reference ledger is a required update target for every proof and decision
-  in this story.
-- Proof closure on `text_span_only` or `text_span_only` plus reduced accumulation
-  explicitly triggers removal of the `legacy_codec_span` mask surface before the next
-  clean restart.
-- Story 29 stays aligned with Story 28 package boundaries and does not reopen god-file
-  style runtime/control-plane changes.
+  - Story 29 is the explicit restart gate for the preserved Task 101 lane.
+  - 'The preferred proof target is documented and enforced: - clear the mitigated `1406 -> 1418` replay - then reach `1500` - then complete the scheduled eval at `1500`'
+  - 'The fallback proof target is documented and enforced: - only after the structural mitigation and accumulation ablations - clear `1406 -> 1470` - then run standalone held-out eval from the `1470` checkpoint'
+  - No fresh clean base restart is allowed before either the preferred or fallback proof gate is met.
+  - Any auxiliary codebook-fusion helper change in the proof lane is either separately proven beneficial and acceptable for mixed-precision hot-path use on the Hemma ROCm stack, or removed before `T197` proof artifacts are treated as canonical.
+  - The training reference ledger is a required update target for every proof and decision in this story.
+  - Proof closure on `text_span_only` or `text_span_only` plus reduced accumulation explicitly triggers removal of the `legacy_codec_span` mask surface before the next clean restart.
+  - Story 29 stays aligned with Story 28 package boundaries and does not reopen god-file style runtime/control-plane changes.
 retired_ids:
-- story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart
+  - story-29-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart
 ---
 
 ## Context
@@ -155,14 +144,14 @@ numerical stability.
 ### Tasks (Ordered)
 
 1. `docs/backlog/tasks/task-195-land-an-explicit-task-101-text-embedding-mask-policy-and-text-span-only-mitigation.md`
-1. `docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md`
-1. `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
-1. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
-1. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
-1. `docs/backlog/tasks/task-sircon-05-05-04-prove-the-true-task-101-text-token-span-contract-and-set-the.md`
-1. `docs/backlog/tasks/task-sircon-05-05-02-restore-story-29-scratch-headroom-and-establish-cold.md`
-1. `docs/backlog/tasks/task-sircon-05-05-03-establish-idle-safe-recurring-hemma-scratch-maintenance.md`
-1. `docs/backlog/tasks/task-sircon-05-05-01-launch-the-first-clean-base-restart-after-the-bounded.md`
+2. `docs/backlog/tasks/task-196-make-task-101-gradient-accumulation-runtime-configurable-for-bounded-proof-runs.md`
+3. `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
+4. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
+5. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
+6. `docs/backlog/tasks/task-sircon-05-05-04-prove-the-true-task-101-text-token-span-contract-and-set-the.md`
+7. `docs/backlog/tasks/task-sircon-05-05-02-restore-story-29-scratch-headroom-and-establish-cold.md`
+8. `docs/backlog/tasks/task-sircon-05-05-03-establish-idle-safe-recurring-hemma-scratch-maintenance.md`
+9. `docs/backlog/tasks/task-sircon-05-05-01-launch-the-first-clean-base-restart-after-the-bounded.md`
 
 ### Current Status
 

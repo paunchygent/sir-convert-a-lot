@@ -4,13 +4,13 @@ id: REF-SIRCON-PLAN-hemma-sidecar-tts-md-to-wav-contract-outline
 title: Hemma Sidecar TTS md to wav Contract Outline
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: plan
 retired_ids:
-- REF-hemma-sidecar-tts-md-to-wav-contract-outline
+  - REF-hemma-sidecar-tts-md-to-wav-contract-outline
 summary: Hemma Sidecar TTS md to wav Contract Outline
 ---
 

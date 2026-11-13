@@ -4,8 +4,8 @@ id: EPIC-SIRCON-01
 title: Unified conversion service (Hemma-first, multi-format, cross-repo)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,7 +18,7 @@ links:
   decisions: []
 outcome: Unified conversion service (Hemma-first, multi-format, cross-repo)
 retired_ids:
-- 003-unified-conversion-service-epic
+  - 003-unified-conversion-service-epic
 ---
 
 ## Scope
@@ -89,21 +89,21 @@ retries, and failure reasons, without selecting backends manually or rewriting i
 ### Stories
 
 1. `docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md`
-1. `docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md`
-1. `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
-1. `docs/backlog/stories/st-sircon-01-03-consolidate-html-pdf-md-docx-xlsx-csv-conversion.md`
-1. `docs/backlog/stories/story-03-05-quality-performance-reliability-validation-gates.md`
-1. `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`
+2. `docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md`
+3. `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
+4. `docs/backlog/stories/st-sircon-01-03-consolidate-html-pdf-md-docx-xlsx-csv-conversion.md`
+5. `docs/backlog/stories/story-03-05-quality-performance-reliability-validation-gates.md`
+6. `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`
 
 ### Acceptance Criteria
 
 1. One canonical API + CLI contract is documented, test-enforced, and used across repos.
-1. Local usage from tunnel/internal HTTP is stable and documented as default dev workflow.
-1. HuleEdu and Skriptoteket backend integrations use the same internal contract with no repo-specific forks.
-1. GPU-first policy is validated and enforced during initial rollout; fallback policy is explicit and decision-gated.
-1. All listed formats (html/pdf/md/docx/xlsx/csv) are supported through canonical surface.
-1. Redundant converter scripts are removed or converted to thin compatibility wrappers after stabilization gate.
-1. Performance and reliability targets in Story 003e are met on the agreed benchmark corpus.
+2. Local usage from tunnel/internal HTTP is stable and documented as default dev workflow.
+3. HuleEdu and Skriptoteket backend integrations use the same internal contract with no repo-specific forks.
+4. GPU-first policy is validated and enforced during initial rollout; fallback policy is explicit and decision-gated.
+5. All listed formats (html/pdf/md/docx/xlsx/csv) are supported through canonical surface.
+6. Redundant converter scripts are removed or converted to thin compatibility wrappers after stabilization gate.
+7. Performance and reliability targets in Story 003e are met on the agreed benchmark corpus.
 
 ### Quality and Test Strategy (Epic Level)
 

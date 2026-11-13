@@ -4,14 +4,14 @@ id: REF-SIRCON-GENERAL-qwen3-tts-swedish-preprocessing-and-manifest-specificatio
 title: Qwen3-TTS Swedish Preprocessing and Manifest Specification
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 summary: Qwen3-TTS Swedish Preprocessing and Manifest Specification
 retired_ids:
-- REF-qwen3-tts-swedish-preprocessing-and-manifest-spec
+  - REF-qwen3-tts-swedish-preprocessing-and-manifest-spec
 ---
 
 ## Overview
@@ -195,20 +195,20 @@ Freeze rule:
 The full planned preprocessing flow, including `T110` / `T111` hardening, is
 fixed to these stages:
 
-1. inventory the approved source datasets and emit deterministic source rows
-1. normalize transcript text into a Swedish orthography form suitable for Qwen
-1. apply corpus-policy filters from `T102`
-1. select exactly one canonical `5` to `10` second reference clip per speaker
-1. standardize admitted audio assets from public source format to `24 kHz`
-1. run Swedish ASR mismatch scoring with `KBLab/kb-whisper-large`,
-   `revision="strict"`
-1. assign corpus quality tiers from WER bands and speaker-quality gates
-1. persist row-level preprocessing results to a deterministic disk-backed spool
-1. materialize the rich curated manifest layer from the spool
-1. materialize the Qwen raw JSONL layer from the spool
-1. generate `audio_codes` with the official Qwen tokenizer flow in bounded
-   chunks
-1. materialize the Qwen prepared JSONL layer used by training
+01. inventory the approved source datasets and emit deterministic source rows
+02. normalize transcript text into a Swedish orthography form suitable for Qwen
+03. apply corpus-policy filters from `T102`
+04. select exactly one canonical `5` to `10` second reference clip per speaker
+05. standardize admitted audio assets from public source format to `24 kHz`
+06. run Swedish ASR mismatch scoring with `KBLab/kb-whisper-large`,
+    `revision="strict"`
+07. assign corpus quality tiers from WER bands and speaker-quality gates
+08. persist row-level preprocessing results to a deterministic disk-backed spool
+09. materialize the rich curated manifest layer from the spool
+10. materialize the Qwen raw JSONL layer from the spool
+11. generate `audio_codes` with the official Qwen tokenizer flow in bounded
+    chunks
+12. materialize the Qwen prepared JSONL layer used by training
 
 ### Stage Control Contract
 
@@ -464,6 +464,7 @@ Speaker-quality rules:
   generation; path
   `build/reference/qwen3-tts-swedish-corpus/manifests/<subset>.prepared.jsonl`;
   required fields are all Layer 3 fields plus `audio_codes`.
+
 ### Canonical Manifest Families
 
 The preprocessing pipeline should materialize these manifest families:

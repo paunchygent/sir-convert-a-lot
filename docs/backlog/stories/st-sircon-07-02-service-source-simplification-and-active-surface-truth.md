@@ -4,8 +4,8 @@ id: ST-SIRCON-07-02
 title: Service source simplification and active surface truth cleanup before Exam.net runtime
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,17 +18,14 @@ epic: EPIC-SIRCON-07
 links:
   decisions: []
 acceptance_criteria:
-- '- [x] Task 284 reconciles the active docs state without runtime code changes.'
-- '- [x] Generic service job creation has a route policy/handler registry boundary before the Exam.net authoring route gains
-  runtime behavior.'
-- '- [x] Runtime engine, checkpoint executor, and CLI responsibilities are split into bounded modules with clear module docstrings
-  and without behavior drift.'
-- '- [ ] Legacy/deprecated experiment commands are visibly classified away from production conversion commands.'
-- '- [ ] Task 200 scaffolds are either completed under their governed contract or retired with source, docs, and tests reconciled.'
-- '- [ ] The onboarding map names the five service lanes, their status, entry points, owning docs, and command surfaces, and
-  is generated or validator-checked.'
+  - '- [x] Task 284 reconciles the active docs state without runtime code changes.'
+  - '- [x] Generic service job creation has a route policy/handler registry boundary before the Exam.net authoring route gains runtime behavior.'
+  - '- [x] Runtime engine, checkpoint executor, and CLI responsibilities are split into bounded modules with clear module docstrings and without behavior drift.'
+  - '- [ ] Legacy/deprecated experiment commands are visibly classified away from production conversion commands.'
+  - '- [ ] Task 200 scaffolds are either completed under their governed contract or retired with source, docs, and tests reconciled.'
+  - '- [ ] The onboarding map names the five service lanes, their status, entry points, owning docs, and command surfaces, and is generated or validator-checked.'
 retired_ids:
-- story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime
+  - story-46-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime
 ---
 
 ## Context
@@ -95,13 +92,13 @@ half-finished scaffolds.
 ### Task Sequence
 
 1. Task 284 is the first cleanup PR and is docs-state only.
-1. Task 285 must land before any service runtime implementation for
+2. Task 285 must land before any service runtime implementation for
    `examnet_artifact -> teacher_authoring_bundle`.
-1. Tasks 286 and 287 split runtime and CLI hotspots after the route boundary is
+3. Tasks 286 and 287 split runtime and CLI hotspots after the route boundary is
    explicit.
-1. Tasks 288 and 289 clean experiment surfaces and finish or retire Task 200
+4. Tasks 288 and 289 clean experiment surfaces and finish or retire Task 200
    scaffolds without deleting preserved evidence.
-1. Task 290 publishes the compact onboarding map after the active/legacy route
+5. Task 290 publishes the compact onboarding map after the active/legacy route
    and command classifications are truthful.
 
 ### Acceptance Criteria

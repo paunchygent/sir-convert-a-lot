@@ -4,8 +4,8 @@ id: TASK-SIRCON-03-01-02
 title: Diagnose and harden PDF page-window unit-of-work head-of-line blocking
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,27 +17,20 @@ closeout_review:
 story: ST-SIRCON-03-01
 task_kind: story
 acceptance_criteria:
-- The incident PDF can be replayed at page/window granularity with recorded timings
-  for `13`, `14`, `15`, `16`, `13-14`, `15-16`, and `13-16`.
-- Timing output distinguishes semaphore/queue wait from Docling conversion time and
-  checkpoint/artifact commit time.
-- Checkpoint/status data can show an in-flight long page window before the Docling
-  call returns.
-- Head-of-line blocking is visible in metadata without committing final artifact content
-  out of page order.
-- Smaller page-window candidates are accepted only if markdown/output parity and quality
-  gates pass.
-- No production default changes are made without controlled measurement, quality parity
-  evidence, and explicit rollback criteria.
-- The implementation does not add toy heuristics or quality-reduction routing.
-- The task report states whether the root cause is page-specific, combination-specific,
-  warm-up/model-init related, GPU/CPU scheduling related, or still unresolved.
-- Focused regression tests cover slow opaque chunk progress and completed out-of-order
-  chunk reporting.
-- Docs and generated indexes are synchronized.
+  - The incident PDF can be replayed at page/window granularity with recorded timings for `13`, `14`, `15`, `16`, `13-14`, `15-16`, and `13-16`.
+  - Timing output distinguishes semaphore/queue wait from Docling conversion time and checkpoint/artifact commit time.
+  - Checkpoint/status data can show an in-flight long page window before the Docling call returns.
+  - Head-of-line blocking is visible in metadata without committing final artifact content out of page order.
+  - Smaller page-window candidates are accepted only if markdown/output parity and quality gates pass.
+  - No production default changes are made without controlled measurement, quality parity evidence, and explicit rollback criteria.
+  - The implementation does not add toy heuristics or quality-reduction routing.
+  - The task report states whether the root cause is page-specific, combination-specific, warm-up/model-init related, GPU/CPU scheduling related, or still unresolved.
+  - Focused regression tests cover slow opaque chunk progress and completed out-of-order chunk reporting.
+  - Docs and generated indexes are synchronized.
 retired_ids:
-- task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking
+  - task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md
@@ -95,13 +88,13 @@ Source record: docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-u
 >    quality-preserving in principle, but it can increase overhead and must prove
 >    parity.
 >
-> 1. Should the user-facing CLI/API report completed out-of-order chunks while the
+> 2. Should the user-facing CLI/API report completed out-of-order chunks while the
 >    final artifact remains ordered?
 >
 >    Recommendation: yes, as metadata only, once tested. This directly addresses
 >    the blindness without risking artifact determinism.
 >
-> 1. Should page-window diagnostics become a normal support command?
+> 3. Should page-window diagnostics become a normal support command?
 >
 >    Recommendation: yes, but keep it an operator/developer diagnostic until the
 >    output is stable enough for ordinary CLI users.
@@ -273,7 +266,7 @@ Source record: docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-u
 >      `stopping_criteria_count >= 1`.
 >    - Prove no completed Granite generation row has
 >      `max_new_tokens_exhausted: true`.
-> 1. Prove Granite stops by stop criteria, not the token ceiling.
+> 2. Prove Granite stops by stop criteria, not the token ceiling.
 >    - Rerun direct page-14 `granite_docling`.
 >    - Rerun crop-isolated page-14 `granite_docling`.
 >    - Verify crop `#/texts/5` / hash
@@ -281,7 +274,7 @@ Source record: docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-u
 >      completes without return `-11`.
 >    - Verify the normal fallback path from `codeformulav2` to
 >      `granite_docling` completes when fallback is legitimately exercised.
-> 1. If a native crash remains after stop strings are active, disable
+> 3. If a native crash remains after stop strings are active, disable
 >    `torch.compile` only for the ROCm formula VLM Transformers path and rerun
 >    the same direct/crop/fallback proof.
 >    - The crash stack is in the compiled `OptimizedModule` path over
@@ -386,20 +379,20 @@ Source record: docs/backlog/tasks/task-344-diagnose-and-harden-pdf-page-window-u
 >
 > 1. Reproduce the incident page-window behavior on Hemma or an explicitly
 >    declared equivalent runtime.
-> 1. Run controlled page-window replays for the incident pages with the same
+> 2. Run controlled page-window replays for the incident pages with the same
 >    Docling options, OCR mode, table/formula settings, acceleration policy, and
 >    worker profile unless the experiment declares a single changed variable.
-> 1. Capture CPU/GPU evidence for the replay:
+> 3. Capture CPU/GPU evidence for the replay:
 >    - CPU wall time and process pressure,
 >    - ROCm/GPU busy and memory samples where available,
 >    - model initialization or warm-up state,
 >    - Docling stage/profiler evidence when supported by the library.
-> 1. Prove whether the pathological behavior is page-specific, window-combination
+> 4. Prove whether the pathological behavior is page-specific, window-combination
 >    specific, first-use/warm-up related, semaphore/queue related, or commit-order
 >    related.
-> 1. Verify markdown/output parity for any smaller-window candidate before
+> 5. Verify markdown/output parity for any smaller-window candidate before
 >    recommending it.
-> 1. Record why naive feature heuristics are insufficient for this incident.
+> 6. Record why naive feature heuristics are insufficient for this incident.
 
 ## Notes
 

@@ -1,12 +1,11 @@
 ---
 type: story
 id: ST-SIRCON-05-06
-title: Recover a stable fresh-start Task 101 bundle-learning recipe through talker-core
-  stabilization
+title: Recover a stable fresh-start Task 101 bundle-learning recipe through talker-core stabilization
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -19,23 +18,15 @@ epic: EPIC-SIRCON-05
 links:
   decisions: []
 acceptance_criteria:
-- '`T214` is recorded as closed discovery evidence rather than left as the active
-  explanation lane.'
-- One lightweight Story 31 exploration surface exists for rapid matrix iteration on
-  the late-middle talker-core seam without a proof package per hypothesis.
-- One bounded talker-core stabilization surface exists that targets the late-middle
-  seam exposed by `T214` without reopening replay framing or altering the clean text-token
-  semantics.
-- One smallest-signal local promotion gate exists that tests the exact fresh-start
-  failure family before any governed Hemma run.
-- One exact-control runtime surface exists for the original restored Task 101 recipe
-  with only the `T206` token-span correction, so the repo can answer the practical
-  full-bundle control question without approximation.
-- Only the first promoted candidate gets a short governed fresh-start Hemma proof.
-- The restart target remains blocked until the stabilization lane records a truthful
-  success surface that justifies a larger clean-start proof.
+  - '`T214` is recorded as closed discovery evidence rather than left as the active explanation lane.'
+  - One lightweight Story 31 exploration surface exists for rapid matrix iteration on the late-middle talker-core seam without a proof package per hypothesis.
+  - One bounded talker-core stabilization surface exists that targets the late-middle seam exposed by `T214` without reopening replay framing or altering the clean text-token semantics.
+  - One smallest-signal local promotion gate exists that tests the exact fresh-start failure family before any governed Hemma run.
+  - One exact-control runtime surface exists for the original restored Task 101 recipe with only the `T206` token-span correction, so the repo can answer the practical full-bundle control question without approximation.
+  - Only the first promoted candidate gets a short governed fresh-start Hemma proof.
+  - The restart target remains blocked until the stabilization lane records a truthful success surface that justifies a larger clean-start proof.
 retired_ids:
-- story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization
+  - story-31-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization
 ---
 
 ## Context
@@ -85,7 +76,7 @@ This story is intentionally split into two lanes:
    - fast, cheap, repeatable
    - no proof package per hypothesis
    - compact result ledger and promotion criteria
-1. `Governed proof lane`
+2. `Governed proof lane`
    - only for the first candidate that earns promotion from the exploration
      lane
    - reuses the existing detached Hemma surfaces instead of inventing a new
@@ -193,30 +184,30 @@ the governing success criterion for future restart work.
 
 ### Tasks (Ordered)
 
-1. `docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md`
-1. `docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md`
-1. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
-1. `docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md`
-1. `docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md`
-1. `docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md`
-1. `docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md`
-1. `docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md`
-1. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
-1. `docs/backlog/tasks/task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix.md`
-1. `docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md`
-1. `docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md`
-1. `docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md`
-1. `docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md`
-1. `docs/backlog/tasks/task-233-split-the-post-t230-layer16-input-layernorm-seam-into-normalization-internal-probes.md`
-1. `docs/backlog/tasks/task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface.md`
-1. `docs/backlog/tasks/task-235-resolve-the-post-t234-sub-talker-loss-disagreement-between-layer16-input-layernorm-and-layer15-output.md`
-1. `docs/backlog/tasks/task-236-resolve-the-post-t235-line4-row-local-outlier-before-claiming-a-generic-layer15-output-seam.md`
-1. `docs/backlog/tasks/task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam.md`
-1. `docs/backlog/tasks/task-240-split-the-post-t237-downstream-convergence-seam-beneath-layer15-output-before-any-promotion-discussion.md`
-1. `docs/backlog/tasks/task-241-split-the-post-t240-layer15-output-seam-into-residual-output-formation-sub-boundaries-before-any-new-stabilizer-family.md`
-1. `docs/backlog/tasks/task-243-split-the-post-t241-layer15-residual-output-formation-seam-before-any-new-stabilizer-family.md`
-1. `docs/backlog/tasks/task-244-split-the-post-t243-layer15-output-return-path-before-any-new-stabilizer-family.md`
-1. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
+01. `docs/backlog/tasks/task-216-implement-the-first-bounded-talker-core-stabilization-surface-for-the-late-middle-qwen-failure-seam.md`
+02. `docs/backlog/tasks/task-215-add-the-smallest-signal-local-finiteness-gate-for-the-first-talker-core-stabilization-lane.md`
+03. `docs/backlog/tasks/task-218-implement-the-second-bounded-story31-late-middle-attenuation-candidate-for-the-layer16-layer15-seams.md`
+04. `docs/backlog/tasks/task-220-run-the-exact-original-task-101-fresh-start-control-on-the-canonical-bundle-with-only-the-t206-token-span-correction.md`
+05. `docs/backlog/tasks/task-221-recreate-the-documented-historical-task-101-control-contract-before-judging-the-t206-only-fresh-start-lane.md`
+06. `docs/backlog/tasks/task-225-define-the-exact-step-1-instability-parity-contract-for-the-recreated-historical-control-failure-family.md`
+07. `docs/backlog/tasks/task-226-build-a-deterministic-upstream-vs-current-single-step-parity-probe-for-the-qwen-fine-tuning-path.md`
+08. `docs/backlog/tasks/task-227-trace-and-remediate-the-first-verified-finite-to-non-finite-divergence-before-resuming-story-31-stabilizer-candidates.md`
+09. `docs/backlog/tasks/task-219-implement-the-third-bounded-story31-layer16-handoff-candidate-for-the-shifted-seams.md`
+10. `docs/backlog/tasks/task-228-close-the-failed-t219-layer16-handoff-family-with-one-ranked-failure-matrix.md`
+11. `docs/backlog/tasks/task-229-split-the-post-t219-layer16-handoff-seam-into-sub-boundary-probes.md`
+12. `docs/backlog/tasks/task-230-test-one-diagnosed-post-t219-micro-family-against-the-first-verified-layer16-sub-boundary.md`
+13. `docs/backlog/tasks/task-231-pin-the-post-t219-bounded-fresh-start-promotion-contract-before-any-governed-proof.md`
+14. `docs/backlog/tasks/task-232-make-the-story-31-lane-decision-after-the-post-t219-bounded-promotion-result.md`
+15. `docs/backlog/tasks/task-233-split-the-post-t230-layer16-input-layernorm-seam-into-normalization-internal-probes.md`
+16. `docs/backlog/tasks/task-234-test-one-diagnosed-post-t233-output-scale-micro-family-against-the-first-verified-layer16-input-layernorm-output-surface.md`
+17. `docs/backlog/tasks/task-235-resolve-the-post-t234-sub-talker-loss-disagreement-between-layer16-input-layernorm-and-layer15-output.md`
+18. `docs/backlog/tasks/task-236-resolve-the-post-t235-line4-row-local-outlier-before-claiming-a-generic-layer15-output-seam.md`
+19. `docs/backlog/tasks/task-237-test-one-post-t236-micro-family-against-the-first-verified-dominant-sub-talker-outlier-seam.md`
+20. `docs/backlog/tasks/task-240-split-the-post-t237-downstream-convergence-seam-beneath-layer15-output-before-any-promotion-discussion.md`
+21. `docs/backlog/tasks/task-241-split-the-post-t240-layer15-output-seam-into-residual-output-formation-sub-boundaries-before-any-new-stabilizer-family.md`
+22. `docs/backlog/tasks/task-243-split-the-post-t241-layer15-residual-output-formation-seam-before-any-new-stabilizer-family.md`
+23. `docs/backlog/tasks/task-244-split-the-post-t243-layer15-output-return-path-before-any-new-stabilizer-family.md`
+24. `docs/backlog/tasks/task-217-run-the-first-fresh-start-governed-hemma-proof-for-the-talker-core-stabilization-lane.md`
 
 ### Checklist
 

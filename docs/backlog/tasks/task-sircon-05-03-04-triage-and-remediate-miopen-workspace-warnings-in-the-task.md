@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-04
-title: Triage and remediate MIOpen workspace warnings in the Task 101 ROCm Qwen training
-  lane
+title: Triage and remediate MIOpen workspace warnings in the Task 101 ROCm Qwen training lane
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] The task answers, with evidence, whether the MIOpen warnings materially\n \
-  \ block the saturation target after the earlier pipeline fixes."
-- "[ ] If the warnings do matter, one remediation is implemented or at least\n  bounded\
-  \ tightly enough that a final follow-on can be scoped precisely."
-- "[ ] If the warnings do not matter much, the report and logs say so clearly\n  instead\
-  \ of leaving the lane in ambiguity."
+  - "[ ] The task answers, with evidence, whether the MIOpen warnings materially\n  block the saturation target after the earlier pipeline fixes."
+  - "[ ] If the warnings do matter, one remediation is implemented or at least\n  bounded tightly enough that a final follow-on can be scoped precisely."
+  - "[ ] If the warnings do not matter much, the report and logs say so clearly\n  instead of leaving the lane in ambiguity."
 retired_ids:
-- task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane
+  - task-165-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane
 ---
 
 ## Context

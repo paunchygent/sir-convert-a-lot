@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-01-01
-title: Run the optional Colab H100 fallback lane and publish the Swedish Qwen3-TTS
-  comparison
+title: Run the optional Colab H100 fallback lane and publish the Swedish Qwen3-TTS comparison
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- The task records the exact dataset slice and checkpoint strategy used on Colab.
-- The task compares results against the Hemma pilot instead of publishing a standalone
-  notebook-only result.
-- The task records the concrete Hemma limitation that justified using Colab.
-- The task records whether the Colab lane is materially better for the larger Swedish
-  run.
+  - The task records the exact dataset slice and checkpoint strategy used on Colab.
+  - The task compares results against the Hemma pilot instead of publishing a standalone notebook-only result.
+  - The task records the concrete Hemma limitation that justified using Colab.
+  - The task records whether the Colab lane is materially better for the larger Swedish run.
 retired_ids:
-- task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison
+  - task-104-run-the-colab-h100-scaling-lane-and-publish-the-swedish-qwen3-tts-comparison
 ---
 
 ## Context

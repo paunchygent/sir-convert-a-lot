@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-05-04
-title: Prove the true Task 101 text-token span contract and set the final post-fix
-  restart rule
+title: Prove the true Task 101 text-token span contract and set the final post-fix restart rule
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,24 +17,17 @@ closeout_review:
 story: ST-SIRCON-05-05
 task_kind: story
 acceptance_criteria:
-- '- [ ] `T198` is treated as terminal negative evidence and is not reused as a reason
-  to keep sweeping replay-only ablations.'
-- '- [ ] The repo contains a deterministic artifact proving whether the current code
-  still includes the wrong token span in the trainable text-embedding surface.'
-- '- [ ] The corrected token-span contract is covered by focused tests and is visible
-  in operator-facing metadata or reporting.'
-- '- [ ] The canonical correction is chosen by semantic span correctness and minimal
-  blast radius, not by small performance differences between otherwise similar variants.'
-- '- [ ] The next clean restart remains blocked until the single post-fix proof reaches
-  `1470` and the detached standalone eval completes.'
-- '- [ ] If that single post-fix proof fails numerically before `1470` with the same
-  failure family, Story 29 records a hard stop for bounded RCA on this preserved lane
-  and `T199` remains blocked until a new design story exists.'
-- '- [ ] Docs, runbook, and reference surfaces all describe the same restart and stop
-  rule.'
+  - '- [ ] `T198` is treated as terminal negative evidence and is not reused as a reason to keep sweeping replay-only ablations.'
+  - '- [ ] The repo contains a deterministic artifact proving whether the current code still includes the wrong token span in the trainable text-embedding surface.'
+  - '- [ ] The corrected token-span contract is covered by focused tests and is visible in operator-facing metadata or reporting.'
+  - '- [ ] The canonical correction is chosen by semantic span correctness and minimal blast radius, not by small performance differences between otherwise similar variants.'
+  - '- [ ] The next clean restart remains blocked until the single post-fix proof reaches `1470` and the detached standalone eval completes.'
+  - '- [ ] If that single post-fix proof fails numerically before `1470` with the same failure family, Story 29 records a hard stop for bounded RCA on this preserved lane and `T199` remains blocked until a new design story exists.'
+  - '- [ ] Docs, runbook, and reference surfaces all describe the same restart and stop rule.'
 retired_ids:
-- task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule
+  - task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-206-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md

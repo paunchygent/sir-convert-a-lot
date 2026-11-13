@@ -4,14 +4,14 @@ id: REF-SIRCON-RESEARCH-qwen-live-training-pipeline-analysis-and-monitoring-evid
 title: Qwen Live Training Pipeline Analysis and Monitoring Evidence (2026-03-13)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: Qwen Live Training Pipeline Analysis and Monitoring Evidence (2026-03-13)
 retired_ids:
-- REF-qwen-live-training-pipeline-analysis-2026-03-13
+  - REF-qwen-live-training-pipeline-analysis-2026-03-13
 ---
 
 ## Research Purpose And Boundary

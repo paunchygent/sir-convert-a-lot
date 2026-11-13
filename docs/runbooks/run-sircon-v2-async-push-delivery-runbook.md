@@ -4,15 +4,16 @@ id: RUN-SIRCON-v2-async-push-delivery-runbook
 title: V2 Async Push Delivery Runbook
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 summary: V2 Async Push Delivery Runbook
 system: sir-convert-a-lot
 retired_ids:
-- RUN-v2-async-push-delivery
+  - RUN-v2-async-push-delivery
 ---
+
 ## Trigger
 
 Source record: docs/runbooks/runbook-v2-async-push-delivery.md
@@ -78,8 +79,8 @@ Source record: docs/runbooks/runbook-v2-async-push-delivery.md
 > Actions:
 >
 > 1. Verify callback endpoint reachability from service host.
-> 1. Validate onboarding records are enabled and callback URLs are correct.
-> 1. If retry storm is active, disable delivery via `SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY=0`,
+> 2. Validate onboarding records are enabled and callback URLs are correct.
+> 3. If retry storm is active, disable delivery via `SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY=0`,
 >    keep polling fallback, and begin DLQ replay planning.
 >
 > ### 2) Retry Storm / DLQ Growth
@@ -92,8 +93,8 @@ Source record: docs/runbooks/runbook-v2-async-push-delivery.md
 > Actions:
 >
 > 1. Inspect one DLQ record for `attempt_count`, `last_error_class`, and `last_status_code`.
-> 1. Fix remote callback availability/signature verification on consumer side.
-> 1. Re-enable delivery only after callback lane stability is confirmed.
+> 2. Fix remote callback availability/signature verification on consumer side.
+> 3. Re-enable delivery only after callback lane stability is confirmed.
 >
 > ### 3) SSE Instability
 >
@@ -104,8 +105,8 @@ Source record: docs/runbooks/runbook-v2-async-push-delivery.md
 > Actions:
 >
 > 1. Confirm polling fallback is healthy (`GET /v2/convert/jobs/{job_id}`).
-> 1. Temporarily disable SSE lane (`SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM=0`) if required.
-> 1. Keep webhook/polling lanes active.
+> 2. Temporarily disable SSE lane (`SIR_CONVERT_A_LOT_ENABLE_SSE_STREAM=0`) if required.
+> 3. Keep webhook/polling lanes active.
 
 ### KPI Formula Template
 
@@ -114,13 +115,13 @@ Source record: docs/runbooks/runbook-v2-async-push-delivery.md
 > 1. Poll reduction:
 >    - formula: `1 - (poll_req_rate_post / poll_req_rate_baseline)`
 >    - target: `>= 0.60`
-> 1. SSE latency:
+> 2. SSE latency:
 >    - source: SSE payload `sse_metrics.emit_to_send_ms`
 >    - target: `p95 <= 2000ms`
-> 1. Webhook initial delivery latency:
+> 3. Webhook initial delivery latency:
 >    - source: delivered entry `delivery_latency_ms` for first-attempt deliveries
 >    - target: `p95 <= 5000ms`
-> 1. Webhook success within first 3 attempts:
+> 4. Webhook success within first 3 attempts:
 >    - formula: `successful_deliveries_with_attempt_count<=3 / total_deliveries`
 >    - target: `1.00` (100%)
 
@@ -154,18 +155,18 @@ Source record: docs/runbooks/runbook-v2-async-push-delivery.md
 >
 > 1. Enable SSE and onboarding first, keep delivery disabled:
 >    - `ENABLE_SSE_STREAM=1`, `ENABLE_WEBHOOK_ONBOARDING=1`, `ENABLE_WEBHOOK_DELIVERY=0`.
-> 1. Validate onboarding + SSE contract tests.
-> 1. Enable delivery for canary consumers:
+> 2. Validate onboarding + SSE contract tests.
+> 3. Enable delivery for canary consumers:
 >    - `ENABLE_WEBHOOK_DELIVERY=1`.
-> 1. Track retry ratio + DLQ growth for one rollout window.
-> 1. Expand rollout only when KPI trend is stable.
+> 4. Track retry ratio + DLQ growth for one rollout window.
+> 5. Expand rollout only when KPI trend is stable.
 >
 > ### Safe Rollback
 >
 > 1. Set `SIR_CONVERT_A_LOT_ENABLE_WEBHOOK_DELIVERY=0`.
-> 1. Confirm outbox stops draining and no new callback attempts are made.
-> 1. Keep polling fallback active and notify downstream consumers.
-> 1. Investigate and resolve callback/security issue before re-enable.
+> 2. Confirm outbox stops draining and no new callback attempts are made.
+> 3. Keep polling fallback active and notify downstream consumers.
+> 4. Investigate and resolve callback/security issue before re-enable.
 
 ## Rollback
 

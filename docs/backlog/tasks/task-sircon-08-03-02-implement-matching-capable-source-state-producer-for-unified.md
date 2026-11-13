@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-03-02
 title: Implement matching-capable source-state producer for unified corrections
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,22 +17,14 @@ closeout_review:
 story: ST-SIRCON-08-03
 task_kind: story
 acceptance_criteria:
-- 'A real producer-owned source state contains at least one item with `item_type:
-  matching` and a non-empty `matching_interactions` collection.'
-- The matching interaction exposes stable `interaction_id`, source choice IDs, target
-  choice IDs, association bounds, current answer-key provenance, source evidence,
-  and source-item fingerprint binding.
-- The source-state issuer returns the signed bundle for that producer using only server-owned
-  producer state.
-- A focused runtime test submits `manual_matching_answer_key` with issued source IDs
-  and target IDs, receives an accepted entry, and gets target readiness/artifact availability
-  according to the unified contract.
-- A negative regression proves DigiExam producer-issued state with zero matching interactions
-  cannot be used as matching authority.
-- OpenAPI continues to expose only the unified correction routes and omits the abandoned
-  Task 324 route.
+  - 'A real producer-owned source state contains at least one item with `item_type: matching` and a non-empty `matching_interactions` collection.'
+  - The matching interaction exposes stable `interaction_id`, source choice IDs, target choice IDs, association bounds, current answer-key provenance, source evidence, and source-item fingerprint binding.
+  - The source-state issuer returns the signed bundle for that producer using only server-owned producer state.
+  - A focused runtime test submits `manual_matching_answer_key` with issued source IDs and target IDs, receives an accepted entry, and gets target readiness/artifact availability according to the unified contract.
+  - A negative regression proves DigiExam producer-issued state with zero matching interactions cannot be used as matching authority.
+  - OpenAPI continues to expose only the unified correction routes and omits the abandoned Task 324 route.
 retired_ids:
-- task-332-implement-matching-capable-source-state-producer-for-unified-corrections
+  - task-332-implement-matching-capable-source-state-producer-for-unified-corrections
 ---
 
 ## Context

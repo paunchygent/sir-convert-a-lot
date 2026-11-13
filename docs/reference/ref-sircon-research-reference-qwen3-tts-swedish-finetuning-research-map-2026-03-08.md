@@ -4,14 +4,14 @@ id: REF-SIRCON-RESEARCH-reference-qwen3-tts-swedish-finetuning-research-map-2026
 title: 'Reference: Qwen3-TTS Swedish finetuning research map (2026-03-08)'
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: 'Reference: Qwen3-TTS Swedish finetuning research map (2026-03-08)'
 retired_ids:
-- REF-qwen3-tts-swedish-finetuning-research-map-2026-03-08
+  - REF-qwen3-tts-swedish-finetuning-research-map-2026-03-08
 ---
 
 ## Research Purpose And Boundary
@@ -132,13 +132,13 @@ multi-speaker run:
 
 1. Best known public pattern for extending a TTS base model from an upstream
    single-speaker recipe to a multi-speaker or language-expansion recipe.
-1. Best public data-filtering strategy for parliamentary or broadcast corpora
+2. Best public data-filtering strategy for parliamentary or broadcast corpora
    with non-verbatim transcripts.
-1. Best public manifest/reference-audio contract for Qwen-style codec-TTS
+3. Best public manifest/reference-audio contract for Qwen-style codec-TTS
    fine-tuning when the language goal matters more than speaker cloning.
-1. Strong Swedish or closely related multilingual evaluation practice we can
+4. Strong Swedish or closely related multilingual evaluation practice we can
    reuse instead of inventing an ad hoc prompt sheet.
-1. Examples of successful community Qwen3-TTS fine-tunes that document:
+5. Examples of successful community Qwen3-TTS fine-tunes that document:
    - training subset size,
    - runtime shape,
    - checkpoint cadence,
@@ -150,11 +150,11 @@ multi-speaker run:
 Rank the evidence sources in this order:
 
 1. Official Qwen model card, repo, scripts, and technical report.
-1. Official dataset cards and papers for `rixvox`, `fleurs`, and `waxholm`.
-1. Public Qwen3-TTS fine-tuned model cards that document training choices.
-1. Public GitHub repos and open notebooks that show reproducible Qwen3-TTS or
+2. Official dataset cards and papers for `rixvox`, `fleurs`, and `waxholm`.
+3. Public Qwen3-TTS fine-tuned model cards that document training choices.
+4. Public GitHub repos and open notebooks that show reproducible Qwen3-TTS or
    nearby multi-speaker TTS fine-tuning workflows.
-1. Related research papers and paper-as-code repos for multilingual or
+5. Related research papers and paper-as-code repos for multilingual or
    language-expansion TTS that can inform:
    - curation,
    - manifest design,
@@ -262,14 +262,14 @@ The research pass should produce three concrete outputs:
    - repos/notebooks,
    - papers,
    - dataset references.
-1. One distilled guide of best practices and anti-patterns for this exact
+2. One distilled guide of best practices and anti-patterns for this exact
    effort:
    - Swedish,
    - multi-speaker,
    - Qwen `1.7B`,
    - Hemma plus Colab,
    - full fine-tuning.
-1. One recommendation memo that answers the current open questions with:
+3. One recommendation memo that answers the current open questions with:
    - preferred pilot subset,
    - preferred preprocessing contract,
    - preferred evaluation design,

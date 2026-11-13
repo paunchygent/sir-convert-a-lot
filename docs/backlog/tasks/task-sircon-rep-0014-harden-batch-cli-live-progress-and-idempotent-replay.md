@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0014
 title: Harden batch CLI live progress and idempotent replay visibility for long conversions
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -16,21 +16,16 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '- [x] A long-running second file in a multi-file batch produces visible progress and a persisted job id before the file
-  reaches terminal state.'
-- '- [x] A batch interrupted after job submission preserves a manifest entry with `status: running`, `job_id`, and the current
-  non-terminal error/status code.'
-- '- [x] A non-terminal idempotent replay is displayed as an existing running job, not as an unexplained hang or a duplicate
-  fresh submission.'
-- '- [ ] A terminal successful idempotent replay downloads the existing artifact, writes a succeeded manifest entry, and proceeds
-  to the next file.'
-- '- [ ] A stale non-terminal job is classified with the existing `job_timeout` semantics and visible stale/heartbeat details.'
-- '- [ ] Manifest schema remains deterministic and backward compatible for existing required fields: - `source_file_path`
-  - `job_id` - `status` - `output_path` - `error_code`'
-- '- [ ] Observability additions preserve the redaction policy and bounded-cardinality metrics contract.'
-- '- [ ] Focused CLI/client/API tests prove behavior through public boundaries, not private helper-call assertions.'
+  - '- [x] A long-running second file in a multi-file batch produces visible progress and a persisted job id before the file reaches terminal state.'
+  - '- [x] A batch interrupted after job submission preserves a manifest entry with `status: running`, `job_id`, and the current non-terminal error/status code.'
+  - '- [x] A non-terminal idempotent replay is displayed as an existing running job, not as an unexplained hang or a duplicate fresh submission.'
+  - '- [ ] A terminal successful idempotent replay downloads the existing artifact, writes a succeeded manifest entry, and proceeds to the next file.'
+  - '- [ ] A stale non-terminal job is classified with the existing `job_timeout` semantics and visible stale/heartbeat details.'
+  - '- [ ] Manifest schema remains deterministic and backward compatible for existing required fields: - `source_file_path` - `job_id` - `status` - `output_path` - `error_code`'
+  - '- [ ] Observability additions preserve the redaction policy and bounded-cardinality metrics contract.'
+  - '- [ ] Focused CLI/client/API tests prove behavior through public boundaries, not private helper-call assertions.'
 retired_ids:
-- task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions
+  - task-342-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions
 ---
 
 ## Context
@@ -72,7 +67,7 @@ PR-sized execution unit; may be linked to a story or standalone.
    - Recommendation: split submit, progress observation, terminal wait, and
      artifact download into explicit client operations that the CLI can surface.
 
-1. The manifest is written too late.
+2. The manifest is written too late.
 
    - Current behavior: `write_cli_manifest_v2` runs after the batch submission
      function returns.
@@ -82,7 +77,7 @@ PR-sized execution unit; may be linked to a story or standalone.
      soon as each job id is known, then atomically refresh it on meaningful
      status transitions.
 
-1. Submission and replay are not visible as first-class user events.
+3. Submission and replay are not visible as first-class user events.
 
    - Current behavior: the CLI prints conversion success or timeout/running
      outcomes, but not a submitted/replayed state immediately after the service
@@ -92,7 +87,7 @@ PR-sized execution unit; may be linked to a story or standalone.
    - Recommendation: emit submitted/replayed lines with source label, job id,
      target path, replay flag, and retry mode.
 
-1. Polling progress is not streamed to the operator.
+4. Polling progress is not streamed to the operator.
 
    - Current behavior: API progress exists, but the high-level CLI path does not
      periodically show page counters, heartbeat freshness, ETA, or partial
@@ -101,7 +96,7 @@ PR-sized execution unit; may be linked to a story or standalone.
    - Recommendation: add bounded periodic progress output using existing v2
      `job.progress` fields and existing partial/checkpoint endpoints.
 
-1. Formula-heavy decisions are not visible to the operator.
+5. Formula-heavy decisions are not visible to the operator.
 
    - Current behavior: after Task 344, the service can distinguish formula VLM
      generation calls, stop criteria, and source Markdown quality failures, but
@@ -115,7 +110,7 @@ PR-sized execution unit; may be linked to a story or standalone.
      PDFs, inspect formula crops, classify source-layer evidence, or duplicate
      formula-authority policy; those are Task 345 responsibilities.
 
-1. Interrupts and local client termination lose context.
+6. Interrupts and local client termination lose context.
 
    - Current behavior: known running jobs are only represented after a handled
      client error such as poll-window expiry.
@@ -124,7 +119,7 @@ PR-sized execution unit; may be linked to a story or standalone.
    - Recommendation: handle `KeyboardInterrupt` and local exceptions by writing
      known submitted/running entries before exiting.
 
-1. There is no normal post-run status/recovery workflow.
+7. There is no normal post-run status/recovery workflow.
 
    - Current behavior: docs tell users to call status/result/artifact endpoints,
      but the CLI does not provide a convenient manifest/job-id status surface.
@@ -132,7 +127,7 @@ PR-sized execution unit; may be linked to a story or standalone.
    - Recommendation: add `convert-a-lot status` or equivalent to inspect a job
      id or manifest, refresh entries, and download completed artifacts.
 
-1. Duplicate-looking jobs are not explainable from persisted job evidence.
+8. Duplicate-looking jobs are not explainable from persisted job evidence.
 
    - Current behavior: service idempotency is enforced, but persisted job
      manifests do not expose safe idempotency key/fingerprint/replay metadata.
@@ -141,7 +136,7 @@ PR-sized execution unit; may be linked to a story or standalone.
    - Recommendation: persist safe request identity diagnostics and replay
      metadata, without secrets or payload contents.
 
-1. Batch continuity semantics are underdefined.
+9. Batch continuity semantics are underdefined.
 
    - Current behavior: sequential processing is simple but creates a perception
      that later files are unsubmitted while a slow earlier file runs.
@@ -159,24 +154,24 @@ PR-sized execution unit; may be linked to a story or standalone.
      idempotency behavior, and GPU concurrency assumptions while closing the
      immediate blindness.
 
-1. Make incremental manifesting non-optional by default.
+2. Make incremental manifesting non-optional by default.
 
    - The manifest is the audit surface; it should be trustworthy during the run,
      not only after normal completion.
 
-1. Add a CLI status/recover command as the second slice.
+3. Add a CLI status/recover command as the second slice.
 
    - Once the manifest carries running jobs, users need a first-class way to
      refresh and fetch results without resubmitting source files.
 
-1. Treat submit-ahead batch queuing as a product decision, not an implicit fix.
+4. Treat submit-ahead batch queuing as a product decision, not an implicit fix.
 
    - Submitting every file up front improves visibility and allows queue
      position reporting, but it changes service queue behavior and operator
      expectations. It should follow only after the visible sequential path is
      proven.
 
-1. Keep idempotency conservative.
+5. Keep idempotency conservative.
 
    - Do not auto-rerun non-terminal jobs. Show replay state, progress, and stale
      classification; require `--new-job` or another explicit operator action for
@@ -403,17 +398,17 @@ Validation:
    non-terminal job and progress snapshots before success. The test should fail
    until the CLI emits submitted/progress messages and persists a valid
    incremental manifest before the final artifact is available.
-1. Add a CLI interrupt test that raises `KeyboardInterrupt` after submission and
+2. Add a CLI interrupt test that raises `KeyboardInterrupt` after submission and
    proves the output directory contains a manifest/state file with the known
    running job id.
-1. Add an HTTP client test for non-terminal idempotent replay that proves replay
+3. Add an HTTP client test for non-terminal idempotent replay that proves replay
    metadata is preserved and status/progress can be reported without auto-rerun.
-1. Add an API/job-store contract test that safe idempotency diagnostics are
+4. Add an API/job-store contract test that safe idempotency diagnostics are
    persisted or exposed without leaking API keys or payload contents.
-1. Add a CLI status/resume test that starts from an existing manifest/job id,
+5. Add a CLI status/resume test that starts from an existing manifest/job id,
    polls status, downloads a succeeded artifact, and updates the manifest
    without resubmitting the source upload.
-1. Add a formula-authority presentation test proving terminal status/result and
+6. Add a formula-authority presentation test proving terminal status/result and
    CLI manifest outputs preserve Task 345 metadata as opaque presentation data.
 
 ### Implementation Plan
@@ -421,19 +416,19 @@ Validation:
 1. Split `convert_upload_to_artifact` into lower-level typed operations:
    submit, classify replay, observe progress, wait, and download. Keep the
    current high-level method as a thin compatibility wrapper.
-1. Introduce a small progress event model in the CLI boundary so submission,
+2. Introduce a small progress event model in the CLI boundary so submission,
    replay, polling, partial availability, terminal success, and error states
    are represented consistently.
-1. Move manifest persistence behind an incremental writer with atomic replace
+3. Move manifest persistence behind an incremental writer with atomic replace
    semantics and deterministic sorting. Preserve the final
    `sir_convert_a_lot_manifest.json` contract.
-1. Refactor `submit_service_route_batch_v2` so the per-file loop records state
+4. Refactor `submit_service_route_batch_v2` so the per-file loop records state
    immediately and can recover known entries on interrupt or poll-window exit.
-1. Add replay diagnostics to safe client outcome models and persisted job
+5. Add replay diagnostics to safe client outcome models and persisted job
    records, using non-secret request fingerprint/idempotency metadata.
-1. Add `convert-a-lot status` or equivalent command coverage for manifest/job-id
+6. Add `convert-a-lot status` or equivalent command coverage for manifest/job-id
    observation and completed artifact download.
-1. Update `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md` and the v2 API contract if new
+7. Update `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md` and the v2 API contract if new
    fields or CLI commands are added.
 
 ### Validation Commands

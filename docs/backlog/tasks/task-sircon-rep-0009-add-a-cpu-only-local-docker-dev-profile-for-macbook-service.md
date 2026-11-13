@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0009
 title: Add a CPU-only local Docker dev profile for MacBook service debugging
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,16 +16,14 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '- [ ] `docker compose -f compose.local.yaml config` succeeds locally.'
-- '- [ ] the local compose service does not declare ROCm devices or `video` / `render`
-  passthrough.'
-- '- [ ] the local Dockerfile installs CPU torch pins instead of ROCm wheel pins.'
-- '- [ ] the local service entrypoint reports a distinct local CPU service profile.'
-- '- [ ] existing `compose.yaml` production contract assertions remain valid.'
-- '- [ ] local docs explicitly forbid host-run `uvicorn` as the sanctioned local integration
-  path.'
+  - '- [ ] `docker compose -f compose.local.yaml config` succeeds locally.'
+  - '- [ ] the local compose service does not declare ROCm devices or `video` / `render` passthrough.'
+  - '- [ ] the local Dockerfile installs CPU torch pins instead of ROCm wheel pins.'
+  - '- [ ] the local service entrypoint reports a distinct local CPU service profile.'
+  - '- [ ] existing `compose.yaml` production contract assertions remain valid.'
+  - '- [ ] local docs explicitly forbid host-run `uvicorn` as the sanctioned local integration path.'
 retired_ids:
-- task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging
+  - task-250-add-a-cpu-only-local-docker-dev-profile-for-macbook-service-debugging
 ---
 
 ## Context

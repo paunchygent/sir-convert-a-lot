@@ -4,8 +4,8 @@ id: ST-SIRCON-06-04
 title: Sir Convert internal auth and metadata hardening before cutover
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,16 +18,14 @@ epic: EPIC-SIRCON-06
 links:
   decisions: []
 acceptance_criteria:
-- Missing or invalid auth never returns `500`.
-- Public docs/OpenAPI/metrics are disabled or gated in production.
-- Detailed readiness metadata is internal-only or intentionally reduced.
-- Sir Convert rejects unsigned public user identity headers.
-- '`InternalIdentityContextV1` verification and Sir Convert route authorization are
-  tested.'
-- The existing service API key is treated as transport only, not as global job/artifact
-  ownership.
+  - Missing or invalid auth never returns `500`.
+  - Public docs/OpenAPI/metrics are disabled or gated in production.
+  - Detailed readiness metadata is internal-only or intentionally reduced.
+  - Sir Convert rejects unsigned public user identity headers.
+  - '`InternalIdentityContextV1` verification and Sir Convert route authorization are tested.'
+  - The existing service API key is treated as transport only, not as global job/artifact ownership.
 retired_ids:
-- story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover
+  - story-36-sir-convert-internal-auth-and-metadata-hardening-before-cutover
 ---
 
 ## Context

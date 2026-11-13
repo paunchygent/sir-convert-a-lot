@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-05
-title: Eliminate Task 101 per-step host synchronization overhead and add finite-loss
-  guards
+title: Eliminate Task 101 per-step host synchronization overhead and add finite-loss guards
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] Bounded Hemma run shows materially lower HIP synchronization overhead\n  relative\
-  \ to the `T162` baseline."
-- "[ ] Training status/report artifacts remain truthful under the decimated\n  heartbeat/logging\
-  \ cadence."
-- "[ ] At least one bounded Hemma run completes with finite loss values across\n \
-  \ the measured steady-state window."
+  - "[ ] Bounded Hemma run shows materially lower HIP synchronization overhead\n  relative to the `T162` baseline."
+  - "[ ] Training status/report artifacts remain truthful under the decimated\n  heartbeat/logging cadence."
+  - "[ ] At least one bounded Hemma run completes with finite loss values across\n  the measured steady-state window."
 retired_ids:
-- task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards
+  - task-171-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards
 ---
 
 ## Context

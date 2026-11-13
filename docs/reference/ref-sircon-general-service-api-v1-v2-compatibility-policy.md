@@ -4,15 +4,16 @@ id: REF-SIRCON-GENERAL-service-api-v1-v2-compatibility-policy
 title: Service API v1/v2 Compatibility Policy
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: draft
 reference_kind: general
 retired_ids:
-- CONV-service-api-v1-v2-compatibility-policy
+  - CONV-service-api-v1-v2-compatibility-policy
 summary: Service API v1/v2 Compatibility Policy
 ---
+
 ## Overview
 
 Source record: docs/converters/service_api_v1_v2_compatibility_policy.md

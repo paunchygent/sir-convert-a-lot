@@ -4,14 +4,14 @@ id: REF-SIRCON-GENERAL-qwen3-tts-swedish-finetuning-guide-for-general-language-s
 title: Qwen3-TTS Swedish Finetuning Guide for General Language Support
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 summary: Qwen3-TTS Swedish Finetuning Guide for General Language Support
 retired_ids:
-- REF-qwen3-tts-swedish-finetuning-guide
+  - REF-qwen3-tts-swedish-finetuning-guide
 ---
 
 ## Overview
@@ -156,7 +156,7 @@ Here is the most defensible translation from "single-speaker custom voice" to "m
 Qwen's pipeline has two separate mechanisms that are often confused:
 
 1. **Speaker conditioning during training**: `speaker_encoder(ref_mels)` provides a speaker embedding per sample, and it is injected into embeddings (they place it in a specific time step/slot in `input_codec_embedding`). This happens regardless of whether the data is single-speaker or multi-speaker.
-1. **Materialization of a "CustomVoice speaker" at checkpoint**: the script writes a `talker_config["spk_id"]` that maps `speaker_name` to a fixed id (3000), and replaces one row in `codec_embedding.weight` with *one* embedding (`target_speaker_embedding`) picked from the first batch.
+2. **Materialization of a "CustomVoice speaker" at checkpoint**: the script writes a `talker_config["spk_id"]` that maps `speaker_name` to a fixed id (3000), and replaces one row in `codec_embedding.weight` with *one* embedding (`target_speaker_embedding`) picked from the first batch.
 
 The second step is exactly what makes Qwen's recipe single-speaker in practice.
 
@@ -349,12 +349,12 @@ hoc row subsets or manually edited manifests for the pilot.
      - Waxholm label-safe files (as additional high-trust)
    - Add a "fail-closed" preflight early: count how many rows lack a wav, how many ref_audios are not 24k, how many utts are >15s, etc. (This is an operational principle; the Huleedu runbook argues for fail-closed and cache stability in GPU workloads.)
 
-1. **Run Qwen's `prepare_data.py` locally on Hemma for the pilot size**
+2. **Run Qwen's `prepare_data.py` locally on Hemma for the pilot size**
 
    - This provides `audio_codes` and isolates the training run from costly tokenization.
    - If GPU time is expensive on Hemma: do just the encode step on H100 (see below) and move the JSONL back. But start with a local pilot to confirm the contract.
 
-1. **Patch the Official Training Stack (sft_12hz.py and dataset.py)**
+3. **Patch the Official Training Stack (sft_12hz.py and dataset.py)**
    Minimum patch (language expansion):
 
    - **sft_12hz.py**: Keep multi-speaker training but **remove**:
@@ -366,13 +366,13 @@ hoc row subsets or manually edited manifests for the pilot.
    - **dataset.py**: Patch the dataloader to parse multiple speakers, build a `spk_id_map`, and carry a dataset-scoped `speaker_id` through the training loop. *(Note: This patch is strictly for metadata tracking, governance, and evaluation, or if you intend to export named speakers (Pattern B). The actual forward path conditions purely on `ref_mel -> speaker_encoder(ref_mels)` and does not use `speaker_id`.)*
      Otherwise, you risk exporting an artificial "single speaker" even if training succeeds.
 
-1. **Inference on Multi-Speaker Checkpoint**
+4. **Inference on Multi-Speaker Checkpoint**
 
    - Because you kept `tts_model_type` as "base" and preserved the `speaker_encoder`, do **not** use `generate_custom_voice.py` for inference.
    - After a base-like fine-tune, validate inference with `generate_voice_clone.py` or `create_voice_clone_prompt` + `generate_voice_clone`.
    - Reserve `generate_custom_voice.py` strictly for checkpoints intentionally exported as CustomVoice models.
 
-1. **Run a short, but not trivial, training loop**
+5. **Run a short, but not trivial, training loop**
 
    - 1–2 epochs on Pilot-A, with a checkpoint per epoch (as Qwen does).
    - After each epoch, run a fixed eval suite (FLEURS dev/test + your stress texts) with ASR-WER.
@@ -388,11 +388,11 @@ The H100 track should be used for what is **expensive but parallelizable**:
 
    - The script is already batched (32 per batch). H100 will do this dramatically faster than Hemma.
 
-1. **RixVox mismatch filtering with ASR**
+2. **RixVox mismatch filtering with ASR**
 
    - If you plan to use hundreds of hours of RixVox, you need an ASR pipeline at scale (transcribe -> WER -> filter lists). Nord-Parl-TTS and LibriTTS-R show that "ASR-WER as filter metadata" is a published and reasonable pattern.
 
-1. **Phase-2 Training (Volume)**
+3. **Phase-2 Training (Volume)**
 
    - When Pilot-A shows clear improvement in Swedish WER and listening quality: mix in filtered RixVox at a controlled ratio (e.g., 70% high-trust, 30% filtered RixVox initially; adjust after regression control).
      Qwen's own report describes using quality stratification to reduce hallucinations—this is a strong argument not to let low-trust dominate early.

@@ -4,16 +4,15 @@ id: REF-SIRCON-RESEARCH-review-02-qwen-ungraceful-detached-shutdown-evidence
 title: Review 02 Qwen Ungraceful Detached Shutdown Evidence
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: Review 02 Qwen Ungraceful Detached Shutdown Evidence
 retired_ids:
-- REF-review-02-qwen-ungraceful-detached-shutdown-evidence
+  - REF-review-02-qwen-ungraceful-detached-shutdown-evidence
 ---
-
 
 ## Research Purpose And Boundary
 
@@ -40,6 +39,7 @@ status or authority.
 ## Source Body Preservation
 
 ## Purpose
+
 Preserve the code-level evidence behind Review 02's detached shutdown finding without misclassifying the evidence note as a standalone backlog review.
 **Source:** `scripts/sir_convert_a_lot/ml/qwen/training/detached_runtime/launch_service.py`
 **Lines:** `378-390`
@@ -48,4 +48,3 @@ This orchestration code uses `docker stop` to terminate the detached pilot. Dock
 **Missing handler in:** `scripts/devops/qwen_finetuning_patches/sft_12hz.py`
 The underlying PyTorch training script `train_with_args` originally contained a standard `for epoch in range(...)` loop without any `signal` traps for `SIGTERM`.
 When `docker stop` is invoked, the Python process can terminate without dumping the current optimizer state or triggering `_save_durable_checkpoint` for partial progress within the epoch.
-

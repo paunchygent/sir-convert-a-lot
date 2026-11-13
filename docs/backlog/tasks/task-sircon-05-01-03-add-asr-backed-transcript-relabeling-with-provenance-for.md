@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-01-03
 title: Add ASR-backed transcript relabeling with provenance for Qwen corpus candidates
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,12 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- '- [ ] Curated/report artifacts preserve both original and ASR transcript values when relabeling is attempted.'
-- '- [ ] Transcript provenance is explicit and machine-readable.'
-- '- [ ] Default preprocessing behavior remains conservative unless a bounded relabel lane is explicitly enabled.'
-- '- [ ] The task documents which quality tiers and review rules may feed an ASR-backed relabel candidate.'
+  - '- [ ] Curated/report artifacts preserve both original and ASR transcript values when relabeling is attempted.'
+  - '- [ ] Transcript provenance is explicit and machine-readable.'
+  - '- [ ] Default preprocessing behavior remains conservative unless a bounded relabel lane is explicitly enabled.'
+  - '- [ ] The task documents which quality tiers and review rules may feed an ASR-backed relabel candidate.'
 retired_ids:
-- task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates
+  - task-111-add-asr-backed-transcript-relabeling-with-provenance-for-qwen-corpus-candidates
 ---
 
 ## Context

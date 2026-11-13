@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0019
 title: Add English reference-clone lane to Chatterbox Hemma benchmark
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -16,12 +16,12 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- A main English clone run can be executed without ad hoc scripts.
-- Report JSON clearly records the probe language.
-- Existing Swedish benchmark behavior remains the default path.
-- Local tests cover the new probe-language option and reporting shape.
+  - A main English clone run can be executed without ad hoc scripts.
+  - Report JSON clearly records the probe language.
+  - Existing Swedish benchmark behavior remains the default path.
+  - Local tests cover the new probe-language option and reporting shape.
 retired_ids:
-- task-96-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark
+  - task-96-add-english-reference-clone-lane-to-chatterbox-hemma-benchmark
 ---
 
 ## Context

@@ -4,13 +4,13 @@ id: REF-SIRCON-GENERAL-docx-template-catalog-contract-v2
 title: DOCX Template Catalog Contract v2
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: general
 retired_ids:
-- CONV-docx-template-catalog-contract-v2
+  - CONV-docx-template-catalog-contract-v2
 summary: DOCX Template Catalog Contract v2
 ---
 

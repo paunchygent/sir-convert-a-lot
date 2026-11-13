@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0034
 title: Accept equivalent Qwen bind backing and correct private route guidance
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-10-15'
 status: in_progress
 closeout_review:
@@ -99,10 +99,10 @@ commands are in the assigned session's `operational-output/commands/` lane.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term |
-| --- | --------------------- |
-| D01 | Closed: reuse existing sentinel backing identity for mounted producer roots; equivalent SOURCE forms pass and genuinely wrong backing fails closed. |
-| D02 | Closed: the named .agents codemap documents the private Mac dev tunnel, container tunnel host, and hule-network prod service (ADR-SIRCON-0014). |
-| D03 | Closed: Mac-local work only under the 2026-10-15 Hemma hold; no deferred CONV reference edits. |
-| D04 | Closed: focused source proof and docs gates, owned-path branch commit without attribution or push, and parent-routed independent review. |
+| ID  | Decided contract term                                                                                                                                          |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D01 | Closed: reuse existing sentinel backing identity for mounted producer roots; equivalent SOURCE forms pass and genuinely wrong backing fails closed.            |
+| D02 | Closed: the named .agents codemap documents the private Mac dev tunnel, container tunnel host, and hule-network prod service (ADR-SIRCON-0014).                |
+| D03 | Closed: Mac-local work only under the 2026-10-15 Hemma hold; no deferred CONV reference edits.                                                                 |
+| D04 | Closed: focused source proof and docs gates, owned-path branch commit without attribution or push, and parent-routed independent review.                       |
 | D05 | Closed: include the companion installed-home consumer using the exact same sentinel identity, with device-form and wrong-backing tests (parent authorization). |

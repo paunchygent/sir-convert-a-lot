@@ -4,8 +4,8 @@ id: TASK-SIRCON-01-05-01
 title: Durable persistence layout retention and recovery for containerized runtime
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,12 +17,12 @@ closeout_review:
 story: ST-SIRCON-01-05
 task_kind: story
 acceptance_criteria:
-- '- [ ] Restarted containers recover job metadata/result discoverability per contract.'
-- '- [ ] Retention sweeper behavior remains deterministic and profile-scoped.'
-- '- [ ] No prod/eval data-root collision is possible under documented configuration.'
-- '- [ ] Validation evidence includes restart/recovery and retention edge cases.'
+  - '- [ ] Restarted containers recover job metadata/result discoverability per contract.'
+  - '- [ ] Retention sweeper behavior remains deterministic and profile-scoped.'
+  - '- [ ] No prod/eval data-root collision is possible under documented configuration.'
+  - '- [ ] Validation evidence includes restart/recovery and retention edge cases.'
 retired_ids:
-- task-23-durable-persistence-layout-retention-and-recovery-for-containerized-runtime
+  - task-23-durable-persistence-layout-retention-and-recovery-for-containerized-runtime
 ---
 
 ## Context

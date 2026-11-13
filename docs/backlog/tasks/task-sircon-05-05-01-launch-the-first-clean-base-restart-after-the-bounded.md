@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-05-01
 title: Launch the first clean base restart after the bounded stability gate
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,17 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-05
 task_kind: story
 acceptance_criteria:
-- "[ ] The task does not start before Story 31 records an explicit fresh-start\n \
-  \ stabilization proof in the training reference ledger that justifies a larger\n\
-  \  clean-start proof lane."
-- "[ ] The first restart acceptance gate is completion of the first scheduled\n  eval\
-  \ at step `100` without a non-finite guard event."
-- "[ ] Any new restart failure window is written back into the training\n  reference\
-  \ ledger immediately rather than treated as an informal note."
+  - "[ ] The task does not start before Story 31 records an explicit fresh-start\n  stabilization proof in the training reference ledger that justifies a larger\n  clean-start proof lane."
+  - "[ ] The first restart acceptance gate is completion of the first scheduled\n  eval at step `100` without a non-finite guard event."
+  - "[ ] Any new restart failure window is written back into the training\n  reference ledger immediately rather than treated as an informal note."
 retired_ids:
-- task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate
+  - task-199-launch-the-first-clean-base-restart-after-the-bounded-stability-gate
 ---
-
 
 ## Context
 
@@ -100,9 +95,13 @@ for gate status and approval evidence.
 ## Source Body Preservation
 
 PR-sized execution unit; may be linked to a story or standalone.
+
 ## Objective
+
 Launch the first clean base restart only after the repo records a truthful fresh-start stabilization proof that shows stable bundle learning is back on the canonical clean-semantics lane.
+
 ## PR Scope
+
 - Treat Story 29 and Story 30 as closed prerequisite evidence:
   - replay-family rescue is exhausted
   - clean text semantics are now a correctness baseline, not a stability proof
@@ -111,33 +110,38 @@ Launch the first clean base restart only after the repo records a truthful fresh
   - one bounded talker-core stabilization surface (`T216`)
   - one passing local finiteness gate (`T215`)
   - one positive fresh-start governed Hemma proof (`T217`) that justifies a
-larger clean-start proof lane
+    larger clean-start proof lane
 - Launch from `Qwen/Qwen3-TTS-12Hz-1.7B-Base`, not from a legacy checkpoint.
 - Use the winning mitigation contract from the proof phase.
 - If the winning mitigation confirms `text_span_only` as the right fix, remove
-`legacy_codec_span` from the live restart lane before launch.
+  `legacy_codec_span` from the live restart lane before launch.
 - Use the canonical scheduled posture:
   - checkpoint every `500`
   - eval every `100`
   - retain newest `3`
 - Record the restart result immediately in the training reference ledger.
+
 ## Deliverables
+
 - [ ] One proof-gated clean restart launch record exists.
 - [ ] One operator-facing ledger entry records which proof gate justified the
-restart.
+  restart.
 - [ ] If the proof closed in favor of `text_span_only`, one explicit cleanup
-record exists showing `legacy_codec_span` was removed before restart.
+  record exists showing `legacy_codec_span` was removed before restart.
 - [ ] One restart acceptance record states whether step `100` eval completed
-without a non-finite guard event.
+  without a non-finite guard event.
+
 ## Acceptance Criteria
+
 - [ ] The task does not start before Story 31 records an explicit fresh-start
-stabilization proof in the training reference ledger that justifies a larger clean-start proof lane.
+  stabilization proof in the training reference ledger that justifies a larger clean-start proof lane.
 - [ ] The first restart acceptance gate is completion of the first scheduled
-eval at step `100` without a non-finite guard event.
+  eval at step `100` without a non-finite guard event.
 - [ ] Any new restart failure window is written back into the training
-reference ledger immediately rather than treated as an informal note.
+  reference ledger immediately rather than treated as an informal note.
+
 ## Checklist
+
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated
-

@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-01-02-01
-title: Adopt Story 003c thin adapter in HuleEdu and validate demanding scientific
-  PDF workload
+title: Adopt Story 003c thin adapter in HuleEdu and validate demanding scientific PDF workload
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,17 +17,13 @@ closeout_review:
 story: ST-SIRCON-01-02
 task_kind: story
 acceptance_criteria:
-- HuleEdu integration calls Sir Convert-a-Lot through canonical adapter contract surface.
-- End-to-end HuleEdu flow can submit, poll, and retrieve results without per-document
-  custom logic.
-- Workload validation includes demanding scientific PDFs representative of production
-  use.
-- 'Workload execution demonstrates operational ease: - no manual converter code changes
-  required across corpus - failures (if any) are reported via canonical error/status
-  surfaces with actionable diagnostics'
-- Story 003c closure decision is supportable with HuleEdu adoption evidence.
+  - HuleEdu integration calls Sir Convert-a-Lot through canonical adapter contract surface.
+  - End-to-end HuleEdu flow can submit, poll, and retrieve results without per-document custom logic.
+  - Workload validation includes demanding scientific PDFs representative of production use.
+  - 'Workload execution demonstrates operational ease: - no manual converter code changes required across corpus - failures (if any) are reported via canonical error/status surfaces with actionable diagnostics'
+  - Story 003c closure decision is supportable with HuleEdu adoption evidence.
 retired_ids:
-- task-08-adopt-consumer-integration-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload
+  - task-08-adopt-consumer-integration-thin-adapter-in-huleedu-and-validate-demanding-scientific-pdf-workload
 ---
 
 ## Context

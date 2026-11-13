@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-01-08
 title: Add a Hemma Drive-ingestion lane for Colab Qwen preprocessing run roots
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,22 +17,15 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- "[ ] Hemma can read a dedicated shared Google Drive folder without needing the\n\
-  \  local workstation to proxy file transfers."
-- "[ ] The import lane uses repo-owned command surfaces invoked through canonical\n\
-  \  Hemma wrappers rather than ad hoc shell payloads."
-- "[ ] A completed Colab run root can be synced into\n  `/srv/storage/sir-convert-a-lot/imports/google-drive/qwen-colab/`\
-  \ with a\n  deterministic destination path."
-- "[ ] The validation surface fails closed if an imported root is missing any of:\n\
-  \  - `run.json`\n  - `status.json`\n  - `spool/rows/`\n  - `audio_24k/`"
-- "[ ] If a completed-row resume index exists, it is validated through the\n  existing\
-  \ helper surface before the run root is treated as healthy."
-- "[ ] The imported run root can be referenced by later canonical processed-root\n\
-  \  and dedupe workflows without extra notebook-only steps."
-- "[ ] The auth model is least-privilege and scoped to one dedicated Colab\n  artifacts\
-  \ folder rather than broad whole-Drive access."
+  - "[ ] Hemma can read a dedicated shared Google Drive folder without needing the\n  local workstation to proxy file transfers."
+  - "[ ] The import lane uses repo-owned command surfaces invoked through canonical\n  Hemma wrappers rather than ad hoc shell payloads."
+  - "[ ] A completed Colab run root can be synced into\n  `/srv/storage/sir-convert-a-lot/imports/google-drive/qwen-colab/` with a\n  deterministic destination path."
+  - "[ ] The validation surface fails closed if an imported root is missing any of:\n  - `run.json`\n  - `status.json`\n  - `spool/rows/`\n  - `audio_24k/`"
+  - "[ ] If a completed-row resume index exists, it is validated through the\n  existing helper surface before the run root is treated as healthy."
+  - "[ ] The imported run root can be referenced by later canonical processed-root\n  and dedupe workflows without extra notebook-only steps."
+  - "[ ] The auth model is least-privilege and scoped to one dedicated Colab\n  artifacts folder rather than broad whole-Drive access."
 retired_ids:
-- task-176-add-a-hemma-drive-ingestion-lane-for-colab-qwen-preprocessing-run-roots
+  - task-176-add-a-hemma-drive-ingestion-lane-for-colab-qwen-preprocessing-run-roots
 ---
 
 ## Context

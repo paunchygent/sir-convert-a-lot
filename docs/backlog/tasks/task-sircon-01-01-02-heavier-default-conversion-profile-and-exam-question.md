@@ -4,8 +4,8 @@ id: TASK-SIRCON-01-01-02
 title: Heavier default conversion profile and exam-question ordering normalization
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,16 +17,16 @@ closeout_review:
 story: ST-SIRCON-01-01
 task_kind: story
 acceptance_criteria:
-- '- [ ] Default conversion path uses heavier Docling layout profile by contract.'
-- '- [ ] Target PDF conversion output keeps question lines before alternatives.'
-- '- [ ] Target PDF conversion output has consistent question numbering order.'
-- '- [x] `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py` stays below
-  400 LoC with behavior preserved by tests.'
-- '- [ ] Full quality/docs gates pass after implementation.'
-- '- [ ] Hemma deploy/rebuild/lane verification pass on pushed revision.'
+  - '- [ ] Default conversion path uses heavier Docling layout profile by contract.'
+  - '- [ ] Target PDF conversion output keeps question lines before alternatives.'
+  - '- [ ] Target PDF conversion output has consistent question numbering order.'
+  - '- [x] `scripts/sir_convert_a_lot/infrastructure/markdown_normalizer.py` stays below 400 LoC with behavior preserved by tests.'
+  - '- [ ] Full quality/docs gates pass after implementation.'
+  - '- [ ] Hemma deploy/rebuild/lane verification pass on pushed revision.'
 retired_ids:
-- task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization
+  - task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization
 ---
+
 ## Context
 
 Source record: docs/backlog/tasks/task-25-heavier-default-conversion-profile-and-exam-question-ordering-normalization.md
@@ -44,14 +44,14 @@ Source record: docs/backlog/tasks/task-25-heavier-default-conversion-profile-and
 > 1. Heavier-default policy:
 >    - Prefer heavier Docling layout model by default.
 >    - Keep override capability explicit and deterministic through config/env.
-> 1. Conversion correctness target:
+> 2. Conversion correctness target:
 >    - For the target exam PDF, question heading should precede alternatives.
 >    - Numbering progression must remain monotonic and non-duplicated.
-> 1. Maintainability target:
+> 3. Maintainability target:
 >    - `markdown_normalizer.py` remains a thin contract surface; heavy strict-mode
 >      internals are split into focused modules.
 >    - Normalization modules stay below 400 LoC each.
-> 1. Validation path:
+> 4. Validation path:
 >    - Must include Hemma deployment cycle:
 >      - commit + push,
 >      - remote pull,

@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-03-12
 title: Add standalone eval and scheduled train-stop-resume control for Qwen training
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,21 +17,13 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[x] `qwen-train eval` accepts an explicit checkpoint plus held-out eval\n  material\
-  \ and runs a real eval pass with `model.eval()` and `torch.no_grad()`\n  inside\
-  \ the governed training image."
-- "[x] Standalone eval writes deterministic machine-readable artifacts that\n  expose\
-  \ at least latest eval loss, checkpoint path, eval manifest path, and\n  bundle/reference-input\
-  \ posture."
-- "[x] The schedule runner can intentionally stop a detached training run,\n  launch\
-  \ standalone eval against the resulting durable checkpoint, and resume\n  training\
-  \ from that checkpoint afterwards."
-- "[x] Epoch-aware schedule boundaries are computed from canonical\n  `dataloader_length`\
-  \ and durable checkpoint metadata rather than inferred from\n  raw row counts alone."
-- "[x] Focused tests prove the schedule runner chooses the correct next boundary\n\
-  \  and wires train/eval/resume calls in order without needing a long Hemma run."
+  - "[x] `qwen-train eval` accepts an explicit checkpoint plus held-out eval\n  material and runs a real eval pass with `model.eval()` and `torch.no_grad()`\n  inside the governed training image."
+  - "[x] Standalone eval writes deterministic machine-readable artifacts that\n  expose at least latest eval loss, checkpoint path, eval manifest path, and\n  bundle/reference-input posture."
+  - "[x] The schedule runner can intentionally stop a detached training run,\n  launch standalone eval against the resulting durable checkpoint, and resume\n  training from that checkpoint afterwards."
+  - "[x] Epoch-aware schedule boundaries are computed from canonical\n  `dataloader_length` and durable checkpoint metadata rather than inferred from\n  raw row counts alone."
+  - "[x] Focused tests prove the schedule runner chooses the correct next boundary\n  and wires train/eval/resume calls in order without needing a long Hemma run."
 retired_ids:
-- task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training
+  - task-182-add-standalone-eval-and-scheduled-train-stop-resume-control-for-task-101-qwen-training
 ---
 
 ## Context
@@ -98,15 +90,15 @@ check.
 ### Ordered Execution
 
 1. Open the task/docs slice for standalone eval and scheduled control.
-1. Add the public `qwen-train eval` surface and in-container standalone eval
+2. Add the public `qwen-train eval` surface and in-container standalone eval
    implementation.
-1. Add schedule-runner orchestration that can launch or resume training,
+3. Add schedule-runner orchestration that can launch or resume training,
    request a graceful stop at the next planned boundary, run standalone eval,
    and resume again.
-1. Persist eval and schedule truth into deterministic status/report artifacts.
-1. Add focused regression coverage for CLI parsing, checkpoint/eval path
+4. Persist eval and schedule truth into deterministic status/report artifacts.
+5. Add focused regression coverage for CLI parsing, checkpoint/eval path
    validation, epoch-boundary math, and schedule orchestration.
-1. Run local quality gates, docs gates, and one bounded Hemma proof before any
+6. Run local quality gates, docs gates, and one bounded Hemma proof before any
    longer pilot spend.
 
 ### Deliverables

@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-01-05
 title: Stream RixVox source selection and make preflight status truthful
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,20 +17,14 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- A bounded `rixvox train` launch no longer needs full-train parquet materialization
-  before row-processing can begin.
-- '`max_rows_per_split` is enforced during parquet iteration for `rixvox` train, not
-  after a whole-split Python list has been built.'
-- The run root records one persisted bounded selected-row artifact before row-processing
-  starts.
-- The run root records one persisted bounded audio-locator artifact for the selected
-  train rows.
-- 'Status clearly distinguishes: - source selection - audio-locator resolution - inventory
-  writing - row-processing'
-- A rerun of the aggressive Hemma probe reaches first spool-row output fast enough
-  to be a real worker/concurrency experiment.
+  - A bounded `rixvox train` launch no longer needs full-train parquet materialization before row-processing can begin.
+  - '`max_rows_per_split` is enforced during parquet iteration for `rixvox` train, not after a whole-split Python list has been built.'
+  - The run root records one persisted bounded selected-row artifact before row-processing starts.
+  - The run root records one persisted bounded audio-locator artifact for the selected train rows.
+  - 'Status clearly distinguishes: - source selection - audio-locator resolution - inventory writing - row-processing'
+  - A rerun of the aggressive Hemma probe reaches first spool-row output fast enough to be a real worker/concurrency experiment.
 retired_ids:
-- task-119-stream-rixvox-source-selection-and-make-preflight-status-truthful
+  - task-119-stream-rixvox-source-selection-and-make-preflight-status-truthful
 ---
 
 ## Context
@@ -130,10 +124,10 @@ worker probes from testing the actual worker configuration.
 Canonical staged-public-corpus preprocessing on Hemma should become:
 
 1. `source-selection`
-1. `row-processing`
-1. `finalization`
-1. `reports`
-1. `promotion`
+2. `row-processing`
+3. `finalization`
+4. `reports`
+5. `promotion`
 
 `row-processing` must consume persisted bounded selection artifacts rather than
 performing full train parquet discovery on startup.

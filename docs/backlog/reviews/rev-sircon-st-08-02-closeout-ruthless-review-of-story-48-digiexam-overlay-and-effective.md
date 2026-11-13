@@ -4,15 +4,15 @@ id: REV-SIRCON-ST-08-02-CLOSEOUT
 title: Ruthless review of Story 48 DigiExam overlay and effective IR contract
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: changes_requested
 target: ST-SIRCON-08-02
 decided_at: '2026-05-15'
 gate: closeout
 retired_ids:
-- review-15-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract
+  - review-15-ruthless-review-of-story-48-digiexam-overlay-and-effective-ir-contract
 reviewer: ruthless-reviewer
 ---
 
@@ -112,7 +112,7 @@ Structured review artifact for implementation or readiness checks.
      `pdm run pytest-root tests/sir_convert_a_lot/test_digiexam_migration_bundle_api_v2.py`
      plus `pdm run docs-validate`.
 
-1. [ ] `high` - Story 48's unkeyed/manual QTI wording is stale after completed
+2. [ ] `high` - Story 48's unkeyed/manual QTI wording is stale after completed
    Task 303.
 
    - Evidence:
@@ -139,7 +139,7 @@ Structured review artifact for implementation or readiness checks.
      manual/unkeyed profile and run the focused Task 303/API tests named in the
      task, plus `pdm run docs-validate`.
 
-1. [ ] `medium` - The matching and gapped/open-cloze sequencing is not enforced
+3. [ ] `medium` - The matching and gapped/open-cloze sequencing is not enforced
    by Story 48 acceptance criteria.
 
    - Evidence:
@@ -167,7 +167,7 @@ Structured review artifact for implementation or readiness checks.
      focused answer-key completion tests once those surfaces exist, plus
      `pdm run docs-validate`.
 
-1. [ ] `medium` - Story 48 state mixes completed child slices with remaining
+4. [ ] `medium` - Story 48 state mixes completed child slices with remaining
    proposed blockers.
 
    - Evidence:
@@ -225,10 +225,10 @@ the remediation before the decision changes.
 
 1. Harden Story 48 privacy/provenance acceptance and tests so they match Task
    295 and the converter contract.
-1. Refresh Story 48 QTI wording against completed Task 303 and the current
+2. Refresh Story 48 QTI wording against completed Task 303 and the current
    manual/unkeyed profile.
-1. Add Story 48 acceptance gates for Tasks 298, 305, and 306 sequencing.
-1. Clarify Story 48 current state by separating completed child slices from
+3. Add Story 48 acceptance gates for Tasks 298, 305, and 306 sequencing.
+4. Clarify Story 48 current state by separating completed child slices from
    remaining blockers.
 
 ### Completion

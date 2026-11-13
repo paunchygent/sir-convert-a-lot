@@ -4,8 +4,8 @@ id: TASK-SIRCON-01-01-03
 title: Docling form cluster ordering source patch with deterministic quality gate and fallback
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,14 +17,14 @@ closeout_review:
 story: ST-SIRCON-01-01
 task_kind: story
 acceptance_criteria:
-- '- [x] For target document class, source-level output places question prompts before options for Q2/Q3-class defects.'
-- '- [x] Numbering continuity for target exam output is preserved after backend selection + fallback policy.'
-- '- [x] Behavior is deterministic under fixed input/spec and produces stable artifact output across repeated runs.'
-- '- [x] Normalization is no longer the primary mechanism for question-order repair.'
-- '- [x] `format-all`, `lint-fix`, `typecheck-all`, targeted pytest, `validate-tasks`, and `validate-docs` pass.'
-- '- [ ] Hemma lane evidence confirms contract-compatible behavior after deploy.'
+  - '- [x] For target document class, source-level output places question prompts before options for Q2/Q3-class defects.'
+  - '- [x] Numbering continuity for target exam output is preserved after backend selection + fallback policy.'
+  - '- [x] Behavior is deterministic under fixed input/spec and produces stable artifact output across repeated runs.'
+  - '- [x] Normalization is no longer the primary mechanism for question-order repair.'
+  - '- [x] `format-all`, `lint-fix`, `typecheck-all`, targeted pytest, `validate-tasks`, and `validate-docs` pass.'
+  - '- [ ] Hemma lane evidence confirms contract-compatible behavior after deploy.'
 retired_ids:
-- task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback
+  - task-26-docling-form-cluster-ordering-source-patch-with-deterministic-quality-gate-and-fallback
 ---
 
 ## Context

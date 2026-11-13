@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-03-02
 title: Define saturation-oriented Qwen launch profiles and acceptance gates on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,14 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] A Task 101 launch can be classified unambiguously as smoke, profile,\n  pilot-long,\
-  \ or convergence."
-- "[ ] Each profile selects a coherent default policy instead of leaving the\n  operator\
-  \ to assemble settings manually."
-- "[ ] The story-level success gate is documented as `>= 90%` median GPU busy\n  over\
-  \ a steady-state non-checkpoint window, not as a vague throughput claim."
+  - "[ ] A Task 101 launch can be classified unambiguously as smoke, profile,\n  pilot-long, or convergence."
+  - "[ ] Each profile selects a coherent default policy instead of leaving the\n  operator to assemble settings manually."
+  - "[ ] The story-level success gate is documented as `>= 90%` median GPU busy\n  over a steady-state non-checkpoint window, not as a vague throughput claim."
 retired_ids:
-- task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma
+  - task-163-define-saturation-oriented-task-101-qwen-launch-profiles-and-acceptance-gates-on-hemma
 ---
 
 ## Context

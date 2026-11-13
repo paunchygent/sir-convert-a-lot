@@ -4,8 +4,8 @@ id: TASK-SIRCON-03-02-03
 title: Make source-layer formula evidence authoritative for born-digital PDFs
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,31 +17,17 @@ closeout_review:
 story: ST-SIRCON-03-02
 task_kind: story
 acceptance_criteria:
-- Born-digital/source-backed formula regions preserve source-layer evidence unless
-  a generated formula candidate passes a source-backed acceptance gate.
-- Source-layer authority is applied only after the evidence model classifies the region
-  as `usable`; `partial_or_unusable` and `absent` evidence remain explicit states
-  with governed fallback behavior.
-- Every encountered source-backed formula page window has an explicit best-effort
-  artifact representation decision; the accepted terminal Markdown uses deterministic
-  `formula-not-decoded` placeholders plus safe authority metadata instead of hallucinated
-  generated formula text.
-- Accurate table mode can run without automatically committing generative formula
-  VLM output.
-- No-source/raster formula regions still have a governed formula VLM path with the
-  Task 344 stop/compile runtime controls intact.
-- Result/replay metadata tells the caller whether formula VLM was skipped, advisory,
-  accepted, rejected, or fell back, and why. The initial Task 342 terminal status/result/manifest
-  presentation slice now surfaces that metadata without adding a second authority
-  policy.
-- The pages `13-16` incident replay contains no accepted-output recurrence of the
-  known leaked `</formula`, `\mathbmath`, repeated `\mathbf`, or pre-remediation corrupted
-  formula/prose markers when source-layer evidence is usable.
-- Any remaining Granite/ROCm latency is explicitly attributed as residual model-throughput
-  work for Task 343/Task 74, not mistaken for successful formula-authority remediation.
-- Docs index and validation gates pass.
+  - Born-digital/source-backed formula regions preserve source-layer evidence unless a generated formula candidate passes a source-backed acceptance gate.
+  - Source-layer authority is applied only after the evidence model classifies the region as `usable`; `partial_or_unusable` and `absent` evidence remain explicit states with governed fallback behavior.
+  - Every encountered source-backed formula page window has an explicit best-effort artifact representation decision; the accepted terminal Markdown uses deterministic `formula-not-decoded` placeholders plus safe authority metadata instead of hallucinated generated formula text.
+  - Accurate table mode can run without automatically committing generative formula VLM output.
+  - No-source/raster formula regions still have a governed formula VLM path with the Task 344 stop/compile runtime controls intact.
+  - Result/replay metadata tells the caller whether formula VLM was skipped, advisory, accepted, rejected, or fell back, and why. The initial Task 342 terminal status/result/manifest presentation slice now surfaces that metadata without adding a second authority policy.
+  - The pages `13-16` incident replay contains no accepted-output recurrence of the known leaked `</formula`, `\mathbmath`, repeated `\mathbf`, or pre-remediation corrupted formula/prose markers when source-layer evidence is usable.
+  - Any remaining Granite/ROCm latency is explicitly attributed as residual model-throughput work for Task 343/Task 74, not mistaken for successful formula-authority remediation.
+  - Docs index and validation gates pass.
 retired_ids:
-- task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs
+  - task-345-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs
 ---
 
 ## Context

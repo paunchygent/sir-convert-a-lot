@@ -4,8 +4,8 @@ id: ST-SIRCON-01-01
 title: Hemma offloaded PDF-to-Markdown conversion pipeline
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,22 +18,22 @@ epic: EPIC-SIRCON-01
 links:
   decisions: []
 acceptance_criteria:
-- '- [ ] Canonical converter entrypoint implemented'
-- '- [ ] Noisy/scanned PDF fixtures added'
-- '- [ ] Unit + integration tests added'
-- '- [ ] Hemma HTTP service profile added'
-- '- [ ] HTTP async job contract implemented'
-- '- [ ] Queue-compatible `JobSpec`/`JobResult` contract defined'
-- '- [ ] Local client invocation against HTTP endpoint verified'
-- '- [ ] Docling accelerator decision gate documented'
-- '- [ ] Phase 0 v1 API schema + ADR published and linked'
-- '- [ ] GPU-first policy enforced; CPU fallback enabled only after decision gate'
-- '- [ ] Post-stabilization cleanup completed (redundant converters removed, canonical surface only)'
-- '- [ ] Versioned converter contract + migration notes published'
-- '- [ ] Commands documented in repo docs'
-- '- [ ] `pdm run format` / `pdm run lint` / `pdm run typecheck` / `pdm run test` executed'
+  - '- [ ] Canonical converter entrypoint implemented'
+  - '- [ ] Noisy/scanned PDF fixtures added'
+  - '- [ ] Unit + integration tests added'
+  - '- [ ] Hemma HTTP service profile added'
+  - '- [ ] HTTP async job contract implemented'
+  - '- [ ] Queue-compatible `JobSpec`/`JobResult` contract defined'
+  - '- [ ] Local client invocation against HTTP endpoint verified'
+  - '- [ ] Docling accelerator decision gate documented'
+  - '- [ ] Phase 0 v1 API schema + ADR published and linked'
+  - '- [ ] GPU-first policy enforced; CPU fallback enabled only after decision gate'
+  - '- [ ] Post-stabilization cleanup completed (redundant converters removed, canonical surface only)'
+  - '- [ ] Versioned converter contract + migration notes published'
+  - '- [ ] Commands documented in repo docs'
+  - '- [ ] `pdm run format` / `pdm run lint` / `pdm run typecheck` / `pdm run test` executed'
 retired_ids:
-- 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline
+  - 002-hemma-offloaded-pdf-to-markdown-conversion-pipeline
 ---
 
 ## Context
@@ -133,11 +133,11 @@ This story is being executed through these PR-sized tasks:
 
 1. Durable filesystem job store + restart recovery + retention sweeper:
    - `docs/backlog/tasks/task-09-durable-filesystem-job-store-restart-recovery-retention-sweeper-story-02-01.md`
-1. Docling backend + OCR mapping + deterministic Markdown normalization (width 100 strict strong-reflow):
+2. Docling backend + OCR mapping + deterministic Markdown normalization (width 100 strict strong-reflow):
    - `docs/backlog/tasks/task-10-docling-backend-ocr-policy-mapping-deterministic-markdown-normalization-width-100.md`
-1. PyMuPDF4LLM backend + deterministic output + governance compatibility rules:
+3. PyMuPDF4LLM backend + deterministic output + governance compatibility rules:
    - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
-1. Workload evidence harness + Hemma tunnel acceptance report (10/10 real scientific PDFs):
+4. Workload evidence harness + Hemma tunnel acceptance report (10/10 real scientific PDFs):
    - `docs/backlog/tasks/task-sircon-01-01-01-scientific-paper-workload-evidence-harness-hemma-tunnel.md`
 
 ### Phase 0 - Contract and scope freeze (docs-as-code first)
@@ -152,7 +152,7 @@ This story is being executed through these PR-sized tasks:
 - result and error payload schema.
 
 2. Lock remote architecture target to HTTP API first (not tunnel/SSH-first orchestration).
-1. Publish and freeze v1 API schema before implementation:
+3. Publish and freeze v1 API schema before implementation:
 
 - `docs/reference/ref-sircon-general-pdf-to-markdown-service-api-v1.md`
 - async-create endpoint with optional bounded wait semantics (no separate sync endpoint),
@@ -196,19 +196,19 @@ This story is being executed through these PR-sized tasks:
 - image-heavy pages.
 
 2. Add unit tests for normalization and heading/table logic.
-1. Add integration tests for end-to-end conversion outputs with assertions on:
+3. Add integration tests for end-to-end conversion outputs with assertions on:
 
 - non-empty markdown,
 - expected section/table presence,
 - deterministic metadata header fields.
 
 4. Add regression fixtures for previously failing/noisy documents.
-1. Add contract tests for API response schema and job state transitions.
+5. Add contract tests for API response schema and job state transitions.
 
 ### Phase 3 - Hemma HTTP service deployment (primary path)
 
 1. Package converter core and API server as dedicated container profile for Hemma.
-1. Implement async HTTP endpoints:
+2. Implement async HTTP endpoints:
 
 - `POST /v1/convert/jobs` (create job),
 - `GET /v1/convert/jobs/{job_id}` (status),
@@ -216,8 +216,8 @@ This story is being executed through these PR-sized tasks:
 - `POST /v1/convert/jobs/{job_id}/cancel` (optional).
 
 3. Persist job metadata/artifacts in a storage layout that is transport-agnostic.
-1. Add client command wrappers in this repo that call HTTP endpoints.
-1. Record operational limits:
+4. Add client command wrappers in this repo that call HTTP endpoints.
+5. Record operational limits:
 
 - CPU/memory profile,
 - timeout policy,
@@ -238,12 +238,12 @@ This story is being executed through these PR-sized tasks:
 - external queue worker (Option 3).
 
 3. Add idempotency key support for job creation to make future queue retries safe.
-1. Add tracing/correlation IDs in all job lifecycle events.
+4. Add tracing/correlation IDs in all job lifecycle events.
 
 ### Phase 4 - GPU decision gate (Docling on Hemma)
 
 1. Validate Docling accelerator behavior on Hemma hardware/runtime.
-1. Gate outcomes:
+2. Gate outcomes:
 
 - Start with GPU-first default policy and no silent CPU fallback.
 - If GPU path is supported and stable: keep GPU as default.
@@ -256,9 +256,9 @@ This story is being executed through these PR-sized tasks:
 ### Phase 5 - Cross-repo local availability
 
 1. Define one canonical local tool surface (`pdf2md` CLI contract) and keep thin repo wrappers.
-1. Keep current aliases (`convert:pdf-md`, `convert:pdf-md-advanced`) as compatibility wrappers
+2. Keep current aliases (`convert:pdf-md`, `convert:pdf-md-advanced`) as compatibility wrappers
    over the canonical entrypoint.
-1. Document synchronization strategy to avoid drift between repos.
+3. Document synchronization strategy to avoid drift between repos.
 
 ### Phase 6 - Post-stabilization consolidation and cleanup
 

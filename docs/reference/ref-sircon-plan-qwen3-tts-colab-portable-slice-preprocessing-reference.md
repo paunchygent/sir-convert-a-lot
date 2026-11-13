@@ -4,14 +4,14 @@ id: REF-SIRCON-PLAN-qwen3-tts-colab-portable-slice-preprocessing-reference
 title: Qwen3-TTS Colab Portable Slice Preprocessing Reference
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: plan
 summary: Qwen3-TTS Colab Portable Slice Preprocessing Reference
 retired_ids:
-- REF-qwen3-tts-colab-portable-slice-preprocessing
+  - REF-qwen3-tts-colab-portable-slice-preprocessing
 ---
 
 ## Outcome And Purpose
@@ -84,13 +84,13 @@ Portable slices must be disjoint.
 The first deterministic partitioning rule is:
 
 1. start from one completed Hemma `source-selection` artifact set
-1. keep only `rixvox train` rows
-1. sort rows by:
+2. keep only `rixvox train` rows
+3. sort rows by:
    - dataset
    - split
    - speaker
    - dataset row id
-1. assign rows by modulo:
+4. assign rows by modulo:
    - row `i` belongs to slice `i % slice_count`
 
 This guarantees:
@@ -175,9 +175,9 @@ The added source mode is:
 Expected behavior:
 
 1. load the portable selected-source JSONL
-1. locally re-resolve missing audio locators from the staged required files
-1. run canonical Task 103 `row-processing`
-1. emit the normal Task 103 run-root artifacts
+2. locally re-resolve missing audio locators from the staged required files
+3. run canonical Task 103 `row-processing`
+4. emit the normal Task 103 run-root artifacts
 
 That preserves output compatibility with Hemma:
 
@@ -215,10 +215,10 @@ repo-owned portable-slice localization stage.
 That stage must:
 
 1. read one portable selected-source bundle
-1. resolve the required local archive members from staged raw files
-1. extract those members into a deterministic plain-file tree under the slice
+2. resolve the required local archive members from staged raw files
+3. extract those members into a deterministic plain-file tree under the slice
    root
-1. persist one localized selected-source manifest with plain-file
+4. persist one localized selected-source manifest with plain-file
    `source_audio_locator` values
 
 After localization, the notebook should invoke Task 103 row-processing against

@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-03-13
 title: Restore the upstream Qwen fine-tune graph and add clip-boundary forensics
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,24 +17,13 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[x] A focused train-step test proves talker-level projection may be present\n \
-  \ for fingerprinting but is not injected into the fine-tune forward graph."
-- "[x] A focused eval-runtime test proves held-out eval uses the same\n  no-projection\
-  \ contract."
-- "[x] Focused guard tests prove distinct failure reasons for:\n  - `pre_clip_non_finite_gradients`\n\
-  \  - `clip_grad_norm_non_finite`\n  - `post_clip_non_finite_gradients`\n  - `post_step_non_finite_parameters`\
-  \ / `post_step_non_finite_optimizer_state`"
-- "[x] Operator docs identify `state-step-00001238` as the canonical\n  no-projection\
-  \ RCA checkpoint and record the projection-enabled restart as a\n  diagnostic experiment\
-  \ rather than the new mainline."
-- "[ ] One bounded Hemma proof from a fresh diagnostic checkpoint near optimizer\n\
-  \  step `1401` writes machine-readable stage truth for the first non-finite\n  event.\n\
-  \  - Current partial truth: the resumed no-projection lane already proved the\n\
-  \    first bad stage at optimizer step `1405` is `pre_clip`, with\n    `text_embedding.weight.grad`\
-  \ as the first non-finite surface, but it did\n    not mint the intended fresh near-`1401`\
-  \ checkpoint."
+  - "[x] A focused train-step test proves talker-level projection may be present\n  for fingerprinting but is not injected into the fine-tune forward graph."
+  - "[x] A focused eval-runtime test proves held-out eval uses the same\n  no-projection contract."
+  - "[x] Focused guard tests prove distinct failure reasons for:\n  - `pre_clip_non_finite_gradients`\n  - `clip_grad_norm_non_finite`\n  - `post_clip_non_finite_gradients`\n  - `post_step_non_finite_parameters` / `post_step_non_finite_optimizer_state`"
+  - "[x] Operator docs identify `state-step-00001238` as the canonical\n  no-projection RCA checkpoint and record the projection-enabled restart as a\n  diagnostic experiment rather than the new mainline."
+  - "[ ] One bounded Hemma proof from a fresh diagnostic checkpoint near optimizer\n  step `1401` writes machine-readable stage truth for the first non-finite\n  event.\n  - Current partial truth: the resumed no-projection lane already proved the\n    first bad stage at optimizer step `1405` is `pre_clip`, with\n    `text_embedding.weight.grad` as the first non-finite surface, but it did\n    not mint the intended fresh near-`1401` checkpoint."
 retired_ids:
-- task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics
+  - task-193-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics
 ---
 
 ## Context

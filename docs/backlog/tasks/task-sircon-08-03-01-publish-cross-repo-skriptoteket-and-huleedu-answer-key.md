@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-03-01
 title: Publish cross-repo Skriptoteket and HuleEdu answer-key completion handoff
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,15 +17,12 @@ closeout_review:
 story: ST-SIRCON-08-03
 task_kind: story
 acceptance_criteria:
-- '- [ ] Skriptoteket is instructed to consume Sir Convert manifest and overlay contract
-  data, not duplicate parser or provider inference.'
-- '- [ ] HuleEdu provider reuse is framed as optional/future and requires a new API
-  shape, not reuse of comparison-only callback results.'
-- '- [ ] Public/grant and authenticated routes keep separate consent and remote fallback
-  semantics.'
-- '- [ ] The handoff contains exact validation expectations for each repo.'
+  - '- [ ] Skriptoteket is instructed to consume Sir Convert manifest and overlay contract data, not duplicate parser or provider inference.'
+  - '- [ ] HuleEdu provider reuse is framed as optional/future and requires a new API shape, not reuse of comparison-only callback results.'
+  - '- [ ] Public/grant and authenticated routes keep separate consent and remote fallback semantics.'
+  - '- [ ] The handoff contains exact validation expectations for each repo.'
 retired_ids:
-- task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff
+  - task-299-publish-cross-repo-skriptoteket-and-huleedu-answer-key-completion-handoff
 ---
 
 ## Context

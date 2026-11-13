@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-06
 title: Research eSpeak NG phoneme support for Swedish Chatterbox integration
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,16 +17,12 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- 'The research note is grounded in official upstream sources only: - `resemble-ai/chatterbox`
-  - `espeak-ng/espeak-ng` - any proposed helper library''s official repo/docs'
-- The task records whether the current Chatterbox API used by this repo can accept
-  phoneme strings without undocumented internals.
-- The task records that Swedish phoneme support must be benchmarked on Hemma rather
-  than assumed from generic multilingual marketing copy.
-- The task ends with a recommended task setup for the next slices rather than jumping
-  directly to implementation.
+  - 'The research note is grounded in official upstream sources only: - `resemble-ai/chatterbox` - `espeak-ng/espeak-ng` - any proposed helper library''s official repo/docs'
+  - The task records whether the current Chatterbox API used by this repo can accept phoneme strings without undocumented internals.
+  - The task records that Swedish phoneme support must be benchmarked on Hemma rather than assumed from generic multilingual marketing copy.
+  - The task ends with a recommended task setup for the next slices rather than jumping directly to implementation.
 retired_ids:
-- task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration
+  - task-88-research-espeak-ng-phoneme-support-for-swedish-chatterbox-integration
 ---
 
 ## Context

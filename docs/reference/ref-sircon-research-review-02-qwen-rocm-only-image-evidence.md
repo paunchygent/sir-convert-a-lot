@@ -4,14 +4,14 @@ id: REF-SIRCON-RESEARCH-review-02-qwen-rocm-only-image-evidence
 title: Review 02 Qwen ROCm-Only Image Evidence
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: research
 summary: Review 02 Qwen ROCm-Only Image Evidence
 retired_ids:
-- REF-review-02-qwen-rocm-only-image-evidence
+  - REF-review-02-qwen-rocm-only-image-evidence
 ---
 
 ## Research Purpose And Boundary

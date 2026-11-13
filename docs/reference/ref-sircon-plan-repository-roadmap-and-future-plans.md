@@ -4,14 +4,14 @@ id: REF-SIRCON-PLAN-repository-roadmap-and-future-plans
 title: Repository Roadmap and Future Plans
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 reference_kind: plan
 summary: Repository Roadmap and Future Plans
 retired_ids:
-- REF-repository-roadmap-and-future-plans
+  - REF-repository-roadmap-and-future-plans
 ---
 
 ## Outcome And Purpose

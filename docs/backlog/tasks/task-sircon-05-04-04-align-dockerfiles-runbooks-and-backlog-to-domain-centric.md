@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-04-04
 title: Align Dockerfiles Runbooks and Backlog to Domain-Centric Structure
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,11 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-04
 task_kind: story
 acceptance_criteria:
-- "[ ] `docker buildx build --load` for the Qwen image succeeds with the new\n  structure."
-- '[ ] Runbook steps are verified against the new command names.'
-- '[ ] `pdm run validate-docs` and `pdm run validate-tasks` pass.'
+  - "[ ] `docker buildx build --load` for the Qwen image succeeds with the new\n  structure."
+  - '[ ] Runbook steps are verified against the new command names.'
+  - '[ ] `pdm run validate-docs` and `pdm run validate-tasks` pass.'
 retired_ids:
-- task-170-align-dockerfiles-runbooks-and-backlog-to-domain-centric-structure
+  - task-170-align-dockerfiles-runbooks-and-backlog-to-domain-centric-structure
 ---
 
 ## Context

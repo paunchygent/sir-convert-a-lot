@@ -4,8 +4,8 @@ id: ST-SIRCON-08-02
 title: DigiExam overlay and effective IR contract for answer-key completion
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,52 +18,23 @@ epic: EPIC-SIRCON-08
 links:
   decisions: []
 acceptance_criteria:
-- The service API contract names the new optional multipart part and rejects unknown
-  parts, malformed JSON, oversized overlays, missing job-spec references, stale source
-  bindings, raw/base64 asset payloads, raw `.dxe`, raw PDF text, result-PDF content
-  or student-result data, raw overlay JSON, raw model responses, unowned full exam-level
-  metadata, identity markers, earned scores, wrong selections, free-text student answers,
-  and per-student performance history.
-- Source item fingerprints are deterministic, exclude answer keys, and are available
-  in source IR manifest item summaries.
-- Overlay application fails closed on item ID, sequence, fingerprint, item type, or
-  source file/IR mismatch.
-- Manual answer keys from overlay are represented only as teacher/effective provenance
-  and never as parser evidence.
-- '`effective_ir_json` is emitted only when effective renderer input differs from
-  source IR and uses `digiexam_effective_exam_v2`.'
-- Teacher review decisions such as accepting missing answer keys are represented as
-  overlay decisions, not local Skriptoteket flags, and target artifacts remain unavailable
-  unless Sir Convert can create valid outputs under that policy.
-- Target readiness reports keep unsupported native item/target shapes, such as multi-gap
-  gap-fill without proven native PDF-to-exam import behavior, distinct from ordinary
-  missing `Facit`/answer-key review and from successful degraded manual PDF rendering.
-- Accepted-current-state can enable Exam.net PDF only after Task 308 defines a governed
-  PDF manual/unkeyed profile, creates target bytes, and validates the target. Missing-key
-  choice and item-013-style multi-gap items must render when a native or degraded
-  manual shape preserves visible content; otherwise PDF stays unavailable with item-specific
-  readiness reasons.
-- Existing default route behavior remains source-owned, but the bundle schema is `digiexam_migration_bundle_v3`
-  for every terminal bundle.
-- Item-content repairs through `effective_item_patch` are runtime-applied only after
-  Task 302 validates source-bound patch shapes and proves PDF/QTI renderers consume
-  effective content.
-- Missing machine-marked keys keep QTI disabled unless Task 303 or a later governed
-  QTI profile validates an unkeyed/manual representation for the selected QTI version.
-- Task 304 publishes generated v2 OpenAPI with typed DigiExam migration bundle, overlay,
-  effective-IR, and target-readiness schemas for consumers.
-- Reviewed completion stays disabled for matching answer-key pairs until Task 298
-  provides exact pair fields, validation, provenance, manifest/report, and target-readiness
-  semantics.
-- Reviewed completion stays disabled for gapped/open-cloze accepted values until Task
-  305 provides exact gap/value fields, validation, normalization, provenance, manifest/report,
-  and target-readiness semantics.
-- Task 306 applies reviewed completion only through the completed Task 298 and Task
-  305 contracts; it must still reject or leave items in manual-follow-up state rather
-  than infer matching or gapped/open-cloze answer keys from prompt text, renderer
-  labels, or provider output.
+  - The service API contract names the new optional multipart part and rejects unknown parts, malformed JSON, oversized overlays, missing job-spec references, stale source bindings, raw/base64 asset payloads, raw `.dxe`, raw PDF text, result-PDF content or student-result data, raw overlay JSON, raw model responses, unowned full exam-level metadata, identity markers, earned scores, wrong selections, free-text student answers, and per-student performance history.
+  - Source item fingerprints are deterministic, exclude answer keys, and are available in source IR manifest item summaries.
+  - Overlay application fails closed on item ID, sequence, fingerprint, item type, or source file/IR mismatch.
+  - Manual answer keys from overlay are represented only as teacher/effective provenance and never as parser evidence.
+  - '`effective_ir_json` is emitted only when effective renderer input differs from source IR and uses `digiexam_effective_exam_v2`.'
+  - Teacher review decisions such as accepting missing answer keys are represented as overlay decisions, not local Skriptoteket flags, and target artifacts remain unavailable unless Sir Convert can create valid outputs under that policy.
+  - Target readiness reports keep unsupported native item/target shapes, such as multi-gap gap-fill without proven native PDF-to-exam import behavior, distinct from ordinary missing `Facit`/answer-key review and from successful degraded manual PDF rendering.
+  - Accepted-current-state can enable Exam.net PDF only after Task 308 defines a governed PDF manual/unkeyed profile, creates target bytes, and validates the target. Missing-key choice and item-013-style multi-gap items must render when a native or degraded manual shape preserves visible content; otherwise PDF stays unavailable with item-specific readiness reasons.
+  - Existing default route behavior remains source-owned, but the bundle schema is `digiexam_migration_bundle_v3` for every terminal bundle.
+  - Item-content repairs through `effective_item_patch` are runtime-applied only after Task 302 validates source-bound patch shapes and proves PDF/QTI renderers consume effective content.
+  - Missing machine-marked keys keep QTI disabled unless Task 303 or a later governed QTI profile validates an unkeyed/manual representation for the selected QTI version.
+  - Task 304 publishes generated v2 OpenAPI with typed DigiExam migration bundle, overlay, effective-IR, and target-readiness schemas for consumers.
+  - Reviewed completion stays disabled for matching answer-key pairs until Task 298 provides exact pair fields, validation, provenance, manifest/report, and target-readiness semantics.
+  - Reviewed completion stays disabled for gapped/open-cloze accepted values until Task 305 provides exact gap/value fields, validation, normalization, provenance, manifest/report, and target-readiness semantics.
+  - Task 306 applies reviewed completion only through the completed Task 298 and Task 305 contracts; it must still reject or leave items in manual-follow-up state rather than infer matching or gapped/open-cloze answer keys from prompt text, renderer labels, or provider output.
 retired_ids:
-- story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion
+  - story-48-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion
 ---
 
 ## Context
@@ -217,7 +188,7 @@ Remaining blocker for Story 48 closeout:
 1. Task 306 applies reviewed completion into effective IR only through the
    completed Task 298 and Task 305 first-class pair/value contracts and
    validators.
-1. Historical: Task 308 defined the now-superseded accepted-current-state
+2. Historical: Task 308 defined the now-superseded accepted-current-state
    Exam.net PDF profile. Task 337 removes that export unlock from current
    authoring/correction replay; current follow-up preserves item-specific
    missing-key and native-target limitation reasons while keeping missing-key

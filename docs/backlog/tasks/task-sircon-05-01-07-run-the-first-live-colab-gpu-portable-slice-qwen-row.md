@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-01-07
 title: Run the first live Colab GPU portable-slice Qwen row-processing proof
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,21 +17,17 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- The proof uses a fresh bounded source-selection universe, not the live Hemma `10k`
-  selection.
-- The proof slice is deterministic and unique within that bounded universe.
-- Colab stages only the required raw files for its slice.
-- Colab runs canonical Task 103 row-processing through `selected-source-records`.
-- 'The Colab run root contains at least: - `inventory/` - `audio_24k/` - `spool/rows/`
-  - `run.json` - `status.json`'
-- The notebook remains orchestration only, not a second preprocessing implementation.
-- The notebook can prepare its proof slice from a committed proof bundle without requiring
-  manual pre-run file upload steps.
-- 'The proof records the exact Colab worker mix: - `row_worker_count=4` - `gpu_asr_worker_count=1`'
+  - The proof uses a fresh bounded source-selection universe, not the live Hemma `10k` selection.
+  - The proof slice is deterministic and unique within that bounded universe.
+  - Colab stages only the required raw files for its slice.
+  - Colab runs canonical Task 103 row-processing through `selected-source-records`.
+  - 'The Colab run root contains at least: - `inventory/` - `audio_24k/` - `spool/rows/` - `run.json` - `status.json`'
+  - The notebook remains orchestration only, not a second preprocessing implementation.
+  - The notebook can prepare its proof slice from a committed proof bundle without requiring manual pre-run file upload steps.
+  - 'The proof records the exact Colab worker mix: - `row_worker_count=4` - `gpu_asr_worker_count=1`'
 retired_ids:
-- task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof
+  - task-122-run-the-first-live-colab-gpu-portable-slice-qwen-row-processing-proof
 ---
-
 
 ## Context
 
@@ -104,9 +100,13 @@ for gate status and approval evidence.
 ## Source Body Preservation
 
 PR-sized execution unit; may be linked to a story or standalone.
+
 ## Objective
+
 Run the first live Colab GPU-backed portable-slice proof for Qwen Swedish row-processing without violating the Hemma-first row-selection contract or the canonical Task 103 run-root artifact contract.
+
 ## PR Scope
+
 - Use a fresh Hemma-issued bounded `source-selection` run root for the proof.
 - Build one deterministic portable slice bundle from that run root.
 - Run the notebook-backed Colab proof against a GPU runtime with:
@@ -115,24 +115,28 @@ Run the first live Colab GPU-backed portable-slice proof for Qwen Swedish row-pr
 - Keep the proof limited to `rixvox train` row-processing only.
 - Do not merge Colab spool state into the live Hemma run as part of this task.
 - Record a concrete evidence bundle showing that Colab emitted the same Task
-103 row-processing artifact shape as Hemma.
+  103 row-processing artifact shape as Hemma.
+
 ## Deliverables
+
 - [ ] One fresh Hemma `source-selection` proof run root for Colab use only.
 - [ ] One portable slice bundle issued from that run root.
 - [ ] One Colab notebook flow that can be executed top-to-bottom in a normal
-Colab UI session.
+  Colab UI session.
 - [ ] One committed proof bundle that the notebook can extract without manual
-bundle assembly.
+  bundle assembly.
 - [ ] One live Colab row-processing run root with canonical Task 103 artifacts.
 - [ ] One verification summary comparing the Colab run-root shape against the
-Hemma row-processing contract.
+  Hemma row-processing contract.
+
 ## Acceptance Criteria
+
 - [ ] The proof uses a fresh bounded source-selection universe, not the live
-Hemma `10k` selection.
+  Hemma `10k` selection.
 - [ ] The proof slice is deterministic and unique within that bounded universe.
 - [ ] Colab stages only the required raw files for its slice.
 - [ ] Colab runs canonical Task 103 row-processing through
-`selected-source-records`.
+  `selected-source-records`.
 - [ ] The Colab run root contains at least:
   - `inventory/`
   - `audio_24k/`
@@ -140,15 +144,16 @@ Hemma `10k` selection.
   - `run.json`
   - `status.json`
 - [ ] The notebook remains orchestration only, not a second preprocessing
-implementation.
+  implementation.
 - [ ] The notebook can prepare its proof slice from a committed proof bundle
-without requiring manual pre-run file upload steps.
+  without requiring manual pre-run file upload steps.
 - [ ] The proof records the exact Colab worker mix:
   - `row_worker_count=4`
   - `gpu_asr_worker_count=1`
+
 ## Checklist
+
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated
 - [ ] Live Colab proof complete
-

@@ -4,8 +4,8 @@ id: TASK-SIRCON-08-01-07
 title: Adopt remote answer-key model profiles with a daily token lease budget
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-28'
 status: done
 closeout_review:
@@ -14,16 +14,12 @@ closeout_review:
   reviewer: spec-verifier
   decided_at: '2026-08-29T04:03:02+02:00'
   approval_protocol: agent-overseer:approved-review-closeout
-  approval_evidence: Retained verifier review
-    .orchestration/context/sessions/01a048d5-69f7-7394-93dd-8ff91af608cd/evidence/reviews/TASK-SIRCON-08-01-07/spec-verification.md
-    verified published revision a1319739 after the approved 18126d08 repair,
-    406-passed exam gate, deployed credentialed Luna, forced GLM failover, and
-    forced-exhaustion proofs, and restored exact healthy canonical runtime.
+  approval_evidence: Retained verifier review .orchestration/context/sessions/01a048d5-69f7-7394-93dd-8ff91af608cd/evidence/reviews/TASK-SIRCON-08-01-07/spec-verification.md verified published revision a1319739 after the approved 18126d08 repair, 406-passed exam gate, deployed credentialed Luna, forced GLM failover, and forced-exhaustion proofs, and restored exact healthy canonical runtime.
 task_kind: story
 acceptance_criteria:
-- Exam-lane answer-key completion defaults to the GPT-5.6 Luna low-reasoning-effort remote profile, with GLM-5.3-flash via OpenRouter as a failover-only backup drawing from the same lease.
-- A configurable daily token lease of 5,000,000 tokens (input plus output, non-refundable leases, UTC-midnight reset) fail-closes answer-key completion on exhaustion with operator-visible status while deterministic conversion continues unaffected.
-- The exam-lane remote-provider policy decision is recorded with its data boundary of teacher exam content only, superseding the remote-forbidden default for this lane.
+  - Exam-lane answer-key completion defaults to the GPT-5.6 Luna low-reasoning-effort remote profile, with GLM-5.3-flash via OpenRouter as a failover-only backup drawing from the same lease.
+  - A configurable daily token lease of 5,000,000 tokens (input plus output, non-refundable leases, UTC-midnight reset) fail-closes answer-key completion on exhaustion with operator-visible status while deterministic conversion continues unaffected.
+  - The exam-lane remote-provider policy decision is recorded with its data boundary of teacher exam content only, superseding the remote-forbidden default for this lane.
 story: ST-SIRCON-08-01
 backlog_document_profile: contract-derived
 ---
@@ -99,11 +95,11 @@ concern: the lease check must not add a network hop; it is a local counter.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term |
-| --- | --------------------- |
+| ID  | Decided contract term                                                                                                                                            |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D9  | The exam lane's answer-key completion is remote-API-first, reversing the local-first default for this lane, with the data boundary of teacher exam content only. |
-| D10 | GPT-5.6 Luna at low reasoning effort is the default remote model; the exact ID is verified against provider docs at implementation. |
-| D11 | The lane's daily budget is a fixed configurable sub-allocation of 5,000,000 tokens (input plus output). |
-| D12 | Budgeting is lease-based with no refunds, UTC-midnight reset, and hard fail-closed exhaustion; the backup model is failover-only and draws from the same lease. |
-| D13 | GLM-5.3-flash via OpenRouter is the pinned backup profile. |
-| D14 | This task lands in sir-convert-a-lot now; the Skriptoteket port carries the configuration over rather than rebuilding it. |
+| D10 | GPT-5.6 Luna at low reasoning effort is the default remote model; the exact ID is verified against provider docs at implementation.                              |
+| D11 | The lane's daily budget is a fixed configurable sub-allocation of 5,000,000 tokens (input plus output).                                                          |
+| D12 | Budgeting is lease-based with no refunds, UTC-midnight reset, and hard fail-closed exhaustion; the backup model is failover-only and draws from the same lease.  |
+| D13 | GLM-5.3-flash via OpenRouter is the pinned backup profile.                                                                                                       |
+| D14 | This task lands in sir-convert-a-lot now; the Skriptoteket port carries the configuration over rather than rebuilding it.                                        |

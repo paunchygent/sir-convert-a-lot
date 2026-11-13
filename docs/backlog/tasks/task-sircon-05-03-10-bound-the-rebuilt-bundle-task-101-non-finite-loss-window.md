@@ -1,12 +1,11 @@
 ---
 type: task
 id: TASK-SIRCON-05-03-10
-title: Bound the rebuilt-bundle Task 101 non-finite loss window before retrying saturation
-  proof
+title: Bound the rebuilt-bundle Task 101 non-finite loss window before retrying saturation proof
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -18,15 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-03
 task_kind: story
 acceptance_criteria:
-- "[ ] A bounded rebuilt-bundle aggressive proof reaches at least the first\n  durable\
-  \ checkpoint or `30` optimizer steps without the finite-loss guard\n  firing."
-- "[ ] The proof artifacts preserve truthful occupancy, phase, and data-path\n  attribution\
-  \ surfaces while the numerical-stability fix is in place."
-- "[ ] If a bounded proof still fails, the resulting artifact captures the first\n\
-  \  non-finite window well enough that the next remediation step can be chosen\n\
-  \  from committed evidence instead of live ad hoc probing."
+  - "[ ] A bounded rebuilt-bundle aggressive proof reaches at least the first\n  durable checkpoint or `30` optimizer steps without the finite-loss guard\n  firing."
+  - "[ ] The proof artifacts preserve truthful occupancy, phase, and data-path\n  attribution surfaces while the numerical-stability fix is in place."
+  - "[ ] If a bounded proof still fails, the resulting artifact captures the first\n  non-finite window well enough that the next remediation step can be chosen\n  from committed evidence instead of live ad hoc probing."
 retired_ids:
-- task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof
+  - task-179-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof
 ---
 
 ## Context
