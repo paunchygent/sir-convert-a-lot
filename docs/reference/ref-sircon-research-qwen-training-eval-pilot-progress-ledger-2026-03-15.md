@@ -296,7 +296,7 @@ The next canonical action is a bounded no-projection mitigation proof from
 ### 2026-03-16: Story 29 Created To Gate The Next Clean Restart
 
 - New story:
-  `docs/backlog/stories/st-sircon-05-05-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`
+  `docs/backlog/stories/st-sircon-05-05-counteract-task-101-codec-span-text-pad-instability-and-gate.md`
 - New tasks:
   - `T195` explicit `text_embedding_mask_policy` with `legacy_codec_span` and
     `text_span_only`
@@ -445,7 +445,7 @@ Operator conclusion:
 
 ### Historical Reference Boundary
 
-`docs/reference/ref-sircon-research-qwen-live-training-pipeline-analysis-and-monitoring-evidence-2026-03-13-qwen-live-training-pipeline-analysis-and-monitoring-evidence-2026-03-13.md`
+`docs/reference/ref-sircon-research-qwen-live-training-pipeline-analysis-and-monitoring-evidence-2026-03-13.md`
 remains valuable as historical throughput and bottleneck evidence, but it is
 not the live recovery plan for this lane. Use this ledger for current
 training/eval recovery truth and use the March 13 reference for older

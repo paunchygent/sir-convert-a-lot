@@ -221,7 +221,7 @@ already captured Task 271 production-service proof:
 - `scripts/sir_convert_a_lot/devops/run_pdf_throughput_hemma_benchmark.py`
 - `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_profile_runner.py`
 - `scripts/sir_convert_a_lot/benchmarking/pdf_throughput_service_profile.py`
-- `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
+- `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
 
 ### Test Requirements
 

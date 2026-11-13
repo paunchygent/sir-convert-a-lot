@@ -44,13 +44,13 @@ Structured review artifact for implementation or readiness checks.
   - `docs/backlog/README.md`
   - `docs/_meta/docs-contract.yaml`
   - `docs/backlog/epics/epic-sircon-08-machine-marked-answer-key-completion-for-exam-conversion.md`
-  - `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md`
+  - `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md`
   - `docs/reference/ref-sircon-general-digiexam-migration-service-api-artifact-contract-digiexam-migration-service-api-artifact-contract.md`
   - `docs/reference/ref-sircon-general-digiexam-intermediate-exam-representation-contract-digiexam-intermediate-exam-representation-contract.md`
   - `docs/reference/ref-sircon-general-digiexam-machine-marked-answer-key-completion-architecture-digiexam-machine-marked-answer-key-completion-architecture.md`
   - `docs/reference/ref-sircon-general-exam-net-qti-import-contract-and-validation-strategy-exam-net-qti-import-contract-and-validation-strategy.md`
 - File reviewed:
-  - `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md`
+  - `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md`
 - Public surfaces affected:
   - `digiexam_migration_bundle_v2`
   - optional multipart `digiexam_ingestion_overlay`
@@ -85,9 +85,9 @@ Structured review artifact for implementation or readiness checks.
    - Evidence:
      Story 48 only requires the service API contract to reject
      `raw/base64 asset payloads` at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:84`
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:84`
      and repeats only `forbidden raw/base64 payloads` in test requirements at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:115`.
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:115`.
      Task 295 and the converter contract are stricter: overlays and
      product-visible outputs must not expose raw `.dxe`, raw PDF text,
      result-PDF content/student data, raw overlay JSON, raw model responses,
@@ -119,9 +119,9 @@ Structured review artifact for implementation or readiness checks.
      Story 48 still says to define a later governed unkeyed/manual QTI profile
      so `accept_current_state_for_export` can enable QTI only when the selected
      QTI package is schema-valid and target-valid at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:71`.
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:71`.
      It also marks the Task 303 acceptance item complete at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:107`.
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:107`.
      Task 303 is now completed and defines the `unkeyed_manual_qti_2_1_v1`
      preservation profile, validation semantics, and remaining limits.
    - Why it matters:
@@ -146,7 +146,7 @@ Structured review artifact for implementation or readiness checks.
      Story 48 scope says matching pair and gapped/open-cloze accepted-value
      answer-key shapes must be first-class contracts before reviewed completion
      or target export may treat those shapes as automatically evaluated at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:77`.
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:77`.
      The acceptance criteria and test requirements do not explicitly require
      Task 306 to remain disabled for matching/gapped completion until Tasks 298
      and 305 are complete.
@@ -172,13 +172,13 @@ Structured review artifact for implementation or readiness checks.
 
    - Evidence:
      Story 48 is `status: proposed` at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:5`,
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:5`,
      but several related child tasks are completed and several acceptance
      criteria are checked at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:104`.
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:104`.
      The story still has unchecked implementation, validation, and docs
      checklist items at
-     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md:133`.
+     `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md:133`.
    - Why it matters:
      The story is now a mixed roll-up of completed Tasks 294, 295, 302, 303,
      and 304 plus remaining proposed Tasks 298, 305, and 306. Without a

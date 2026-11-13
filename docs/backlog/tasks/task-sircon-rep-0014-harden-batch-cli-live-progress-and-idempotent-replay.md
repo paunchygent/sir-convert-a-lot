@@ -433,7 +433,7 @@ Validation:
    records, using non-secret request fingerprint/idempotency metadata.
 1. Add `convert-a-lot status` or equivalent command coverage for manifest/job-id
    observation and completed artifact download.
-1. Update `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md` and the v2 API contract if new
+1. Update `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md` and the v2 API contract if new
    fields or CLI commands are added.
 
 ### Validation Commands

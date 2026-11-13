@@ -80,8 +80,8 @@ again for the supported ROCm container path.
 ### Acceptance Criteria
 
 - [ ] Local tests cover the new default and the explicit fallback flag.
-- [ ] `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md` reflects the new default.
-- [ ] `docs/backlog/tasks/task-sircon-04-01-01-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
+- [ ] `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md` reflects the new default.
+- [ ] `docs/backlog/tasks/task-sircon-04-01-01-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats.md`
   reflects the new default.
 - [ ] The change does not introduce a silent CPU fallback or a raw-host
   workaround path.

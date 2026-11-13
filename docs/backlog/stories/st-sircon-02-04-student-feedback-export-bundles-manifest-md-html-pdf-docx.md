@@ -4,8 +4,8 @@ id: ST-SIRCON-02-04
 title: Student feedback export bundles (manifest + md->html->pdf/docx)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,15 +18,13 @@ epic: EPIC-SIRCON-02
 links:
   decisions: []
 acceptance_criteria:
-- '- [ ] Export command converts a fixture set of feedback markdown files to PDF and/or DOCX using the two-step pipeline (`md
-  -> html -> pdf/docx`).'
-- '- [ ] Manifest contains parsed `student_name` + `student_email` for every successfully exported entry.'
-- '- [ ] Missing metadata or failed conversions are recorded deterministically (no partial silent failure).'
-- '- [ ] Export outputs are deterministic in naming and folder layout for the same inputs.'
-- '- [ ] Workflow is documented under `docs/converters/` (either as an extension of `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md`
-  or a dedicated converter doc).'
+  - '- [ ] Export command converts a fixture set of feedback markdown files to PDF and/or DOCX using the two-step pipeline (`md -> html -> pdf/docx`).'
+  - '- [ ] Manifest contains parsed `student_name` + `student_email` for every successfully exported entry.'
+  - '- [ ] Missing metadata or failed conversions are recorded deterministically (no partial silent failure).'
+  - '- [ ] Export outputs are deterministic in naming and folder layout for the same inputs.'
+  - '- [ ] Workflow is documented under `docs/converters/` (either as an extension of `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md` or a dedicated converter doc).'
 retired_ids:
-- story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx
+  - story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx
 ---
 
 ## Context
@@ -62,7 +60,7 @@ student/contact manifest derived from the documents.
 Key requirements:
 
 1. Parse **student name** and **email address** from each feedback Markdown document.
-1. Use a **two-step** conversion flow for controlled layout:
+2. Use a **two-step** conversion flow for controlled layout:
    - `md -> html -> pdf`
    - `md -> html -> docx`
 
@@ -110,7 +108,7 @@ Key requirements:
 - [ ] Missing metadata or failed conversions are recorded deterministically (no partial silent failure).
 - [ ] Export outputs are deterministic in naming and folder layout for the same inputs.
 - [ ] Workflow is documented under `docs/converters/` (either as an extension of
-  `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md` or a dedicated converter doc).
+  `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md` or a dedicated converter doc).
 
 ### Test Requirements
 

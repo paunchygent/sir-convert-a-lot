@@ -111,19 +111,19 @@ review gates.
 
 ### Stories
 
-1. `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key-completion.md`
+1. `docs/backlog/stories/st-sircon-08-02-digiexam-overlay-and-effective-ir-contract-for-answer-key.md`
    defines source-bound overlay, item fingerprint, effective IR, and contract
    report semantics.
 2. `docs/backlog/stories/st-sircon-08-01-structured-llm-provider-harness-for-answer-key-completion.md`
    defines the reusable structured provider harness, provider capabilities,
    token budgeting, failover policy, and item-type output schemas.
-3. `docs/backlog/stories/st-sircon-08-03-skriptoteket-teacher-review-workflow-for-answer-key-completion.md`
+3. `docs/backlog/stories/st-sircon-08-03-skriptoteket-teacher-review-workflow-for-answer-key.md`
    defines the cross-product teacher review workflow and the HuleEdu provider
    decision checkpoint.
 4. `docs/backlog/stories/story-57-cross-repo-compact-answer-key-review-state-production-proof.md`
    tracks Task 373, Skriptoteket PR-0406, and the final production browser
    proof with a tracked DXE fixture.
-5. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+5. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay.md`
    owns the follow-up replay/idempotency hardening after production showed that
    stale succeeded jobs can mask current compact review-state artifacts.
 

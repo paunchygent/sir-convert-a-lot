@@ -159,10 +159,10 @@ numerical stability.
 1. `docs/backlog/tasks/task-203-audit-the-auxiliary-codebook-fusion-hot-path-against-story-29-mixed-precision-and-proof-lane-contracts.md`
 1. `docs/backlog/tasks/task-197-prove-the-text-span-only-mitigation-on-the-1406-1418-window-and-the-preferred-1500-gate.md`
 1. `docs/backlog/tasks/task-198-run-the-conditional-accumulation-ablation-and-fallback-1470-proof-if-1500-still-fails.md`
-1. `docs/backlog/tasks/task-sircon-05-05-04-prove-the-true-task-101-text-token-span-contract-and-set-the-final-post-fix-restart-rule.md`
-1. `docs/backlog/tasks/task-sircon-05-05-02-restore-story-29-scratch-headroom-and-establish-cold-artifact-demotion-policy-on-hemma.md`
+1. `docs/backlog/tasks/task-sircon-05-05-04-prove-the-true-task-101-text-token-span-contract-and-set-the.md`
+1. `docs/backlog/tasks/task-sircon-05-05-02-restore-story-29-scratch-headroom-and-establish-cold.md`
 1. `docs/backlog/tasks/task-sircon-05-05-03-establish-idle-safe-recurring-hemma-scratch-maintenance.md`
-1. `docs/backlog/tasks/task-sircon-05-05-01-launch-the-first-clean-base-restart-after-the-bounded-stability-gate.md`
+1. `docs/backlog/tasks/task-sircon-05-05-01-launch-the-first-clean-base-restart-after-the-bounded.md`
 
 ### Current Status
 

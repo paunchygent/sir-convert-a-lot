@@ -84,7 +84,7 @@ shared package derive `service`, `conversion`, `exam`, `speech`, `operations`,
 - `pdm run check --plan service`
 - `pdm run check service`
 - `pdm run docs-sync`
-- `pdm run docs-validate docs/backlog/tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned-tests.md`
+- `pdm run docs-validate docs/backlog/tasks/task-sircon-rep-0024-derive-service-and-domain-quality-checks-from-behavior-owned.md`
 - `git diff --check`
 
 ## Stop Conditions

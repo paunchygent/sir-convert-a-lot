@@ -87,7 +87,7 @@ discovery is confirmed by the user's next Claude session in this repo.
 
 ## Validation
 
-- `pdm run docs-validate docs/backlog/tasks/task-sircon-rep-0022-expose-local-codex-skills-to-the-claude-harness-via-claude-skills-symlink.md`
+- `pdm run docs-validate docs/backlog/tasks/task-sircon-rep-0022-expose-local-codex-skills-to-the-claude-harness-via-claude.md`
 - `pdm run check-md <changed files>` — deferred unconditionally: it fails
   repo-wide (missing `gfm` extension) and no repair task exists yet. Record
   the deferral in Closeout and open the toolchain-repair task as a named

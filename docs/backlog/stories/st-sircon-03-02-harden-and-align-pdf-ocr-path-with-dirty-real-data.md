@@ -222,7 +222,7 @@ record the outcome in the relevant task doc:
   pages/chunks that still contain `<!-- formula-not-decoded -->`, and by
   replacing bare image placeholders with linked retained image/object and
   companion PDF artifacts.
-- `docs/backlog/tasks/task-sircon-03-02-02-run-chunk-size-8-production-baseline-tuning-proof-with-warm-up-and-gpu-sampling.md`:
+- `docs/backlog/tasks/task-sircon-03-02-02-run-chunk-size-8-production-baseline-tuning-proof-with-warm.md`:
   treat the Task 271 production-service proof as the new baseline, test
   `chunk_size_pages=8` under the same 2-worker cap, keep MIOpen cache settings
   unchanged, exclude warm-up from measurement, and improve GPU/resource

@@ -342,7 +342,7 @@ Tradeoffs:
 ## Follow-Up
 
 - Publish or accept the route-specific converter contract:
-  `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract-audio-transcription-service-api-artifact-contract.md`.
+  `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract.md`.
 - Scaffold implementation stories and tasks under Epic 12, starting with
   route-level concurrency/admission caps before runtime registration.
 - Benchmark codec probing, transcription, diarization, and 120-minute batch

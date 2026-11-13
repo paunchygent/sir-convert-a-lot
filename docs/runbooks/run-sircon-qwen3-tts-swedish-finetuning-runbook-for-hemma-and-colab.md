@@ -39,7 +39,7 @@ ROCm host and on Google Colab H100, using the domain-centric ML architecture.
 This runbook is intentionally anchored to these truth surfaces:
 
 - Repo governance and operations:
-  - `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
+  - `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
   - `docs/decisions/adr-sircon-0005-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
 - ML Domain Root:
   - `scripts/sir_convert_a_lot/ml/qwen/`
@@ -347,7 +347,7 @@ Use one active question at a time:
 Operator rules:
 
 - record active run truth in
-  `docs/reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15-qwen-training-eval-pilot-progress-ledger-2026-03-15.md`
+  `docs/reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15.md`
   and do not create a second live ledger
 - keep one question per run
 - do not make causal claims when code, bundle root, sampler/batching policy,
@@ -393,7 +393,7 @@ For mechanism questions:
 - use the parity probe result to decide whether `T227` remediates a verified
   trainer/runtime divergence or Story 31 continues through bounded stabilizer
   work
-- read the [pilot progress ledger](../reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15-qwen-training-eval-pilot-progress-ledger-2026-03-15.md)
+- read the [pilot progress ledger](../reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15.md)
   for `T219`–`T245` run identifiers, classifications and historical `T242`
   bind-root observations; those observations do not establish new Hot backing
 - ad hoc runtime bind fallback remains compatibility-only after `T242`;
@@ -421,7 +421,7 @@ their backing is migrated and verified. Cache retains its separate legacy source
 default `/srv/scratch/sir-convert-a-lot/cache`; its owner must reconcile placement
 under the shared contract before activation.
 
-The [Hemma operations doorway](run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md#storage-placement-and-cutover)
+The [Hemma operations doorway](run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md#storage-placement-and-cutover)
 routes to the authoritative shared migration and backup procedure. The parent
 owns bind-root installation with `pdm run run-hemma -- pdm run qwen-docker-bind-roots install`
 and subsequent `status`/`probe` receipts during that cutover. Record actual

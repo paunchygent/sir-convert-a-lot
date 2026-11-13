@@ -113,11 +113,11 @@ User-facing rerun behavior:
 
 ### Service Contract
 
-- Normative API: `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md`
+- Normative API: `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md`
 - Downstream integration contract:
-  `docs/reference/ref-sircon-general-downstream-integration-contract-v2-downstream-integration-contract-v2.md`
+  `docs/reference/ref-sircon-general-downstream-integration-contract-v2.md`
 - Decision v2:
-  `docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md`
+  `docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension.md`
 
 ### Task 11 Backend Availability
 
@@ -348,7 +348,7 @@ The CLI infers supported media extensions as `audio`, including `wav`, `mp3`,
 The submitted v2 job uses `source.format="audio"` and
 `conversion.output_format="transcript_bundle"` with the governed public audio
 options from
-`docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract-audio-transcription-service-api-artifact-contract.md`.
+`docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract.md`.
 
 The downloaded primary artifact is the canonical transcript JSON and is written
 as `<source-stem>.transcript.json`. Named service artifacts such as

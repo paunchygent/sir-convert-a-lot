@@ -67,12 +67,12 @@ Source record: docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-co
 ### Stories
 
 > 1. `docs/backlog/stories/st-sircon-06-02-adr-and-contract-authority-for-sir-convert-gateway-cutover.md`
-> 1. `docs/backlog/stories/st-sircon-06-01-sir-convert-gateway-fronted-public-access-and-internal-lane-migration.md`
-> 1. `docs/backlog/stories/st-sircon-06-04-sir-convert-internal-auth-and-metadata-hardening-before-cutover.md`
+> 1. `docs/backlog/stories/st-sircon-06-01-sir-convert-gateway-fronted-public-access-and-internal-lane.md`
+> 1. `docs/backlog/stories/st-sircon-06-04-sir-convert-internal-auth-and-metadata-hardening-before.md`
 > 1. `docs/backlog/stories/story-37-huleedu-gateway-proxy-integration-for-sir-convert-workloads.md`
 >    (completed Sir Convert-side handoff; implementation authority moved to
 >    HuleEdu `ST-01-07`)
-> 1. `docs/backlog/stories/st-sircon-06-03-preserve-internal-service-and-local-operator-sir-convert-lanes.md`
+> 1. `docs/backlog/stories/st-sircon-06-03-preserve-internal-service-and-local-operator-sir-convert.md`
 
 ## Epic Verification Plan
 

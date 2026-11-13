@@ -76,7 +76,7 @@ through the live lane first. No other command changes.
 ## Validation
 
 - `pdm run check`
-- `pdm run docs-validate docs/backlog/tasks/task-sircon-rep-0028-adopt-the-repository-governance-live-authority-resolution-repair.md`
+- `pdm run docs-validate docs/backlog/tasks/task-sircon-rep-0028-adopt-the-repository-governance-live-authority-resolution.md`
 - `git diff --check`
 
 ## Stop Conditions

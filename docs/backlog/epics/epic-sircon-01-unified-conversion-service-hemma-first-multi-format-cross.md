@@ -91,7 +91,7 @@ retries, and failure reasons, without selecting backends manually or rewriting i
 1. `docs/backlog/stories/story-03-01-lock-v1-contract-and-no-hassle-local-dev-ux.md`
 1. `docs/backlog/stories/story-03-02-gpu-first-execution-and-fallback-governance.md`
 1. `docs/backlog/stories/story-03-03-internal-backend-integration-huledu-skriptoteket.md`
-1. `docs/backlog/stories/st-sircon-01-03-consolidate-html-pdf-md-docx-xlsx-csv-conversion-capabilities.md`
+1. `docs/backlog/stories/st-sircon-01-03-consolidate-html-pdf-md-docx-xlsx-csv-conversion.md`
 1. `docs/backlog/stories/story-03-05-quality-performance-reliability-validation-gates.md`
 1. `docs/backlog/stories/story-05-dockerized-service-hardening-with-robust-persistence.md`
 

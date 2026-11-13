@@ -176,15 +176,15 @@ fallback parser lane. Planned lanes, in dependency order:
    validation-report gate: MCQ, free text, image-bearing MCQ/free text,
    unsupported-resource omission, and proof-gated matching before any service
    runtime exposure.
-1. `docs/backlog/stories/st-sircon-07-02-service-source-simplification-and-active-surface-truth-cleanup-before-exam-net-runtime.md`
+1. `docs/backlog/stories/st-sircon-07-02-service-source-simplification-and-active-surface-truth.md`
    for the governed cleanup tranche that must precede more Exam.net runtime
    work: docs-state reconciliation, route-handler registry, runtime/CLI hotspot
    extraction, experiment-surface demotion, Task 200 scaffold closeout, and a
    validated onboarding map.
-1. `docs/backlog/stories/st-sircon-07-03-solid-domain-coupling-audit-for-exam-converter-implementation-boundaries.md`
+1. `docs/backlog/stories/st-sircon-07-03-solid-domain-coupling-audit-for-exam-converter.md`
    for the governed audit and follow-up refactors where exam-converter business
    policy is entangled with implementation branch mechanics.
-1. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay-hardening.md`
+1. `docs/backlog/stories/st-sircon-08-04-service-api-v2-idempotent-replay-and-correction-replay.md`
    for the Service API v2 replay/idempotency hardening that prevents stale
    succeeded DigiExam jobs from masking current route artifact contracts and
    makes correction replay artifacts request-scoped.

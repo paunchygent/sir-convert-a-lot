@@ -125,15 +125,15 @@ existing `CONV-*` identifiers are preserved. PreToolUse rejects body edits while
 `pdm run docs-validate` passes; no alternate writer or hook bypass was used.
 ADR-SIRCON-0014 governs retirement over their stale public-lane guidance:
 
-- `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md`
-- `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract-audio-transcription-service-api-artifact-contract.md`
+- `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md`
+- `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract.md`
 
 The older cutover and public-host recovery backlog records retain their
 historical contracts. Editing those records would require contract-profile and
 retired-identity migration; this task does not migrate those planning records.
 
 The ordered live procedure is the
-[public-edge retirement runbook](../../runbooks/run-sircon-retire-the-sir-convert-public-edge-after-default-host-certificate-separation-retire-the-sir-convert-public-edge-after-default-host-certificate-separation.md).
+[public-edge retirement runbook](../../runbooks/run-sircon-retire-the-sir-convert-public-edge-after-default-host-certificate-separation.md).
 All host mutation remains pending approval. Two final read-only SAN/alias
 probes returned SSH connection refused at 12:41 UTC on 2026-10-15; those
 certificate-sharing checks remain required before approved cleanup.

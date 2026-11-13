@@ -106,7 +106,7 @@ that a real Swedish optimizer step fits on the R9700.
 
 ### Tasks (Ordered)
 
-1. `docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md`
+1. `docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar.md`
 1. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
 1. `docs/backlog/tasks/task-383-isolate-qwen-research-dependencies-in-a-nested-pdm-project.md`
 1. `docs/backlog/tasks/task-141-define-frozen-qwen-pilot-dataset-use-for-finetuning.md`
@@ -118,8 +118,8 @@ that a real Swedish optimizer step fits on the R9700.
 1. `docs/backlog/tasks/task-153-retain-only-bounded-durable-qwen-training-checkpoints-and-guard-scratch-capacity-on-hemma.md`
 1. `docs/backlog/tasks/task-154-remediate-t153-checkpoint-compatibility-scratch-guard-sizing-and-docs-proof-drift.md`
 1. `docs/backlog/tasks/task-155-refactor-qwen-checkpoint-and-task-101-pilot-god-files-into-srp-modules.md`
-1. `docs/backlog/tasks/task-sircon-05-02-01-profile-the-qwen-finetuning-dataloader-and-decide-whether-to-precompute-ref-mels.md`
-1. `docs/backlog/tasks/task-sircon-05-02-02-activate-the-colab-h100-qwen-training-lane-with-a-cuda-dockerfile.md`
+1. `docs/backlog/tasks/task-sircon-05-02-01-profile-the-qwen-finetuning-dataloader-and-decide-whether-to.md`
+1. `docs/backlog/tasks/task-sircon-05-02-02-activate-the-colab-h100-qwen-training-lane-with-a-cuda.md`
 
 ### Acceptance Criteria
 

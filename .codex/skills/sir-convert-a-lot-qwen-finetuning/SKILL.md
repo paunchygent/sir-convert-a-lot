@@ -24,9 +24,9 @@ model-agnostic training guidance and
 ## Read Order
 
 1. `references/architecture-and-experiment-contract.md`
-1. `docs/backlog/epics/epic-sircon-05-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma-and-colab.md`
-1. `docs/reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15-qwen-training-eval-pilot-progress-ledger-2026-03-15.md`
-1. `docs/runbooks/run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md`
+1. `docs/backlog/epics/epic-sircon-05-qwen3-tts-swedish-language-expansion-fine-tuning-on-hemma.md`
+1. `docs/reference/ref-sircon-research-qwen-training-eval-pilot-progress-ledger-2026-03-15.md`
+1. `docs/runbooks/run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md`
 1. `docs/decisions/adr-sircon-0005-hemma-sidecar-tts-architecture-and-non-pdf-gpu-governance.md`
 1. `docs/decisions/adr-sircon-0006-reusable-multi-backend-tts-sidecar-capability-contract.md`
 

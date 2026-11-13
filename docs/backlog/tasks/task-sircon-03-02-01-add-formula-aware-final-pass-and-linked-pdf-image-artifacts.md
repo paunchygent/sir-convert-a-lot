@@ -262,7 +262,7 @@ dirty textbook OCR.
 - `scripts/sir_convert_a_lot/infrastructure/docling_formula_quality.py`
 - new SRP-focused companion artifact manifest/bundle module
 - `scripts/sir_convert_a_lot/interfaces/http_routes_job_artifacts_v2.py`
-- `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md`
+- `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md`
 
 ### Test Requirements
 

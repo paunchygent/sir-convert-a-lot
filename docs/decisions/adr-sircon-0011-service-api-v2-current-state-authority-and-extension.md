@@ -38,10 +38,10 @@ Source record: docs/decisions/0012-service-api-v2-current-state-authority-and-ex
 >
 > - Task 44 removed v1 conversion routes and CLI clients as a clean break to v2.
 > - Task 51 purged conflicting active-surface v1 and local/hybrid guidance.
-> - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md` is the active
+> - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md` is the active
 >   normative converter contract and names v1 conversion routes as removed from
 >   the runtime surface.
-> - `docs/reference/ref-sircon-general-downstream-integration-contract-v2-downstream-integration-contract-v2.md` states that
+> - `docs/reference/ref-sircon-general-downstream-integration-contract-v2.md` states that
 >   downstream conversion integrations are v2-only and `/v1/convert/jobs*` is not
 >   part of the supported runtime surface.
 > - Accepted ADRs 0003 through 0008 extended or constrained v2 after ADR-0002.
@@ -68,7 +68,7 @@ Source record: docs/decisions/0012-service-api-v2-current-state-authority-and-ex
 >
 > The normative API contract for active v2 conversion behavior is:
 >
-> - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md`
+> - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md`
 >
 > Route-specific converter contracts may extend that base contract only when they
 > are explicitly linked from the v2 contract and governed by their own backlog,

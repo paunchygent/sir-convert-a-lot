@@ -202,23 +202,23 @@ Source record: docs/backlog/stories/story-26-drive-task-101-qwen-training-observ
 > 1. `docs/backlog/tasks/task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs.md`
 > 1. `docs/backlog/tasks/task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs.md`
 > 1. `docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-qwen-reference-mels.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed.md`
 > 1. `docs/backlog/tasks/task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and-acceptance-gates-on-hemma.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-07-persist-bundle-level-precomputed-ref-mel-or-speaker-embedding-inputs-for-task-101.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-08-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove-legacy-bundle-fallbacks-after-stable-throughput-proof.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-09-close-the-remaining-task-101-throughput-truth-gaps-from-the-review-alignment.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-07-persist-bundle-level-precomputed-ref-mel-or-speaker.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-08-rebuild-the-task-101-bundle-on-the-t173-contract-and-remove.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-09-close-the-remaining-task-101-throughput-truth-gaps-from-the.md`
 > 1. `docs/backlog/tasks/task-180-remediate-task-101-finite-loss-guard-failure-reporting-and-accumulation-step-correctness.md`
 > 1. `docs/backlog/tasks/task-186-remediate-task-101-optimizer-boundary-corruption-and-deterministic-failure-replay.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-13-restore-the-upstream-qwen-fine-tune-graph-and-add-clip-boundary-forensics.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-14-debug-the-task-101-pre-clip-text-embedding-gradient-failure-at-step-1405.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-13-restore-the-upstream-qwen-fine-tune-graph-and-add-clip.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-14-debug-the-task-101-pre-clip-text-embedding-gradient-failure.md`
 > 1. `docs/backlog/tasks/task-sircon-05-03-11-add-real-in-training-held-out-eval-loop-to-qwen-training.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-12-add-standalone-eval-and-scheduled-train-stop-resume-control-for-qwen-training.md`
-> 1. `docs/backlog/tasks/task-sircon-05-03-10-bound-the-rebuilt-bundle-task-101-non-finite-loss-window-before-retrying-saturation-proof.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-12-add-standalone-eval-and-scheduled-train-stop-resume-control.md`
+> 1. `docs/backlog/tasks/task-sircon-05-03-10-bound-the-rebuilt-bundle-task-101-non-finite-loss-window.md`
 
 ## Decision And Assumption Ledger
 

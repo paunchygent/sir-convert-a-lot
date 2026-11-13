@@ -146,24 +146,24 @@ single live result ledger and must not mix answers across these classes.
 
 ### Stories
 
-1. `docs/backlog/stories/st-sircon-05-02-containerized-qwen3-tts-swedish-full-finetune-baseline-on-hemma-and-colab.md`
-1. `docs/backlog/stories/st-sircon-05-03-drive-qwen-training-observability-throughput-and-gpu-saturation-on-hemma.md`
+1. `docs/backlog/stories/st-sircon-05-02-containerized-qwen3-tts-swedish-full-finetune-baseline-on.md`
+1. `docs/backlog/stories/st-sircon-05-03-drive-qwen-training-observability-throughput-and-gpu.md`
 1. `docs/backlog/stories/story-28-permanently-harden-qwen-training-srp-and-ddd-boundaries.md`
-1. `docs/backlog/stories/st-sircon-05-05-counteract-task-101-codec-span-text-pad-instability-and-gate-the-next-clean-restart.md`
+1. `docs/backlog/stories/st-sircon-05-05-counteract-task-101-codec-span-text-pad-instability-and-gate.md`
 1. `docs/backlog/stories/story-30-define-the-post-task-101-design-lane-after-the-final-story-29-stop-rule.md`
-1. `docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe-through-talker-core-stabilization.md`
+1. `docs/backlog/stories/st-sircon-05-06-recover-a-stable-fresh-start-task-101-bundle-learning-recipe.md`
 1. `docs/backlog/stories/story-32-consolidate-qwen-experiment-governance-and-surface-taxonomy.md`
-1. `docs/backlog/stories/st-sircon-05-01-swedish-multi-speaker-corpus-preprocessing-and-evaluation-for-qwen3-tts.md`
+1. `docs/backlog/stories/st-sircon-05-01-swedish-multi-speaker-corpus-preprocessing-and-evaluation.md`
 
 ### Tasks (Ordered Planning and Execution Checklist)
 
-1. `docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar-benchmark.md`
+1. `docs/backlog/tasks/task-sircon-05-02-04-enable-triton-flash-attention-for-the-qwen-hemma-sidecar.md`
 1. `docs/backlog/tasks/task-105-build-qwen3-tts-swedish-finetuning-research-repomix-package.md`
 1. `docs/backlog/tasks/task-100-create-the-containerized-qwen3-tts-1-7b-swedish-full-finetune-runtime-on-hemma.md`
 1. `docs/backlog/tasks/task-102-curate-the-swedish-multi-speaker-corpus-for-qwen3-tts-language-expansion.md`
 1. `docs/backlog/tasks/task-103-build-the-qwen3-tts-swedish-preprocessing-and-manifest-pipeline.md`
-1. `docs/backlog/tasks/task-sircon-05-01-04-expand-rixvox-staging-and-run-a-sustained-detached-row-processing-window-for-the-bounded-hemma-pilot.md`
-1. `docs/backlog/tasks/task-sircon-05-01-05-stream-rixvox-source-selection-and-make-preflight-status-truthful.md`
+1. `docs/backlog/tasks/task-sircon-05-01-04-expand-rixvox-staging-and-run-a-sustained-detached-row.md`
+1. `docs/backlog/tasks/task-sircon-05-01-05-stream-rixvox-source-selection-and-make-preflight-status.md`
 1. `docs/backlog/tasks/task-sircon-05-01-06-add-portable-colab-slice-based-qwen-preprocessing-lane.md`
 1. `docs/backlog/tasks/task-sircon-rep-0003-add-resumable-row-processing-for-qwen-preprocessing-runs.md`
 1. `docs/backlog/tasks/task-124-add-portable-slice-localization-stage-for-colab-qwen-preprocessing.md`
@@ -181,17 +181,17 @@ single live result ledger and must not mix answers across these classes.
 1. `docs/backlog/tasks/task-158-make-high-resolution-hemma-resource-monitoring-default-for-long-task-101-qwen-runs.md`
 1. `docs/backlog/tasks/task-159-correct-task-101-checkpoint-cadence-and-step-semantics-for-throughput-oriented-qwen-runs.md`
 1. `docs/backlog/tasks/task-160-tune-the-task-101-qwen-dataloader-and-device-transfer-path-for-gpu-saturation.md`
-1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-qwen-reference-mels.md`
+1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed.md`
 1. `docs/backlog/tasks/task-162-add-bounded-pytorch-and-rocm-profiling-surfaces-for-task-101-qwen-bottleneck-attribution.md`
-1. `docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and-acceptance-gates-on-hemma.md`
-1. `docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle-and-training-manifest-contract.md`
-1. `docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task-101-rocm-qwen-training-lane.md`
-1. `docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead-and-add-finite-loss-guards.md`
-1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed-qwen-reference-mels.md`
-1. `docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching-and-vectorized-codebook-fusion.md`
-1. `docs/backlog/tasks/task-sircon-05-01-01-run-the-optional-colab-h100-fallback-lane-and-publish-the-swedish-qwen3-tts-comparison.md`
+1. `docs/backlog/tasks/task-sircon-05-03-02-define-saturation-oriented-qwen-launch-profiles-and.md`
+1. `docs/backlog/tasks/task-sircon-05-03-03-persist-precomputed-qwen-reference-mels-in-the-pilot-bundle.md`
+1. `docs/backlog/tasks/task-sircon-05-03-04-triage-and-remediate-miopen-workspace-warnings-in-the-task.md`
+1. `docs/backlog/tasks/task-sircon-05-03-05-eliminate-task-101-per-step-host-synchronization-overhead.md`
+1. `docs/backlog/tasks/task-sircon-05-03-01-add-ref-mel-caching-and-a-promotion-decision-for-precomputed.md`
+1. `docs/backlog/tasks/task-sircon-05-03-06-increase-task-101-per-launch-gpu-work-via-bucketed-batching.md`
+1. `docs/backlog/tasks/task-sircon-05-01-01-run-the-optional-colab-h100-fallback-lane-and-publish-the.md`
 1. `docs/backlog/tasks/task-139-synchronize-qwen-shard-governance-across-story-24-epic-08-and-runbook.md`
-1. `docs/backlog/tasks/task-sircon-rep-0005-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict-exclusions-in-shard-allocation.md`
+1. `docs/backlog/tasks/task-sircon-rep-0005-freeze-canonical-qwen-pilot-dataset-and-enforce-conflict.md`
 
 ### Acceptance Criteria
 

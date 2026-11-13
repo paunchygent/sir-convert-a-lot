@@ -64,7 +64,7 @@ Sir Convert must not mint a parallel signed identity format. The downstream iden
 
 - `/Users/olofs_mba/Documents/Repos/huleedu/docs/decisions/0039-huleedu-owned-browser-session-authority-and-saas-bootstrap-contract.md`
 - `/Users/olofs_mba/Documents/Repos/huleedu/docs/reference/ref-internal-identity-context-v1-contract.md`
-  Sir Convert consumes that contract with audience `sir-convert-a-lot` and adds only a Sir-specific authorization profile for conversion jobs and artifacts. The profile is tracked in `docs/reference/ref-sircon-general-sir-convert-internalidentitycontextv1-authorization-profile-sir-convert-internalidentitycontextv1-authorization-profile.md`.
+  Sir Convert consumes that contract with audience `sir-convert-a-lot` and adds only a Sir-specific authorization profile for conversion jobs and artifacts. The profile is tracked in `docs/reference/ref-sircon-general-sir-convert-internalidentitycontextv1-authorization-profile.md`.
 
 ### 2.1 Public product lane
 
@@ -149,7 +149,7 @@ User-originated jobs must either:
 ## 6. Follow-up
 
 - Complete the caller/access-lane inventory in
-  `docs/reference/ref-sircon-research-sir-convert-gateway-cutover-caller-inventory-sir-convert-gateway-cutover-caller-inventory.md`.
+  `docs/reference/ref-sircon-research-sir-convert-gateway-cutover-caller-inventory.md`.
 - Complete Task 259 before ADR acceptance so the Sir-specific
   `InternalIdentityContextV1` authorization profile and implementation test plan are not left as implementation discretion.
 - Harden the current public surface before cutover so unauthorized traffic

@@ -67,7 +67,7 @@ headers, and error propagation), not service runtime policy internals.
   - `execution.acceleration_policy: "gpu_required"` (unless explicit caller override)
   - `retention.pin: false`
 - For audio transcription, required defaults are owned by
-  `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract-audio-transcription-service-api-artifact-contract.md` and
+  `docs/reference/ref-sircon-general-audio-transcription-service-api-artifact-contract.md` and
   begin with:
   - `api_version: "v2"`
   - `source.kind: "upload"`
@@ -167,9 +167,9 @@ Required scenario coverage includes:
 - Local/internal consumers use the internal HTTP endpoint plus `X-API-Key`.
 - After the Gateway/internal identity cutover, user-originated internal calls
   also carry verified `InternalIdentityContextV1` according to
-  `docs/reference/ref-sircon-general-sir-convert-internalidentitycontextv1-authorization-profile-sir-convert-internalidentitycontextv1-authorization-profile.md`.
+  `docs/reference/ref-sircon-general-sir-convert-internalidentitycontextv1-authorization-profile.md`.
 - Tunnel-first local development follows:
-  - `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
+  - `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
 
 ### Change Control
 

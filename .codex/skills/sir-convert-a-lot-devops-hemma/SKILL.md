@@ -28,19 +28,19 @@ temporary provider routing is owned in Skriptoteket, not here.
 
 ## Read Order
 
-1. `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
+1. `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`
 2. Route from that doorway to the focused runbook:
-   - `docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot-hemma-service-operations-runbook-for-sir-convert-a-lot.md`
-   - `docs/runbooks/run-sircon-hemma-gpu-runtime-runbook-for-sir-convert-a-lot-hemma-gpu-runtime-runbook-for-sir-convert-a-lot.md`
-   - `docs/runbooks/run-sircon-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot.md`
-   - `docs/runbooks/run-sircon-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot.md`
+   - `docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot.md`
+   - `docs/runbooks/run-sircon-hemma-gpu-runtime-runbook-for-sir-convert-a-lot.md`
+   - `docs/runbooks/run-sircon-hemma-conversion-benchmark-runbook-for-sir-convert-a-lot.md`
+   - `docs/runbooks/run-sircon-hemma-tts-sidecar-benchmark-runbook-for-sir-convert-a-lot.md`
 3. For STT proof lanes, audio admission timing, or formatter replay failures
    observed during downstream proof, read:
-   - `docs/reference/ref-sircon-general-stt-proof-lanes-and-admission-operations-stt-proof-lanes-and-admission-operations.md`
+   - `docs/reference/ref-sircon-general-stt-proof-lanes-and-admission-operations.md`
 4. For public contracts, read:
-   - `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md`
-   - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md`
-   - `docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension-boundary.md`
+   - `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md`
+   - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md`
+   - `docs/decisions/adr-sircon-0011-service-api-v2-current-state-authority-and-extension.md`
 
 ## Workflow
 

@@ -49,7 +49,7 @@ planned, implemented, validated, and operated across local repos and Hemma-hoste
 
 ### Active Epics
 
-1. `docs/backlog/epics/epic-sircon-01-unified-conversion-service-hemma-first-multi-format-cross-repo.md`
+1. `docs/backlog/epics/epic-sircon-01-unified-conversion-service-hemma-first-multi-format-cross.md`
 1. `docs/backlog/epics/epic-04-converter-suite-parity-with-html-to-pdf-handout-templates.md`
 1. `docs/backlog/epics/epic-06-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
 1. `docs/backlog/epics/epic-09-gateway-cutover-and-internal-access-contract-for-sir-convert-a-lot.md`

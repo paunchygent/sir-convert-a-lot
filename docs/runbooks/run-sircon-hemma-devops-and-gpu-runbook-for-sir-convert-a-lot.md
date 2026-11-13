@@ -77,7 +77,7 @@ through the harness's canonical `skill-repository` alias for the single shared
 host procedure. The parent owns writer-safe cutover, installation and physical
 backing/probe receipts; source-only adapter checks do not prove activation.
 Shared weekly `hemma-docker-cleanup` owns Docker cleanup. Sir defaults and
-producer protections are in the [Qwen storage section](run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md#storage-and-cutover).
+producer protections are in the [Qwen storage section](run-sircon-qwen3-tts-swedish-finetuning-runbook-for-hemma-and-colab.md#storage-and-cutover).
 
 ### Closeout
 

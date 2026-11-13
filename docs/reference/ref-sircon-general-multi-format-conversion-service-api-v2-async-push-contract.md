@@ -40,7 +40,7 @@ semantics.
 - Decision authority:
   - `docs/decisions/0003-v2-async-push-sse-webhooks-and-polling-fallback.md`
 - Downstream integration guidance:
-  - `docs/reference/ref-sircon-general-downstream-integration-contract-v2-downstream-integration-contract-v2.md`
+  - `docs/reference/ref-sircon-general-downstream-integration-contract-v2.md`
 
 Version policy:
 

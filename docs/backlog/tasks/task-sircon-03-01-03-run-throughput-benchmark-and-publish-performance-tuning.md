@@ -163,7 +163,7 @@ Measurement rules (must be explicit in report):
    - metrics-safety result (`contains_job_id_label`),
    - determinism evidence for recommended parallel profile vs baseline behavior.
 1. Derive recommended defaults and rollback thresholds from the evidence bundle, then update
-   `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`.
+   `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md`.
 1. If the first Hemma benchmark misses the target without stability regressions, run the bounded
    2-worker sweep to evaluate chunk-size and bounded GPU-cap variants before deciding whether the
    service default can move off serial.
@@ -317,5 +317,5 @@ Measurement rules (must be explicit in report):
 ### Closeout (Mandatory)
 
 - Follow the Epic 06 per-task closeout checklist:
-  - `docs/backlog/epics/epic-sircon-03-long-pdf-conversion-reliability-progress-and-throughput-scaling.md`
+  - `docs/backlog/epics/epic-sircon-03-long-pdf-conversion-reliability-progress-and-throughput.md`
 - Terminalize this task doc (`status: completed`) before checking any epic/story checkboxes.

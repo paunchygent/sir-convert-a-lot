@@ -138,7 +138,7 @@ This story is being executed through these PR-sized tasks:
 1. PyMuPDF4LLM backend + deterministic output + governance compatibility rules:
    - `docs/backlog/tasks/task-11-pymupdf4llm-backend-deterministic-output-governance-compatibility-rules.md`
 1. Workload evidence harness + Hemma tunnel acceptance report (10/10 real scientific PDFs):
-   - `docs/backlog/tasks/task-sircon-01-01-01-scientific-paper-workload-evidence-harness-hemma-tunnel-acceptance-report-10-10-corpus.md`
+   - `docs/backlog/tasks/task-sircon-01-01-01-scientific-paper-workload-evidence-harness-hemma-tunnel.md`
 
 ### Phase 0 - Contract and scope freeze (docs-as-code first)
 
@@ -154,7 +154,7 @@ This story is being executed through these PR-sized tasks:
 2. Lock remote architecture target to HTTP API first (not tunnel/SSH-first orchestration).
 1. Publish and freeze v1 API schema before implementation:
 
-- `docs/reference/ref-sircon-general-pdf-to-markdown-service-api-v1-pdf-to-markdown-service-api-v1.md`
+- `docs/reference/ref-sircon-general-pdf-to-markdown-service-api-v1.md`
 - async-create endpoint with optional bounded wait semantics (no separate sync endpoint),
 - authentication and idempotency semantics,
 - error model and queue-compatible `JobSpec` / `JobResult`.

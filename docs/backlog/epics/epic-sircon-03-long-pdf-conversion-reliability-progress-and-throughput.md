@@ -124,7 +124,7 @@ Turn long PDF OCR conversions from opaque all-or-nothing jobs into a resilient, 
 (requires `T72-T74` plus `T76` preflight hardening gate)
 - [x] `S04` `docs/backlog/stories/story-21-gpu-accelerated-multilingual-ocr-engine-selection-and-swedish-diacritics-correctness.md`
 (requires `T77` and should land before `T74` benchmark/report)
-- [ ] `S05` `docs/backlog/stories/st-sircon-03-02-harden-and-align-pdf-ocr-path-with-dirty-real-data-performance-gate.md`
+- [ ] `S05` `docs/backlog/stories/st-sircon-03-02-harden-and-align-pdf-ocr-path-with-dirty-real-data.md`
 (requires OCR checkpoint metadata truth, contract alignment, and dirty real-data performance proof before `T74` can be treated as final tuning evidence)
 ## Tasks (Ordered)
 - [x] `T67` `docs/backlog/tasks/task-67-detect-stalled-conversions-separately-from-active-long-running-jobs.md`
@@ -140,13 +140,13 @@ Turn long PDF OCR conversions from opaque all-or-nothing jobs into a resilient, 
 - [x] `T269` `docs/backlog/tasks/task-269-reconcile-pdf-ocr-metadata-contract-across-docs-runtime-and-tests.md`
 - [x] `T270` `docs/backlog/tasks/task-270-add-dirty-pdf-ocr-corpus-manifest-and-benchmark-report-schema.md`
 - [x] `T271` `docs/backlog/tasks/task-271-run-safe-hemma-dirty-pdf-ocr-benchmark-and-publish-tuning-evidence.md`
-- [ ] `T342` `docs/backlog/tasks/task-sircon-rep-0014-harden-batch-cli-live-progress-and-idempotent-replay-visibility-for-long-conversions.md`
-- [ ] `T343` `docs/backlog/tasks/task-sircon-03-01-01-investigate-pdf-conversion-decision-logic-and-gpu-cpu-performance-attribution.md`
-- [ ] `T344` `docs/backlog/tasks/task-sircon-03-01-02-diagnose-and-harden-pdf-page-window-unit-of-work-head-of-line-blocking.md`
+- [ ] `T342` `docs/backlog/tasks/task-sircon-rep-0014-harden-batch-cli-live-progress-and-idempotent-replay.md`
+- [ ] `T343` `docs/backlog/tasks/task-sircon-03-01-01-investigate-pdf-conversion-decision-logic-and-gpu-cpu.md`
+- [ ] `T344` `docs/backlog/tasks/task-sircon-03-01-02-diagnose-and-harden-pdf-page-window-unit-of-work-head-of.md`
 - [x] `T346` `docs/backlog/tasks/task-346-evaluate-specialist-formula-ocr-candidates-before-formula-lane-infrastructure.md`
 - [x] `T350` `docs/backlog/tasks/task-350-integrate-deepseek-ocr-2-hf-eager-candidate-replay-for-task-346.md`
-- [ ] `T345` `docs/backlog/tasks/task-sircon-03-02-03-make-source-layer-formula-evidence-authoritative-for-born-digital-pdfs.md`
-- [ ] `T74` `docs/backlog/tasks/task-sircon-03-01-03-run-throughput-benchmark-and-publish-performance-tuning-report.md`
+- [ ] `T345` `docs/backlog/tasks/task-sircon-03-02-03-make-source-layer-formula-evidence-authoritative-for-born.md`
+- [ ] `T74` `docs/backlog/tasks/task-sircon-03-01-03-run-throughput-benchmark-and-publish-performance-tuning.md`
 ## Execution Plan (Implementation Order)
 This epic is intentionally ordered to reduce risk and prevent wasted work.
 1. `T67` (client semantics first):

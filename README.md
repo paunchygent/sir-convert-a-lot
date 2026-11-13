@@ -90,9 +90,9 @@ SSH path from an environment that otherwise looks like Hemma.
 
 **Architecture:**
 
-- [Service API v2](docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md)
-- [Downstream Integration Contract](docs/reference/ref-sircon-general-downstream-integration-contract-v2-downstream-integration-contract-v2.md)
-- [Async Push Extension](docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-async-push-contract-multi-format-conversion-service-api-v2-async-push-contract.md)
+- [Service API v2](docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md)
+- [Downstream Integration Contract](docs/reference/ref-sircon-general-downstream-integration-contract-v2.md)
+- [Async Push Extension](docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-async-push-contract.md)
 
 **Governance:**
 

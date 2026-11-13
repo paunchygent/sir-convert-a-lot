@@ -87,6 +87,6 @@ curl -fsS http://127.0.0.1:28085/healthz
 
 Operational requirement:
 
-- Use `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md` as the source of truth.
+- Use `docs/runbooks/run-sircon-hemma-devops-and-gpu-runbook-for-sir-convert-a-lot.md` as the source of truth.
 - Keep rollout lock active (no env-driven CPU unlock in service startup).
 - If policy unlock is ever proposed, record ADR change before rollout.

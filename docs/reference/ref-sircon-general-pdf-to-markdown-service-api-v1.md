@@ -38,12 +38,12 @@ architecture or governance rationale to an ADR, material planning choices to a
 - Conversion endpoints under `/v1/convert/jobs*` were removed on **2026-02-28** as part of
 clean-break unification to service API v2.
 - Normative conversion contract is now:
-  - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2-multi-format-conversion-service-api-v2.md`
+  - `docs/reference/ref-sircon-general-multi-format-conversion-service-api-v2.md`
 ## Canonical Local Tooling
 - Service run command: `pdm run serve:sir-convert-a-lot`
 - Client command: `pdm run convert-a-lot convert <source> --output-dir <target>`
 - Alias command: `pdm run sir-convert-a-lot convert <source> --output-dir <target>`
-- Local UX guide: `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage-sir-convert-a-lot-cli-and-service-usage.md`
+- Local UX guide: `docs/reference/ref-sircon-general-sir-convert-a-lot-cli-and-service-usage.md`
 ## Decision Lock (Phase 0)
 1. Endpoint shape
 - No separate synchronous endpoint in v1.
