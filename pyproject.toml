@@ -357,12 +357,10 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
 "handoff-validate" = "repository-governance-handoff-validate"
 "format-all" = { composite = [
     "ruff format .",
-    "mdformat --extensions frontmatter README.md AGENTS.md docs .codex",
 ] }
 "lint-fix" = { composite = [
     "ruff check --fix --unsafe-fixes .",
     "ruff format .",
-    "mdformat --extensions frontmatter README.md AGENTS.md docs .codex",
 ] }
 "typecheck-all" = "mypy --no-incremental --config-file pyproject.toml"
 "pytest-root" = "pytest -s"
