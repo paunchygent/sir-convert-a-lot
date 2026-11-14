@@ -7,10 +7,12 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-08-30'
-status: in_progress
+status: canceled
 closeout_review:
   record: inline
-  status: not_started
+  status: not_required
+  approval_protocol: agent-planning:user-closure-gate
+  approval_evidence: The user ended the hold on 2026-11-14.
 task_kind: story
 acceptance_criteria:
   - Sir production, GPU worker, STT sidecar, Qwen sidecars, and every other Sir GPU claimant remain stopped with live restart disabled for the complete CJ experiment.
@@ -64,3 +66,7 @@ that keeps the hold active until the user lifts it.
 | D02 | Sir production and every Sir GPU sidecar remain stopped with `restart=no` for the experiment. |
 | D03 | The hold is operational and temporary; normal re-enablement is decided later.                 |
 | D04 | Skriptoteket routing and user-facing disablement are owned separately by the user.            |
+
+## Closeout Review
+
+The user ended the hold on 2026-11-14.

@@ -19,8 +19,8 @@ Run from the repository root; the full list is in `pyproject.toml` and `README.m
 
 ## Product Facts
 
-- Hemma's GPU is reserved for the private Qwen CJ experiment. Sir GPU worker,
-  STT, Qwen sidecars, training and benchmark profiles stay stopped.
+- Sir GPU workloads change state through the shared Hemma workload switch,
+  `pdm run hemma-workload start|stop|restore`.
 - Local integration uses the CPU-only Docker dev service on `:8085`; never run
   `serve:sir-convert-a-lot` or `uvicorn` there directly.
 - The direct public hostname is retired (ADR-SIRCON-0014); there is no public lane.

@@ -7,18 +7,6 @@ description: >-
 
 # Sir Convert-a-Lot DevOps (Hemma + GPU)
 
-## Active Exclusive-Qwen Hold
-
-Hemma's GPU is reserved for the private Qwen CJ experiment. Read the shared
-`hemma-devops` skill and its
-`references/hemma-exclusive-qwen-cj-gpu-hold.md` before any Hemma action.
-
-Do not start or restore Sir production, GPU worker, STT, Qwen, speech,
-diarization, TTS, training, benchmark, or other GPU profiles while the existing
-production contract includes the GPU worker. This is a runtime hold, not code
-removal, and remains active until the user explicitly lifts it. Skriptoteket's
-temporary provider routing is owned in Skriptoteket, not here.
-
 ## Use When
 
 - Operating or troubleshooting Sir Convert-a-Lot on Hemma.
