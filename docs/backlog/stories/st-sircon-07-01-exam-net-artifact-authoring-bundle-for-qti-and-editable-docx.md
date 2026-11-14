@@ -4,8 +4,8 @@ id: ST-SIRCON-07-01
 title: Exam.net artifact authoring bundle for QTI and editable DOCX
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,33 +18,20 @@ epic: EPIC-SIRCON-07
 links:
   decisions: []
 acceptance_criteria:
-- A governed route contract names `examnet_artifact -> teacher_authoring_bundle` and
-  distinguishes it from the DigiExam migration route.
-- Source role classification is explicit and fail-closed when the uploaded PDF/Word
-  artifact cannot be identified safely.
-- The Swedish Exam.net PDF-to-exam renderer profile is linked as the shared PDF renderer
-  authority.
-- 'QTI support is scoped to Exam.net''s reported future support: QTI 2.1 and later,
-  at least MCQ and free text, with images where supported and unsupported audio/PDF/tool
-  resources reported for manual follow-up.'
-- A QTI validator ladder is defined before QTI generation lands, including local package/XML
-  checks, 1EdTech validator or certification-suite validation, optional local semantic
-  smoke, and Exam.net import proof.
-- The first QTI implementation emits deterministic sample packages and `qti_validation_report`
-  artifacts before service runtime exposure.
-- Service runtime implementation waits for the Story 46 route-handler registry so
-  `examnet_artifact -> teacher_authoring_bundle` does not add route-specific branching
-  to generic job creation.
-- Editable DOCX output is generated from normalized exam authoring IR and preserves
-  item semantics teachers can edit.
-- Matching items are first-class in the authoring IR and supported target outputs
-  only when answer-key provenance exists.
-- New source parser implementation remains blocked until Task 307 defines the first
-  `ExamAuthoringIR v1` matching slice, documents the parser-adapter-neutral-IR architecture,
-  and blocks target exporters from consuming source-specific parse DTOs directly.
+  - A governed route contract names `examnet_artifact -> teacher_authoring_bundle` and distinguishes it from the DigiExam migration route.
+  - Source role classification is explicit and fail-closed when the uploaded PDF/Word artifact cannot be identified safely.
+  - The Swedish Exam.net PDF-to-exam renderer profile is linked as the shared PDF renderer authority.
+  - 'QTI support is scoped to Exam.net''s reported future support: QTI 2.1 and later, at least MCQ and free text, with images where supported and unsupported audio/PDF/tool resources reported for manual follow-up.'
+  - A QTI validator ladder is defined before QTI generation lands, including local package/XML checks, 1EdTech validator or certification-suite validation, optional local semantic smoke, and Exam.net import proof.
+  - The first QTI implementation emits deterministic sample packages and `qti_validation_report` artifacts before service runtime exposure.
+  - Service runtime implementation waits for the Story 46 route-handler registry so `examnet_artifact -> teacher_authoring_bundle` does not add route-specific branching to generic job creation.
+  - Editable DOCX output is generated from normalized exam authoring IR and preserves item semantics teachers can edit.
+  - Matching items are first-class in the authoring IR and supported target outputs only when answer-key provenance exists.
+  - New source parser implementation remains blocked until Task 307 defines the first `ExamAuthoringIR v1` matching slice, documents the parser-adapter-neutral-IR architecture, and blocks target exporters from consuming source-specific parse DTOs directly.
 retired_ids:
-- story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx
+  - story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx
 ---
+
 ## Context
 
 Source record: docs/backlog/stories/story-45-exam-net-artifact-authoring-bundle-for-qti-and-editable-docx.md

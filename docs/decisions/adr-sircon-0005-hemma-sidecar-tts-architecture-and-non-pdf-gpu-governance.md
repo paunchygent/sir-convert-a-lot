@@ -4,16 +4,16 @@ id: ADR-SIRCON-0005
 title: Hemma Sidecar TTS Architecture and Non-PDF GPU Governance
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 deciders:
-- platform
+  - platform
 links:
   governing: []
 retired_ids:
-- ADR-0006
+  - ADR-0006
 ---
 
 ## Context
@@ -57,16 +57,16 @@ do not yet have a fail-closed GPU contract.
 Adopt the following architecture and contract rules for TTS:
 
 1. TTS is **sidecar-only** from day one.
-1. The main Sir Convert-a-Lot service image must not gain TTS model/runtime dependencies.
-1. The first TTS delivery route is **`md -> wav`**, not `pdf -> wav`.
-1. `pdf -> wav` is a later composition route that builds on:
+2. The main Sir Convert-a-Lot service image must not gain TTS model/runtime dependencies.
+3. The first TTS delivery route is **`md -> wav`**, not `pdf -> wav`.
+4. `pdf -> wav` is a later composition route that builds on:
    - existing checkpointed `pdf -> md`,
    - the sidecar-backed `md -> wav` contract.
-1. TTS sidecars run on the **internal Docker network only**; they are not exposed as public
+5. TTS sidecars run on the **internal Docker network only**; they are not exposed as public
    internet surfaces.
-1. Public v2 API fields must remain **provider-neutral**; do not expose model-specific task names
+6. Public v2 API fields must remain **provider-neutral**; do not expose model-specific task names
    such as `CustomVoice`, `Base`, or `VoiceDesign`.
-1. Phase-1 TTS routes are **GPU-required and fail-closed**.
+7. Phase-1 TTS routes are **GPU-required and fail-closed**.
 
 ### 3. Python Runtime Policy
 

@@ -4,8 +4,8 @@ id: TASK-SIRCON-07-02-01
 title: Generate and validate compact service onboarding map
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,18 +17,13 @@ closeout_review:
 story: ST-SIRCON-07-02
 task_kind: story
 acceptance_criteria:
-- '- [ ] The map contains all five required lanes with status, owner docs, source-entrypoint,
-  command, validation, and boundary fields.'
-- '- [ ] A missing lane, broken owner link, or broken entrypoint link fails a documented
-  validation command.'
-- '- [ ] The draft Exam.net authoring route is clearly marked draft/not runtime implemented
-  until its governed implementation task lands.'
-- '- [ ] Qwen/sidecar research is visible but not presented as production conversion
-  core.'
-- '- [ ] `pdm run docs-sync`, `pdm run docs-validate`, `pdm run skills-validate`,
-  `pdm run handoff-validate`, and `git diff --check` pass.'
+  - '- [ ] The map contains all five required lanes with status, owner docs, source-entrypoint, command, validation, and boundary fields.'
+  - '- [ ] A missing lane, broken owner link, or broken entrypoint link fails a documented validation command.'
+  - '- [ ] The draft Exam.net authoring route is clearly marked draft/not runtime implemented until its governed implementation task lands.'
+  - '- [ ] Qwen/sidecar research is visible but not presented as production conversion core.'
+  - '- [ ] `pdm run docs-sync`, `pdm run docs-validate`, `pdm run skills-validate`, `pdm run handoff-validate`, and `git diff --check` pass.'
 retired_ids:
-- task-290-generate-and-validate-compact-service-onboarding-map
+  - task-290-generate-and-validate-compact-service-onboarding-map
 ---
 
 ## Context

@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-05-03
 title: Establish idle-safe recurring Hemma scratch maintenance
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,18 +17,13 @@ closeout_review:
 story: ST-SIRCON-05-05
 task_kind: story
 acceptance_criteria:
-- '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy maintain` writes one deterministic
-  maintenance artifact and archives only cold eligible roots.'
-- '- [ ] The maintenance pass refuses to archive while active Qwen containers or the
-  explicit maintenance block file are present.'
-- '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer ...` writes
-  deterministic install artifacts and enables the user-level timer.'
-- '- [ ] The timer reuses the committed `maintain` surface instead of embedding ad
-  hoc shell logic.'
-- '- [ ] The restored headroom is sufficient for a clean rerun of `task198-20260316t185616z-accum2-a1`
-  without repeating the earlier checkpoint-save disk failure.'
+  - '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy maintain` writes one deterministic maintenance artifact and archives only cold eligible roots.'
+  - '- [ ] The maintenance pass refuses to archive while active Qwen containers or the explicit maintenance block file are present.'
+  - '- [ ] `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer ...` writes deterministic install artifacts and enables the user-level timer.'
+  - '- [ ] The timer reuses the committed `maintain` surface instead of embedding ad hoc shell logic.'
+  - '- [ ] The restored headroom is sufficient for a clean rerun of `task198-20260316t185616z-accum2-a1` without repeating the earlier checkpoint-save disk failure.'
 retired_ids:
-- task-205-establish-idle-safe-recurring-hemma-scratch-maintenance
+  - task-205-establish-idle-safe-recurring-hemma-scratch-maintenance
 ---
 
 ## Context
@@ -136,11 +131,11 @@ The scheduler must therefore be conservative rather than merely aggressive:
 
 1. Run one idle-safe maintenance pass now:
    `pdm run run-hemma -- pdm run qwen-scratch-policy maintain --prune-docker-state`
-1. Install the recurring timer:
+2. Install the recurring timer:
    `pdm run run-hemma -- pdm run qwen-scratch-policy install-timer --enable-linger --prune-docker-state`
-1. Inspect timer state:
+3. Inspect timer state:
    `pdm run run-hemma -- pdm run qwen-scratch-policy status-timer`
-1. After scratch headroom is healthy again, rerun the accumulation-`2` lane:
+4. After scratch headroom is healthy again, rerun the accumulation-`2` lane:
    `pdm run qwen-fallback-accumulation-proof launch-window --proof-id task198-20260316t185616z-accum2-a1`
 
 ### Timer Restart Repair 2026-07-02

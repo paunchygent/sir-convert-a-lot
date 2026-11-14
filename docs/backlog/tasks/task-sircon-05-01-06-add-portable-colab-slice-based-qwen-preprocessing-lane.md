@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-01-06
 title: Add portable Colab slice-based Qwen preprocessing lane
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,20 +17,16 @@ closeout_review:
 story: ST-SIRCON-05-01
 task_kind: story
 acceptance_criteria:
-- The Colab lane does not independently select rows.
-- The first portable lane is explicitly limited to `rixvox train` row-processing.
-- Slice bundles are deterministic and disjoint for the same bounded source selection.
-- Portable selected-source records do not rely on Hemma-local absolute locator paths.
-- Colab can stage only the required raw files for the chosen slice using modern `huggingface_hub`
-  download methods.
-- Task 103 can consume the portable slice and emit the same run-root structure as
-  Hemma row-processing.
-- The notebook is only an orchestrator around repo-owned script surfaces, not a second
-  implementation.
-- One real Colab execution produces a valid Task 103 row-processing run root from
-  a portable slice bundle.
+  - The Colab lane does not independently select rows.
+  - The first portable lane is explicitly limited to `rixvox train` row-processing.
+  - Slice bundles are deterministic and disjoint for the same bounded source selection.
+  - Portable selected-source records do not rely on Hemma-local absolute locator paths.
+  - Colab can stage only the required raw files for the chosen slice using modern `huggingface_hub` download methods.
+  - Task 103 can consume the portable slice and emit the same run-root structure as Hemma row-processing.
+  - The notebook is only an orchestrator around repo-owned script surfaces, not a second implementation.
+  - One real Colab execution produces a valid Task 103 row-processing run root from a portable slice bundle.
 retired_ids:
-- task-121-add-portable-colab-slice-based-qwen-preprocessing-lane
+  - task-121-add-portable-colab-slice-based-qwen-preprocessing-lane
 ---
 
 ## Context
@@ -132,19 +128,19 @@ the canonical Hemma preprocessing pipeline.
 ## Chosen Design
 
 1. Hemma remains the source of truth for `source-selection`.
-1. A new portable slice planner emits:
+2. A new portable slice planner emits:
    - one portable `selected_source_records.jsonl`
    - one `required_hub_files.json`
    - one `slice_summary.json`
-1. Portable slice bundles are deterministic and disjoint by:
+3. Portable slice bundles are deterministic and disjoint by:
    - sorted bounded `rixvox train` row order
    - modulo partitioning by `slice_index` and `slice_count`
-1. Portable selected-source rows intentionally drop Hemma-local locators.
-1. Colab stages only the required dataset files for the chosen slice into a
+4. Portable selected-source rows intentionally drop Hemma-local locators.
+5. Colab stages only the required dataset files for the chosen slice into a
    local raw-data root, then runs Task 103 in a new
    `selected-source-records` source mode that re-resolves local locators before
    row-processing starts.
-1. Each Colab worker writes its own independent Task 103 run root; later
+6. Each Colab worker writes its own independent Task 103 run root; later
    Hemma-side merge/finalization remains a separate follow-on concern.
 
 ## Deliverables

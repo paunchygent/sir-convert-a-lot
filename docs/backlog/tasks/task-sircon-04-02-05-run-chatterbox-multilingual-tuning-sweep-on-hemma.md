@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-05
 title: Run Chatterbox multilingual tuning sweep on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,21 +17,15 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- 'The sweep uses only repo-supported Chatterbox knobs: - `cfg_weight` - `exaggeration`'
-- The sweep uses one fixed Swedish-only probe text across the same-language comparison
-  set.
-- The sweep uses one fixed approved teacher reference clip across the same-language
-  comparison set.
-- 'The sweep runs these value combinations because they are the values explicitly
-  documented in the runbook: - `exaggeration` in `{0.5, 0.7}` - `cfg_weight` in `{0.5,
-  0.3, 0.0}`'
-- 'The conservative-first execution order is preserved: - `(0.5, 0.5)` - `(0.5, 0.3)`
-  - `(0.7, 0.5)` - `(0.7, 0.3)` - `(0.5, 0.0)` - `(0.7, 0.0)`'
-- 'Each lane writes its own deterministic evidence bundle containing at least: - `report.json`
-  - `report.md` - `docker_logs.txt` - `artifacts/scenario-a-sv-ref-sv-out.wav`'
-- Completed evidence bundles exist both on Hemma and in the local repo copy.
+  - 'The sweep uses only repo-supported Chatterbox knobs: - `cfg_weight` - `exaggeration`'
+  - The sweep uses one fixed Swedish-only probe text across the same-language comparison set.
+  - The sweep uses one fixed approved teacher reference clip across the same-language comparison set.
+  - 'The sweep runs these value combinations because they are the values explicitly documented in the runbook: - `exaggeration` in `{0.5, 0.7}` - `cfg_weight` in `{0.5, 0.3, 0.0}`'
+  - 'The conservative-first execution order is preserved: - `(0.5, 0.5)` - `(0.5, 0.3)` - `(0.7, 0.5)` - `(0.7, 0.3)` - `(0.5, 0.0)` - `(0.7, 0.0)`'
+  - 'Each lane writes its own deterministic evidence bundle containing at least: - `report.json` - `report.md` - `docker_logs.txt` - `artifacts/scenario-a-sv-ref-sv-out.wav`'
+  - Completed evidence bundles exist both on Hemma and in the local repo copy.
 retired_ids:
-- task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma
+  - task-87-run-chatterbox-multilingual-tuning-sweep-on-hemma
 ---
 
 ## Context

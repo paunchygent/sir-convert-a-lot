@@ -4,8 +4,8 @@ id: ST-SIRCON-02-01
 title: Pandoc/WeasyPrint document converters parity (md<->pdf/docx/txt)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +18,12 @@ epic: EPIC-SIRCON-02
 links:
   decisions: []
 acceptance_criteria:
-- Each route is supported via the canonical CLI surface and documented with examples.
-- Missing dependency conditions are detected and mapped to deterministic error codes.
-- Conversion outputs are deterministic for the same inputs, with no timestamped filenames
-  by default.
-- The Docker lane documents and validates OS dependencies for WeasyPrint and Pandoc,
-  or clearly states which routes are local-only and why.
+  - Each route is supported via the canonical CLI surface and documented with examples.
+  - Missing dependency conditions are detected and mapped to deterministic error codes.
+  - Conversion outputs are deterministic for the same inputs, with no timestamped filenames by default.
+  - The Docker lane documents and validates OS dependencies for WeasyPrint and Pandoc, or clearly states which routes are local-only and why.
 retired_ids:
-- story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt
+  - story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt
 ---
 
 ## Context

@@ -4,8 +4,8 @@ id: ST-SIRCON-05-04
 title: Transition to Domain-Centric ML Pipeline Structure
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,13 +18,13 @@ epic: EPIC-SIRCON-05
 links:
   decisions: []
 acceptance_criteria:
-- '- [ ] The `scripts/sir_convert_a_lot/devops/` directory no longer contains Qwen-related task files.'
-- '- [ ] No filenames or public symbols in the ML domain contain "taskXXX" prefixes.'
-- '- [ ] `pdm run qwen-train` and `pdm run qwen-preprocess` (or new equivalents) function identically to the old commands.'
-- '- [ ] All unit tests pass with the new import structure.'
-- '- [ ] Docker images build and run successfully using the new internal paths.'
+  - '- [ ] The `scripts/sir_convert_a_lot/devops/` directory no longer contains Qwen-related task files.'
+  - '- [ ] No filenames or public symbols in the ML domain contain "taskXXX" prefixes.'
+  - '- [ ] `pdm run qwen-train` and `pdm run qwen-preprocess` (or new equivalents) function identically to the old commands.'
+  - '- [ ] All unit tests pass with the new import structure.'
+  - '- [ ] Docker images build and run successfully using the new internal paths.'
 retired_ids:
-- story-27-transition-to-domain-centric-ml-pipeline-structure
+  - story-27-transition-to-domain-centric-ml-pipeline-structure
 ---
 
 ## Context

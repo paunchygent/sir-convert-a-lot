@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0018
 title: Extract YouTube reference audio for Chatterbox pipeline
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,11 +16,10 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- TBD
+  - TBD
 retired_ids:
-- task-94-extract-youtube-reference-audio-for-chatterbox-pipeline
+  - task-94-extract-youtube-reference-audio-for-chatterbox-pipeline
 ---
-
 
 ## Context
 
@@ -93,16 +92,25 @@ for gate status and approval evidence.
 ## Source Body Preservation
 
 PR-sized execution unit; may be linked to a story or standalone.
+
 ## Objective
+
 TBD.
+
 ## PR Scope
+
 TBD.
+
 ## Deliverables
+
 - [ ] TBD
+
 ## Acceptance Criteria
+
 - [ ] TBD
+
 ## Checklist
+
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated
-

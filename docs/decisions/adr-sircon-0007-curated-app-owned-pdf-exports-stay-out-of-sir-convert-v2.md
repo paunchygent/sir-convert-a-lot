@@ -4,16 +4,16 @@ id: ADR-SIRCON-0007
 title: Curated App-Owned PDF Exports Stay Out of Sir Convert V2
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 links:
   governing: []
 deciders:
-- platform
+  - platform
 retired_ids:
-- ADR-0008
+  - ADR-0008
 ---
 
 ## Context

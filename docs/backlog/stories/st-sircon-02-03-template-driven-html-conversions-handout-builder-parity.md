@@ -4,8 +4,8 @@ id: ST-SIRCON-02-03
 title: Template-driven HTML conversions (handout builder parity)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,18 +18,16 @@ epic: EPIC-SIRCON-02
 links:
   decisions: []
 acceptance_criteria:
-- Batch template build to PDF works on a representative fixture set.
-- Batch template build to DOCX works on a representative fixture set.
-- Standalone HTML-to-PDF works with an explicit CSS file and produces deterministic
-  output.
-- CLI supports a stable, documented interface for template builds.
-- Manifest is deterministic and captures failures per template without aborting the
-  whole batch.
-- OS-level dependencies for chosen PDF and DOCX backends are documented and validated
-  in the Docker lane.
+  - Batch template build to PDF works on a representative fixture set.
+  - Batch template build to DOCX works on a representative fixture set.
+  - Standalone HTML-to-PDF works with an explicit CSS file and produces deterministic output.
+  - CLI supports a stable, documented interface for template builds.
+  - Manifest is deterministic and captures failures per template without aborting the whole batch.
+  - OS-level dependencies for chosen PDF and DOCX backends are documented and validated in the Docker lane.
 retired_ids:
-- story-09-template-driven-html-conversions-handout-builder-parity
+  - story-09-template-driven-html-conversions-handout-builder-parity
 ---
+
 ## Context
 
 Source record: docs/backlog/stories/story-09-template-driven-html-conversions-handout-builder-parity.md

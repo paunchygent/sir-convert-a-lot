@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-03
 title: Benchmark F5-TTS Swedish cloning sidecar on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,20 +17,15 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- '- [x] F5-TTS installation succeeds in an isolated benchmark environment that does not widen the dependency surface of the
-  main Sir Convert-a-Lot service runtime.'
-- '- [x] `f5-tts_infer-cli --help` runs successfully in the chosen environment before benchmark synthesis is attempted.'
-- '- [x] The sidecar exposes the normalized capability contract from ADR-0007 rather than a benchmark-only backend-native
-  surface.'
-- '- [x] The benchmark proves whether F5-TTS can complete a cloning flow with Swedish probe text on the real R9700 host using
-  the approved teacher reference clip.'
-- '- [x] Evidence records the exact Swedish checkpoint file (`.pt` or `.safetensors`) and `vocab.txt` used for the run.'
-- '- [ ] Evidence records where F5-TTS is stronger or weaker than OpenVoice V2: - cloning workflow ergonomics, - Swedish output
-  credibility, - runtime/dependency complexity, - Hemma operational fit.'
-- '- [ ] The task ends with a clear recommendation on whether F5-TTS becomes the new lead Swedish teacher-voice candidate
-  or falls behind the existing alternatives.'
+  - '- [x] F5-TTS installation succeeds in an isolated benchmark environment that does not widen the dependency surface of the main Sir Convert-a-Lot service runtime.'
+  - '- [x] `f5-tts_infer-cli --help` runs successfully in the chosen environment before benchmark synthesis is attempted.'
+  - '- [x] The sidecar exposes the normalized capability contract from ADR-0007 rather than a benchmark-only backend-native surface.'
+  - '- [x] The benchmark proves whether F5-TTS can complete a cloning flow with Swedish probe text on the real R9700 host using the approved teacher reference clip.'
+  - '- [x] Evidence records the exact Swedish checkpoint file (`.pt` or `.safetensors`) and `vocab.txt` used for the run.'
+  - '- [ ] Evidence records where F5-TTS is stronger or weaker than OpenVoice V2: - cloning workflow ergonomics, - Swedish output credibility, - runtime/dependency complexity, - Hemma operational fit.'
+  - '- [ ] The task ends with a clear recommendation on whether F5-TTS becomes the new lead Swedish teacher-voice candidate or falls behind the existing alternatives.'
 retired_ids:
-- task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma
+  - task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma
 ---
 
 ## Context

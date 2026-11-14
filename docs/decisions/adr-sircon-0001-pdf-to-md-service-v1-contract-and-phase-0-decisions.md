@@ -4,16 +4,16 @@ id: ADR-SIRCON-0001
 title: PDF-to-MD Service v1 Contract and Phase 0 Decisions
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 deciders:
-- platform
+  - platform
 links:
   governing: []
 retired_ids:
-- ADR-0001
+  - ADR-0001
 ---
 
 ## Status

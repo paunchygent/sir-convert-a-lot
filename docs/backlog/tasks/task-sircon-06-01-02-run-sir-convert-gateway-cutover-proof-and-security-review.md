@@ -4,8 +4,8 @@ id: TASK-SIRCON-06-01-02
 title: Run Sir Convert gateway cutover proof and security review
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,16 +17,14 @@ closeout_review:
 story: ST-SIRCON-06-01
 task_kind: story
 acceptance_criteria:
-- '- [ ] Public deny, Gateway allow, internal allow, and operator allow are all proven.'
-- '- [ ] Final live proof includes deliberate re-enable of the intended public edge,
-  not an accidental always-on direct public Sir Convert surface.'
-- '- [ ] Proof commands and artifacts are reproducible, not narrative-only.'
-- '- [ ] No high-severity review finding remains unresolved.'
-- '- [ ] Rollback path is documented.'
+  - '- [ ] Public deny, Gateway allow, internal allow, and operator allow are all proven.'
+  - '- [ ] Final live proof includes deliberate re-enable of the intended public edge, not an accidental always-on direct public Sir Convert surface.'
+  - '- [ ] Proof commands and artifacts are reproducible, not narrative-only.'
+  - '- [ ] No high-severity review finding remains unresolved.'
+  - '- [ ] Rollback path is documented.'
 retired_ids:
-- task-263-run-sir-convert-gateway-cutover-proof-and-security-review
+  - task-263-run-sir-convert-gateway-cutover-proof-and-security-review
 ---
-
 
 ## Context
 
@@ -99,14 +97,18 @@ for gate status and approval evidence.
 ## Source Body Preservation
 
 PR-sized execution unit; may be linked to a story or standalone.
+
 ## Objective
+
 Run the final cutover verification and security review before declaring the Gateway-fronted Sir Convert access model complete.
+
 ## PR Scope
+
 - Verify public anonymous deny behavior.
 - Verify that direct public web access to Sir Convert is disabled or
-fail-closed before the final live proof window.
+  fail-closed before the final live proof window.
 - Re-enable the intended public edge during final live testing and prove that
-only the approved Gateway/internal/operator lanes work.
+  only the approved Gateway/internal/operator lanes work.
 - Verify Gateway-authenticated product flow.
 - Verify direct internal service call flow.
 - Verify local operator tunnel/offload flow.
@@ -114,30 +116,35 @@ only the approved Gateway/internal/operator lanes work.
 - Verify unknown-host/default-host fail-closed behavior.
 - Capture durable report artifacts.
 - Write proof artifacts under
-`build/verification/gateway-cutover-sir-convert/`.
+  `build/verification/gateway-cutover-sir-convert/`.
 - Tie public-edge checks to the existing `hemma-deploy-and-verify` proof
-contract where possible.
+  contract where possible.
+
 ## Deliverables
+
 - [ ] Public/internal/operator proof report.
 - [ ] Pre-final public-web isolation proof showing direct
-`convert.hule.education` access is disabled or fail-closed before final live proof.
+  `convert.hule.education` access is disabled or fail-closed before final live proof.
 - [ ] Final public-edge re-enable proof showing the intended Gateway-backed
-public path works while direct non-Gateway traffic remains fail-closed.
+  public path works while direct non-Gateway traffic remains fail-closed.
 - [ ] Security review findings or explicit no-finding record.
 - [ ] Final cutover report artifacts.
 - [ ] Canonical `report.md` and `report.json` under
-`build/verification/gateway-cutover-sir-convert/`.
+  `build/verification/gateway-cutover-sir-convert/`.
 - [ ] Handoff/current docs update.
+
 ## Acceptance Criteria
+
 - [ ] Public deny, Gateway allow, internal allow, and operator allow are all
-proven.
+  proven.
 - [ ] Final live proof includes deliberate re-enable of the intended public
-edge, not an accidental always-on direct public Sir Convert surface.
+  edge, not an accidental always-on direct public Sir Convert surface.
 - [ ] Proof commands and artifacts are reproducible, not narrative-only.
 - [ ] No high-severity review finding remains unresolved.
 - [ ] Rollback path is documented.
+
 ## Checklist
+
 - [ ] Implementation complete
 - [ ] Validation complete
 - [ ] Docs updated
-

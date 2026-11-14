@@ -34,15 +34,15 @@ Before proposing a path, answer these:
    - a benchmark,
    - a single-speaker adaptation,
    - or a genuine language-expansion / multi-speaker fine-tune?
-1. Does the task need:
+2. Does the task need:
    - Hemma bring-up truth,
    - Colab scale,
    - or both?
-1. What is the actual dataset policy:
+3. What is the actual dataset policy:
    - pilot subset,
    - scale-up subset,
    - held-out evaluation split?
-1. What is the promotion target:
+4. What is the promotion target:
    - research result only,
    - sidecar candidate later,
    - or direct product comparison?
@@ -144,24 +144,24 @@ Use this order by default:
    - benchmark
    - single-speaker adaptation
    - language expansion
-1. Pick the runtime:
+2. Pick the runtime:
    - Hemma
    - Colab
    - both
-1. Bound the data:
+3. Bound the data:
    - pilot subset
    - scale-up subset
    - eval split
    - frozen ownership root when one exists
    - deterministic pilot-bundle root before the first training launch
-1. Define preprocessing:
+4. Define preprocessing:
    - transcript normalization
    - audio normalization
    - manifest schema
    - code/token generation if the model requires it
-1. Run a bounded pilot first.
-1. Evaluate before scaling.
-1. Scale only after the pilot has both runtime truth and quality evidence.
+5. Run a bounded pilot first.
+6. Evaluate before scaling.
+7. Scale only after the pilot has both runtime truth and quality evidence.
 
 ## Evaluation Standard
 

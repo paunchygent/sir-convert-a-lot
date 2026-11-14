@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-02-03
 title: repair task101 container output-root bind fallback for hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -17,12 +17,12 @@ closeout_review:
 story: ST-SIRCON-05-02
 task_kind: story
 acceptance_criteria:
-- '- [x] Task 101 no longer mounts the canonical `/srv/...` bundle output root directly when Docker cannot bind it.'
-- '- [x] The container still sees the selected host-visible bundle output-root path unchanged.'
-- '- [x] Focused tests fail if Task 101 bypasses `resolve_effective_bind_root` for the output root again.'
-- '- [ ] Hemma can launch the resumed governed batch runtime past the previous mount error.'
+  - '- [x] Task 101 no longer mounts the canonical `/srv/...` bundle output root directly when Docker cannot bind it.'
+  - '- [x] The container still sees the selected host-visible bundle output-root path unchanged.'
+  - '- [x] Focused tests fail if Task 101 bypasses `resolve_effective_bind_root` for the output root again.'
+  - '- [ ] Hemma can launch the resumed governed batch runtime past the previous mount error.'
 retired_ids:
-- task-151-repair-task101-container-output-root-bind-fallback-for-hemma
+  - task-151-repair-task101-container-output-root-bind-fallback-for-hemma
 ---
 
 ## Context
@@ -105,16 +105,16 @@ root.
      mount target.
    - Use a deterministic home-backed fallback path when Docker cannot bind the
      canonical `/srv/...` root directly.
-1. Keep output-root bind resolution separate from the HF cache contract.
+2. Keep output-root bind resolution separate from the HF cache contract.
    - The Task 101 bundle root is mutable job state, not shared model cache.
-1. Emit enough launch metadata to debug which effective output-root mount was
+3. Emit enough launch metadata to debug which effective output-root mount was
    used on Hemma.
-1. Add focused tests covering:
+4. Add focused tests covering:
    - deterministic output-root home-mount mapping
    - shared helper reuse with `sync_home_into_canonical=False`
    - generated Docker command using the effective output-root mount rather than
      the canonical host path as the source
-1. Retry the stopped Hemma bundle root only after the repaired runtime is
+5. Retry the stopped Hemma bundle root only after the repaired runtime is
    committed, pushed, and pulled.
 
 ### Deliverables

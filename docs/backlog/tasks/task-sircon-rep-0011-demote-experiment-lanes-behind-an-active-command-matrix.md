@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0011
 title: Demote experiment lanes behind an active command matrix
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,17 +16,13 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '- [ ] No production conversion command is hidden or renamed without a compatibility
-  decision.'
-- '- [ ] Deprecated Qwen proof commands such as `qwen-fallback-proof` and `qwen-fallback-accumulation-proof`
-  are no longer presented as active commands.'
-- '- [ ] Active command docs agree with Rule 096''s status vocabulary or update that
-  rule in the same governed diff.'
-- '- [ ] Validation includes docs gates plus focused script/help checks for any PDM
-  command names changed or demoted.'
-- '- [ ] The close-out names any commands intentionally left flat and why.'
+  - '- [ ] No production conversion command is hidden or renamed without a compatibility decision.'
+  - '- [ ] Deprecated Qwen proof commands such as `qwen-fallback-proof` and `qwen-fallback-accumulation-proof` are no longer presented as active commands.'
+  - '- [ ] Active command docs agree with Rule 096''s status vocabulary or update that rule in the same governed diff.'
+  - '- [ ] Validation includes docs gates plus focused script/help checks for any PDM command names changed or demoted.'
+  - '- [ ] The close-out names any commands intentionally left flat and why.'
 retired_ids:
-- task-288-demote-experiment-lanes-behind-an-active-command-matrix
+  - task-288-demote-experiment-lanes-behind-an-active-command-matrix
 ---
 
 ## Context

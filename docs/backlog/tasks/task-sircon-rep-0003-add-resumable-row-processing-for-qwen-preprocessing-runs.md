@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0003
 title: Add resumable row-processing for Qwen preprocessing runs
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -16,17 +16,13 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- "[ ] A Task 103 row-processing rerun can target an existing run root without\n \
-  \ deleting its preserved spool/audio artifacts when resume mode is enabled."
-- "[ ] Source rows with an existing deterministic spool row are skipped rather\n \
-  \ than recomputed."
-- "[ ] Row heartbeat on resume reflects already completed row count plus newly\n \
-  \ completed rows."
-- "[ ] The Colab row-processing notebook can rerun after timeout/interruption\n  without\
-  \ redoing already completed spool rows."
-- '[ ] Focused tests prove resume semantics for row-processing.'
+  - "[ ] A Task 103 row-processing rerun can target an existing run root without\n  deleting its preserved spool/audio artifacts when resume mode is enabled."
+  - "[ ] Source rows with an existing deterministic spool row are skipped rather\n  than recomputed."
+  - "[ ] Row heartbeat on resume reflects already completed row count plus newly\n  completed rows."
+  - "[ ] The Colab row-processing notebook can rerun after timeout/interruption\n  without redoing already completed spool rows."
+  - '[ ] Focused tests prove resume semantics for row-processing.'
 retired_ids:
-- task-123-add-resumable-row-processing-for-qwen-preprocessing-runs
+  - task-123-add-resumable-row-processing-for-qwen-preprocessing-runs
 ---
 
 ## Context

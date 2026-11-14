@@ -4,8 +4,8 @@ id: EPIC-SIRCON-04
 title: Hemma sidecar TTS audio artifact delivery
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,7 +18,7 @@ links:
   decisions: []
 outcome: Hemma sidecar TTS audio artifact delivery
 retired_ids:
-- epic-07-hemma-sidecar-tts-audio-artifact-delivery
+  - epic-07-hemma-sidecar-tts-audio-artifact-delivery
 ---
 
 ## Scope
@@ -107,7 +107,7 @@ This epic is complete only when:
 ### Stories
 
 1. `docs/backlog/stories/story-22-hemma-sidecar-tts-audio-artifact-delivery.md`
-1. `docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md`
+2. `docs/backlog/stories/story-23-swedish-capable-cloning-tts-benchmark-matrix-on-hemma.md`
 
 ### Tasks (Ordered Planning and Execution Checklist)
 
@@ -118,12 +118,12 @@ Execution rule:
 - Benchmark the chosen sidecar stack on Hemma before implementation defaults are locked.
 
 1. `docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md`
-1. `docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md`
-1. `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
-1. `docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md`
-1. `docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md`
-1. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
-1. `docs/backlog/tasks/task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md`
+2. `docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md`
+3. `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
+4. `docs/backlog/tasks/task-81-benchmark-openvoice-v2-swedish-probable-cloning-sidecar-on-hemma.md`
+5. `docs/backlog/tasks/task-85-benchmark-f5-tts-swedish-cloning-sidecar-on-hemma.md`
+6. `docs/backlog/tasks/task-83-benchmark-mms-swedish-as-the-direct-pronunciation-control-on-hemma.md`
+7. `docs/backlog/tasks/task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md`
 
 Deferred follow-up:
 

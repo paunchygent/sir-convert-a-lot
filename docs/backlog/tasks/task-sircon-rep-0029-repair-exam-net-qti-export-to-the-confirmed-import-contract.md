@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0029
 title: Repair Exam.net QTI export to the confirmed import contract
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-28'
 status: done
 closeout_review:
@@ -15,9 +15,9 @@ closeout_review:
   decided_at: '2026-08-29T10:30:00+02:00'
 task_kind: repository
 acceptance_criteria:
-- Regenerated QTI packages emit one assessmentTest resource with assessmentItemRef and dependency wiring and pass the probe-derived regression fixtures.
-- A regenerated DigiExam-migration package imports live into Exam.net with every item in its confirmed family and its keys and points intact.
-- The empirical Exam.net import contract is published as a governed reference and the prior vendor-reported strategy reference is marked superseded in the same slice.
+  - Regenerated QTI packages emit one assessmentTest resource with assessmentItemRef and dependency wiring and pass the probe-derived regression fixtures.
+  - A regenerated DigiExam-migration package imports live into Exam.net with every item in its confirmed family and its keys and points intact.
+  - The empirical Exam.net import contract is published as a governed reference and the prior vendor-reported strategy reference is marked superseded in the same slice.
 backlog_document_profile: contract-derived
 ---
 
@@ -111,11 +111,11 @@ zip/XML work with no material performance concern.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term |
-| --- | --------------------- |
-| D1  | The repair lands as a bounded repository task in sir-convert-a-lot now, before and independent of the Skriptoteket port epic. |
-| D2  | The empirical observations ledger is promoted to a governed reference and supersedes the vendor-reported strategy reference in the same slice. |
-| D3  | The probe families become repository regression fixtures for the writer. |
-| D4  | The writer emits only empirically confirmed Exam.net lanes; refuted constructions are never emitted or retried. |
-| D5  | The four open empirical unknowns stay open and are not expanded without explicit user request. |
+| ID  | Decided contract term                                                                                                                              |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | The repair lands as a bounded repository task in sir-convert-a-lot now, before and independent of the Skriptoteket port epic.                      |
+| D2  | The empirical observations ledger is promoted to a governed reference and supersedes the vendor-reported strategy reference in the same slice.     |
+| D3  | The probe families become repository regression fixtures for the writer.                                                                           |
+| D4  | The writer emits only empirically confirmed Exam.net lanes; refuted constructions are never emitted or retried.                                    |
+| D5  | The four open empirical unknowns stay open and are not expanded without explicit user request.                                                     |
 | D6  | Execution custody lives with the planning lane that absorbed the diagnostic session handoff; the ledger is evidence, not implementation authority. |

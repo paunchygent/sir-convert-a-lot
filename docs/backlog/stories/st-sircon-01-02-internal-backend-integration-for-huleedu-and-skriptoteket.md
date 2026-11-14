@@ -4,8 +4,8 @@ id: ST-SIRCON-01-02
 title: Internal backend integration for HuleEdu and Skriptoteket
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,17 +18,14 @@ epic: EPIC-SIRCON-01
 links:
   decisions: []
 acceptance_criteria:
-- Both HuleEdu and Skriptoteket integration docs reference the same canonical v1 contract.
-- Both systems can submit and retrieve conversion jobs through the same endpoint set
-  and auth model.
-- Correlation IDs are propagated from caller to conversion logs and metadata.
-- Integration wrappers in consumer repos are thin adapters only, with no business-logic
-  forks.
-- Local tunnel-based development workflow is documented with troubleshooting basics.
-- HuleEdu adoption is validated on real demanding scientific-paper PDFs with evidence
-  that operation requires no per-document logic forks.
+  - Both HuleEdu and Skriptoteket integration docs reference the same canonical v1 contract.
+  - Both systems can submit and retrieve conversion jobs through the same endpoint set and auth model.
+  - Correlation IDs are propagated from caller to conversion logs and metadata.
+  - Integration wrappers in consumer repos are thin adapters only, with no business-logic forks.
+  - Local tunnel-based development workflow is documented with troubleshooting basics.
+  - HuleEdu adoption is validated on real demanding scientific-paper PDFs with evidence that operation requires no per-document logic forks.
 retired_ids:
-- 003c-huledu-skriptoteket-internal-integration-story
+  - 003c-huledu-skriptoteket-internal-integration-story
 ---
 
 ## Context
@@ -66,11 +63,11 @@ Provide one shared internal conversion backend contract that both HuleEdu and Sk
 ### Acceptance Criteria
 
 1. Both HuleEdu and Skriptoteket integration docs reference the same canonical v1 contract.
-1. Both systems can submit and retrieve conversion jobs through the same endpoint set and auth model.
-1. Correlation IDs are propagated from caller to conversion logs/metadata.
-1. Integration wrappers in consumer repos are thin adapters only (no business logic forks).
-1. Local tunnel-based development workflow is documented with troubleshooting basics.
-1. HuleEdu adoption is validated on real, demanding scientific-paper PDFs with evidence that the flow is easy to operate without per-document logic forks.
+2. Both systems can submit and retrieve conversion jobs through the same endpoint set and auth model.
+3. Correlation IDs are propagated from caller to conversion logs/metadata.
+4. Integration wrappers in consumer repos are thin adapters only (no business logic forks).
+5. Local tunnel-based development workflow is documented with troubleshooting basics.
+6. HuleEdu adoption is validated on real, demanding scientific-paper PDFs with evidence that the flow is easy to operate without per-document logic forks.
 
 ### Test Requirements
 

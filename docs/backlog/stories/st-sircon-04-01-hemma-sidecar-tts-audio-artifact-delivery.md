@@ -4,8 +4,8 @@ id: ST-SIRCON-04-01
 title: Hemma sidecar TTS audio artifact delivery
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,18 +18,13 @@ epic: EPIC-SIRCON-04
 links:
   decisions: []
 acceptance_criteria:
-- ADR-0006 is accepted and explicitly forbids in-process TTS in the main service image.
-- Hemma benchmark scope is concrete enough to prove sidecar viability on the live
-  R9700 host.
-- Chatterbox is the explicit current Hemma production-candidate sidecar for the English-first
-  TTS delivery track while other TTS containers remain experiment-only.
-- md to wav is the first documented implementation route and includes request/response
-  contract, output content type, TTS options shape, fail-closed acceleration behavior,
-  and phase-1 language and voice limits.
-- Story links make clear that Story 07's old auxiliary-converter framing is not canonical
-  for TTS delivery.
+  - ADR-0006 is accepted and explicitly forbids in-process TTS in the main service image.
+  - Hemma benchmark scope is concrete enough to prove sidecar viability on the live R9700 host.
+  - Chatterbox is the explicit current Hemma production-candidate sidecar for the English-first TTS delivery track while other TTS containers remain experiment-only.
+  - md to wav is the first documented implementation route and includes request/response contract, output content type, TTS options shape, fail-closed acceleration behavior, and phase-1 language and voice limits.
+  - Story links make clear that Story 07's old auxiliary-converter framing is not canonical for TTS delivery.
 retired_ids:
-- story-22-hemma-sidecar-tts-audio-artifact-delivery
+  - story-22-hemma-sidecar-tts-audio-artifact-delivery
 ---
 
 ## Context
@@ -116,9 +111,9 @@ the first implementation slice as a provider-neutral `md -> wav` v2 job contract
 ## Tasks (Ordered)
 
 1. `docs/backlog/tasks/task-78-adr-for-hemma-sidecar-tts-architecture-and-route-policy.md`
-1. `docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md`
-1. `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
-1. `docs/backlog/tasks/task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md`
+2. `docs/backlog/tasks/task-80-publish-md-to-wav-v2-contract-for-sidecar-backed-tts.md`
+3. `docs/backlog/tasks/task-79-benchmark-hemma-tts-sidecar-compatibility-and-audio-formats-on-r9700.md`
+4. `docs/backlog/tasks/task-92-promote-chatterbox-sidecar-to-hemma-production-candidate-and-mark-experimental-sidecars-explicitly.md`
 
 ## Acceptance Criteria
 

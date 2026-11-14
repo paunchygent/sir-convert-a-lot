@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-04-03
 title: Rebuild ML CLI Entrypoints as Thin Domain-Centric Wrappers
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,12 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-04
 task_kind: story
 acceptance_criteria:
-- '[ ] `pdm run qwen-preprocess` (or equivalent) correctly invokes the new preprocessing
-  facade.'
-- '[ ] `pdm run qwen-train` (or equivalent) correctly invokes the new training orchestrator.'
-- '[ ] CLI flags and help text remain consistent or are improved.'
+  - '[ ] `pdm run qwen-preprocess` (or equivalent) correctly invokes the new preprocessing facade.'
+  - '[ ] `pdm run qwen-train` (or equivalent) correctly invokes the new training orchestrator.'
+  - '[ ] CLI flags and help text remain consistent or are improved.'
 retired_ids:
-- task-169-rebuild-ml-cli-entrypoints-as-thin-domain-centric-wrappers
+  - task-169-rebuild-ml-cli-entrypoints-as-thin-domain-centric-wrappers
 ---
 
 ## Context

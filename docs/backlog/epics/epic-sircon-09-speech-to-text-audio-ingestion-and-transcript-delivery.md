@@ -4,8 +4,8 @@ id: EPIC-SIRCON-09
 title: Speech-to-text audio ingestion and transcript delivery
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,7 +18,7 @@ links:
   decisions: []
 outcome: Speech-to-text audio ingestion and transcript delivery
 retired_ids:
-- epic-12-speech-to-text-audio-ingestion-and-transcript-delivery
+  - epic-12-speech-to-text-audio-ingestion-and-transcript-delivery
 ---
 
 ## Scope
@@ -111,35 +111,35 @@ that consume the JSON core rather than parallel transcription pipelines.
 
 Planned story slices:
 
-1. `docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md`
-   defines the STT sidecar adapter, media admission, route policy, and concrete
-   route-level concurrency/admission caps.
-1. `docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md`
-   benchmarks and selects the first Hemma STT/diarization backend profile.
-1. `docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md`
-   implements route registration, execution, progress, cancellation, retention,
-   and canonical JSON artifact persistence.
-1. `docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md`
-   adds plain text, Markdown, VTT, and SRT formatter strategies after JSON core
-   behavior is stable.
-1. `docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md`
-   coordinates HuleEdu Gateway and Skriptoteket downstream story planning.
-1. `docs/backlog/stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md`
-   adds stateless formatter replay from saved canonical transcript JSON plus
-   typed speaker display-name overlays, using the existing v2 job lifecycle
-   and returning producer-owned TXT, Markdown, VTT, and SRT artifacts.
-1. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md`
-   is the HuleEdu Gateway companion story.
-1. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-09-expose-transcript-formatter-replay-through-sir-convert-auth-edge.md`
-   is the HuleEdu Gateway companion story for overlay-aware formatter replay.
-1. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md`,
-   `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md`,
-   and
-   `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md`
-   are the Skriptoteket Conversion Hub companion stories.
-1. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-08-transcript-speaker-overlays-and-replay-formatter-exports.md`
-   is the Skriptoteket companion story for progress parity, speaker overlays,
-   overlay-aware replay, and download/Mina filer export actions.
+01. `docs/backlog/stories/story-51-stt-sidecar-adapter-contract-media-admission-caps-and-route-policy.md`
+    defines the STT sidecar adapter, media admission, route policy, and concrete
+    route-level concurrency/admission caps.
+02. `docs/backlog/stories/story-52-hemma-stt-and-diarization-backend-benchmark-profile-selection.md`
+    benchmarks and selects the first Hemma STT/diarization backend profile.
+03. `docs/backlog/stories/story-53-audio-transcript-bundle-route-execution-and-json-artifact-persistence.md`
+    implements route registration, execution, progress, cancellation, retention,
+    and canonical JSON artifact persistence.
+04. `docs/backlog/stories/story-54-transcript-formatter-strategies-over-canonical-json.md`
+    adds plain text, Markdown, VTT, and SRT formatter strategies after JSON core
+    behavior is stable.
+05. `docs/backlog/stories/story-55-gateway-and-downstream-transcript-delivery-coordination.md`
+    coordinates HuleEdu Gateway and Skriptoteket downstream story planning.
+06. `docs/backlog/stories/story-56-transcript-speaker-overlay-formatter-replay-over-canonical-json.md`
+    adds stateless formatter replay from saved canonical transcript JSON plus
+    typed speaker display-name overlays, using the existing v2 job lifecycle
+    and returning producer-owned TXT, Markdown, VTT, and SRT artifacts.
+07. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-08-expose-sir-convert-audio-transcription-jobs-through-huleedu-auth-edge.md`
+    is the HuleEdu Gateway companion story.
+08. `/Users/olofs_mba/Documents/Repos/huleedu/docs/backlog/stories/story-01-09-expose-transcript-formatter-replay-through-sir-convert-auth-edge.md`
+    is the HuleEdu Gateway companion story for overlay-aware formatter replay.
+09. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-05-conversion-hub-transcript-intake-and-diarization-controls.md`,
+    `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-06-transcript-job-lifecycle-through-huleedu-gateway.md`,
+    and
+    `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-07-durable-transcript-saves-and-json-first-downstream-formatting.md`
+    are the Skriptoteket Conversion Hub companion stories.
+10. `/Users/olofs_mba/Documents/Repos/CascadeProjects/windsurf-project/docs/backlog/stories/story-21-08-transcript-speaker-overlays-and-replay-formatter-exports.md`
+    is the Skriptoteket companion story for progress parity, speaker overlays,
+    overlay-aware replay, and download/Mina filer export actions.
 
 ### Runtime-Enabling Tasks
 

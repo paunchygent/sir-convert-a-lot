@@ -4,8 +4,8 @@ id: EPIC-SIRCON-02
 title: Converter suite parity with html_to_pdf_handout_templates
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,7 +18,7 @@ links:
   decisions: []
 outcome: Converter suite parity with html_to_pdf_handout_templates
 retired_ids:
-- epic-04-converter-suite-parity-with-html-to-pdf-handout-templates
+  - epic-04-converter-suite-parity-with-html-to-pdf-handout-templates
 ---
 
 ## Scope
@@ -161,13 +161,13 @@ Epic 04 is complete only when **every legacy converter surface is either**:
 ### Stories
 
 1. `docs/backlog/stories/story-03-04-consolidate-html-pdf-md-docx-xlsx-csv.md`
-1. `docs/backlog/stories/story-08-cli-multi-format-routing-and-deterministic-manifests.md`
-1. `docs/backlog/stories/story-09-template-driven-html-conversions-handout-builder-parity.md`
-1. `docs/backlog/stories/story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md`
-1. `docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md`
+2. `docs/backlog/stories/story-08-cli-multi-format-routing-and-deterministic-manifests.md`
+3. `docs/backlog/stories/story-09-template-driven-html-conversions-handout-builder-parity.md`
+4. `docs/backlog/stories/story-06-pandoc-weasyprint-document-converters-parity-md-pdf-docx-txt.md`
+5. `docs/backlog/stories/story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech.md`
    (image OCR parity only; TTS superseded by Epic 07 / Story 22)
-1. `docs/backlog/stories/story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx.md`
-1. `docs/backlog/stories/story-16-v2-pdf-layout-presets-docx-to-pdf-route.md`
+6. `docs/backlog/stories/story-10-student-feedback-export-bundles-manifest-md-html-pdf-docx.md`
+7. `docs/backlog/stories/story-16-v2-pdf-layout-presets-docx-to-pdf-route.md`
 
 ### Task Order (Synergy-Optimized)
 
@@ -189,20 +189,20 @@ Execution order is optimized to:
 
 Ordered tasks:
 
-1. `docs/backlog/tasks/task-33-service-multi-format-api-v2-contract-adr.md`
-1. `docs/backlog/tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md`
-1. `docs/backlog/tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md`
-1. `docs/backlog/tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md`
-1. `docs/backlog/tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md`
-1. `docs/backlog/tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md`
-1. `docs/backlog/tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md`
-1. `docs/backlog/tasks/task-39-hemma-v2-conversion-smoke-verification.md` (verification)
-1. `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md` (contracts)
-1. `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md` (hardening)
-1. `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md` (hardening)
-1. `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
-1. `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
-1. `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`
+01. `docs/backlog/tasks/task-33-service-multi-format-api-v2-contract-adr.md`
+02. `docs/backlog/tasks/task-34-service-v2-job-store-runtime-for-multi-format-artifacts.md`
+03. `docs/backlog/tasks/task-37-service-v2-route-html-css-pdf-weasyprint.md`
+04. `docs/backlog/tasks/task-36-service-v2-route-md-pdf-via-html-intermediary.md`
+05. `docs/backlog/tasks/task-38-service-v2-route-md-docx-via-html-intermediary.md`
+06. `docs/backlog/tasks/task-29-pdf-to-docx-hybrid-pipeline-service-pdf-md-local-md-html-docx.md`
+07. `docs/backlog/tasks/task-35-cli-pivot-remote-only-routes-via-service-api-v2.md`
+08. `docs/backlog/tasks/task-39-hemma-v2-conversion-smoke-verification.md` (verification)
+09. `docs/backlog/tasks/task-40-service-api-v2-contract-tests-v1-v2-compatibility-policy.md` (contracts)
+10. `docs/backlog/tasks/task-41-harden-v2-resources-zip-extraction-limits.md` (hardening)
+11. `docs/backlog/tasks/task-42-split-oversized-cli-and-v2-job-store-cancel-cas.md` (hardening)
+12. `docs/backlog/tasks/task-64-adr-0004-v2-pdf-layout-presets-preview-docx-to-pdf.md`
+13. `docs/backlog/tasks/task-65-add-v2-pdf-layout-presets-paper-orientation-for-pdf-outputs.md`
+14. `docs/backlog/tasks/task-66-add-v2-route-docx-to-pdf-via-pandoc-html-and-weasyprint.md`
 
 ### Acceptance Criteria
 

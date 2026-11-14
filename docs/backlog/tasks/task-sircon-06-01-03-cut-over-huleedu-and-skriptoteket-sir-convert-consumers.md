@@ -4,8 +4,8 @@ id: TASK-SIRCON-06-01-03
 title: Cut over HuleEdu and Skriptoteket Sir Convert consumers
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,15 +17,12 @@ closeout_review:
 story: ST-SIRCON-06-01
 task_kind: story
 acceptance_criteria:
-- '- [ ] No known browser/product caller depends on direct public `convert.hule.education`
-  job routes.'
-- '- [ ] Backend/internal direct callers are still supported through the internal
-  identity contract.'
-- '- [ ] User-originated workloads retain context-derived ownership through job creation,
-  status, result, and artifact reads.'
-- '- [ ] Existing user-facing conversion use cases continue to work.'
+  - '- [ ] No known browser/product caller depends on direct public `convert.hule.education` job routes.'
+  - '- [ ] Backend/internal direct callers are still supported through the internal identity contract.'
+  - '- [ ] User-originated workloads retain context-derived ownership through job creation, status, result, and artifact reads.'
+  - '- [ ] Existing user-facing conversion use cases continue to work.'
 retired_ids:
-- task-264-cut-over-huleedu-and-skriptoteket-sir-convert-consumers
+  - task-264-cut-over-huleedu-and-skriptoteket-sir-convert-consumers
 ---
 
 ## Context

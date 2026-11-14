@@ -4,16 +4,16 @@ id: ADR-SIRCON-0006
 title: Reusable Multi-Backend TTS Sidecar Capability Contract
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 links:
   governing: []
 deciders:
-- platform
+  - platform
 retired_ids:
-- ADR-0007
+  - ADR-0007
 ---
 
 ## Context
@@ -42,8 +42,8 @@ model family or one vendor runtime.
 ADR-0006 locked three decisions:
 
 1. TTS is sidecar-only.
-1. The public v2 API stays provider-neutral.
-1. The main Sir Convert-a-Lot service image must not absorb TTS runtime/model dependencies.
+2. The public v2 API stays provider-neutral.
+3. The main Sir Convert-a-Lot service image must not absorb TTS runtime/model dependencies.
 
 That architecture is sufficient for one benchmarked backend, but not yet for the next phase where
 we need to compare and potentially reuse multiple TTS stacks on Hemma:
@@ -73,13 +73,13 @@ Key rules:
 
 1. Sir Convert-a-Lot integrates with one **internal adapter contract**, not with backend-native
    APIs directly.
-1. Each backend gets its own sidecar image/runtime as needed; we do **not** standardize on one
+2. Each backend gets its own sidecar image/runtime as needed; we do **not** standardize on one
    universal mega-runtime that must host every TTS stack.
-1. Every candidate backend must surface a stable **capability document** that Sir Convert-a-Lot
+3. Every candidate backend must surface a stable **capability document** that Sir Convert-a-Lot
    can use for validation and routing.
-1. Backend-specific concepts are normalized at the sidecar boundary before they reach the main
+4. Backend-specific concepts are normalized at the sidecar boundary before they reach the main
    service runtime.
-1. Benchmarks starting with `T81` must evaluate candidate backends against this adapter contract,
+5. Benchmarks starting with `T81` must evaluate candidate backends against this adapter contract,
    even if the sidecar uses backend-native libraries internally.
 
 ### 3. Sidecar Shape

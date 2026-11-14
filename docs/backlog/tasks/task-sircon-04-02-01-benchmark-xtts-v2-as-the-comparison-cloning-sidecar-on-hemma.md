@@ -4,8 +4,8 @@ id: TASK-SIRCON-04-02-01
 title: Benchmark XTTS-v2 as the comparison cloning sidecar on Hemma
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,19 +17,13 @@ closeout_review:
 story: ST-SIRCON-04-02
 task_kind: story
 acceptance_criteria:
-- XTTS-v2 sidecar boots on Hemma and stays isolated from the main Sir Convert-a-Lot
-  runtime.
-- The sidecar exposes the normalized capability contract from ADR-0007 rather than
-  a benchmark-only backend-native surface.
-- The benchmark proves whether XTTS-v2 can complete a cloning flow with Swedish probe
-  text on the real R9700 host.
-- 'Evidence records where XTTS-v2 is stronger or weaker than OpenVoice V2: - cloning
-  workflow ergonomics, - Swedish output credibility, - runtime/dependency complexity,
-  - Hemma operational fit.'
-- The task ends with a clear recommendation on whether XTTS-v2 remains a serious candidate
-  or drops behind OpenVoice V2.
+  - XTTS-v2 sidecar boots on Hemma and stays isolated from the main Sir Convert-a-Lot runtime.
+  - The sidecar exposes the normalized capability contract from ADR-0007 rather than a benchmark-only backend-native surface.
+  - The benchmark proves whether XTTS-v2 can complete a cloning flow with Swedish probe text on the real R9700 host.
+  - 'Evidence records where XTTS-v2 is stronger or weaker than OpenVoice V2: - cloning workflow ergonomics, - Swedish output credibility, - runtime/dependency complexity, - Hemma operational fit.'
+  - The task ends with a clear recommendation on whether XTTS-v2 remains a serious candidate or drops behind OpenVoice V2.
 retired_ids:
-- task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma
+  - task-82-benchmark-xtts-v2-as-the-comparison-cloning-sidecar-on-hemma
 ---
 
 ## Context

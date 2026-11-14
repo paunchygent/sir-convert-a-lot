@@ -4,8 +4,8 @@ id: TASK-SIRCON-06-02-01
 title: Publish ADR-0009 for Gateway-fronted Sir Convert access
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,17 +17,14 @@ closeout_review:
 story: ST-SIRCON-06-02
 task_kind: story
 acceptance_criteria:
-- '- [ ] ADR explicitly preserves internal service direct access.'
-- '- [ ] ADR explicitly preserves local operator GPU-offload access.'
-- '- [ ] ADR explicitly rejects anonymous/direct public job API access as the normal
-  product lane.'
-- '- [ ] ADR names HuleEdu `InternalIdentityContextV1` with audience `sir-convert-a-lot`
-  as the first enforced identity model for Gateway/user-originated traffic.'
-- '- [ ] ADR keeps direct public host posture fail-closed/reserved unless a separate
-  accepted ADR creates another public surface.'
-- '- [ ] Docs validation passes.'
+  - '- [ ] ADR explicitly preserves internal service direct access.'
+  - '- [ ] ADR explicitly preserves local operator GPU-offload access.'
+  - '- [ ] ADR explicitly rejects anonymous/direct public job API access as the normal product lane.'
+  - '- [ ] ADR names HuleEdu `InternalIdentityContextV1` with audience `sir-convert-a-lot` as the first enforced identity model for Gateway/user-originated traffic.'
+  - '- [ ] ADR keeps direct public host posture fail-closed/reserved unless a separate accepted ADR creates another public surface.'
+  - '- [ ] Docs validation passes.'
 retired_ids:
-- task-257-publish-adr-0009-for-gateway-fronted-sir-convert-access
+  - task-257-publish-adr-0009-for-gateway-fronted-sir-convert-access
 ---
 
 ## Context

@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0015
 title: Resolve Hemma STT sidecar live proof backend blockers
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -16,25 +16,15 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- The task does not promote dry-run, projection, or partial sidecar evidence as accepted
-  live proof.
-- Live evidence proves a Whisper-family STT backend executes on a GPU-required no-CPU-fallback
-  lane for both fixtures and records bounded language/duration/segment/word-timestamp
-  evidence.
-- If GPU-backed FasterWhisper cannot be proven, any alternative STT backend is governed
-  as a Whisper-family replacement and proven on GPU before Task 352 can unblock Story
-  53.
-- If `pyannote.audio` remains selected, live evidence proves exact speaker count and
-  min/max speaker range hints run through the backend for the fixtures.
-- If pyannote gated access cannot be provisioned, the rejection is recorded with a
-  governed replacement decision that preserves library-backed diarization.
-- 'The live observation and profile proof remain content-safe: no transcript text,
-  token values, private cache paths, fixture source paths, raw model ids, generated
-  media, or model artifacts are committed.'
-- Story 53 remains blocked unless Task 352 receives a final retained review decision
-  of accepted live-proof evidence.
+  - The task does not promote dry-run, projection, or partial sidecar evidence as accepted live proof.
+  - Live evidence proves a Whisper-family STT backend executes on a GPU-required no-CPU-fallback lane for both fixtures and records bounded language/duration/segment/word-timestamp evidence.
+  - If GPU-backed FasterWhisper cannot be proven, any alternative STT backend is governed as a Whisper-family replacement and proven on GPU before Task 352 can unblock Story 53.
+  - If `pyannote.audio` remains selected, live evidence proves exact speaker count and min/max speaker range hints run through the backend for the fixtures.
+  - If pyannote gated access cannot be provisioned, the rejection is recorded with a governed replacement decision that preserves library-backed diarization.
+  - 'The live observation and profile proof remain content-safe: no transcript text, token values, private cache paths, fixture source paths, raw model ids, generated media, or model artifacts are committed.'
+  - Story 53 remains blocked unless Task 352 receives a final retained review decision of accepted live-proof evidence.
 retired_ids:
-- task-353-resolve-hemma-stt-sidecar-live-proof-backend-blockers
+  - task-353-resolve-hemma-stt-sidecar-live-proof-backend-blockers
 ---
 
 ## Context
@@ -142,23 +132,23 @@ Read-only subagent research on 2026-06-10 split the two blockers:
 
 The governed next-choice matrix is:
 
-| Area | Keep Current Profile If | Otherwise |
-|---|---|---|
-| STT | CTranslate2 HIP/ROCm wheel or source-build proof runs `faster-whisper` on Hemma GPU with no CPU fallback. | Govern and prove a different GPU-backed Whisper-family backend, or keep Task 352 and Story 53 blocked; do not accept non-Whisper STT or CPU fallback. |
-| Diarization | The Hemma `HF_TOKEN` account receives gated access and pyannote runs exact and min/max speaker hints. | Govern a different library-backed diarization profile that supports the speaker-hint contract; keep Story 53 blocked until proven. |
+| Area        | Keep Current Profile If                                                                                   | Otherwise                                                                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STT         | CTranslate2 HIP/ROCm wheel or source-build proof runs `faster-whisper` on Hemma GPU with no CPU fallback. | Govern and prove a different GPU-backed Whisper-family backend, or keep Task 352 and Story 53 blocked; do not accept non-Whisper STT or CPU fallback. |
+| Diarization | The Hemma `HF_TOKEN` account receives gated access and pyannote runs exact and min/max speaker hints.     | Govern a different library-backed diarization profile that supports the speaker-hint contract; keep Story 53 blocked until proven.                    |
 
 ### Overseer Loop
 
 This task uses the shared `overseer-implementation-review-loop` skill:
 
 1. The overseer owns scope, docs authority, commits, deploys, and final state.
-1. Implementation specialists work against this task, with red behavior tests
+2. Implementation specialists work against this task, with red behavior tests
    first where feasible.
-1. A fixed ruthless reviewer writes retained review artifacts and either
+3. A fixed ruthless reviewer writes retained review artifacts and either
    approves or requests changes.
-1. On changes requested, implementation adds red tests that would have caught
+4. On changes requested, implementation adds red tests that would have caught
    each accepted finding, makes them green, and returns for another review pass.
-1. A backend profile change is not accepted until the retained review approves
+5. A backend profile change is not accepted until the retained review approves
    the live-proof evidence.
 
 ### Implementation Notes

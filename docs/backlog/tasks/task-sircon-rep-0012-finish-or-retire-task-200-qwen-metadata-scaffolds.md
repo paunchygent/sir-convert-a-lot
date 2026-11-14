@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0012
 title: Finish or retire Task 200 Qwen metadata scaffolds
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -16,16 +16,13 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '- [ ] No active Qwen metadata control-plane module contains a governed placeholder
-  `NotImplementedError`.'
-- '- [ ] No compatibility shim is kept only to preserve old Task 200 import paths.'
-- '- [ ] Task 200 status and checklist state match the actual source state.'
-- '- [ ] Any deleted scaffold is proven unused by tests, import checks, or command
-  help checks.'
-- '- [ ] Close-out validation includes focused Qwen metadata tests, docs gates, and
-  standard Python gates for touched source.'
+  - '- [ ] No active Qwen metadata control-plane module contains a governed placeholder `NotImplementedError`.'
+  - '- [ ] No compatibility shim is kept only to preserve old Task 200 import paths.'
+  - '- [ ] Task 200 status and checklist state match the actual source state.'
+  - '- [ ] Any deleted scaffold is proven unused by tests, import checks, or command help checks.'
+  - '- [ ] Close-out validation includes focused Qwen metadata tests, docs gates, and standard Python gates for touched source.'
 retired_ids:
-- task-289-finish-or-retire-task-200-qwen-metadata-scaffolds
+  - task-289-finish-or-retire-task-200-qwen-metadata-scaffolds
 ---
 
 ## Context

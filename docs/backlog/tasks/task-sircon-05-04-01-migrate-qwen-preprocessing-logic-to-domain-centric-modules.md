@@ -4,8 +4,8 @@ id: TASK-SIRCON-05-04-01
 title: Migrate Qwen Preprocessing Logic to Domain-Centric Modules
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -17,11 +17,11 @@ closeout_review:
 story: ST-SIRCON-05-04
 task_kind: story
 acceptance_criteria:
-- '- [ ] All preprocessing logic is located under `ml/qwen/preprocessing/`.'
-- '- [ ] Preprocessing unit tests pass after import refactoring.'
-- '- [ ] Logic remains behaviorally identical to the task-prefixed versions.'
+  - '- [ ] All preprocessing logic is located under `ml/qwen/preprocessing/`.'
+  - '- [ ] Preprocessing unit tests pass after import refactoring.'
+  - '- [ ] Logic remains behaviorally identical to the task-prefixed versions.'
 retired_ids:
-- task-167-migrate-qwen-preprocessing-logic-to-domain-centric-modules
+  - task-167-migrate-qwen-preprocessing-logic-to-domain-centric-modules
 ---
 
 ## Context

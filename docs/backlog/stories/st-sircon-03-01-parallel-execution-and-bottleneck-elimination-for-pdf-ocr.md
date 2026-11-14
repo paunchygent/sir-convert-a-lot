@@ -4,8 +4,8 @@ id: ST-SIRCON-03-01
 title: Parallel execution and bottleneck elimination for PDF OCR
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: active
 readiness_review:
@@ -18,15 +18,13 @@ epic: EPIC-SIRCON-03
 links:
   decisions: []
 acceptance_criteria:
-- Throughput improvements are measurable and reproducible on the benchmark corpus.
-- Median wall-clock for long scanned OCR jobs improves by at least 40 percent from
-  baseline.
-- Telemetry identifies top bottlenecks with stage-level timings and utilization evidence.
-- Parallelization does not regress output determinism or API contract behavior.
-- GPU-first governance remains enforced under parallel mode, with no silent CPU fallback
-  and explicit concurrency caps for GPU-backed stages.
+  - Throughput improvements are measurable and reproducible on the benchmark corpus.
+  - Median wall-clock for long scanned OCR jobs improves by at least 40 percent from baseline.
+  - Telemetry identifies top bottlenecks with stage-level timings and utilization evidence.
+  - Parallelization does not regress output determinism or API contract behavior.
+  - GPU-first governance remains enforced under parallel mode, with no silent CPU fallback and explicit concurrency caps for GPU-backed stages.
 retired_ids:
-- story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr
+  - story-20-parallel-execution-and-bottleneck-elimination-for-pdf-ocr
 ---
 
 ## Context

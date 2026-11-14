@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0023
 title: Repair the check-md markdown gate gfm extension
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-03'
 status: proposed
 readiness_review:
@@ -16,9 +16,9 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- pdm run check-md exits 0 on a known-clean markdown file
-- The root cause of the missing gfm extension is recorded in this task
-- Docs validation and git diff --check pass
+  - pdm run check-md exits 0 on a known-clean markdown file
+  - The root cause of the missing gfm extension is recorded in this task
+  - Docs validation and git diff --check pass
 ---
 
 ## Context

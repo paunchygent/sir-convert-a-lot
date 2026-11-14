@@ -4,8 +4,8 @@ id: TASK-SIRCON-REP-0017
 title: Restore docx output after pandoc sandbox hardening
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: in_progress
 readiness_review:
@@ -16,17 +16,13 @@ closeout_review:
   status: not_started
 task_kind: repository
 acceptance_criteria:
-- '`pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_cli_v2_routes.py`
-  passes.'
-- '`pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py`
-  passes.'
-- '`pdm run run-local-pdm typecheck-all` passes.'
-- '`pdm run run-local-pdm coverage-gate` remains >=90%.'
-- 'Live operator tunnel lane smoke: - `pdm run run-local-pdm convert-a-lot convert
-  <md> --to docx --service-url http://127.0.0.1:28085` succeeds. - `pdm run run-local-pdm
-  convert-a-lot convert <pdf> --to docx --service-url http://127.0.0.1:28085` succeeds.'
+  - '`pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_cli_v2_routes.py` passes.'
+  - '`pdm run run-local-pdm pytest-root tests/sir_convert_a_lot/test_pandoc_additional_timeout_wrappers.py` passes.'
+  - '`pdm run run-local-pdm typecheck-all` passes.'
+  - '`pdm run run-local-pdm coverage-gate` remains >=90%.'
+  - 'Live operator tunnel lane smoke: - `pdm run run-local-pdm convert-a-lot convert <md> --to docx --service-url http://127.0.0.1:28085` succeeds. - `pdm run run-local-pdm convert-a-lot convert <pdf> --to docx --service-url http://127.0.0.1:28085` succeeds.'
 retired_ids:
-- task-62-fix-docx-output-regression-after-pandoc-sandbox-hardening
+  - task-62-fix-docx-output-regression-after-pandoc-sandbox-hardening
 ---
 
 ## Context

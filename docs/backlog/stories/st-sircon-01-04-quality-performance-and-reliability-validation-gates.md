@@ -4,8 +4,8 @@ id: ST-SIRCON-01-04
 title: Quality, performance, and reliability validation gates
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,17 +18,13 @@ epic: EPIC-SIRCON-01
 links:
   decisions: []
 acceptance_criteria:
-- Test matrix exists across unit, integration, end-to-end, regression corpus, and
-  performance/load lanes.
-- Reliability thresholds meet at least 99 percent success for valid benchmark conversions
-  and zero idempotency correctness failures.
-- Performance thresholds from epic 003 are measured and reported on the agreed Hemma
-  profile.
-- Failure taxonomy dashboard or report covers top failure codes, retryable versus
-  non-retryable split, and format-specific failure clusters.
-- Release gate requires passing validation before deprecating legacy converters.
+  - Test matrix exists across unit, integration, end-to-end, regression corpus, and performance/load lanes.
+  - Reliability thresholds meet at least 99 percent success for valid benchmark conversions and zero idempotency correctness failures.
+  - Performance thresholds from epic 003 are measured and reported on the agreed Hemma profile.
+  - Failure taxonomy dashboard or report covers top failure codes, retryable versus non-retryable split, and format-specific failure clusters.
+  - Release gate requires passing validation before deprecating legacy converters.
 retired_ids:
-- 003e-quality-performance-and-reliability-validation-story
+  - 003e-quality-performance-and-reliability-validation-story
 ---
 
 ## Context
@@ -110,7 +106,7 @@ Establish non-negotiable validation gates so rollout and consolidation are safe,
 - 0 idempotency correctness failures in test suite.
 
 3. Performance thresholds from epic 003 are measured and reported on agreed Hemma profile.
-1. Failure taxonomy dashboard/report exists:
+4. Failure taxonomy dashboard/report exists:
 
 - top failure codes,
 - retryable vs non-retryable split,

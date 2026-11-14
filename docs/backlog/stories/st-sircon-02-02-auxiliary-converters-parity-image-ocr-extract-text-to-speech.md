@@ -4,8 +4,8 @@ id: ST-SIRCON-02-02
 title: Auxiliary converters parity (image OCR extract + text-to-speech)
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: proposed
 readiness_review:
@@ -18,14 +18,12 @@ epic: EPIC-SIRCON-02
 links:
   decisions: []
 acceptance_criteria:
-- OCR extraction works for a representative fixture image and emits deterministic
-  text output.
-- TTS supersession is explicit through links to Epic 07, Story 22, and ADR-0006.
-- All remaining routes in scope are documented, including required environment variables
-  and local system dependencies.
-- Manifest semantics for these routes are documented and deterministic.
+  - OCR extraction works for a representative fixture image and emits deterministic text output.
+  - TTS supersession is explicit through links to Epic 07, Story 22, and ADR-0006.
+  - All remaining routes in scope are documented, including required environment variables and local system dependencies.
+  - Manifest semantics for these routes are documented and deterministic.
 retired_ids:
-- story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech
+  - story-07-auxiliary-converters-parity-image-ocr-extract-text-to-speech
 ---
 
 ## Context

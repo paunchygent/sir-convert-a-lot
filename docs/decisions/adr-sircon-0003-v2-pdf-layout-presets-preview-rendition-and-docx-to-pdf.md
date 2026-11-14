@@ -4,17 +4,18 @@ id: ADR-SIRCON-0003
 title: V2 PDF Layout Presets, Preview Rendition, and DOCX to PDF
 repository: sir-convert-a-lot
 owners:
-- kind: service
-  id: sir-convert-a-lot
+  - kind: service
+    id: sir-convert-a-lot
 created: '2026-08-02'
 status: accepted
 deciders:
-- platform
+  - platform
 links:
   governing: []
 retired_ids:
-- ADR-0004
+  - ADR-0004
 ---
+
 ## Context
 
 Source record: docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-docx-to-pdf.md
@@ -30,7 +31,7 @@ Source record: docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-d
 > 1. PDF outputs lack a first-class, typed layout control surface.
 >    - Only `conversion.css_filenames` exists, which pushes basic page setup (paper size, orientation,
 >      margins, page-break ergonomics) into ad hoc CSS conventions per client.
-> 1. v2 does not support `docx -> pdf`.
+> 2. v2 does not support `docx -> pdf`.
 >    - Downstream GUIs need an authoritative PDF artifact output from DOCX inputs without relying on
 >      repo-local scripts or sidecar conversion tools.
 >
@@ -44,8 +45,8 @@ Source record: docs/decisions/0004-v2-pdf-layout-presets-preview-rendition-and-d
 
 > 1. Add **PDF layout presets** to the v2 JobSpec as a typed, PDF-only contract surface:
 >    `conversion.pdf_layout`.
-> 1. Add a v2 conversion route: `docx -> pdf`, implemented as `docx -> html (pandoc) -> pdf (weasyprint)`.
-> 1. Define “preview rendition” as a **normal v2 job** producing a PDF artifact:
+> 2. Add a v2 conversion route: `docx -> pdf`, implemented as `docx -> html (pandoc) -> pdf (weasyprint)`.
+> 3. Define “preview rendition” as a **normal v2 job** producing a PDF artifact:
 >    - no new output format,
 >    - no v1 surfaces,
 >    - downstream UIs use existing job creation + polling/push to obtain artifacts,
