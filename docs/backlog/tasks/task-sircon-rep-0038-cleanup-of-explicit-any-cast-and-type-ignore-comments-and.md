@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-11-22'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-11-22T16:38:50+00:00'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: TASK-SIRCON-REP-0038#closeout
 task_kind: repository
 acceptance_criteria:
   - 'Given the repository''s tracked Python files, when `pyrefly check --error explicit-any --only explicit-any` runs over them with Pyrefly 1.4.1, then it reports no error, and rg finds no `cast(` call or `# type: ignore` comment outside an exception recorded in this task.'
@@ -76,3 +80,30 @@ fails the gate while mypy keeps covering its existing scope.
 | DCT-03 | A test double or fixture typed `Any` is rewritten to the real class, a Protocol, or `object`; the typing reference gains no test-double exception (Olof, 22 Nov 2026). (TASK-SKILL-REP-0591)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | DCT-04 | The spool readers narrow `reference_audio_24k_paths` keys and `manifest_targets` elements to `ManifestFamily` (storage.py `iter_spool_rows`), and `quality_tier`, `speaker_quality_gate` and `admission_decision` to their Literal types (canonical_root.py `_spool_row_from_payload`), in place of the `# type: ignore` assignments on main. This changes no reachable behavior: the only spool writers emit values from those Literal types, the four types never lost or renamed a member since 8 Mar 2026, and all 8,453 spool rows found on Hemma on 22 Nov 2026 hold only member values. Review F2's storage part at c77565f is therefore not admitted (orchestrator under the 7 Nov 2026 rule, 22 Nov 2026). |
 | DCT-05 | The post-release settings sync adds the shared test-tool pins (coverage 7.17.2, pytest-cov, pytest-xdist, pytest-mock, pytest-timeout, pytest-asyncio, testcontainers, yamllint) to the generated tooling group together with the Pyrefly pin, although this repository registers a pytest exception, and the root `dev` coverage resolution moves from 7.15.2 to 7.17.2; TASK-SKILL-REP-0591 DCT-13 is read with this addition, and review F4 at c77565f is settled by it (Olof, 22 Nov 2026).                                                                                                                                                                                                                     |
+
+## Closeout
+
+The task removed every explicit `Any`, `cast(` and `# type: ignore` from the
+repository's tracked Python files and, after the runtime release, synced the
+generated tooling settings so `pdm run typecheck` runs mypy and then Pyrefly
+1.4.1 with `--only explicit-any` over `typecheck-includes`
+`["scripts", "tests", "qwen/tests", "markdown_normalizer.py"]`. `{args}` sits
+on the mypy subcommand only, so the Pyrefly producer checks the whole
+typecheck-includes rather than the forwarded cohort paths, and the touched
+JSON parse sites enter through the repository's recursive `JsonValue` alias
+and are narrowed before typed use.
+
+- `review-task-sircon-rep-0038-c77565f.md` reviewed `c77565f`, verdict
+  `changes_requested` (2026-11-22T13:45:57+00:00). F1 (unscoped
+  `pdm run typecheck` let Pyrefly check only the forwarded test cohorts, not
+  product source) and the canonical part of F2 (the new spool numeric gates
+  rejected the numeric strings `main` had coerced through `float(...)`) were
+  repaired in `18610be` and approved in the `e3cb8db` rereview. F2's storage
+  part was not admitted under DCT-04. F3 (medium: rewritten JSON boundaries
+  still bypassed narrowing) was repaired in `18610be` and admitted on its
+  repair commit. F4 (the root `dev` coverage resolution moving to the shared
+  7.17.2 pin) was settled by DCT-05.
+- `rereview-task-sircon-rep-0038-e3cb8db.md` reviewed `e3cb8db` over the
+  repair delta `c77565f..e3cb8db`, verdict `approved`
+  (2026-11-22T16:38:50+00:00): F1 and F2 closed, no new material finding from
+  the repairs.
