@@ -24,14 +24,20 @@ import shutil
 import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal, Sequence, cast
+from typing import Literal, Sequence
 
+from scripts.sir_convert_a_lot.devops.research_image_cleanup import JsonValue
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
-    CANONICAL_MANIFEST_FAMILIES,
     ManifestFamily,
 )
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import (
     SpoolRow,
+)
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.narrowing import (
+    is_admission_decision,
+    is_manifest_family,
+    is_quality_tier,
+    is_speaker_quality_gate,
 )
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.sharding import (
     RowKey,
@@ -263,7 +269,7 @@ def _iter_row_candidates(run_root: Path) -> list[RowCandidate]:
     rows_root = spool_rows_dir(run_root)
     candidates: list[RowCandidate] = []
     for spool_path in sorted(rows_root.rglob("*.json")):
-        payload = json.loads(spool_path.read_text(encoding="utf-8"))
+        payload: JsonValue = json.loads(spool_path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise ValueError(f"Malformed spool row payload: {spool_path}")
         spool_row = _spool_row_from_payload(payload)
@@ -285,7 +291,7 @@ def _iter_row_candidates(run_root: Path) -> list[RowCandidate]:
     return candidates
 
 
-def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
+def _spool_row_from_payload(payload: dict[str, JsonValue]) -> SpoolRow:
     """Hydrate one typed spool row from one stored payload (internal helper)."""
     # Using local helper to avoid deep coupling to storage internals
     reference_audio_24k_paths_raw = payload.get("reference_audio_24k_paths")
@@ -294,12 +300,9 @@ def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
 
     reference_audio_24k_paths: dict[ManifestFamily, str] = {}
     for key, val in reference_audio_24k_paths_raw.items():
-        if key in CANONICAL_MANIFEST_FAMILIES:
-            # Type narrowing via CANONICAL_MANIFEST_FAMILIES check
-            manifest_family_key = cast(ManifestFamily, key)
-            reference_audio_24k_paths[manifest_family_key] = str(val)
-        else:
+        if not is_manifest_family(key):
             raise ValueError(f"Unknown manifest family in spool payload: {key}")
+        reference_audio_24k_paths[key] = str(val)
 
     manifest_targets_raw = payload.get("manifest_targets")
     if not isinstance(manifest_targets_raw, list):
@@ -307,10 +310,25 @@ def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
 
     manifest_targets: list[ManifestFamily] = []
     for target in manifest_targets_raw:
-        if target in CANONICAL_MANIFEST_FAMILIES:
-            manifest_targets.append(cast(ManifestFamily, target))
-        else:
+        if not is_manifest_family(target):
             raise ValueError(f"Unknown manifest target in spool payload: {target}")
+        manifest_targets.append(target)
+
+    duration_seconds = payload["duration_seconds"]
+    if not isinstance(duration_seconds, (int, float, str)):
+        raise ValueError("Malformed `duration_seconds` in spool payload.")
+    asr_wer = payload["asr_wer"]
+    if not isinstance(asr_wer, (int, float, str)):
+        raise ValueError("Malformed `asr_wer` in spool payload.")
+    quality_tier = payload["quality_tier"]
+    if not is_quality_tier(quality_tier):
+        raise ValueError("Malformed `quality_tier` in spool payload.")
+    speaker_quality_gate = payload["speaker_quality_gate"]
+    if not is_speaker_quality_gate(speaker_quality_gate):
+        raise ValueError("Malformed `speaker_quality_gate` in spool payload.")
+    admission_decision = payload["admission_decision"]
+    if not is_admission_decision(admission_decision):
+        raise ValueError("Malformed `admission_decision` in spool payload.")
 
     return SpoolRow(
         dataset=str(payload["dataset"]),
@@ -321,17 +339,17 @@ def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
         speaker_from_id=bool(payload["speaker_from_id"]),
         source_audio_path=str(payload["source_audio_path"]),
         audio_24k_path=str(payload["audio_24k_path"]),
-        duration_seconds=float(payload["duration_seconds"]),  # type: ignore
+        duration_seconds=float(duration_seconds),
         text_normalized=str(payload["text_normalized"]),
         reference_audio_24k_paths=reference_audio_24k_paths,
         asr_model=str(payload["asr_model"]),
         asr_revision=str(payload["asr_revision"]),
         asr_transcript=str(payload["asr_transcript"]),
-        asr_wer=float(payload["asr_wer"]),  # type: ignore
-        quality_tier=payload["quality_tier"],  # type: ignore
-        speaker_quality_gate=payload["speaker_quality_gate"],  # type: ignore
+        asr_wer=float(asr_wer),
+        quality_tier=quality_tier,
+        speaker_quality_gate=speaker_quality_gate,
         dedup_applied=bool(payload["dedup_applied"]),
-        admission_decision=payload["admission_decision"],  # type: ignore
+        admission_decision=admission_decision,
         manifest_targets=tuple(manifest_targets),
     )
 

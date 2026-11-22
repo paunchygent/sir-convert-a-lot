@@ -35,6 +35,10 @@ from scripts.sir_convert_a_lot.interfaces.http_client_v2_models import (
 from scripts.sir_convert_a_lot.interfaces.http_client_v2_polling import (
     wait_for_terminal_status_v2,
 )
+from scripts.sir_convert_a_lot.interfaces.http_client_v2_transport import (
+    HttpClient,
+    HttpResponse,
+)
 from scripts.sir_convert_a_lot.interfaces.http_client_v2_upload_helpers import (
     content_type_for_source_path,
 )
@@ -51,7 +55,7 @@ class SirConvertALotClientV2:
         base_url: str,
         api_key: str,
         timeout_seconds: float = 60.0,
-        http_client: httpx.Client | None = None,
+        http_client: HttpClient | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
@@ -84,9 +88,7 @@ class SirConvertALotClientV2:
             headers["X-Correlation-ID"] = correlation_id
         return headers
 
-    def _extract_error(
-        self, response: httpx.Response, *, job_id: str | None = None
-    ) -> ClientErrorV2:
+    def _extract_error(self, response: HttpResponse, *, job_id: str | None = None) -> ClientErrorV2:
         payload: object
         try:
             payload = response.json()

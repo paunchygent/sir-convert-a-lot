@@ -18,12 +18,13 @@ import time
 from _thread import LockType
 from dataclasses import replace
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import TypedDict
 
 import pytest
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
+from scripts.sir_convert_a_lot.devops.research_image_cleanup import JsonValue
 from scripts.sir_convert_a_lot.domain.specs import JobStatus, TableMode
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
@@ -154,13 +155,13 @@ def _make_stub_conversion(
 
 
 def _pdf_md_spec(*, filename: str, pin: bool = False) -> dict[str, object]:
-    spec = cast(
-        dict[str, object],
+    spec: dict[str, object] = {}
+    spec.update(
         _job_spec_v2(
             filename=filename,
             source_format=SourceFormatV2.PDF,
             output_format=OutputFormatV2.MD,
-        ),
+        )
     )
     spec["pdf_options"] = {
         "backend_strategy": "auto",
@@ -202,13 +203,17 @@ def _wait_for_progress_pages(
     job_id: str,
     minimum_pages: int,
     timeout_seconds: float = 8.0,
-) -> dict[str, object]:
+) -> dict[str, JsonValue]:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         response = client.get(f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 200
-        payload = response.json()
-        progress = cast(dict[str, object], payload["job"]["progress"])
+        payload: JsonValue = response.json()
+        assert isinstance(payload, dict)
+        job = payload["job"]
+        assert isinstance(job, dict)
+        progress = job["progress"]
+        assert isinstance(progress, dict)
         processed_pages_raw = progress.get("processed_pages")
         processed_pages = int(processed_pages_raw) if isinstance(processed_pages_raw, int) else 0
         if processed_pages >= minimum_pages:
@@ -452,7 +457,8 @@ def test_parallel_chunk_commit_updates_heartbeat_and_phase_timings(
 
     progress_payload = _wait_for_progress_pages(client, job_id=job_id, minimum_pages=1)
     assert progress_payload["last_heartbeat_at"] is not None
-    phase_timings = cast(dict[str, object], progress_payload["phase_timings_ms"])
+    phase_timings = progress_payload["phase_timings_ms"]
+    assert isinstance(phase_timings, dict)
     assert "checkpoint_persist_ms" in phase_timings
     assert "chunk_total_ms" in phase_timings
 

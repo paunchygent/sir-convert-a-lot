@@ -1,5 +1,5 @@
 {
-  "dependency_hash": "dfcec127417288ece2b3043604ff6f702e94c732d1883f03f10547dab95e08ab",
+  "dependency_hash": "371826709899dddb5c4b6ee7be05880e15598396fadc7c11f8abd66e63a95db7",
   "easyocr_preload": {
     "download_enabled": true,
     "gpu": false,
@@ -9,7 +9,7 @@
     ],
     "model_storage_directory": "/opt/easyocr-models"
   },
-  "requirements_sha256": "764b583114344f486396c583dc3b69c6dabea52f6de5fc275dc4db4207ccb9f5",
+  "requirements_sha256": "87bb72ad77abf08f468b543df6fd1168678f6f45db456d4019336d074d7d061f",
   "runtime_kind": "rocm",
   "runtime_pins": {
     "torch_index_url": "https://download.pytorch.org/whl/rocm7.1",
@@ -93,7 +93,7 @@
     "opencv-python==5.0.0.93",
     "opencv-python-headless==5.0.0.93",
     "openpyxl==3.1.5",
-    "packaging==26.2",
+    "packaging==26.3",
     "pandas==2.3.3",
     "pillow==12.3.0",
     "pipcl==12",

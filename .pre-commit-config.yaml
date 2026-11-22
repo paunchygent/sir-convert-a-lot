@@ -1,5 +1,8 @@
 default_install_hook_types: [pre-commit, pre-merge-commit, pre-push]
 repos:
+  # repository-governance:prepush-hook:start
+  # the push check runs in the managed pre-push script (TASK-SKILL-08-12-12)
+  # repository-governance:prepush-hook:end
   - repo: local
     hooks:
       - id: markdown-format

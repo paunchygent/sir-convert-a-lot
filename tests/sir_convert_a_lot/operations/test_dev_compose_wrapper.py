@@ -15,6 +15,7 @@ Relationships:
 from __future__ import annotations
 
 import os
+import shutil
 import stat
 import subprocess
 from pathlib import Path
@@ -296,8 +297,16 @@ def test_dev_compose_requires_action_argument() -> None:
 
 
 def test_dev_compose_fails_when_docker_is_unavailable(tmp_path: Path) -> None:
+    # A PATH of system directories finds the host's real docker (Hemma has /usr/bin/docker),
+    # so give the wrapper only the non-docker tools it runs before the docker check.
+    bin_dir = tmp_path / "bin-without-docker"
+    bin_dir.mkdir()
+    for tool in ("bash", "dirname"):
+        tool_path = shutil.which(tool)
+        if tool_path is not None:
+            (bin_dir / tool).symlink_to(tool_path)
     env = os.environ.copy()
-    env["PATH"] = "/usr/bin:/bin"
+    env["PATH"] = str(bin_dir)
     result = _run_wrapper(DEV_COMPOSE_SCRIPT, ["ps"], env)
     assert result.returncode == 67
     assert "docker is not installed" in result.stderr
