@@ -1,5 +1,5 @@
 {
-  "dependency_hash": "fdb9a6f44ba2037e4ccecd671865c170bf25997dc97d7f539c738ca2e3adc98c",
+  "dependency_hash": "776b4754b3bc351f3821b808d7872c74920aa40ed71bf7e2c2b6a955771b33f7",
   "easyocr_preload": {
     "download_enabled": true,
     "gpu": false,
@@ -9,7 +9,7 @@
     ],
     "model_storage_directory": "/opt/easyocr-models"
   },
-  "requirements_sha256": "764b583114344f486396c583dc3b69c6dabea52f6de5fc275dc4db4207ccb9f5",
+  "requirements_sha256": "87bb72ad77abf08f468b543df6fd1168678f6f45db456d4019336d074d7d061f",
   "runtime_kind": "cpu",
   "runtime_pins": {
     "torch_version": "2.10.0",
@@ -92,7 +92,7 @@
     "opencv-python==5.0.0.93",
     "opencv-python-headless==5.0.0.93",
     "openpyxl==3.1.5",
-    "packaging==26.2",
+    "packaging==26.3",
     "pandas==2.3.3",
     "pillow==12.3.0",
     "pipcl==12",
