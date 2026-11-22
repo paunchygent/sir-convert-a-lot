@@ -24,6 +24,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from scripts.sir_convert_a_lot.application.contracts import ConversionMetadata
+from scripts.sir_convert_a_lot.devops.research_image_cleanup import JsonValue
 from scripts.sir_convert_a_lot.domain.specs import JobStatus, TableMode
 from scripts.sir_convert_a_lot.domain.specs_v2 import OcrEngineV2, OutputFormatV2, SourceFormatV2
 from scripts.sir_convert_a_lot.infrastructure import v2_pdf_checkpointed_executor
@@ -202,13 +203,17 @@ def _wait_for_progress_pages(
     job_id: str,
     minimum_pages: int,
     timeout_seconds: float = 8.0,
-) -> dict[str, object]:
+) -> dict[str, JsonValue]:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         response = client.get(f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 200
-        payload = response.json()
-        progress: dict[str, object] = payload["job"]["progress"]
+        payload: JsonValue = response.json()
+        assert isinstance(payload, dict)
+        job = payload["job"]
+        assert isinstance(job, dict)
+        progress = job["progress"]
+        assert isinstance(progress, dict)
         processed_pages_raw = progress.get("processed_pages")
         processed_pages = int(processed_pages_raw) if isinstance(processed_pages_raw, int) else 0
         if processed_pages >= minimum_pages:

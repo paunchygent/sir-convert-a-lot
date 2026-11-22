@@ -385,7 +385,7 @@ run-hemma = "bash scripts/devops/run-hemma.sh"
     "ruff format .",
 ] }
 "typecheck-all" = { composite = [
-    "mypy --no-incremental --config-file pyproject.toml",
+    "mypy --no-incremental --config-file pyproject.toml {args}",
     "pyrefly check --config ${PDM_PROJECT_ROOT}/pyproject.toml --only explicit-any",
 ] }
 "pytest-root" = "pytest -s"

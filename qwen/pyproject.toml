@@ -78,7 +78,7 @@ qwen-pilot-bundle = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_bundle"
 test = "pytest -c qwen/pyproject.toml -s --import-mode=importlib qwen/tests"
 test-scope = "pytest -c qwen/pyproject.toml -s --import-mode=importlib"
 typecheck = { composite = [
-    "mypy --no-incremental --config-file qwen/pyproject.toml scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests",
+    "mypy --no-incremental --config-file qwen/pyproject.toml scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests {args}",
     "pyrefly check --config ${PDM_PROJECT_ROOT}/pyproject.toml --only explicit-any",
 ] }
 format = "ruff format scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests"

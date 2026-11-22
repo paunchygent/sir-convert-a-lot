@@ -17,11 +17,13 @@ import re
 import shutil
 import tempfile
 import threading
+from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Iterator, Literal, Protocol, Sequence
 
 from scripts.sir_convert_a_lot.benchmarking.output_policy import enforce_generated_output_path
+from scripts.sir_convert_a_lot.devops.research_image_cleanup import JsonValue
 from scripts.sir_convert_a_lot.ml.qwen.common.models import ManifestFamily
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import (
     AdmissionDecision,
@@ -85,7 +87,7 @@ def completed_row_keys_index_path(output_root: Path) -> Path:
 
 
 def _completed_row_key_payload_to_tuple(
-    payload: dict[str, object],
+    payload: Mapping[str, JsonValue],
     *,
     path: Path,
 ) -> CompletedRowKey:
@@ -338,7 +340,7 @@ def iter_spool_rows(output_root: Path) -> Iterator[SpoolRow]:
         raw_payload = path.read_text(encoding="utf-8")
         if raw_payload.strip() == "":
             continue
-        payload = json.loads(raw_payload)
+        payload: JsonValue = json.loads(raw_payload)
         if not isinstance(payload, dict):
             raise ValueError(f"Expected one JSON object in spool row {path}.")
         reference_audio_24k_paths_raw = payload.get("reference_audio_24k_paths")
@@ -388,7 +390,7 @@ def spool_row_artifact_is_complete(path: Path) -> bool:
     return path.exists() and path.stat().st_size > 0
 
 
-def _required_str(payload: dict[str, object], key: str, path: Path) -> str:
+def _required_str(payload: Mapping[str, JsonValue], key: str, path: Path) -> str:
     """Return one required string field from one stored JSON payload."""
     value = payload.get(key)
     if not isinstance(value, str):
@@ -406,7 +408,7 @@ class _TextWriteCloser(Protocol):
         """Close one underlying temp file."""
 
 
-def _required_bool(payload: dict[str, object], key: str, path: Path) -> bool:
+def _required_bool(payload: Mapping[str, JsonValue], key: str, path: Path) -> bool:
     """Return one required boolean field from one stored JSON payload."""
     value = payload.get(key)
     if not isinstance(value, bool):
@@ -414,7 +416,7 @@ def _required_bool(payload: dict[str, object], key: str, path: Path) -> bool:
     return value
 
 
-def _required_float(payload: dict[str, object], key: str, path: Path) -> float:
+def _required_float(payload: Mapping[str, JsonValue], key: str, path: Path) -> float:
     """Return one required float-like field from one stored JSON payload."""
     value = payload.get(key)
     if not isinstance(value, (float, int)):
@@ -422,7 +424,7 @@ def _required_float(payload: dict[str, object], key: str, path: Path) -> float:
     return round(float(value), 6)
 
 
-def _required_quality_tier(payload: dict[str, object], path: Path) -> QualityTier:
+def _required_quality_tier(payload: Mapping[str, JsonValue], path: Path) -> QualityTier:
     """Return one required typed quality tier from one stored spool payload."""
     value = _required_str(payload, "quality_tier", path)
     if not is_quality_tier(value):
@@ -431,7 +433,7 @@ def _required_quality_tier(payload: dict[str, object], path: Path) -> QualityTie
 
 
 def _required_speaker_quality_gate(
-    payload: dict[str, object],
+    payload: Mapping[str, JsonValue],
     path: Path,
 ) -> SpeakerQualityGate:
     """Return one required typed speaker gate from one stored spool payload."""
@@ -442,7 +444,7 @@ def _required_speaker_quality_gate(
 
 
 def _required_admission_decision(
-    payload: dict[str, object],
+    payload: Mapping[str, JsonValue],
     path: Path,
 ) -> AdmissionDecision:
     """Return one required typed admission decision from one stored spool payload."""

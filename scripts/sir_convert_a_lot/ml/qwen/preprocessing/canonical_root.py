@@ -26,6 +26,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal, Sequence
 
+from scripts.sir_convert_a_lot.devops.research_image_cleanup import JsonValue
 from scripts.sir_convert_a_lot.ml.qwen.common.models import (
     ManifestFamily,
 )
@@ -268,7 +269,7 @@ def _iter_row_candidates(run_root: Path) -> list[RowCandidate]:
     rows_root = spool_rows_dir(run_root)
     candidates: list[RowCandidate] = []
     for spool_path in sorted(rows_root.rglob("*.json")):
-        payload = json.loads(spool_path.read_text(encoding="utf-8"))
+        payload: JsonValue = json.loads(spool_path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise ValueError(f"Malformed spool row payload: {spool_path}")
         spool_row = _spool_row_from_payload(payload)
@@ -290,7 +291,7 @@ def _iter_row_candidates(run_root: Path) -> list[RowCandidate]:
     return candidates
 
 
-def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
+def _spool_row_from_payload(payload: dict[str, JsonValue]) -> SpoolRow:
     """Hydrate one typed spool row from one stored payload (internal helper)."""
     # Using local helper to avoid deep coupling to storage internals
     reference_audio_24k_paths_raw = payload.get("reference_audio_24k_paths")
@@ -314,10 +315,10 @@ def _spool_row_from_payload(payload: dict[str, object]) -> SpoolRow:
         manifest_targets.append(target)
 
     duration_seconds = payload["duration_seconds"]
-    if not isinstance(duration_seconds, (int, float)):
+    if not isinstance(duration_seconds, (int, float, str)):
         raise ValueError("Malformed `duration_seconds` in spool payload.")
     asr_wer = payload["asr_wer"]
-    if not isinstance(asr_wer, (int, float)):
+    if not isinstance(asr_wer, (int, float, str)):
         raise ValueError("Malformed `asr_wer` in spool payload.")
     quality_tier = payload["quality_tier"]
     if not is_quality_tier(quality_tier):
