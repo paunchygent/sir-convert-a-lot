@@ -18,7 +18,7 @@ import time
 from _thread import LockType
 from dataclasses import replace
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import TypedDict
 
 import pytest
 from fastapi.testclient import TestClient
@@ -154,13 +154,13 @@ def _make_stub_conversion(
 
 
 def _pdf_md_spec(*, filename: str, pin: bool = False) -> dict[str, object]:
-    spec = cast(
-        dict[str, object],
+    spec: dict[str, object] = {}
+    spec.update(
         _job_spec_v2(
             filename=filename,
             source_format=SourceFormatV2.PDF,
             output_format=OutputFormatV2.MD,
-        ),
+        )
     )
     spec["pdf_options"] = {
         "backend_strategy": "auto",
@@ -208,7 +208,7 @@ def _wait_for_progress_pages(
         response = client.get(f"/v2/convert/jobs/{job_id}", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 200
         payload = response.json()
-        progress = cast(dict[str, object], payload["job"]["progress"])
+        progress: dict[str, object] = payload["job"]["progress"]
         processed_pages_raw = progress.get("processed_pages")
         processed_pages = int(processed_pages_raw) if isinstance(processed_pages_raw, int) else 0
         if processed_pages >= minimum_pages:
@@ -452,7 +452,8 @@ def test_parallel_chunk_commit_updates_heartbeat_and_phase_timings(
 
     progress_payload = _wait_for_progress_pages(client, job_id=job_id, minimum_pages=1)
     assert progress_payload["last_heartbeat_at"] is not None
-    phase_timings = cast(dict[str, object], progress_payload["phase_timings_ms"])
+    phase_timings = progress_payload["phase_timings_ms"]
+    assert isinstance(phase_timings, dict)
     assert "checkpoint_persist_ms" in phase_timings
     assert "chunk_total_ms" in phase_timings
 

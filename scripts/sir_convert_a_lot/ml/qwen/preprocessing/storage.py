@@ -30,6 +30,12 @@ from scripts.sir_convert_a_lot.ml.qwen.preprocessing.models import (
     SpeakerQualityGate,
     SpoolRow,
 )
+from scripts.sir_convert_a_lot.ml.qwen.preprocessing.narrowing import (
+    is_admission_decision,
+    is_manifest_family,
+    is_quality_tier,
+    is_speaker_quality_gate,
+)
 
 CompletedRowKey = tuple[str, str, str]
 CompletedRowKeyLoadSource = Literal["index", "rebuild", "spool-scan"]
@@ -340,14 +346,19 @@ def iter_spool_rows(output_root: Path) -> Iterator[SpoolRow]:
             raise ValueError(f"Malformed `reference_audio_24k_paths` in {path}.")
         reference_audio_24k_paths: dict[ManifestFamily, str] = {}
         for key, value in reference_audio_24k_paths_raw.items():
-            manifest_family = key  # type: ignore
+            if not is_manifest_family(key):
+                raise ValueError(f"Malformed `reference_audio_24k_paths` in {path}.")
             if not isinstance(value, str):
                 raise ValueError(f"Malformed reference path mapping in {path}.")
-            reference_audio_24k_paths[manifest_family] = value
+            reference_audio_24k_paths[key] = value
         manifest_targets_raw = payload.get("manifest_targets")
         if not isinstance(manifest_targets_raw, list):
             raise ValueError(f"Malformed `manifest_targets` in {path}.")
-        manifest_targets = tuple(manifest_targets_raw)  # type: ignore
+        manifest_targets: list[ManifestFamily] = []
+        for target in manifest_targets_raw:
+            if not is_manifest_family(target):
+                raise ValueError(f"Malformed `manifest_targets` in {path}.")
+            manifest_targets.append(target)
         yield SpoolRow(
             dataset=_required_str(payload, "dataset", path),
             source_split=_required_str(payload, "source_split", path),
@@ -368,7 +379,7 @@ def iter_spool_rows(output_root: Path) -> Iterator[SpoolRow]:
             speaker_quality_gate=_required_speaker_quality_gate(payload, path),
             dedup_applied=_required_bool(payload, "dedup_applied", path),
             admission_decision=_required_admission_decision(payload, path),
-            manifest_targets=manifest_targets,
+            manifest_targets=tuple(manifest_targets),
         )
 
 
@@ -414,9 +425,9 @@ def _required_float(payload: dict[str, object], key: str, path: Path) -> float:
 def _required_quality_tier(payload: dict[str, object], path: Path) -> QualityTier:
     """Return one required typed quality tier from one stored spool payload."""
     value = _required_str(payload, "quality_tier", path)
-    if value in {"high_trust", "medium_trust", "rejected"}:
-        return value  # type: ignore
-    raise ValueError(f"Malformed `quality_tier` in {path}.")
+    if not is_quality_tier(value):
+        raise ValueError(f"Malformed `quality_tier` in {path}.")
+    return value
 
 
 def _required_speaker_quality_gate(
@@ -425,9 +436,9 @@ def _required_speaker_quality_gate(
 ) -> SpeakerQualityGate:
     """Return one required typed speaker gate from one stored spool payload."""
     value = _required_str(payload, "speaker_quality_gate", path)
-    if value in {"speaker_from_id", "manual_review", "rejected_multi_speaker"}:
-        return value  # type: ignore
-    raise ValueError(f"Malformed `speaker_quality_gate` in {path}.")
+    if not is_speaker_quality_gate(value):
+        raise ValueError(f"Malformed `speaker_quality_gate` in {path}.")
+    return value
 
 
 def _required_admission_decision(
@@ -436,6 +447,6 @@ def _required_admission_decision(
 ) -> AdmissionDecision:
     """Return one required typed admission decision from one stored spool payload."""
     value = _required_str(payload, "admission_decision", path)
-    if value in {"admit", "reject"}:
-        return value  # type: ignore
-    raise ValueError(f"Malformed `admission_decision` in {path}.")
+    if not is_admission_decision(value):
+        raise ValueError(f"Malformed `admission_decision` in {path}.")
+    return value

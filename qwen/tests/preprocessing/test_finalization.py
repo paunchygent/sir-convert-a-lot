@@ -15,7 +15,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import cast
 
 import numpy as np
 import pytest
@@ -303,8 +302,8 @@ def test_governed_audio_codes_runtime_preloads_waveforms_before_encode(
     )
 
     assert _FakeTokenizer.last_call is not None
-    tokenizer = cast(_FakeTokenizer | None, encoder._tokenizer)
-    assert tokenizer is not None
+    tokenizer = encoder._tokenizer
+    assert isinstance(tokenizer, _FakeTokenizer)
     assert tokenizer.last_encode_inputs is not None
     assert tokenizer.encode_call_count == 0
     assert tokenizer.feature_extractor.call_count == 1

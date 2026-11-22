@@ -14,7 +14,7 @@ Relationships:
 
 from __future__ import annotations
 
-from typing import Literal, cast, get_args
+from typing import Literal, TypeGuard, get_args
 
 TextEmbeddingAssemblyMode = Literal[
     "semantic_only",
@@ -24,11 +24,15 @@ TextEmbeddingAssemblyMode = Literal[
 SEMANTIC_ONLY_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = "semantic_only"
 FULL_CHANNEL_MASKED_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = "full_channel_masked"
 
-DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = cast(
-    TextEmbeddingAssemblyMode,
-    SEMANTIC_ONLY_TEXT_EMBEDDING_ASSEMBLY_MODE,
+DEFAULT_TEXT_EMBEDDING_ASSEMBLY_MODE: TextEmbeddingAssemblyMode = (
+    SEMANTIC_ONLY_TEXT_EMBEDDING_ASSEMBLY_MODE
 )
 TEXT_EMBEDDING_ASSEMBLY_MODE_CHOICES = tuple(get_args(TextEmbeddingAssemblyMode))
+
+
+def _is_text_embedding_assembly_mode(value: str) -> TypeGuard[TextEmbeddingAssemblyMode]:
+    """Report whether a normalized value is one text-embedding assembly-mode literal."""
+    return value in TEXT_EMBEDDING_ASSEMBLY_MODE_CHOICES
 
 
 def resolve_text_embedding_assembly_mode(
@@ -42,9 +46,9 @@ def resolve_text_embedding_assembly_mode(
     normalized = value.strip().lower()
     if normalized == "":
         return default
-    if normalized not in TEXT_EMBEDDING_ASSEMBLY_MODE_CHOICES:
+    if not _is_text_embedding_assembly_mode(normalized):
         choices = ", ".join(TEXT_EMBEDDING_ASSEMBLY_MODE_CHOICES)
         raise ValueError(
             f"Unsupported text-embedding assembly mode: `{value}`. Expected one of: {choices}."
         )
-    return cast(TextEmbeddingAssemblyMode, normalized)
+    return normalized
