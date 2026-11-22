@@ -19,6 +19,7 @@ from types import ModuleType, SimpleNamespace
 import numpy as np
 import pytest
 import torch
+
 from scripts.sir_convert_a_lot.ml.qwen.preprocessing.finalization import (
     AudioCodesRuntimeRequest,
     WarmAudioCodesEncoder,

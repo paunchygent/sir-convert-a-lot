@@ -24,6 +24,19 @@ dependencies = [
 ]
 
 [dependency-groups]
+# repository-governance:tooling-dependencies:start
+repository-governance-tooling = [
+    "coverage==7.17.2",
+    "pyrefly==1.4.1",
+    "pytest-asyncio==1.4.1.post1",
+    "pytest-cov==7.1.0",
+    "pytest-mock==3.17.0",
+    "pytest-timeout==2.4.0",
+    "pytest-xdist==3.8.0",
+    "testcontainers==4.15.0",
+    "yamllint==1.38.0",
+]
+# repository-governance:tooling-dependencies:end
 dev = [
     "mypy>=1.18.2",
     "pytest>=8.4.2",
@@ -64,7 +77,10 @@ qwen-train = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_train"
 qwen-pilot-bundle = "python -m scripts.sir_convert_a_lot.cli.ml.qwen_bundle"
 test = "pytest -c qwen/pyproject.toml -s --import-mode=importlib qwen/tests"
 test-scope = "pytest -c qwen/pyproject.toml -s --import-mode=importlib"
-typecheck = "mypy --no-incremental --config-file qwen/pyproject.toml scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests"
+typecheck = { composite = [
+    "mypy --no-incremental --config-file qwen/pyproject.toml scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests",
+    "pyrefly check --config ${PDM_PROJECT_ROOT}/pyproject.toml --only explicit-any",
+] }
 format = "ruff format scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests"
 lint = { composite = [
     "ruff format --check --diff scripts/sir_convert_a_lot/cli/ml scripts/sir_convert_a_lot/ml/qwen scripts/devops/qwen_finetuning_patches qwen/tests",
@@ -97,3 +113,14 @@ ignore = ["E203"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+# repository-governance:tooling-settings:start
+[tool.pyrefly]
+python-version = "3.12"
+project-includes = ["scripts", "tests", "qwen/tests", "markdown_normalizer.py"]
+search-path = []
+ignore-missing-imports = []
+
+[tool.pyrefly.errors]
+explicit-any = "error"
+# repository-governance:tooling-settings:end
