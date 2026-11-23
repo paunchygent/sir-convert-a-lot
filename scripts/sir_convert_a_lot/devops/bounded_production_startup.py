@@ -156,11 +156,14 @@ def _start_selected(
     environment: dict[str, str],
 ) -> None:
     worker = before.containers[WORKER_SERVICE]
-    if worker.status == "running":
+    if worker.status in ("running", "created", "exited"):
         if worker.image_id != application_image_id:
-            raise StartupFailure("running GPU worker has stale application provenance")
-        start_worker = False
-    elif worker.status in (None, "created", "exited"):
+            raise StartupFailure(
+                "GPU worker has stale application provenance "
+                f"(status={worker.status!r}); redeploy with `pdm run prod-recreate`"
+            )
+        start_worker = worker.status != "running"
+    elif worker.status is None:
         start_worker = True
     else:
         raise StartupFailure(
@@ -184,10 +187,7 @@ def _start_selected(
             api_command.append("--force-recreate")
         runner.run([*api_command, API_SERVICE], environment=environment)
     else:
-        runner.run(
-            [*compose_command(environment), "-f", "compose.yaml", "start", API_SERVICE],
-            environment=environment,
-        )
+        runner.run([*docker_command(), "start", API_SERVICE])
     if not start_worker:
         return
     if worker.status is None:
@@ -207,10 +207,7 @@ def _start_selected(
             environment=environment,
         )
     else:
-        runner.run(
-            [*compose_command(environment), "-f", "compose.yaml", "start", WORKER_SERVICE],
-            environment=environment,
-        )
+        runner.run([*docker_command(), "start", WORKER_SERVICE])
 
 
 def _assert_running_worker_identity_preserved(
