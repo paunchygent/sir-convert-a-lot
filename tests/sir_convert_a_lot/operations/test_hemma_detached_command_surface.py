@@ -42,9 +42,13 @@ def test_local_detached_launcher_delegates_through_run_hemma() -> None:
     assert "pdm run run-local-pdm run-hemma" in monitor_text
 
 
-def test_prod_recreate_preserves_skill_repository_across_sudo() -> None:
+def test_prod_recreate_preserves_skill_repository_as_operator() -> None:
     script_text = LOCAL_PROD_RECREATE.read_text(encoding="utf-8")
 
+    # No outer sudo: prod-recreate owns Docker elevation and the agent-secrets
+    # store lookup must stay on the operator account.
+    assert "sudo -n" not in script_text
+    assert "run-hemma -- \\\n  env \\" in script_text
     assert "REMOTE_SKILL_REPOSITORY=" in script_text
     assert '"SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"' in script_text
     assert '"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}"' in script_text
