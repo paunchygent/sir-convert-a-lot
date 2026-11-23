@@ -152,6 +152,27 @@ if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
   printf "service_revision=%s expected_revision=%s\\n" \
     "${service_revision}" \
     "${expected_revision}" >>"${FAKE_DOCKER_LOG}"
+  if [[ "${FAKE_DOCKER_LOG_SECRETS:-0}" == "1" ]]; then
+    secret_probe_names=(
+      SIR_CONVERT_A_LOT_V2_API_KEY
+      HF_TOKEN
+      SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY
+    )
+    for secret_name in "${secret_probe_names[@]}"; do
+      if [[ -n "${!secret_name:-}" ]]; then
+        printf "secret_env %s=present\\n" "${secret_name}" >>"${FAKE_DOCKER_LOG}"
+      else
+        printf "secret_env %s=absent\\n" "${secret_name}" >>"${FAKE_DOCKER_LOG}"
+      fi
+    done
+    if [[ -n "${compose_env_file}" ]]; then
+      env_secret_regex='^(SIR_CONVERT_A_LOT_V2_API_KEY|HF_TOKEN'
+      env_secret_regex+='|SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY)='
+      printf "env_file_secret_lines=%s\\n" \
+        "$(grep -cE "${env_secret_regex}" "${compose_env_file}" || true)" \
+        >>"${FAKE_DOCKER_LOG}"
+    fi
+  fi
 fi
 
 exit 0
@@ -187,16 +208,87 @@ set -euo pipefail
 if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
   printf "sudo %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
 fi
-if [[ "${1:-}" == "-n" ]]; then
-  shift
-fi
+preserve_env_list=""
+sudo_args=("$@")
+while [[ "${#sudo_args[@]}" -gt 0 ]]; do
+  case "${sudo_args[0]}" in
+    -n)
+      sudo_args=("${sudo_args[@]:1}")
+      ;;
+    --preserve-env=*)
+      preserve_env_list="${sudo_args[0]#--preserve-env=}"
+      sudo_args=("${sudo_args[@]:1}")
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 unset SIR_CONVERT_A_LOT_SERVICE_REVISION
 unset SIR_CONVERT_A_LOT_EXPECTED_REVISION
-exec "$@"
+secret_probe_names=(
+  SIR_CONVERT_A_LOT_V2_API_KEY
+  HF_TOKEN
+  SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY
+)
+for secret_name in "${secret_probe_names[@]}"; do
+  if [[ ",${preserve_env_list}," != *",${secret_name},"* ]]; then
+    unset "${secret_name}"
+  fi
+done
+exec "${sudo_args[@]}"
 """,
         encoding="utf-8",
     )
     fake_sudo.chmod(fake_sudo.stat().st_mode | stat.S_IXUSR)
+
+
+def _write_fake_agent_secrets(script_dir: Path) -> None:
+    fake_agent_secrets = script_dir / "agent-secrets"
+    fake_agent_secrets.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
+  printf "agent-secrets %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
+fi
+set_name=""
+args=("$@")
+while [[ "${#args[@]}" -gt 0 ]]; do
+  case "${args[0]}" in
+    --set)
+      set_name="${args[1]}"
+      args=("${args[@]:2}")
+      ;;
+    --)
+      args=("${args[@]:1}")
+      break
+      ;;
+    *)
+      args=("${args[@]:1}")
+      ;;
+  esac
+done
+case "${set_name}" in
+  sir-convert-a-lot-prod)
+    export SIR_CONVERT_A_LOT_V2_API_KEY="test-store-prod-key"
+    export HF_TOKEN="test-store-hf-token"
+    export AGENT_SECRETS_VARIABLES="HF_TOKEN,SIR_CONVERT_A_LOT_V2_API_KEY"
+    ;;
+  sir-convert-a-lot-remote-proof)
+    export SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY="test-store-remote-proof-key"
+    export AGENT_SECRETS_VARIABLES="SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY"
+    ;;
+  *)
+    echo "fake-agent-secrets: unknown set: ${set_name}" >&2
+    exit 3
+    ;;
+esac
+exec "${args[@]}"
+""",
+        encoding="utf-8",
+    )
+    fake_agent_secrets.chmod(fake_agent_secrets.stat().st_mode | stat.S_IXUSR)
 
 
 def _run_wrapper(
@@ -231,6 +323,8 @@ def _with_fake_prod_compose_env(env: dict[str, str], tmp_path: Path) -> dict[str
             (
                 "SIR_CONVERT_A_LOT_SERVICE_REVISION=source_service_revision",
                 "SIR_CONVERT_A_LOT_EXPECTED_REVISION=source_expected_revision",
+                "SIR_CONVERT_A_LOT_V2_API_KEY=source-env-api-key",
+                "HF_TOKEN=source-env-hf-token",
                 "UNRELATED_SOURCE_VALUE=not-observed",
                 "",
             )
@@ -399,6 +493,85 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     fake_bin.mkdir(parents=True)
     _write_fake_docker(fake_bin)
     _write_fake_sudo(fake_bin)
+    _write_fake_agent_secrets(fake_bin)
+    log_file = tmp_path / "docker.log"
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["FAKE_DOCKER_LOG_SECRETS"] = "1"
+    env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
+    env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+    env = _with_fake_hemma_env(env)
+    env = _with_fake_prod_compose_env(env, tmp_path)
+
+    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_prod"], env)
+    assert result.returncode == 0
+
+    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    agent_secrets_line = next(
+        line for line in log_lines if line.startswith("agent-secrets run --set ")
+    )
+    assert agent_secrets_line.startswith(
+        "agent-secrets run --set sir-convert-a-lot-prod -- bash -c "
+    )
+    sudo_compose_line = next(
+        line
+        for line in log_lines
+        if line.startswith("sudo -n --preserve-env=") and " docker compose --env-file " in line
+    )
+    snapshot_path = Path(sudo_compose_line.split(" --env-file ", maxsplit=1)[1].split(" -f ")[0])
+    assert snapshot_path.parent == tmp_path / "compose-env-snapshots"
+    assert snapshot_path.name.startswith("sir-convert-compose-env.")
+    assert str(tmp_path / "prod-compose.env") not in sudo_compose_line
+    assert (
+        f"--env-file {snapshot_path} -f {REPO_ROOT / 'compose.yaml'} "
+        f"-f {REPO_ROOT / 'compose.secrets.yaml'} "
+        "up -d --force-recreate --build sir_convert_a_lot_prod"
+    ) in log_lines
+    assert "service_revision=prod_rev expected_revision=prod_rev" in log_lines
+    assert "secret_env SIR_CONVERT_A_LOT_V2_API_KEY=present" in log_lines
+    assert "secret_env HF_TOKEN=present" in log_lines
+    assert "env_file_secret_lines=0" in log_lines
+    assert not snapshot_path.exists()
+
+
+def test_prod_compose_start_wraps_up_with_secrets_overlay(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
+    _write_fake_agent_secrets(fake_bin)
+    log_file = tmp_path / "docker.log"
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["FAKE_DOCKER_LOG_SECRETS"] = "1"
+    env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "prod_rev"
+    env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "prod_rev"
+    env = _with_fake_hemma_env(env)
+    env = _with_fake_prod_compose_env(env, tmp_path)
+
+    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["start", "sir_convert_a_lot_prod"], env)
+    assert result.returncode == 0
+
+    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    assert any(
+        line.startswith("agent-secrets run --set sir-convert-a-lot-prod -- bash -c ")
+        for line in log_lines
+    )
+    compose_line = next(line for line in log_lines if "compose" in line and "up -d --build" in line)
+    assert f"-f {REPO_ROOT / 'compose.yaml'}" in compose_line
+    assert f"-f {REPO_ROOT / 'compose.secrets.yaml'}" in compose_line
+    assert "secret_env SIR_CONVERT_A_LOT_V2_API_KEY=present" in log_lines
+
+
+def test_prod_compose_ps_uses_base_file_without_agent_secrets(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
     log_file = tmp_path / "docker.log"
 
     env = os.environ.copy()
@@ -409,23 +582,14 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     env = _with_fake_hemma_env(env)
     env = _with_fake_prod_compose_env(env, tmp_path)
 
-    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_prod"], env)
+    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["ps"], env)
     assert result.returncode == 0
 
     log_lines = log_file.read_text(encoding="utf-8").splitlines()
-    sudo_compose_line = next(
-        line for line in log_lines if line.startswith("sudo -n docker compose --env-file ")
-    )
-    snapshot_path = Path(sudo_compose_line.split(" --env-file ", maxsplit=1)[1].split(" -f ")[0])
-    assert snapshot_path.parent == tmp_path / "compose-env-snapshots"
-    assert snapshot_path.name.startswith("sir-convert-compose-env.")
-    assert str(tmp_path / "prod-compose.env") not in sudo_compose_line
-    assert (
-        f"--env-file {snapshot_path} -f {REPO_ROOT / 'compose.yaml'} "
-        "up -d --force-recreate --build sir_convert_a_lot_prod"
-    ) in log_lines
-    assert "service_revision=prod_rev expected_revision=prod_rev" in log_lines
-    assert not snapshot_path.exists()
+    assert not any(line.startswith("agent-secrets") for line in log_lines)
+    compose_line = next(line for line in log_lines if line.endswith(" ps"))
+    assert f"-f {REPO_ROOT / 'compose.yaml'}" in compose_line
+    assert "compose.secrets.yaml" not in compose_line
 
 
 def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: Path) -> None:
@@ -449,6 +613,7 @@ def test_prod_compose_reuses_dependency_image_only_when_labels_match(tmp_path: P
     env = _with_fake_hemma_env(env)
     env = _with_fake_prod_compose_env(env, tmp_path)
 
+    _write_fake_agent_secrets(fake_bin)
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
     assert result.returncode == 0
 
@@ -483,6 +648,7 @@ def test_prod_compose_rebuilds_dependency_image_when_recipe_label_is_stale(
     env = _with_fake_hemma_env(env)
     env = _with_fake_prod_compose_env(env, tmp_path)
 
+    _write_fake_agent_secrets(fake_bin)
     result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["build"], env)
     assert result.returncode == 0
 
@@ -500,12 +666,14 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     fake_bin.mkdir(parents=True)
     _write_fake_docker(fake_bin)
     _write_fake_sudo(fake_bin)
+    _write_fake_agent_secrets(fake_bin)
     log_file = tmp_path / "docker.log"
 
     env = os.environ.copy()
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
     env["FAKE_DOCKER_LOG"] = str(log_file)
     env["FAKE_DOCKER_LOG_BUILDS"] = "1"
+    env["FAKE_DOCKER_LOG_SECRETS"] = "1"
     env["SIR_CONVERT_A_LOT_COMPOSE_ENV_SNAPSHOT_DIR"] = str(tmp_path)
     env["SIR_CONVERT_A_LOT_PRUNE_SUPERSEDED_DEPS_IMAGES"] = "1"
     env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "remote_proof_rev"
@@ -522,12 +690,48 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     assert "sudo -n docker buildx build" in log_text
     assert "sudo -n docker image ls" in log_text
     assert "sudo -n docker ps --format" in log_text
-    assert "sudo -n docker compose --env-file" in log_text
+    assert "agent-secrets run --set sir-convert-a-lot-remote-proof -- bash -c" in log_text
+    assert (
+        "sudo -n --preserve-env=SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY "
+        "docker compose --env-file" in log_text
+    )
     assert f"--env-file {tmp_path}/sir-convert-compose-env." in log_text
     assert f"--env-file {tmp_path / 'remote-proof.env'}" not in log_text
     assert f"-f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
+    assert "compose.secrets.yaml" not in log_text
+    assert "secret_env SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY=present" in log_text
+    assert "env_file_secret_lines=0" in log_text
     assert "superseded dependency image cleanup failed" not in result.stderr
     assert not list(tmp_path.glob("sir-convert-compose-env.*"))
+
+
+def test_remote_proof_compose_ps_routes_through_agent_secrets(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    _write_fake_docker(fake_bin)
+    _write_fake_sudo(fake_bin)
+    _write_fake_agent_secrets(fake_bin)
+    log_file = tmp_path / "docker.log"
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+    env["FAKE_DOCKER_LOG"] = str(log_file)
+    env["SIR_CONVERT_A_LOT_SERVICE_REVISION"] = "remote_proof_rev"
+    env["SIR_CONVERT_A_LOT_EXPECTED_REVISION"] = "remote_proof_rev"
+    env = _with_fake_hemma_env(env)
+    env = _with_fake_remote_proof_trust_env(env, tmp_path)
+
+    result = _run_wrapper(REMOTE_PROOF_COMPOSE_SCRIPT, ["ps"], env)
+    assert result.returncode == 0
+
+    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    assert any(
+        line.startswith("agent-secrets run --set sir-convert-a-lot-remote-proof --")
+        for line in log_lines
+    )
+    compose_line = next(line for line in log_lines if line.endswith(" ps"))
+    assert f"-f {REPO_ROOT / 'compose.remote-proof.yaml'}" in compose_line
+    assert "compose.secrets.yaml" not in compose_line
 
 
 def test_remote_proof_wrapper_fails_before_docker_when_trust_key_is_missing(

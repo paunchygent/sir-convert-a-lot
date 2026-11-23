@@ -55,7 +55,8 @@ def test_remote_proof_compose_declares_fenced_api_and_worker_services() -> None:
     for env_map in (api_env, worker_env):
         assert env_map["SIR_CONVERT_A_LOT_DATA_DIR"] == "/var/lib/sir-convert-a-lot/remote-proof"
         assert env_map["SIR_CONVERT_A_LOT_V2_API_KEY"] == (
-            "${SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?Set remote-proof Sir Convert API key}"
+            "${SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?"
+            "run through agent-secrets run --set sir-convert-a-lot-remote-proof}"
         )
         assert env_map["HULEEDU_INTERNAL_IDENTITY_PUBLIC_KEY_PATH"] == (
             "/run/secrets/huleedu-local-auth-integration-public-key.pem"
@@ -169,6 +170,10 @@ def test_remote_proof_wrapper_and_pdm_scripts_are_first_class() -> None:
     assert "gateway-internal-identity-public-key.pem" in script_text
     assert "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH" in script_text
     assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
+    assert 'SIR_CONVERT_A_LOT_AGENT_SECRETS_SET="sir-convert-a-lot-remote-proof"' in script_text
+    assert (
+        "source <(grep -vE '^(export )?SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY='" in script_text
+    )
 
     compose_actions = (REPO_ROOT / "scripts" / "devops" / "compose-actions.sh").read_text(
         encoding="utf-8"

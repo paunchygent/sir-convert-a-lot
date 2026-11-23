@@ -26,8 +26,10 @@ if [[ ! -f "${REMOTE_PROOF_ENV_FILE}" ]]; then
   exit 70
 fi
 set -a
+# Secrets never come from the env file: agent-secrets injects them for the
+# wrapped compose commands. Configuration still comes from remote-proof.env.
 # shellcheck source=/dev/null
-source "${REMOTE_PROOF_ENV_FILE}"
+source <(grep -vE '^(export )?SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY=' "${REMOTE_PROOF_ENV_FILE}")
 set +a
 
 REMOTE_PROOF_TRUST_DIR="${SIR_CONVERT_A_LOT_REMOTE_PROOF_TRUST_DIR:-/home/paunchygent/.data/sir-convert-a-lot/remote-proof/local-auth-integration}"
@@ -45,6 +47,9 @@ fi
 export SIR_CONVERT_A_LOT_COMPOSE_LABEL="remote-proof-compose"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.remote-proof.yaml"
 export SIR_CONVERT_A_LOT_COMPOSE_FILE_DESCRIPTION="remote-proof compose file"
+export SIR_CONVERT_A_LOT_AGENT_SECRETS_SET="sir-convert-a-lot-remote-proof"
+export SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS="start stop build build-clean recreate logs ps config"
+export SIR_CONVERT_A_LOT_COMPOSE_ENV_EXCLUDE_KEYS="SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY"
 export SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE="${REMOTE_PROOF_ENV_FILE}"
 export SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"
 export SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"

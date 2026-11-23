@@ -11,7 +11,7 @@ services:
     container_name: sir_convert_a_lot_remote_proof
     restart: unless-stopped
     environment:
-      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?Set remote-proof Sir Convert API key}
+      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?run through agent-secrets run --set sir-convert-a-lot-remote-proof}
       - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/remote-proof
@@ -79,7 +79,7 @@ services:
     container_name: sir_convert_a_lot_remote_proof_worker
     restart: unless-stopped
     environment:
-      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?Set remote-proof Sir Convert API key}
+      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?run through agent-secrets run --set sir-convert-a-lot-remote-proof}
       - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/remote-proof

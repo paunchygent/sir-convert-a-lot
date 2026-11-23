@@ -117,9 +117,7 @@ def test_compose_enforces_single_runtime_restart_env_and_command() -> None:
     assert service.get("env_file") is None
 
     env_map = _service_env_map(service)
-    assert (
-        env_map["SIR_CONVERT_A_LOT_V2_API_KEY"] == "${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}"
-    )
+    assert "SIR_CONVERT_A_LOT_V2_API_KEY" not in env_map
     assert (
         env_map["SIR_CONVERT_A_LOT_SERVICE_REVISION"]
         == "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}"
@@ -328,6 +326,10 @@ def test_compose_declares_only_prod_named_volume() -> None:
 def test_prod_compose_helper_targets_production_compose_surface() -> None:
     script_text = PROD_COMPOSE_SCRIPT.read_text(encoding="utf-8")
     assert 'SIR_CONVERT_A_LOT_COMPOSE_FILE="${REPO_ROOT}/compose.yaml"' in script_text
+    assert (
+        'SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE="${REPO_ROOT}/compose.secrets.yaml"' in script_text
+    )
+    assert 'SIR_CONVERT_A_LOT_AGENT_SECRETS_SET="sir-convert-a-lot-prod"' in script_text
     assert (
         'export SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE="'
         '${SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE:-${REPO_ROOT}/.env}"' in script_text
