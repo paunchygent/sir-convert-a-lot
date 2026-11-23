@@ -64,9 +64,9 @@ Operate Sir Convert-a-Lot on Hemma without duplicating HuleEdu or Skriptoteket r
 - Local wrapper: `pdm run run-local-pdm <script> [args]`
 - Hemma wrapper: `pdm run run-hemma -- <command> [args]`
 - Short shell probe: `pdm run run-hemma --shell "<command>"`
-- Deploy and live verify: `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host --api-key <key>`
+- Deploy and live verify: `pdm run hemma-deploy-and-verify --expected-revision <sha> --lane host`
 - GPU runtime verify from a client checkout:
-  `pdm run run-local-pdm hemma-verify-gpu-runtime`. The local launcher reuses `SIR_CONVERT_A_LOT_V2_API_KEY` loaded by `run-local-pdm` and forwards only that key through the `run-hemma` verifier opt-in; operators should not rediscover or routinely pass `--api-key` by hand.
+  `pdm run run-local-pdm hemma-verify-gpu-runtime`. The verifier reads `SIR_CONVERT_A_LOT_V2_API_KEY` through `agent-secrets run --set sir-convert-a-lot-operator` on Hemma; the client side handles no key, and operators should not pass `--api-key` by hand.
   `hemma-deploy-and-verify` gates deploy success on revision/readiness parity,
   and metrics safety over the selected private lane. It consumes source already
   published by the parent; it does not push a branch. The legacy V2 conversion smoke
@@ -187,10 +187,11 @@ Canonical lanes:
 
 ## API Key Handling
 
-Deploy/live verification key precedence:
+Deploy/live verification key handling:
 
-1. `--api-key` 1. `SIR_CONVERT_A_LOT_API_KEY` 1. explicit failure
-   The implicit development key is rejected unless passed deliberately. Never write API keys into reports, logs, or retained artifacts.
+1. Hemma-side verifiers read `SIR_CONVERT_A_LOT_V2_API_KEY` from the process environment injected by `agent-secrets run --set sir-convert-a-lot-operator`; the key never travels on a command line.
+2. The implicit development key is rejected unless passed deliberately.
+3. Never write API keys into reports, logs, or retained artifacts.
 
 ## Detached Work
 

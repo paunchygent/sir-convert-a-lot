@@ -27,6 +27,13 @@ from scripts.sir_convert_a_lot.devops.qwen3_tts_request_payload import (
     prepare_request_inputs,
     resolve_text_input,
 )
+from scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_probes import (
+    audio_probe,
+    extract_gpu_identity,
+    python_recommendation,
+    resolve_effective_hf_cache_dir,
+    voice_names_from_payload,
+)
 from scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_reporting import (
     BenchmarkReport,
     SpeechRequestEvidence,
@@ -36,20 +43,15 @@ from scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_reporting import (
 )
 from scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_runtime import (
     BenchmarkSettings,
-    audio_probe,
     docker_checked,
     ensure_image_present,
     ensure_sidecar_preconditions,
-    extract_gpu_identity,
     inspect_runtime,
     prefetch_qwen3_tts_assets,
     probe_from_service_container,
-    python_recommendation,
     remove_existing_benchmark_container,
-    resolve_effective_hf_cache_dir,
     run_checked,
     start_sidecar,
-    voice_names_from_payload,
     wait_for_voices,
 )
 
@@ -224,7 +226,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         instructions=instructions,
         reference_audio=Path(args.reference_audio) if args.reference_audio is not None else None,
         reference_transcript=reference_transcript,
-        hf_token=os.environ.get("HF_TOKEN", "").strip() or None,
+        hf_token_present=os.environ.get("HF_TOKEN", "").strip() != "",
         pull_image=not bool(args.skip_pull_image),
         retain_container=bool(args.retain_container),
         stage_config_path=STAGE_CONFIG_PATH,

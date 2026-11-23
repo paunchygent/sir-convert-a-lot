@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from .dirty_pdf_corpus import load_dirty_corpus_manifest
@@ -31,6 +32,8 @@ DEFAULT_OUTPUT_JSON = DEFAULT_OUTPUT_ROOT / "pdf-throughput-throughput-benchmark
 DEFAULT_OUTPUT_REPORT = DEFAULT_OUTPUT_ROOT / "pdf-throughput-throughput-report.md"
 DEFAULT_CORPUS_ROOT = DEFAULT_OUTPUT_ROOT / "corpus"
 DEFAULT_DATA_ROOT = DEFAULT_OUTPUT_ROOT / "runtime"
+PRODUCTION_API_KEY_ENV_VAR = "SIR_CONVERT_A_LOT_V2_API_KEY"
+LOCAL_SYNTHETIC_API_KEY = "benchmark-key"
 
 
 def parse_positive_int_csv(raw_values: str, *, label: str) -> tuple[int, ...]:
@@ -65,7 +68,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--page-counts",
         default=",".join(str(value) for value in DEFAULT_PAGE_COUNTS),
     )
-    parser.add_argument("--api-key", default="benchmark-key")
+    parser.add_argument("--api-key", default=None)
     parser.add_argument("--acceleration-policy", default="gpu_required")
     parser.add_argument("--ocr-mode", default="force")
     parser.add_argument("--ocr-engine", default="easyocr")
@@ -160,6 +163,28 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_api_key(args: argparse.Namespace) -> str:
+    """Resolve the benchmark API key for the selected runtime lane.
+
+    `production_service` mode reads the canonical key from the process
+    environment (injected by `agent-secrets run --set sir-convert-a-lot-operator`
+    through the `benchmark:pdf-throughput-*-hemma` wrappers) so no secret
+    value crosses a command line; other lanes keep the synthetic key.
+    """
+    explicit = coerce_optional_str(args.api_key)
+    if explicit is not None:
+        return explicit
+    if str(args.runtime_mode) != "production_service":
+        return LOCAL_SYNTHETIC_API_KEY
+    env_value = os.environ.get(PRODUCTION_API_KEY_ENV_VAR, "").strip()
+    if env_value == "":
+        raise SystemExit(
+            "production_service mode requires SIR_CONVERT_A_LOT_V2_API_KEY in the "
+            "environment or an explicit --api-key."
+        )
+    return env_value
+
+
 def _require_positive_int(value: int | None, *, label: str) -> int:
     if value is None or value <= 0:
         raise ValueError(f"{label} must be a positive integer for production_service mode.")
@@ -226,7 +251,7 @@ def main() -> None:
         corpus_root=args.corpus_root,
         data_root=args.data_root,
         page_counts=page_counts,
-        api_key=args.api_key,
+        api_key=_resolve_api_key(args),
         acceleration_policy=args.acceleration_policy,
         ocr_mode=args.ocr_mode,
         ocr_engine=args.ocr_engine,

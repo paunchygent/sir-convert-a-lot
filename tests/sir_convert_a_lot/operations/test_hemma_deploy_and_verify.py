@@ -30,9 +30,8 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
         remote_args: list[str],
         *,
         label: str,
-        redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, redactions
+        del label
         calls.append(remote_args)
         if len(calls) == 1:
             raise hemma_deploy_and_verify.CommandExecutionError(
@@ -80,9 +79,8 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_erro
         remote_args: list[str],
         *,
         label: str,
-        redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, redactions
+        del label
         calls.append(remote_args)
         if len(calls) == 1:
             raise hemma_deploy_and_verify.CommandExecutionError(
@@ -130,9 +128,8 @@ def test_remote_recreate_service_raises_on_non_permission_error(
         remote_args: list[str],
         *,
         label: str,
-        redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, redactions
+        del label
         calls.append(remote_args)
         raise hemma_deploy_and_verify.CommandExecutionError("unexpected recreate failure")
 
@@ -164,9 +161,8 @@ def test_remote_recreate_service_injects_verified_revision(
         remote_args: list[str],
         *,
         label: str,
-        redactions: tuple[str, ...] = (),
     ) -> str:
-        del label, redactions
+        del label
         calls.append(remote_args)
         return ""
 
@@ -201,9 +197,8 @@ def test_fetch_readyz_with_retry_handles_transient_failures(
         remote_args: list[str],
         *,
         label: str,
-        redactions: tuple[str, ...] = (),
     ) -> str:
-        del remote_args, label, redactions
+        del remote_args, label
         if not responses:
             raise AssertionError("unexpected extra readyz fetch")
         value = responses.pop(0)
@@ -292,15 +287,11 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
     ]
     readyz = ["curl", "-sS", "http://127.0.0.1:28085/readyz"]
     smoke = [
-        "pdm",
-        "run",
-        "python",
-        "-m",
-        "scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions",
+        "bash",
+        "scripts/devops/verify-hemma-v2-conversions.sh",
+        "--remote",
         "--lane",
         "host",
-        "--api-key",
-        "secret",
         "--output-root",
         "build/verification/hemma-deploy-verify/v2-smoke",
     ]
@@ -311,7 +302,6 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
         *,
         label: str,
         env: dict[str, str] | None = None,
-        redactions: tuple[str, ...] = (),
     ) -> str:
         raise AssertionError(f"unexpected local/publication command: {command!r}")
 
@@ -319,7 +309,6 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
         remote_args: list[str],
         *,
         label: str,
-        redactions: tuple[str, ...] = (),
     ) -> str:
         remote_calls.append(remote_args)
         if remote_args == pull:
@@ -338,7 +327,6 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
                 }
             )
         if remote_args == smoke:
-            assert redactions == ("secret",)
             if scenario == "smoke_failure":
                 raise hemma_deploy_and_verify.CommandExecutionError("gpu_not_available")
             return ""
@@ -354,9 +342,6 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
             lane="host",
             service_url="http://127.0.0.1:28085",
             output_root=tmp_path,
-            api_key="secret",
-            api_key_source="cli",
-            allow_dev_key=False,
         )
     )
 
@@ -390,14 +375,12 @@ def test_main_settings_failure_writes_only_private_artifacts(
         *,
         label: str,
         env: dict[str, str] | None = None,
-        redactions: tuple[str, ...] = (),
     ) -> str:
-        if command == ["git", "rev-parse", "HEAD^{commit}"]:
-            return "abc\n"
-        raise AssertionError(f"unexpected publication/public/remote command: {command!r}")
+        raise hemma_deploy_and_verify.CommandExecutionError(
+            f"resolve expected revision failed for {command!r}"
+        )
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", fake_run_command)
-    monkeypatch.delenv("SIR_CONVERT_A_LOT_V2_API_KEY", raising=False)
     assert (
         hemma_deploy_and_verify.main(
             [
@@ -410,7 +393,7 @@ def test_main_settings_failure_writes_only_private_artifacts(
         == 1
     )
     report = json.loads((tmp_path / "report.json").read_text())
-    assert "Missing API key" in report["failure"]
+    assert "resolve expected revision failed" in report["failure"]
     assert_private_artifacts(tmp_path, report)
     assert json.loads((tmp_path / "readyz.json").read_text()) == {}
     assert (tmp_path / "metrics.prom").read_text() == "# metrics not captured\n"
