@@ -8,7 +8,7 @@ Purpose:
 
 Relationships:
     - Implements TASK-SIRCON-REP-0039 (EPIC-SKILL-18 leaf).
-    - Complements wrapper argv tests in test_dev_compose_wrapper.py.
+    - Complements the compose wrapper argv test modules.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_FILE = REPO_ROOT / "compose.yaml"
 SECRETS_FILE = REPO_ROOT / "compose.secrets.yaml"
 REMOTE_PROOF_FILE = REPO_ROOT / "compose.remote-proof.yaml"
+REMOTE_PROOF_SECRETS_FILE = REPO_ROOT / "compose.remote-proof.secrets.yaml"
 PROD_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
 DEV_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "dev-compose.sh"
 REMOTE_PROOF_COMPOSE_SCRIPT = REPO_ROOT / "scripts" / "devops" / "remote-proof-compose.sh"
@@ -154,21 +155,31 @@ def test_dev_wrapper_keeps_unwrapped_secret_free_lane() -> None:
     assert "COMPOSE_ENV_EXCLUDE_KEYS" not in script
 
 
-def test_remote_proof_lane_routes_every_action_through_its_set() -> None:
+def test_remote_proof_lane_wraps_mutating_actions_through_its_overlay() -> None:
     script = REMOTE_PROOF_COMPOSE_SCRIPT.read_text(encoding="utf-8")
 
     assert 'SIR_CONVERT_A_LOT_AGENT_SECRETS_SET="sir-convert-a-lot-remote-proof"' in script
     assert (
-        'SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS="start stop build build-clean '
-        'recreate logs ps config"' in script
+        'SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE="${REPO_ROOT}/compose.remote-proof.secrets.yaml"'
+        in script
     )
+    assert "SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS" not in script
     assert "COMPOSE_ENV_EXCLUDE_KEYS" not in script
-    assert "source <(grep -vE '^(export )?SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY='" in script
+    assert "SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY" not in script
 
     compose = _load_yaml_mapping(REMOTE_PROOF_FILE)
     for service_name, service in _services(compose).items():
         assert isinstance(service, dict)
-        env_map = _service_env_map(service)
-        assert env_map["SIR_CONVERT_A_LOT_V2_API_KEY"] == (
-            f"${{SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY:?{REMOTE_PROOF_GUARD}}}"
-        ), service_name
+        assert "SIR_CONVERT_A_LOT_V2_API_KEY" not in _service_env_map(service), service_name
+
+    overlay = _load_yaml_mapping(REMOTE_PROOF_SECRETS_FILE)
+    overlay_services = _services(overlay)
+    expected_key = f"${{SIR_CONVERT_A_LOT_V2_API_KEY:?{REMOTE_PROOF_GUARD}}}"
+    for service_name in (
+        "sir_convert_a_lot_remote_proof",
+        "sir_convert_a_lot_remote_proof_worker",
+    ):
+        service = overlay_services[service_name]
+        assert isinstance(service, dict)
+        assert _service_env_map(service) == {"SIR_CONVERT_A_LOT_V2_API_KEY": expected_key}
+        assert set(service) == {"environment"}

@@ -3,12 +3,12 @@
 # Purpose:
 #   Recreate Sir Convert-a-Lot Hemma production services through one stable
 #   local operator command that preserves PDM, Docker, and BuildKit paths across
-#   the remote sudo boundary.
+#   the remote command boundary.
 #
 # Relationships:
 #   - Exposed by the PDM `hemma-prod-recreate` script.
-#   - Delegates to the canonical remote `prod-recreate` compose wrapper.
-#   - Provides the same sudo/PATH behavior used by deploy-and-verify fallback.
+#   - Delegates to the canonical remote `prod-recreate` compose wrapper, which
+#     owns agent-secrets injection and sudo elevation for Docker.
 #
 
 set -euo pipefail
@@ -30,7 +30,7 @@ Default services:
 
 Environment:
   SIR_CONVERT_A_LOT_HEMMA_PDM          Remote pdm executable path.
-  SIR_CONVERT_A_LOT_HEMMA_DEPLOY_PATH  Remote sudo PATH containing pdm and docker.
+  SIR_CONVERT_A_LOT_HEMMA_DEPLOY_PATH  Remote PATH containing pdm and docker.
 EOF
 }
 
@@ -50,7 +50,7 @@ fi
 cd "${REPO_ROOT}"
 
 exec pdm run run-local-pdm run-hemma -- \
-  sudo -n env \
+  env \
   "PATH=${REMOTE_DEPLOY_PATH}" \
   "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}" \
   "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=${REMOTE_SKILL_REPOSITORY}" \
