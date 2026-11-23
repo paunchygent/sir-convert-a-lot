@@ -12,11 +12,13 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.bounded_production_startup_runtime import (
+    SECRETS_COMPOSE_FILE,
     CommandRunner,
     RuntimeSnapshot,
     StartupFailure,
     assert_preserved,
     compose_command,
+    compose_secrets_command,
     compose_volume_names,
     docker_command,
     inspect_container,
@@ -166,33 +168,49 @@ def _start_selected(
         )
 
     api = before.containers[API_SERVICE]
-    api_command = [
-        *compose_command(environment),
-        "-f",
-        "compose.yaml",
-        "up",
-        "-d",
-        "--no-deps",
-        "--no-build",
-    ]
-    if api.image_id != application_image_id:
-        api_command.append("--force-recreate")
-    runner.run([*api_command, API_SERVICE], environment=environment)
-    if not start_worker:
-        return
-    runner.run(
-        [
-            *compose_command(environment),
+    if api.status is None or api.image_id != application_image_id:
+        api_command = [
+            *compose_secrets_command(environment),
             "-f",
             "compose.yaml",
+            "-f",
+            SECRETS_COMPOSE_FILE,
             "up",
             "-d",
             "--no-deps",
             "--no-build",
-            WORKER_SERVICE,
-        ],
-        environment=environment,
-    )
+        ]
+        if api.image_id != application_image_id:
+            api_command.append("--force-recreate")
+        runner.run([*api_command, API_SERVICE], environment=environment)
+    else:
+        runner.run(
+            [*compose_command(environment), "-f", "compose.yaml", "start", API_SERVICE],
+            environment=environment,
+        )
+    if not start_worker:
+        return
+    if worker.status is None:
+        runner.run(
+            [
+                *compose_secrets_command(environment),
+                "-f",
+                "compose.yaml",
+                "-f",
+                SECRETS_COMPOSE_FILE,
+                "up",
+                "-d",
+                "--no-deps",
+                "--no-build",
+                WORKER_SERVICE,
+            ],
+            environment=environment,
+        )
+    else:
+        runner.run(
+            [*compose_command(environment), "-f", "compose.yaml", "start", WORKER_SERVICE],
+            environment=environment,
+        )
 
 
 def _assert_running_worker_identity_preserved(
