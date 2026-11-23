@@ -7,10 +7,9 @@ repos:
     hooks:
       - id: markdown-format
         name: Markdown format (staged Markdown files)
-        entry: pdm run format-md --skip-excluded
+        entry: pdm run format-md
         language: system
-        types: [markdown]
-        exclude: ^(docs/(index\.md|(backlog|decisions|reference|runbooks)/INDEX\.md)$|provenance/)
+        files: \.(md|mdc|markdown)$
         pass_filenames: true
   - repo: local
     hooks:
