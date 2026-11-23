@@ -74,7 +74,7 @@ def _container(
     *,
     identity: str = "container-id",
     status: str | None = "running",
-    image_id: str = APPLICATION_IMAGE_ID,
+    image_id: str | None = APPLICATION_IMAGE_ID,
     restart_policy: str = "no",
     state_record: str = '{"Status":"running"}',
 ) -> ContainerSnapshot:
@@ -113,6 +113,7 @@ def _before(
 def test_stale_api_recreates_only_api_and_preserves_current_worker_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_DOCKER_USE_SUDO", raising=False)
     runner = _Runner()
     before = _before(api_image_id="sha256:stale")
     environment = startup._compose_environment(head=HEAD, dependency_image=DEPENDENCY_IMAGE)
@@ -136,10 +137,17 @@ def test_stale_api_recreates_only_api_and_preserves_current_worker_identity(
 
     assert [call[0] for call in runner.calls] == [
         [
+            "agent-secrets",
+            "run",
+            "--set",
+            "sir-convert-a-lot-prod",
+            "--",
             "docker",
             "compose",
             "-f",
             "compose.yaml",
+            "-f",
+            "compose.secrets.yaml",
             "up",
             "-d",
             "--no-deps",
@@ -148,10 +156,126 @@ def test_stale_api_recreates_only_api_and_preserves_current_worker_identity(
             startup.API_SERVICE,
         ]
     ]
+    assert runner.calls[0][1] == environment
 
 
-@pytest.mark.parametrize("worker_status", [None, "created", "exited"])
-def test_absent_or_stopped_worker_starts_separately(worker_status: str | None) -> None:
+def test_wrapped_up_under_sudo_preserves_agent_secrets_variables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_DOCKER_USE_SUDO", "1")
+    runner = _Runner()
+    before = _before(api_image_id="sha256:stale")
+    environment = startup._compose_environment(head=HEAD, dependency_image=DEPENDENCY_IMAGE)
+
+    startup._start_selected(
+        runner,
+        before=before,
+        application_image_id=APPLICATION_IMAGE_ID,
+        environment=environment,
+    )
+
+    assert [call[0] for call in runner.calls] == [
+        [
+            "agent-secrets",
+            "run",
+            "--set",
+            "sir-convert-a-lot-prod",
+            "--",
+            "bash",
+            "-c",
+            'exec sudo -n --preserve-env="$AGENT_SECRETS_VARIABLES" "$@"',
+            "bash",
+            "env",
+            "COMPOSE_DOCKER_CLI_BUILD=1",
+            "DOCKER_BUILDKIT=1",
+            f"SIR_CONVERT_A_LOT_DEPS_IMAGE={DEPENDENCY_IMAGE}",
+            "SIR_CONVERT_A_LOT_DEPS_RUNTIME=rocm",
+            f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={HEAD}",
+            f"SIR_CONVERT_A_LOT_IMAGE_TAG={HEAD}",
+            f"SIR_CONVERT_A_LOT_SERVICE_REVISION={HEAD}",
+            "docker",
+            "compose",
+            "-f",
+            "compose.yaml",
+            "-f",
+            "compose.secrets.yaml",
+            "up",
+            "-d",
+            "--no-deps",
+            "--no-build",
+            "--force-recreate",
+            startup.API_SERVICE,
+        ]
+    ]
+    assert runner.calls[0][1] == environment
+
+
+def test_absent_api_and_worker_are_created_through_wrapped_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_DOCKER_USE_SUDO", raising=False)
+    runner = _Runner()
+    before = _before(worker_status=None)
+    before.containers[startup.API_SERVICE] = _container(
+        startup.API_SERVICE,
+        status=None,
+        image_id=None,
+    )
+
+    startup._start_selected(
+        runner,
+        before=before,
+        application_image_id=APPLICATION_IMAGE_ID,
+        environment={},
+    )
+
+    assert [call[0] for call in runner.calls] == [
+        [
+            "agent-secrets",
+            "run",
+            "--set",
+            "sir-convert-a-lot-prod",
+            "--",
+            "docker",
+            "compose",
+            "-f",
+            "compose.yaml",
+            "-f",
+            "compose.secrets.yaml",
+            "up",
+            "-d",
+            "--no-deps",
+            "--no-build",
+            "--force-recreate",
+            startup.API_SERVICE,
+        ],
+        [
+            "agent-secrets",
+            "run",
+            "--set",
+            "sir-convert-a-lot-prod",
+            "--",
+            "docker",
+            "compose",
+            "-f",
+            "compose.yaml",
+            "-f",
+            "compose.secrets.yaml",
+            "up",
+            "-d",
+            "--no-deps",
+            "--no-build",
+            startup.WORKER_SERVICE,
+        ],
+    ]
+
+
+@pytest.mark.parametrize("worker_status", ["created", "exited"])
+def test_existing_stopped_containers_use_compose_start_without_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+    worker_status: str,
+) -> None:
+    monkeypatch.delenv("SIR_CONVERT_A_LOT_DOCKER_USE_SUDO", raising=False)
     runner = _Runner()
 
     startup._start_selected(
@@ -161,9 +285,10 @@ def test_absent_or_stopped_worker_starts_separately(worker_status: str | None) -
         environment={},
     )
 
-    assert [call[0][-1] for call in runner.calls] == [startup.API_SERVICE, startup.WORKER_SERVICE]
-    assert "--no-deps" in runner.calls[1][0]
-    assert "--no-build" in runner.calls[1][0]
+    assert [call[0] for call in runner.calls] == [
+        ["docker", "compose", "-f", "compose.yaml", "start", startup.API_SERVICE],
+        ["docker", "compose", "-f", "compose.yaml", "start", startup.WORKER_SERVICE],
+    ]
 
 
 @pytest.mark.parametrize(
