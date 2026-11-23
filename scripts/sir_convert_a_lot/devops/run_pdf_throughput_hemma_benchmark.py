@@ -86,7 +86,6 @@ class HemmaPdfThroughputSettings:
 class VerifiedEnvContract:
     """Env contract data required for the benchmark workflow."""
 
-    api_key: str
     default_ocr_engine: str
     default_ocr_languages: tuple[str, ...]
     deployed_profile: ProfileSpec
@@ -164,20 +163,11 @@ def _parse_args(argv: list[str]) -> HemmaPdfThroughputSettings:
     )
 
 
-def _redact(text: str, *, redactions: tuple[str, ...]) -> str:
-    redacted = text
-    for secret in redactions:
-        if secret != "":
-            redacted = redacted.replace(secret, "[redacted]")
-    return redacted
-
-
 def _run_command(
     argv: list[str],
     *,
     label: str,
     cwd: Path = CANONICAL_REPO_ROOT,
-    redactions: tuple[str, ...] = (),
     env_overrides: dict[str, str] | None = None,
 ) -> str:
     process_env = None
@@ -192,12 +182,10 @@ def _run_command(
         env=process_env,
     )
     if result.returncode != 0:
-        stdout = _redact(result.stdout.strip(), redactions=redactions)
-        stderr = _redact(result.stderr.strip(), redactions=redactions)
         raise SystemExit(
             f"{label} failed with exit code {result.returncode}.\n"
-            f"stdout:\n{stdout}\n"
-            f"stderr:\n{stderr}"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
         )
     return result.stdout
 
@@ -233,7 +221,6 @@ def _verify_env_contract() -> VerifiedEnvContract:
         raise SystemExit("SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES must not be empty.")
 
     return VerifiedEnvContract(
-        api_key=env_values["SIR_CONVERT_A_LOT_V2_API_KEY"],
         default_ocr_engine=env_values["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"],
         default_ocr_languages=default_languages,
         deployed_profile=deployed_profile_from_env(env_values),
@@ -282,7 +269,7 @@ def _verify_expected_revision(expected_revision: str) -> str:
     return remote_revision
 
 
-def _run_live_smoke(smoke_output_root: Path, *, api_key: str) -> dict[str, object]:
+def _run_live_smoke(smoke_output_root: Path) -> dict[str, object]:
     _run_command(
         [
             "pdm",
@@ -292,13 +279,10 @@ def _run_live_smoke(smoke_output_root: Path, *, api_key: str) -> dict[str, objec
             "scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions",
             "--lane",
             "host",
-            "--api-key",
-            api_key,
             "--output-root",
             smoke_output_root.as_posix(),
         ],
         label="verify_hemma_v2_conversions",
-        redactions=(api_key,),
     )
     return _read_json_object(
         smoke_output_root / "readyz.json", label="Hemma deploy verification smoke readyz"
@@ -308,7 +292,6 @@ def _run_live_smoke(smoke_output_root: Path, *, api_key: str) -> dict[str, objec
 def _run_pdf_throughput_benchmark(
     settings: HemmaPdfThroughputSettings,
     *,
-    api_key: str,
     remote_revision: str,
     service_revision: str,
     default_ocr_engine: str,
@@ -329,8 +312,6 @@ def _run_pdf_throughput_benchmark(
         settings.data_root.as_posix(),
         "--page-counts",
         settings.page_counts,
-        "--api-key",
-        api_key,
         "--gpu-available",
         "--ocr-mode",
         "force",
@@ -401,7 +382,6 @@ def _run_pdf_throughput_benchmark(
     _run_command(
         benchmark_args,
         label="benchmark:pdf-throughput",
-        redactions=(api_key,),
         env_overrides=_prepare_miopen_cache(),
     )
 
@@ -424,7 +404,7 @@ def execute_workflow(settings: HemmaPdfThroughputSettings) -> dict[str, object]:
     remote_revision = _verify_expected_revision(settings.expected_revision)
     _sync_host_runtime()
 
-    readyz_payload = _run_live_smoke(settings.smoke_output_root, api_key=env_contract.api_key)
+    readyz_payload = _run_live_smoke(settings.smoke_output_root)
     service_revision = _require_string(
         readyz_payload,
         key="service_revision",
@@ -438,7 +418,6 @@ def execute_workflow(settings: HemmaPdfThroughputSettings) -> dict[str, object]:
 
     _run_pdf_throughput_benchmark(
         settings,
-        api_key=env_contract.api_key,
         remote_revision=remote_revision,
         service_revision=service_revision,
         default_ocr_engine=env_contract.default_ocr_engine,

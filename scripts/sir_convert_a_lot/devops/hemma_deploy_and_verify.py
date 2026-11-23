@@ -9,15 +9,17 @@ Relationships:
     - Exposed as `pdm run hemma-deploy-and-verify`.
     - Uses `scripts/devops/run-hemma.sh` via `run-local-pdm` for canonical
       remote execution context.
-    - Delegates live GPU smoke to
-      `scripts.sir_convert_a_lot.devops.verify_hemma_gpu_runtime`.
+    - Delegates live conversion smoke to
+      `scripts/devops/verify-hemma-v2-conversions.sh --remote` on Hemma, which
+      injects `SIR_CONVERT_A_LOT_V2_API_KEY` through
+      `agent-secrets run --set sir-convert-a-lot-operator`; this coordinator
+      never handles the key.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
@@ -31,7 +33,6 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
     assert_expected_revision_matches_remote,
     assert_service_revision_matches_remote,
     port_for_lane,
-    resolve_api_key,
     scan_metrics_forbidden_substrings,
     service_url_for_lane,
 )
@@ -53,6 +54,7 @@ DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES = (
     "permission denied while trying to connect to the Docker daemon socket",
     "permission denied while trying to connect to the docker API",
 )
+REMOTE_VERIFIER_KEY_SOURCE = "agent-secrets:sir-convert-a-lot-operator"
 
 
 class CommandExecutionError(RuntimeError):
@@ -67,9 +69,6 @@ class WorkflowSettings:
     lane: str
     service_url: str
     output_root: Path
-    api_key: str
-    api_key_source: str
-    allow_dev_key: bool
 
 
 def _utc_now_iso() -> str:
@@ -99,16 +98,6 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Override service URL (default derived from --lane).",
     )
     parser.add_argument(
-        "--api-key",
-        default=None,
-        help="X-API-Key value. Precedence: --api-key > SIR_CONVERT_A_LOT_V2_API_KEY.",
-    )
-    parser.add_argument(
-        "--allow-dev-key",
-        action="store_true",
-        help="Allow implicit env-based dev-only-key for local/dev scenarios.",
-    )
-    parser.add_argument(
         "--output-root",
         default=str(DEFAULT_OUTPUT_ROOT),
         help="Deterministic artifact output path.",
@@ -121,21 +110,14 @@ def _run_command(
     *,
     label: str,
     env: dict[str, str] | None = None,
-    redactions: tuple[str, ...] = (),
 ) -> str:
-    """Run command and return stdout, raising sanitized diagnostics on failure."""
+    """Run command and return stdout, raising diagnostics on failure."""
     result = subprocess.run(command, check=False, capture_output=True, text=True, env=env)
     if result.returncode != 0:
-        stdout = result.stdout
-        stderr = result.stderr
-        for token in redactions:
-            if token != "":
-                stdout = stdout.replace(token, "<redacted>")
-                stderr = stderr.replace(token, "<redacted>")
         raise CommandExecutionError(
             f"{label} failed (exit={result.returncode}).\n"
-            f"stdout:\n{stdout.strip()}\n"
-            f"stderr:\n{stderr.strip()}"
+            f"stdout:\n{result.stdout.strip()}\n"
+            f"stderr:\n{result.stderr.strip()}"
         )
     return result.stdout
 
@@ -144,11 +126,10 @@ def _run_remote(
     remote_args: list[str],
     *,
     label: str,
-    redactions: tuple[str, ...] = (),
 ) -> str:
     """Execute argv-safe command on Hemma via canonical wrappers."""
     command = ["pdm", "run", "run-local-pdm", "run-hemma", "--", *remote_args]
-    return _run_command(command, label=label, redactions=redactions)
+    return _run_command(command, label=label)
 
 
 def _write_json(path: Path, payload: object) -> None:
@@ -169,16 +150,8 @@ def _resolve_expected_revision(raw_revision: str) -> str:
 
 
 def _load_workflow_settings(args: argparse.Namespace) -> WorkflowSettings:
-    """Resolve settings and enforce API-key contracts before workflow execution."""
+    """Resolve settings before workflow execution."""
     resolved_expected_revision = _resolve_expected_revision(str(args.expected_revision))
-    try:
-        resolved_api_key = resolve_api_key(
-            api_key_arg=args.api_key,
-            environ=os.environ,
-            allow_dev_key=bool(args.allow_dev_key),
-        )
-    except VerificationContractError as exc:
-        raise CommandExecutionError(str(exc)) from exc
 
     lane = str(args.lane)
     # Validate lane mapping early for deterministic failure messaging.
@@ -194,9 +167,6 @@ def _load_workflow_settings(args: argparse.Namespace) -> WorkflowSettings:
         lane=lane,
         service_url=service_url,
         output_root=output_root,
-        api_key=resolved_api_key.value,
-        api_key_source=resolved_api_key.source,
-        allow_dev_key=bool(args.allow_dev_key),
     )
 
 
@@ -305,7 +275,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         "service_revision": None,
         "lane": settings.lane,
         "service_url": settings.service_url,
-        "api_key_source": settings.api_key_source,
+        "api_key_source": REMOTE_VERIFIER_KEY_SOURCE,
         "checks": {
             "expected_revision_matches_remote": False,
             "service_revision_matches_remote": False,
@@ -360,15 +330,11 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
 
         remote_smoke_output_root = "build/verification/hemma-deploy-verify/v2-smoke"
         remote_verify_args: list[str] = [
-            "pdm",
-            "run",
-            "python",
-            "-m",
-            "scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions",
+            "bash",
+            "scripts/devops/verify-hemma-v2-conversions.sh",
+            "--remote",
             "--lane",
             settings.lane,
-            "--api-key",
-            settings.api_key,
             "--output-root",
             remote_smoke_output_root,
         ]
@@ -376,7 +342,6 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
             _run_remote(
                 remote_verify_args,
                 label="remote verify_hemma_v2_conversions",
-                redactions=(settings.api_key,),
             )
             checks_obj = report["checks"]
             if isinstance(checks_obj, dict):
@@ -437,7 +402,7 @@ def main(argv: list[str] | None = None) -> int:
             "service_revision": None,
             "lane": str(args.lane),
             "service_url": str(args.service_url).strip() or service_url_for_lane(str(args.lane)),
-            "api_key_source": None,
+            "api_key_source": REMOTE_VERIFIER_KEY_SOURCE,
             "checks": {
                 "expected_revision_matches_remote": False,
                 "service_revision_matches_remote": False,

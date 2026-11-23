@@ -72,10 +72,6 @@ def test_secret_reading_pdm_scripts_run_through_agent_secrets() -> None:
             "scripts.sir_convert_a_lot.devops."
             "run_audio_transcription_sidecar_diarization_access",
         ),
-        "hemma-deploy-and-verify": (
-            OPERATOR_SET,
-            "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify",
-        ),
         "proof:remote-proof-audio-transcript": (
             REMOTE_PROOF_SET,
             "python -m scripts.sir_convert_a_lot.devops.remote_proof_audio_transcript_evidence",
@@ -87,6 +83,14 @@ def test_secret_reading_pdm_scripts_run_through_agent_secrets() -> None:
         assert command == (f"agent-secrets run --set {secret_set} -- {inner}"), (
             f"pdm script {name} is not wrapped in agent-secrets"
         )
+
+
+def test_client_deploy_coordinator_needs_no_secret_store() -> None:
+    scripts = _pdm_scripts()
+
+    assert scripts["hemma-deploy-and-verify"] == (
+        "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify"
+    )
 
 
 def test_pdf_throughput_hemma_scripts_keep_dotenv_for_configuration() -> None:

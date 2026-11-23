@@ -36,9 +36,8 @@ def _remote_sha_command(
     *,
     label: str,
     cwd: Path = run_pdf_throughput_hemma_benchmark.CANONICAL_REPO_ROOT,
-    redactions: tuple[str, ...] = (),
 ) -> str:
-    _ = (argv, label, cwd, redactions)
+    _ = (argv, label, cwd)
     return "remote-sha\n"
 
 
@@ -50,7 +49,6 @@ def test_verify_env_contract_reads_process_environment(
 
     contract = run_pdf_throughput_hemma_benchmark._verify_env_contract()
 
-    assert contract.api_key == "secret-key"
     assert contract.default_ocr_engine == "easyocr"
     assert contract.default_ocr_languages == ("sv", "en")
     assert contract.deployed_profile.profile_name == "production_service_current"
@@ -211,10 +209,9 @@ def test_run_pdf_throughput_benchmark_uses_scratch_backed_miopen_cache(
         *,
         label: str,
         cwd: Path = run_pdf_throughput_hemma_benchmark.CANONICAL_REPO_ROOT,
-        redactions: tuple[str, ...] = (),
         env_overrides: dict[str, str] | None = None,
     ) -> str:
-        del label, cwd, redactions
+        del label, cwd
         commands.append(argv)
         if env_overrides is not None:
             captured_env.update(env_overrides)
@@ -234,7 +231,6 @@ def test_run_pdf_throughput_benchmark_uses_scratch_backed_miopen_cache(
 
     run_pdf_throughput_hemma_benchmark._run_pdf_throughput_benchmark(
         settings,
-        api_key="secret-key",
         remote_revision="abc1234",
         service_revision="abc1234",
         default_ocr_engine="easyocr",
@@ -264,3 +260,66 @@ def test_run_pdf_throughput_benchmark_uses_scratch_backed_miopen_cache(
     }
     assert (tmp_path / "miopen" / "user-db").is_dir()
     assert (tmp_path / "miopen" / "kernel-cache").is_dir()
+
+
+def test_child_verifier_and_benchmark_commands_keep_secret_off_argv(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    secret_marker = "sir-v2-synthetic-marker-value"
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_V2_API_KEY", secret_marker)
+    commands: list[list[str]] = []
+
+    def run_command_stub(
+        argv: list[str],
+        *,
+        label: str,
+        cwd: Path = run_pdf_throughput_hemma_benchmark.CANONICAL_REPO_ROOT,
+        env_overrides: dict[str, str] | None = None,
+    ) -> str:
+        del label, cwd, env_overrides
+        commands.append(argv)
+        return ""
+
+    monkeypatch.setattr(run_pdf_throughput_hemma_benchmark, "_run_command", run_command_stub)
+    monkeypatch.setattr(
+        run_pdf_throughput_hemma_benchmark,
+        "_prepare_miopen_cache",
+        lambda: {},
+    )
+    monkeypatch.setattr(
+        run_pdf_throughput_hemma_benchmark,
+        "_read_json_object",
+        lambda path, *, label: {"service_revision": "abc1234"},
+    )
+    settings = run_pdf_throughput_hemma_benchmark._parse_args(
+        [
+            "--expected-revision",
+            "abc1234",
+            "--output-json",
+            (tmp_path / "out.json").as_posix(),
+            "--output-report",
+            (tmp_path / "out.md").as_posix(),
+        ]
+    )
+
+    run_pdf_throughput_hemma_benchmark._run_live_smoke(tmp_path / "smoke")
+    run_pdf_throughput_hemma_benchmark._run_pdf_throughput_benchmark(
+        settings,
+        remote_revision="abc1234",
+        service_revision="abc1234",
+        default_ocr_engine="easyocr",
+        default_ocr_languages=("sv", "en"),
+        deployed_profile=run_pdf_throughput_hemma_benchmark.ProfileSpec(
+            profile_name="production_service_current",
+            parallel_enabled=True,
+            max_chunk_workers=2,
+            chunk_size_pages=4,
+            gpu_stage_max_concurrency=2,
+        ),
+    )
+
+    assert len(commands) == 2
+    for command in commands:
+        assert "--api-key" not in command
+        assert secret_marker not in command
