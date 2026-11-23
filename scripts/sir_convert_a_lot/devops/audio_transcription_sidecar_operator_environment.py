@@ -10,12 +10,16 @@ Relationships:
       runtime probes.
     - Mirrors the repo-local `.env` precedence used by sanctioned local PDM
       command wrappers without importing service runtime settings.
+    - Never loads secret variable names from `.env`: those reach the process
+      only through `agent-secrets run --set sir-convert-a-lot-operator`.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+
+SECRET_ENV_VAR_NAMES: tuple[str, ...] = ("HF_TOKEN", "SIR_CONVERT_A_LOT_V2_API_KEY")
 
 
 def merged_operator_environment(
@@ -27,7 +31,10 @@ def merged_operator_environment(
 
     merged = dict(base_environment)
     if env_file.is_file():
-        merged.update(_parse_env_file(env_file))
+        file_values = _parse_env_file(env_file)
+        for secret_name in SECRET_ENV_VAR_NAMES:
+            file_values.pop(secret_name, None)
+        merged.update(file_values)
     return merged
 
 

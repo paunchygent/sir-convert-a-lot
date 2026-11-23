@@ -120,7 +120,11 @@ def test_diarization_access_command_is_registered() -> None:
         "scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_diarization_access"
     )
 
-    assert f'"diagnose:stt-sidecar-diarization-access" = "python -m {command_module}"' in pyproject
+    assert (
+        '"diagnose:stt-sidecar-diarization-access" = '
+        f'"agent-secrets run --set sir-convert-a-lot-operator -- python -m {command_module}"'
+        in pyproject
+    )
 
 
 def test_diarization_access_report_writes_json_under_generated_root(tmp_path: Path) -> None:

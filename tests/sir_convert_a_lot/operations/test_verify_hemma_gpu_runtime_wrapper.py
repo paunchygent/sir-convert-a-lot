@@ -1,8 +1,9 @@
 """Tests for the Hemma GPU verifier shell wrapper.
 
 Purpose:
-    Prove the operator-facing GPU verifier can reuse the local Sir Convert API
-    key without requiring each session to rediscover the `--api-key` flag.
+    Prove the operator-facing GPU verifier delegates remote execution through
+    `run-hemma` and resolves the Sir Convert API key through `agent-secrets`
+    on Hemma instead of reading or forwarding a local secret.
 
 Relationships:
     - Exercises `scripts/devops/verify-hemma-gpu-runtime.sh`.
@@ -40,6 +41,22 @@ def _write_fake_pdm(script_dir: Path, *, args_path: Path, flag_path: Path) -> No
     fake_pdm.chmod(fake_pdm.stat().st_mode | stat.S_IXUSR)
 
 
+def _write_fake_agent_secrets(script_dir: Path, *, args_path: Path) -> None:
+    fake_agent_secrets = script_dir / "agent-secrets"
+    fake_agent_secrets.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                f"printf '%s\\n' \"$*\" > {args_path.as_posix()!r}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    fake_agent_secrets.chmod(fake_agent_secrets.stat().st_mode | stat.S_IXUSR)
+
+
 def _run_wrapper_with_fake_pdm(
     tmp_path: Path,
     *,
@@ -69,7 +86,7 @@ def _run_wrapper_with_fake_pdm(
     return result, args_path.read_text(encoding="utf-8"), flag_path.read_text(encoding="utf-8")
 
 
-def test_gpu_verifier_wrapper_opts_into_api_key_forwarding_without_arg_secret(
+def test_gpu_verifier_wrapper_delegates_remote_run_without_local_secret_use(
     tmp_path: Path,
 ) -> None:
     result, pdm_args, forward_flag = _run_wrapper_with_fake_pdm(
@@ -79,7 +96,7 @@ def test_gpu_verifier_wrapper_opts_into_api_key_forwarding_without_arg_secret(
     )
 
     assert result.returncode == 0
-    assert forward_flag.strip() == "1"
+    assert forward_flag.strip() == "missing"
     expected_command = (
         "run-local-pdm run-hemma -- bash "
         "scripts/devops/verify-hemma-gpu-runtime.sh --remote --lane host"
@@ -112,3 +129,29 @@ def test_gpu_verifier_wrapper_without_key_keeps_existing_missing_key_path(tmp_pa
     assert result.returncode == 0
     assert forward_flag.strip() == "missing"
     assert "--remote --lane host" in pdm_args
+
+
+def test_gpu_verifier_remote_mode_wraps_python_module_in_agent_secrets(
+    tmp_path: Path,
+) -> None:
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir(parents=True)
+    args_path = tmp_path / "agent-secrets-args.txt"
+    _write_fake_agent_secrets(fake_bin, args_path=args_path)
+
+    env = os.environ.copy()
+    env["PATH"] = f"{fake_bin}:{env['PATH']}"
+
+    result = subprocess.run(
+        ["bash", str(VERIFY_HEMMA_GPU_RUNTIME), "--remote", "--lane", "host"],
+        cwd=REPO_ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0
+    assert args_path.read_text(encoding="utf-8").strip() == (
+        "run --set sir-convert-a-lot-operator -- pdm run python -m "
+        "scripts.sir_convert_a_lot.devops.verify_hemma_gpu_runtime --lane host"
+    )

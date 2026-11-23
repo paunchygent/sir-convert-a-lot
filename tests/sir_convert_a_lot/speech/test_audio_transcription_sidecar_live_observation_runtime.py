@@ -29,7 +29,7 @@ def test_live_observation_pdm_command_targets_purpose_named_runner() -> None:
     scripts = payload["tool"]["pdm"]["scripts"]
 
     assert scripts["benchmark:stt-sidecar-live-observation"] == (
-        "python -m "
+        "agent-secrets run --set sir-convert-a-lot-operator -- python -m "
         "scripts.sir_convert_a_lot.devops.run_audio_transcription_sidecar_live_observation"
     )
 
@@ -221,10 +221,11 @@ def test_operator_command_loads_repo_env_without_exposing_secret_values(
     english_fixture.write_bytes(b"english audio placeholder")
     swedish_fixture.write_bytes(b"swedish audio placeholder")
     secret_value = "hf_private_token_value_from_repo_env"
+    file_secret_value = "hf_file_token_value_must_be_ignored"
     (tmp_path / ".env").write_text(
         "\n".join(
             (
-                f"HF_TOKEN={secret_value}",
+                f"HF_TOKEN={file_secret_value}",
                 f"HF_HOME={hf_home.as_posix()}",
                 f"HF_HUB_CACHE={hf_hub_cache.as_posix()}",
                 "",
@@ -233,7 +234,7 @@ def test_operator_command_loads_repo_env_without_exposing_secret_values(
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.setenv("HF_TOKEN", secret_value)
 
     exit_code = live_runner.main(
         [
@@ -261,6 +262,8 @@ def test_operator_command_loads_repo_env_without_exposing_secret_values(
     assert "--preserve-env=HF_TOKEN" in runtime_probe_command
     assert secret_value not in flattened_commands
     assert secret_value not in persisted_text
+    assert file_secret_value not in flattened_commands
+    assert file_secret_value not in persisted_text
     assert hf_home.as_posix() not in persisted_text
 
 

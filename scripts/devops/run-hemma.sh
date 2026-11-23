@@ -21,8 +21,6 @@ Environment:
   SIR_CONVERT_A_LOT_HEMMA_ROOT   Remote repo root (default: /home/paunchygent/apps/sir-convert-a-lot)
   SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA
                                   Force SSH execution even when already on Hemma.
-  SIR_CONVERT_A_LOT_RUN_HEMMA_FORWARD_API_KEY
-                                  Forward SIR_CONVERT_A_LOT_V2_API_KEY to remote process.
 EOF
 }
 
@@ -35,21 +33,7 @@ quote_args() {
   printf '%s' "${out% }"
 }
 
-forwarded_env_exports() {
-  if [[ "${SIR_CONVERT_A_LOT_RUN_HEMMA_FORWARD_API_KEY:-0}" != "1" ]]; then
-    return 0
-  fi
-  if [[ -z "${SIR_CONVERT_A_LOT_V2_API_KEY:-}" ]]; then
-    return 0
-  fi
-
-  local api_key_q
-  api_key_q="$(printf '%q' "${SIR_CONVERT_A_LOT_V2_API_KEY}")"
-  printf '; export SIR_CONVERT_A_LOT_V2_API_KEY=%s' "${api_key_q}"
-}
-
 remote_prelude() {
-  local include_forwarded_env="${1:-0}"
   local root_q
   root_q="$(printf '%q' "${HEMMA_ROOT}")"
   printf '%s' \
@@ -71,15 +55,12 @@ remote_prelude() {
     "exit 68; " \
     "fi; " \
     "export PATH=\"\${HOME}/.local/bin:\${PATH}\""
-  if [[ "${include_forwarded_env}" == "1" ]]; then
-    forwarded_env_exports
-  fi
 }
 
 run_remote() {
   local user_cmd="$1"
   local prelude
-  prelude="$(remote_prelude 1)"
+  prelude="$(remote_prelude)"
   local remote_script
   remote_script="${prelude}; ${user_cmd}"
   ssh "${HEMMA_HOST}" "${REMOTE_BASH[@]}" <<<"${remote_script}"
@@ -121,7 +102,7 @@ is_hemma_local_session() {
 run_local_hemma() {
   local user_cmd="$1"
   local prelude
-  prelude="$(remote_prelude 0)"
+  prelude="$(remote_prelude)"
   /bin/bash --noprofile --norc -c "${prelude}; ${user_cmd}"
 }
 

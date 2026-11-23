@@ -2,14 +2,15 @@
 
 Purpose:
     Execute the full Hemma PDF throughput benchmark workflow against a parity-checked
-    revision by synchronizing the prod env mirror, verifying the server-side
-    env contract, syncing the host PDM runtime, rerunning the live host-lane
-    smoke, and then invoking the benchmark harness with explicit parity
-    metadata against the deployed production service.
+    revision by verifying the env contract, syncing the host PDM runtime,
+    rerunning the live host-lane smoke, and then invoking the benchmark
+    harness with explicit parity metadata against the deployed production
+    service.
 
 Relationships:
-    - Reuses `scripts/devops/sync-prod-env-mirror.sh` for canonical Hemma env
-      mirroring and symlink refresh.
+    - Reads `SIR_CONVERT_A_LOT_V2_API_KEY` from the process environment; its
+      pdm script wraps the command in
+      `agent-secrets run --set sir-convert-a-lot-operator`.
     - Reuses `scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions` to
       prove the live deployed runtime is healthy before benchmarking.
     - Invokes `scripts.sir_convert_a_lot.pdf_throughput_benchmark_report`
@@ -33,8 +34,6 @@ from scripts.sir_convert_a_lot.devops.hemma_pdf_benchmark_env_profile import (
 from scripts.sir_convert_a_lot.devops.hemma_pdf_benchmark_summary import build_stdout_summary
 
 CANONICAL_REPO_ROOT = Path("/home/paunchygent/apps/sir-convert-a-lot")
-CANONICAL_ENV_PATH = Path("/home/paunchygent/infrastructure/env/prod/sir-convert-a-lot.env")
-CANONICAL_ENV_LINK = CANONICAL_REPO_ROOT / ".env"
 DEFAULT_SERVICE_URL = "http://127.0.0.1:28085"
 DEFAULT_OUTPUT_JSON = Path(
     "build/benchmarks/pdf-throughput/pdf-throughput-throughput-benchmark-hemma.json"
@@ -85,14 +84,12 @@ class HemmaPdfThroughputSettings:
 
 @dataclass(frozen=True)
 class VerifiedEnvContract:
-    """Server-side env contract data required for the benchmark workflow."""
+    """Env contract data required for the benchmark workflow."""
 
     api_key: str
     default_ocr_engine: str
     default_ocr_languages: tuple[str, ...]
     deployed_profile: ProfileSpec
-    canonical_env_path: Path
-    repo_env_link: Path
 
 
 def _parse_args(argv: list[str]) -> HemmaPdfThroughputSettings:
@@ -205,46 +202,7 @@ def _run_command(
     return result.stdout
 
 
-def _strip_optional_quotes(value: str) -> str:
-    stripped = value.strip()
-    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {'"', "'"}:
-        return stripped[1:-1]
-    return stripped
-
-
-def _parse_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if line == "" or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        values[key.strip()] = _strip_optional_quotes(value)
-    return values
-
-
 def _verify_env_contract() -> VerifiedEnvContract:
-    _run_command(
-        ["bash", "scripts/devops/sync-prod-env-mirror.sh"],
-        label="sync-prod-env-mirror",
-    )
-
-    if not CANONICAL_ENV_LINK.is_symlink():
-        raise SystemExit(
-            f"Expected `{CANONICAL_ENV_LINK}` to be a symlink to the canonical env file."
-        )
-
-    resolved_link = CANONICAL_ENV_LINK.resolve()
-    if resolved_link != CANONICAL_ENV_PATH:
-        raise SystemExit(
-            f"Expected `{CANONICAL_ENV_LINK}` to resolve to `{CANONICAL_ENV_PATH}`, "
-            f"got `{resolved_link}`."
-        )
-
-    if not CANONICAL_ENV_PATH.exists():
-        raise SystemExit(f"Canonical env file is missing: `{CANONICAL_ENV_PATH}`.")
-
-    env_values = _parse_env_file(CANONICAL_ENV_PATH)
     required_keys = (
         "SIR_CONVERT_A_LOT_V2_API_KEY",
         "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE",
@@ -255,12 +213,15 @@ def _verify_env_contract() -> VerifiedEnvContract:
         "SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES",
         "SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY",
     )
-    missing = [key for key in required_keys if env_values.get(key, "").strip() == ""]
+    env_values = {key: os.environ.get(key, "") for key in required_keys}
+    missing = [key for key in required_keys if env_values[key].strip() == ""]
     if missing:
         joined = ", ".join(missing)
         raise SystemExit(
-            "Canonical Hemma env file is missing required PDF throughput benchmark keys: "
-            f"{joined}. Run `pdm run hemma-sync-prod-env-mirror` and repair the env."
+            "Environment is missing required PDF throughput benchmark keys: "
+            f"{joined}. Run `pdm run benchmark:pdf-throughput-hemma` so "
+            "`agent-secrets run --set sir-convert-a-lot-operator` supplies the "
+            "secret and `.env` supplies configuration."
         )
 
     default_languages = tuple(
@@ -276,8 +237,6 @@ def _verify_env_contract() -> VerifiedEnvContract:
         default_ocr_engine=env_values["SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE"],
         default_ocr_languages=default_languages,
         deployed_profile=deployed_profile_from_env(env_values),
-        canonical_env_path=CANONICAL_ENV_PATH,
-        repo_env_link=CANONICAL_ENV_LINK,
     )
 
 

@@ -502,7 +502,7 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
         f"{settings.stage_config_path.resolve().as_posix()}:/workspace/tts-sidecar-stage-config.yaml:ro",
     ]
     if settings.hf_token:
-        run_args.extend(["-e", f"HF_TOKEN={settings.hf_token}"])
+        run_args.extend(["-e", "HF_TOKEN"])
     run_args.extend(
         [
             "--entrypoint",

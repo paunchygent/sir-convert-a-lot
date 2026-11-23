@@ -18,7 +18,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PROD_COMPOSE = REPO_ROOT / "scripts" / "devops" / "prod-compose.sh"
 SERVICE_DEPS_IMAGE = REPO_ROOT / "scripts" / "devops" / "service-deps-image.sh"
-SYNC_PROD_ENV_MIRROR = REPO_ROOT / "scripts" / "devops" / "sync-prod-env-mirror.sh"
 
 
 def _client_like_env() -> dict[str, str]:
@@ -52,11 +51,3 @@ def test_rocm_dependency_image_refuses_client_like_environment_before_build() ->
     assert result.returncode == 70
     assert "service-deps-image rocm: this command is Hemma Server-only" in result.stderr
     assert "docker build" not in result.stderr
-
-
-def test_prod_env_mirror_refuses_client_like_environment_before_host_paths() -> None:
-    result = _run_script(["bash", str(SYNC_PROD_ENV_MIRROR)])
-
-    assert result.returncode == 70
-    assert "sync-prod-env-mirror: this command is Hemma Server-only" in result.stderr
-    assert "[sync-prod-env]" not in result.stderr

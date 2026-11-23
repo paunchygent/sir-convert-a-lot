@@ -72,8 +72,8 @@ Operate Sir Convert-a-Lot on Hemma without duplicating HuleEdu or Skriptoteket r
   published by the parent; it does not push a branch. The legacy V2 conversion smoke
   is evidence only; `gpu_not_available` there is a conversion-worker finding,
   not a deploy failure.
-  Use the wrapper from the local repo root. It is environment-aware: from a client machine it SSHes to Hemma; from the canonical Hemma Server checkout it runs directly after checking the hostname, repo root, and shared skill repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an operator deliberately needs the SSH path despite local Hemma detection. `run-hemma` does not forward local secrets by default; the GPU verifier is the committed exception and opts in to forwarding only `SIR_CONVERT_A_LOT_V2_API_KEY` for its remote process.
-  Direct production and ROCm helpers such as `prod-*`, `prod-deps-rocm-build`, and `hemma-sync-prod-env-mirror` are Hemma Server-only. They fail before Docker or host env mutation when the session does not prove the canonical Hemma hostname, repo root, and shared skill repository.
+  Use the wrapper from the local repo root. It is environment-aware: from a client machine it SSHes to Hemma; from the canonical Hemma Server checkout it runs directly after checking the hostname, repo root, and shared skill repository path. Set `SIR_CONVERT_A_LOT_FORCE_REMOTE_HEMMA=1` only when an operator deliberately needs the SSH path despite local Hemma detection. `run-hemma` never forwards local secrets; remote commands that need `SIR_CONVERT_A_LOT_V2_API_KEY` or `HF_TOKEN` read them through `agent-secrets run --set sir-convert-a-lot-operator` on Hemma.
+  Direct production and ROCm helpers such as `prod-*` and `prod-deps-rocm-build` are Hemma Server-only. They fail before Docker or host env mutation when the session does not prove the canonical Hemma hostname, repo root, and shared skill repository.
 
 ## Pre-Start Stored Job-Spec Migration
 
@@ -191,12 +191,6 @@ Deploy/live verification key precedence:
 
 1. `--api-key` 1. `SIR_CONVERT_A_LOT_API_KEY` 1. explicit failure
    The implicit development key is rejected unless passed deliberately. Never write API keys into reports, logs, or retained artifacts.
-
-## Production Env Mirror
-
-Use the committed mirror command:
-`pdm run run-hemma -- pdm run hemma-sync-prod-env-mirror`
-Do not hand-copy `.env` files between products or repos.
 
 ## Detached Work
 
