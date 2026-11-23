@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-11-23'
-status: ready
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: ruthless-reviewer
+  decided_at: '2026-11-23T21:30:29Z'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: "TASK-SIRCON-REP-0041#closeout; whole review 322590fc changes_requested; first rereview e7f337f1 changes_requested; second rereview 9358f055 approved."
 task_kind: repository
 acceptance_criteria:
   - Given each Sir convert-a-lot devops script that reads SIR_CONVERT_A_LOT_V2_API_KEY or HF_TOKEN, when it runs, then its pdm script runs it through `agent-secrets run --set sir-convert-a-lot-operator`, no code reads those names from a .env file, no HF_TOKEN value is put on a command line, and scripts/devops/sync-prod-env-mirror.sh and its calls are removed.
@@ -63,3 +67,29 @@ reach a container this leaf cannot route through the wrapper.
 | ID  | Decided contract term                                   |
 | --- | ------------------------------------------------------- |
 | D1  | EPIC-SKILL-18 decided terms apply; this leaf adds none. |
+
+## Closeout
+
+Implementation is complete and independently approved.
+
+- Whole review `322590fc` (independent ruthless reviewer, 2026-11-23T20:41:21Z,
+  `changes_requested`) reviewed all three merged leaves at `f14832aa` and
+  returned eight findings. For this task, finding 5: the TTS `HF_TOKEN` was
+  lost across sudo before Docker saw it; finding 6: the STT environment merge
+  still fell back to file credentials and the PDF launch preloaded the whole
+  `.env`; and finding 7: the deployed verification and PDF benchmark marshaled
+  the fetched key back into argv.
+- First rereview `e7f337f1` (2026-11-23T21:18:10Z, `changes_requested`):
+  finding 6 was not reopened after the process-only read repair at `434ed58`,
+  but findings 5 and 7 were not resolved — the required prefetch container
+  still dropped the token, and the deployed PDF CLI still accepted and
+  recommended a credential on argv.
+- Second rereview `9358f055` (2026-11-23T21:30:29Z, `approved` at `70b2b88`):
+  finding 5 resolved at `e36f7ee` — prefetch and serve both forward `HF_TOKEN`
+  by name only across sudo and `-e`; finding 7 resolved at `a4ccaa6` —
+  production PDF mode reads only `SIR_CONVERT_A_LOT_V2_API_KEY`, refuses a
+  nonblank `--api-key` without echoing it, and points the missing-key error at
+  the existing Hemma wrapper.
+- The one wrapped command per changed path on Hemma is a cutover step after
+  the `agent-secrets --set` tooling release and D13 approval; it is not part
+  of this closeout.
