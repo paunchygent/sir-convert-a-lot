@@ -28,7 +28,8 @@ cd "${REPO_ROOT}"
 
 if [[ "${1:-}" == "--remote" ]]; then
   shift
-  exec pdm run python -m scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions "$@"
+  exec agent-secrets run --set sir-convert-a-lot-operator -- \
+    pdm run python -m scripts.sir_convert_a_lot.devops.verify_hemma_v2_conversions "$@"
 fi
 
 exec pdm run run-local-pdm run-hemma -- bash scripts/devops/verify-hemma-v2-conversions.sh --remote "$@"

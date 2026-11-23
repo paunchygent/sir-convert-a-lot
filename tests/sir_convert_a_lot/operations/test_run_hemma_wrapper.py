@@ -166,7 +166,7 @@ def test_run_hemma_does_not_forward_api_key_without_opt_in(tmp_path: Path) -> No
     assert result.stdout == "missing"
 
 
-def test_run_hemma_forwards_api_key_when_opted_in(tmp_path: Path) -> None:
+def test_run_hemma_never_forwards_api_key(tmp_path: Path) -> None:
     remote_root = tmp_path / "remote-repo"
     remote_root.mkdir(parents=True)
     (remote_root / ".git").mkdir()
@@ -188,7 +188,7 @@ def test_run_hemma_forwards_api_key_when_opted_in(tmp_path: Path) -> None:
     )
 
     assert result.returncode == 0
-    assert result.stdout == "local-secret"
+    assert result.stdout == "missing"
 
 
 def test_run_hemma_fails_if_remote_root_is_missing(tmp_path: Path) -> None:

@@ -482,6 +482,52 @@ def test_start_sidecar_uses_persistent_hf_cache_contract(
     assert "--enforce-eager" in command
 
 
+def test_start_sidecar_passes_hf_token_by_name_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stage_config_path = tmp_path / "tts-sidecar-stage-config.yaml"
+    stage_config_path.write_text("model: test\n", encoding="utf-8")
+    recorded_commands: list[list[str]] = []
+
+    def _fake_docker_checked(args: list[str], *, label: str) -> str:
+        assert label == "docker run tts-sidecar sidecar"
+        recorded_commands.append(args)
+        return "container-id"
+
+    monkeypatch.setattr(
+        "scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_runtime.docker_checked",
+        _fake_docker_checked,
+    )
+    settings = _build_settings(
+        tmp_path,
+        stage_config_path=stage_config_path,
+        hf_token="hf_secret_token_value",
+    )
+
+    start_sidecar(settings)
+
+    command = recorded_commands[0]
+    token_index = command.index("HF_TOKEN")
+    assert command[token_index - 1] == "-e"
+    assert not any(
+        argument.startswith("HF_TOKEN=") or "hf_secret_token_value" in argument
+        for argument in command
+    )
+
+
+def test_parse_args_reads_hf_token_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HF_TOKEN", "  hf_secret_token_value  ")
+
+    settings = run_tts_sidecar_hemma_benchmark._parse_args([])
+
+    assert settings.hf_token == "hf_secret_token_value"
+
+
+def test_parse_args_rejects_hf_token_command_line_flag() -> None:
+    with pytest.raises(SystemExit):
+        run_tts_sidecar_hemma_benchmark._parse_args(["--hf-token", "hf_secret_token_value"])
+
+
 def test_report_helpers_write_expected_json_and_markdown(tmp_path: Path) -> None:
     report = BenchmarkReport(
         benchmark_id="tts-sidecar-hemma",

@@ -20,23 +20,10 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
-has_api_key_arg() {
-  local arg
-  for arg in "$@"; do
-    if [[ "${arg}" == "--api-key" || "${arg}" == --api-key=* ]]; then
-      return 0
-    fi
-  done
-  return 1
-}
-
 if [[ "${1:-}" == "--remote" ]]; then
   shift
-  exec pdm run python -m scripts.sir_convert_a_lot.devops.verify_hemma_gpu_runtime "$@"
-fi
-
-if [[ -n "${SIR_CONVERT_A_LOT_V2_API_KEY:-}" ]] && ! has_api_key_arg "$@"; then
-  export SIR_CONVERT_A_LOT_RUN_HEMMA_FORWARD_API_KEY=1
+  exec agent-secrets run --set sir-convert-a-lot-operator -- \
+    pdm run python -m scripts.sir_convert_a_lot.devops.verify_hemma_gpu_runtime "$@"
 fi
 
 exec pdm run run-local-pdm run-hemma -- bash scripts/devops/verify-hemma-gpu-runtime.sh --remote "$@"

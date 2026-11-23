@@ -1,7 +1,7 @@
 """Tests for the canonical Hemma PDF throughput benchmark runner.
 
 Purpose:
-    Validate the env-contract parsing and revision checks that gate the Hemma
+    Validate the env-contract checks and revision checks that gate the Hemma
     PDF throughput benchmark workflow before any long-running benchmark is started.
 
 Relationships:
@@ -19,16 +19,16 @@ import pytest
 
 from scripts.sir_convert_a_lot.devops import run_pdf_throughput_hemma_benchmark
 
-
-def _empty_command(
-    argv: list[str],
-    *,
-    label: str,
-    cwd: Path = run_pdf_throughput_hemma_benchmark.CANONICAL_REPO_ROOT,
-    redactions: tuple[str, ...] = (),
-) -> str:
-    _ = (argv, label, cwd, redactions)
-    return ""
+REQUIRED_ENV_KEYS = {
+    "SIR_CONVERT_A_LOT_V2_API_KEY": "secret-key",
+    "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE": "easyocr",
+    "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES": "sv,en",
+    "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR": "/opt/easyocr-models",
+    "SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS": "1",
+    "SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS": "2",
+    "SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES": "4",
+    "SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY": "2",
+}
 
 
 def _remote_sha_command(
@@ -42,36 +42,11 @@ def _remote_sha_command(
     return "remote-sha\n"
 
 
-def test_verify_env_contract_accepts_canonical_symlink(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+def test_verify_env_contract_reads_process_environment(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    canonical_env = tmp_path / "sir-convert-a-lot.env"
-    canonical_env.write_text(
-        "\n".join(
-            [
-                "SIR_CONVERT_A_LOT_V2_API_KEY=secret-key",
-                "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr",
-                "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en",
-                "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models",
-                "SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=1",
-                "SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS=2",
-                "SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES=4",
-                "SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY=2",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    repo_env_link = tmp_path / ".env"
-    repo_env_link.symlink_to(canonical_env)
-
-    monkeypatch.setattr(run_pdf_throughput_hemma_benchmark, "CANONICAL_ENV_PATH", canonical_env)
-    monkeypatch.setattr(run_pdf_throughput_hemma_benchmark, "CANONICAL_ENV_LINK", repo_env_link)
-    monkeypatch.setattr(
-        run_pdf_throughput_hemma_benchmark,
-        "_run_command",
-        _empty_command,
-    )
+    for key, value in REQUIRED_ENV_KEYS.items():
+        monkeypatch.setenv(key, value)
 
     contract = run_pdf_throughput_hemma_benchmark._verify_env_contract()
 
@@ -85,22 +60,36 @@ def test_verify_env_contract_accepts_canonical_symlink(
     assert contract.deployed_profile.gpu_stage_max_concurrency == 2
 
 
+def test_verify_env_contract_never_reads_env_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    canonical_env = tmp_path / ".env"
+    canonical_env.write_text(
+        "SIR_CONVERT_A_LOT_V2_API_KEY=file-secret\n"
+        "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_ENGINE=easyocr\n"
+        "SIR_CONVERT_A_LOT_DEFAULT_PDF_OCR_LANGUAGES=sv,en\n"
+        "SIR_CONVERT_A_LOT_EASYOCR_MODEL_STORAGE_DIR=/opt/easyocr-models\n"
+        "SIR_CONVERT_A_LOT_ENABLE_PARALLEL_PDF_CHUNKS=1\n"
+        "SIR_CONVERT_A_LOT_MAX_CHUNK_WORKERS=2\n"
+        "SIR_CONVERT_A_LOT_PDF_CHUNK_SIZE_PAGES=4\n"
+        "SIR_CONVERT_A_LOT_GPU_STAGE_MAX_CONCURRENCY=2\n",
+        encoding="utf-8",
+    )
+    for key in REQUIRED_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit, match="missing required PDF throughput benchmark keys"):
+        run_pdf_throughput_hemma_benchmark._verify_env_contract()
+
+
 def test_verify_env_contract_rejects_missing_required_keys(
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
 ) -> None:
-    canonical_env = tmp_path / "sir-convert-a-lot.env"
-    canonical_env.write_text("SIR_CONVERT_A_LOT_V2_API_KEY=secret-key\n", encoding="utf-8")
-    repo_env_link = tmp_path / ".env"
-    repo_env_link.symlink_to(canonical_env)
-
-    monkeypatch.setattr(run_pdf_throughput_hemma_benchmark, "CANONICAL_ENV_PATH", canonical_env)
-    monkeypatch.setattr(run_pdf_throughput_hemma_benchmark, "CANONICAL_ENV_LINK", repo_env_link)
-    monkeypatch.setattr(
-        run_pdf_throughput_hemma_benchmark,
-        "_run_command",
-        _empty_command,
-    )
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_V2_API_KEY", "secret-key")
+    for key in REQUIRED_ENV_KEYS:
+        if key != "SIR_CONVERT_A_LOT_V2_API_KEY":
+            monkeypatch.delenv(key, raising=False)
 
     with pytest.raises(SystemExit, match="missing required PDF throughput benchmark keys"):
         run_pdf_throughput_hemma_benchmark._verify_env_contract()

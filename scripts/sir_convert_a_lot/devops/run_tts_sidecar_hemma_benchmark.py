@@ -147,7 +147,6 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
     parser.add_argument("--reference-audio", type=Path, default=None)
     parser.add_argument("--reference-transcript", default=None)
     parser.add_argument("--reference-transcript-file", type=Path, default=None)
-    parser.add_argument("--hf-token", default=None)
     parser.add_argument(
         "--response-formats",
         default="wav,mp3",
@@ -225,7 +224,7 @@ def _parse_args(argv: list[str]) -> BenchmarkSettings:
         instructions=instructions,
         reference_audio=Path(args.reference_audio) if args.reference_audio is not None else None,
         reference_transcript=reference_transcript,
-        hf_token=str(args.hf_token).strip() if args.hf_token else None,
+        hf_token=os.environ.get("HF_TOKEN", "").strip() or None,
         pull_image=not bool(args.skip_pull_image),
         retain_container=bool(args.retain_container),
         stage_config_path=STAGE_CONFIG_PATH,
