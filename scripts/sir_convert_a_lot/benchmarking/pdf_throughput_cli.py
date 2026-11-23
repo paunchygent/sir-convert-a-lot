@@ -166,21 +166,27 @@ def _build_parser() -> argparse.ArgumentParser:
 def _resolve_api_key(args: argparse.Namespace) -> str:
     """Resolve the benchmark API key for the selected runtime lane.
 
-    `production_service` mode reads the canonical key from the process
+    `production_service` mode reads the canonical key only from the process
     environment (injected by `agent-secrets run --set sir-convert-a-lot-operator`
-    through the `benchmark:pdf-throughput-*-hemma` wrappers) so no secret
-    value crosses a command line; other lanes keep the synthetic key.
+    through the `benchmark:pdf-throughput-*-hemma` wrappers) and refuses an
+    explicit key, so no production secret crosses a command line. Other lanes
+    take an explicit key or fall back to the synthetic key.
     """
     explicit = coerce_optional_str(args.api_key)
-    if explicit is not None:
-        return explicit
     if str(args.runtime_mode) != "production_service":
-        return LOCAL_SYNTHETIC_API_KEY
+        return explicit if explicit is not None else LOCAL_SYNTHETIC_API_KEY
+    if explicit is not None:
+        raise SystemExit(
+            "production_service mode reads its key only from the "
+            f"{PRODUCTION_API_KEY_ENV_VAR} environment variable; remove the "
+            "command-line key and run through `pdm run benchmark:pdf-throughput-hemma`."
+        )
     env_value = os.environ.get(PRODUCTION_API_KEY_ENV_VAR, "").strip()
     if env_value == "":
         raise SystemExit(
-            "production_service mode requires SIR_CONVERT_A_LOT_V2_API_KEY in the "
-            "environment or an explicit --api-key."
+            f"production_service mode requires {PRODUCTION_API_KEY_ENV_VAR} in the "
+            "environment; run the benchmark through `pdm run run-hemma -- pdm run "
+            "benchmark:pdf-throughput-hemma`, which injects it with agent-secrets."
         )
     return env_value
 
