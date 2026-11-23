@@ -38,22 +38,6 @@ from scripts.sir_convert_a_lot.devops.hemma_deploy_verification_contracts import
 )
 
 DEFAULT_OUTPUT_ROOT = Path("build/verification/hemma-deploy-verify")
-REMOTE_PDM = "/home/paunchygent/.local/bin/pdm"
-REMOTE_DEPLOY_PATH = (
-    "/home/paunchygent/.local/bin:"
-    "/snap/bin:"
-    "/usr/local/sbin:"
-    "/usr/local/bin:"
-    "/usr/sbin:"
-    "/usr/bin:"
-    "/sbin:"
-    "/bin"
-)
-REMOTE_HEMMA_SKILL_REPOSITORY = "/home/paunchygent/apps/skill-repository"
-DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES = (
-    "permission denied while trying to connect to the Docker daemon socket",
-    "permission denied while trying to connect to the docker API",
-)
 REMOTE_VERIFIER_KEY_SOURCE = "agent-secrets:sir-convert-a-lot-operator"
 
 
@@ -223,45 +207,22 @@ def _initialize_artifacts(output_root: Path) -> tuple[Path, Path, Path, Path, Pa
 
 
 def _remote_recreate_service(remote_revision: str) -> None:
-    """Recreate remote service, retrying with sudo when Docker socket is restricted."""
-    recreate_args = [
-        "env",
-        f"SIR_CONVERT_A_LOT_SERVICE_REVISION={remote_revision}",
-        f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={remote_revision}",
-        "pdm",
-        "run",
-        "prod-recreate",
-        "sir_convert_a_lot_gpu_worker",
-        "sir_convert_a_lot_prod",
-    ]
-    try:
-        _run_remote(
-            recreate_args,
-            label="remote pdm run prod-recreate private services",
-        )
-        return
-    except CommandExecutionError as exc:
-        error_text = str(exc)
-        if not any(message in error_text for message in DOCKER_SOCKET_PERMISSION_DENIED_MESSAGES):
-            raise
+    """Recreate the remote private services once as the invoking user.
 
+    `prod-recreate` owns Docker elevation; any failure propagates unchanged.
+    """
     _run_remote(
         [
-            "sudo",
-            "-n",
             "env",
-            f"PATH={REMOTE_DEPLOY_PATH}",
-            f"SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY={REMOTE_HEMMA_SKILL_REPOSITORY}",
-            f"SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY={REMOTE_HEMMA_SKILL_REPOSITORY}",
             f"SIR_CONVERT_A_LOT_SERVICE_REVISION={remote_revision}",
             f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={remote_revision}",
-            REMOTE_PDM,
+            "pdm",
             "run",
             "prod-recreate",
             "sir_convert_a_lot_gpu_worker",
             "sir_convert_a_lot_prod",
         ],
-        label="remote sudo -n pdm run prod-recreate private services",
+        label="remote pdm run prod-recreate private services",
     )
 
 

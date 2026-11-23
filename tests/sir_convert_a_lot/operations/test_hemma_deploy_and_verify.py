@@ -2,7 +2,7 @@
 
 Purpose:
     Lock command orchestration behavior that protects live deploy verification,
-    including Docker permission fallback on remote recreate.
+    including the single, unretried remote recreate call.
 
 Relationships:
     - Exercises `scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify`.
@@ -21,10 +21,11 @@ import pytest
 from scripts.sir_convert_a_lot.devops import hemma_deploy_and_verify
 
 
-def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_error(
+def test_remote_recreate_service_does_not_retry_on_docker_permission_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list[list[str]] = []
+    diagnostic = "permission denied while trying to connect to the Docker daemon socket"
 
     def fake_run_remote(
         remote_args: list[str],
@@ -33,90 +34,17 @@ def test_remote_recreate_service_retries_with_sudo_on_docker_socket_permission_e
     ) -> str:
         del label
         calls.append(remote_args)
-        if len(calls) == 1:
-            raise hemma_deploy_and_verify.CommandExecutionError(
-                "permission denied while trying to connect to the Docker daemon socket"
-            )
-        return ""
+        raise hemma_deploy_and_verify.CommandExecutionError(diagnostic)
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
 
-    hemma_deploy_and_verify._remote_recreate_service("verified-revision")
+    with pytest.raises(hemma_deploy_and_verify.CommandExecutionError) as excinfo:
+        hemma_deploy_and_verify._remote_recreate_service("verified-revision")
 
-    assert calls[0] == [
-        "env",
-        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
-        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
-        "pdm",
-        "run",
-        "prod-recreate",
-        "sir_convert_a_lot_gpu_worker",
-        "sir_convert_a_lot_prod",
-    ]
-    assert calls[1] == [
-        "sudo",
-        "-n",
-        "env",
-        "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
-        "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
-        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
-        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
-        "/home/paunchygent/.local/bin/pdm",
-        "run",
-        "prod-recreate",
-        "sir_convert_a_lot_gpu_worker",
-        "sir_convert_a_lot_prod",
-    ]
-
-
-def test_remote_recreate_service_retries_with_sudo_on_docker_api_permission_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    calls: list[list[str]] = []
-
-    def fake_run_remote(
-        remote_args: list[str],
-        *,
-        label: str,
-    ) -> str:
-        del label
-        calls.append(remote_args)
-        if len(calls) == 1:
-            raise hemma_deploy_and_verify.CommandExecutionError(
-                "permission denied while trying to connect to the docker API"
-            )
-        return ""
-
-    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
-
-    hemma_deploy_and_verify._remote_recreate_service("verified-revision")
-
-    assert calls[0] == [
-        "env",
-        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
-        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
-        "pdm",
-        "run",
-        "prod-recreate",
-        "sir_convert_a_lot_gpu_worker",
-        "sir_convert_a_lot_prod",
-    ]
-    assert calls[1] == [
-        "sudo",
-        "-n",
-        "env",
-        "PATH=/home/paunchygent/.local/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "SIR_CONVERT_A_LOT_HEMMA_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
-        "SIR_CONVERT_A_LOT_CURRENT_SKILL_REPOSITORY=/home/paunchygent/apps/skill-repository",
-        "SIR_CONVERT_A_LOT_SERVICE_REVISION=verified-revision",
-        "SIR_CONVERT_A_LOT_EXPECTED_REVISION=verified-revision",
-        "/home/paunchygent/.local/bin/pdm",
-        "run",
-        "prod-recreate",
-        "sir_convert_a_lot_gpu_worker",
-        "sir_convert_a_lot_prod",
-    ]
+    assert str(excinfo.value) == diagnostic
+    assert len(calls) == 1
+    assert "sudo" not in calls[0]
+    assert "prod-recreate" in calls[0]
 
 
 def test_remote_recreate_service_raises_on_non_permission_error(
