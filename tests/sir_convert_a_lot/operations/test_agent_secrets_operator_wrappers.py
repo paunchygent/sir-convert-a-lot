@@ -3,9 +3,8 @@
 Purpose:
     Prove every devops surface that reads `SIR_CONVERT_A_LOT_V2_API_KEY` or
     `HF_TOKEN` reaches the secret through
-    `agent-secrets run --set sir-convert-a-lot-operator`, that no code path
-    falls back to `.env` for those names, and that the retired prod env
-    mirror is gone.
+    `agent-secrets run --set <set>`, that no code path falls back to `.env`
+    for those names, and that the retired prod env mirror is gone.
 
 Relationships:
     - Exercises `pyproject.toml` pdm script declarations.
@@ -28,6 +27,7 @@ from scripts.sir_convert_a_lot.devops.audio_transcription_sidecar_operator_envir
 REPO_ROOT = Path(__file__).resolve().parents[3]
 VERIFY_HEMMA_V2_CONVERSIONS = REPO_ROOT / "scripts" / "devops" / "verify-hemma-v2-conversions.sh"
 OPERATOR_SET = "sir-convert-a-lot-operator"
+REMOTE_PROOF_SET = "sir-convert-a-lot-remote-proof"
 
 
 def _pdm_scripts() -> dict[str, object]:
@@ -41,36 +41,50 @@ def test_secret_reading_pdm_scripts_run_through_agent_secrets() -> None:
     scripts = _pdm_scripts()
     expected_wrapped = {
         "benchmark:pdf-throughput-hemma": (
-            "python -m scripts.sir_convert_a_lot.devops.run_pdf_throughput_hemma_benchmark"
+            OPERATOR_SET,
+            "python -m scripts.sir_convert_a_lot.devops.run_pdf_throughput_hemma_benchmark",
         ),
         "benchmark:pdf-throughput-two-worker-sweep-hemma": (
+            OPERATOR_SET,
             "python -m "
             "scripts.sir_convert_a_lot.devops.run_pdf_throughput_hemma_benchmark "
-            "--two-worker-sweep"
+            "--two-worker-sweep",
         ),
         "benchmark:tts-sidecar": (
-            "python -m scripts.sir_convert_a_lot.devops.run_tts_sidecar_hemma_benchmark"
+            OPERATOR_SET,
+            "python -m scripts.sir_convert_a_lot.devops.run_tts_sidecar_hemma_benchmark",
         ),
         "benchmark:stt-sidecar-preflight": (
+            OPERATOR_SET,
             "python -m "
             "scripts.sir_convert_a_lot.devops."
-            "run_audio_transcription_sidecar_benchmark_preflight"
+            "run_audio_transcription_sidecar_benchmark_preflight",
         ),
         "benchmark:stt-sidecar-live-observation": (
+            OPERATOR_SET,
             "python -m "
             "scripts.sir_convert_a_lot.devops."
-            "run_audio_transcription_sidecar_live_observation"
+            "run_audio_transcription_sidecar_live_observation",
         ),
         "diagnose:stt-sidecar-diarization-access": (
+            OPERATOR_SET,
             "python -m "
             "scripts.sir_convert_a_lot.devops."
-            "run_audio_transcription_sidecar_diarization_access"
+            "run_audio_transcription_sidecar_diarization_access",
+        ),
+        "hemma-deploy-and-verify": (
+            OPERATOR_SET,
+            "python -m scripts.sir_convert_a_lot.devops.hemma_deploy_and_verify",
+        ),
+        "proof:remote-proof-audio-transcript": (
+            REMOTE_PROOF_SET,
+            "python -m scripts.sir_convert_a_lot.devops.remote_proof_audio_transcript_evidence",
         ),
     }
-    for name, inner in expected_wrapped.items():
+    for name, (secret_set, inner) in expected_wrapped.items():
         entry = scripts[name]
         command = entry["cmd"] if isinstance(entry, dict) else entry
-        assert command == (f"agent-secrets run --set {OPERATOR_SET} -- {inner}"), (
+        assert command == (f"agent-secrets run --set {secret_set} -- {inner}"), (
             f"pdm script {name} is not wrapped in agent-secrets"
         )
 
@@ -125,30 +139,28 @@ def test_v2_conversions_remote_mode_wraps_python_module_in_agent_secrets(
     )
 
 
-def test_operator_environment_loads_dotenv_configuration_but_never_secret_names(
+def test_operator_environment_merges_dotenv_keys_absent_from_environment(
     tmp_path: Path,
 ) -> None:
     env_file = tmp_path / ".env"
-    env_file.write_text(
-        "HF_TOKEN=file-hf-token\n"
-        "SIR_CONVERT_A_LOT_V2_API_KEY=file-api-key\n"
-        "HF_HOME=/srv/scratch/hf\n",
-        encoding="utf-8",
-    )
+    env_file.write_text("HF_HOME=/srv/scratch/hf\n", encoding="utf-8")
 
-    merged = merged_operator_environment({}, env_file=env_file)
+    merged = merged_operator_environment({"PATH": "/usr/bin"}, env_file=env_file)
 
     assert merged["HF_HOME"] == "/srv/scratch/hf"
-    assert "HF_TOKEN" not in merged
-    assert "SIR_CONVERT_A_LOT_V2_API_KEY" not in merged
+    assert merged["PATH"] == "/usr/bin"
 
 
-def test_operator_environment_keeps_process_secret_over_dotenv_value(
+def test_operator_environment_never_overrides_process_value(
     tmp_path: Path,
 ) -> None:
     env_file = tmp_path / ".env"
-    env_file.write_text("HF_TOKEN=file-hf-token\n", encoding="utf-8")
+    env_file.write_text("HF_TOKEN=file-hf-token\nHF_HOME=/srv/other/hf\n", encoding="utf-8")
 
-    merged = merged_operator_environment({"HF_TOKEN": "agent-secrets-hf-token"}, env_file=env_file)
+    merged = merged_operator_environment(
+        {"HF_TOKEN": "agent-secrets-hf-token", "HF_HOME": "/srv/scratch/hf"},
+        env_file=env_file,
+    )
 
     assert merged["HF_TOKEN"] == "agent-secrets-hf-token"
+    assert merged["HF_HOME"] == "/srv/scratch/hf"

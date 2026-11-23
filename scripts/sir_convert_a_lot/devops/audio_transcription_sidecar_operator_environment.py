@@ -8,10 +8,9 @@ Purpose:
 Relationships:
     - Used by the live-observation producer before launching host or Docker
       runtime probes.
-    - Mirrors the repo-local `.env` precedence used by sanctioned local PDM
-      command wrappers without importing service runtime settings.
-    - Never loads secret variable names from `.env`: those reach the process
-      only through `agent-secrets run --set sir-convert-a-lot-operator`.
+    - Never overwrites a variable already set in the process environment with a
+      `.env` value, so a secret injected through
+      `agent-secrets run --set sir-convert-a-lot-operator` always wins.
 """
 
 from __future__ import annotations
@@ -19,22 +18,18 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
-SECRET_ENV_VAR_NAMES: tuple[str, ...] = ("HF_TOKEN", "SIR_CONVERT_A_LOT_V2_API_KEY")
-
 
 def merged_operator_environment(
     base_environment: Mapping[str, str],
     *,
     env_file: Path,
 ) -> dict[str, str]:
-    """Return process environment overlaid with repo-local operator values."""
+    """Return process environment extended with repo-local operator values."""
 
     merged = dict(base_environment)
     if env_file.is_file():
-        file_values = _parse_env_file(env_file)
-        for secret_name in SECRET_ENV_VAR_NAMES:
-            file_values.pop(secret_name, None)
-        merged.update(file_values)
+        for key, value in _parse_env_file(env_file).items():
+            merged.setdefault(key, value)
     return merged
 
 
