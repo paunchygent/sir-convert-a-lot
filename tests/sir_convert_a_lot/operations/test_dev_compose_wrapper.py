@@ -124,29 +124,34 @@ if [[ "${1:-}" == "version" ]]; then
 fi
 
 if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
-  compose_env_file=""
+  compose_env_files=()
   compose_args=("$@")
   for index in "${!compose_args[@]}"; do
     if [[ "${compose_args[index]}" == "--env-file" ]]; then
-      compose_env_file="${compose_args[index + 1]}"
-      break
+      compose_env_files+=("${compose_args[index + 1]}")
     fi
   done
 
   service_revision="${SIR_CONVERT_A_LOT_SERVICE_REVISION:-}"
   expected_revision="${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-}"
-  if [[ -n "${compose_env_file}" ]]; then
+  # Compose semantics: a process-environment variable wins over every env file;
+  # among env files a later file overrides an earlier one.
+  for compose_env_file in "${compose_env_files[@]}"; do
     while IFS= read -r env_line || [[ -n "${env_line}" ]]; do
       case "${env_line}" in
         SIR_CONVERT_A_LOT_SERVICE_REVISION=*)
-          service_revision="${env_line#*=}"
+          if [[ -z "${SIR_CONVERT_A_LOT_SERVICE_REVISION:-}" ]]; then
+            service_revision="${env_line#*=}"
+          fi
           ;;
         SIR_CONVERT_A_LOT_EXPECTED_REVISION=*)
-          expected_revision="${env_line#*=}"
+          if [[ -z "${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-}" ]]; then
+            expected_revision="${env_line#*=}"
+          fi
           ;;
       esac
     done <"${compose_env_file}"
-  fi
+  done
 
   printf "%s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
   printf "service_revision=%s expected_revision=%s\\n" \
@@ -165,13 +170,21 @@ if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
         printf "secret_env %s=absent\\n" "${secret_name}" >>"${FAKE_DOCKER_LOG}"
       fi
     done
-    if [[ -n "${compose_env_file}" ]]; then
-      env_secret_regex='^(SIR_CONVERT_A_LOT_V2_API_KEY|HF_TOKEN'
-      env_secret_regex+='|SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY)='
-      printf "env_file_secret_lines=%s\\n" \
+    env_secret_regex='^(SIR_CONVERT_A_LOT_V2_API_KEY|HF_TOKEN'
+    env_secret_regex+='|SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY)='
+    for compose_env_file in "${compose_env_files[@]}"; do
+      printf "env_file_secret_lines %s=%s\\n" \
+        "${compose_env_file}" \
         "$(grep -cE "${env_secret_regex}" "${compose_env_file}" || true)" \
         >>"${FAKE_DOCKER_LOG}"
-    fi
+      env_file_key_names="$(
+        sed -n 's/^\\([A-Za-z_][A-Za-z0-9_]*\\)=.*/\\1/p' "${compose_env_file}" | paste -sd, -
+      )"
+      printf "env_file_keys %s=%s\\n" \
+        "${compose_env_file}" \
+        "${env_file_key_names}" \
+        >>"${FAKE_DOCKER_LOG}"
+    done
   fi
 fi
 
@@ -520,19 +533,37 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
         for line in log_lines
         if line.startswith("sudo -n --preserve-env=") and " docker compose --env-file " in line
     )
-    snapshot_path = Path(sudo_compose_line.split(" --env-file ", maxsplit=1)[1].split(" -f ")[0])
+    source_env_path = tmp_path / "prod-compose.env"
+    assert f"--env-file {source_env_path} --env-file " in sudo_compose_line
+    snapshot_path = Path(
+        sudo_compose_line.split(f"--env-file {source_env_path} --env-file ", maxsplit=1)[1].split(
+            " -f ", maxsplit=1
+        )[0]
+    )
     assert snapshot_path.parent == tmp_path / "compose-env-snapshots"
     assert snapshot_path.name.startswith("sir-convert-compose-env.")
-    assert str(tmp_path / "prod-compose.env") not in sudo_compose_line
     assert (
-        f"--env-file {snapshot_path} -f {REPO_ROOT / 'compose.yaml'} "
+        f"--env-file {source_env_path} --env-file {snapshot_path} "
+        f"-f {REPO_ROOT / 'compose.yaml'} "
         f"-f {REPO_ROOT / 'compose.secrets.yaml'} "
         "up -d --force-recreate --build sir_convert_a_lot_prod"
     ) in log_lines
     assert "service_revision=prod_rev expected_revision=prod_rev" in log_lines
     assert "secret_env SIR_CONVERT_A_LOT_V2_API_KEY=present" in log_lines
     assert "secret_env HF_TOKEN=present" in log_lines
-    assert "env_file_secret_lines=0" in log_lines
+    assert f"env_file_secret_lines {source_env_path}=2" in log_lines
+    assert f"env_file_secret_lines {snapshot_path}=0" in log_lines
+    keys_prefix = f"env_file_keys {snapshot_path}="
+    keys_line = next(line for line in log_lines if line.startswith(keys_prefix))
+    generated_keys = set(keys_line[len(keys_prefix) :].split(","))
+    assert generated_keys <= {
+        "SIR_CONVERT_A_LOT_DEPS_IMAGE",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION",
+        "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH",
+    }
+    assert "SIR_CONVERT_A_LOT_SERVICE_REVISION" in generated_keys
+    assert "UNRELATED_SOURCE_VALUE" not in generated_keys
     assert not snapshot_path.exists()
 
 
@@ -562,6 +593,7 @@ def test_prod_compose_start_wraps_up_with_secrets_overlay(tmp_path: Path) -> Non
         for line in log_lines
     )
     compose_line = next(line for line in log_lines if "compose" in line and "up -d --build" in line)
+    assert f"--env-file {tmp_path / 'prod-compose.env'} --env-file " in compose_line
     assert f"-f {REPO_ROOT / 'compose.yaml'}" in compose_line
     assert f"-f {REPO_ROOT / 'compose.secrets.yaml'}" in compose_line
     assert "secret_env SIR_CONVERT_A_LOT_V2_API_KEY=present" in log_lines
@@ -685,6 +717,7 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
     assert result.returncode == 0
 
     log_text = log_file.read_text(encoding="utf-8")
+    log_lines = log_text.splitlines()
     assert "sudo -n docker compose version" in log_text
     assert "sudo -n docker image inspect" in log_text
     assert "sudo -n docker buildx build" in log_text
@@ -695,12 +728,29 @@ def test_remote_proof_wrapper_routes_compose_and_deps_through_shared_sudo_docker
         "sudo -n --preserve-env=SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY "
         "docker compose --env-file" in log_text
     )
-    assert f"--env-file {tmp_path}/sir-convert-compose-env." in log_text
-    assert f"--env-file {tmp_path / 'remote-proof.env'}" not in log_text
+    assert (
+        f"--env-file {tmp_path / 'remote-proof.env'} "
+        f"--env-file {tmp_path}/sir-convert-compose-env." in log_text
+    )
     assert f"-f {REPO_ROOT / 'compose.remote-proof.yaml'}" in log_text
     assert "compose.secrets.yaml" not in log_text
     assert "secret_env SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY=present" in log_text
-    assert "env_file_secret_lines=0" in log_text
+    assert f"env_file_secret_lines {tmp_path / 'remote-proof.env'}=1" in log_lines
+    keys_prefix = f"env_file_keys {tmp_path}/sir-convert-compose-env."
+    keys_line = next(line for line in log_lines if line.startswith(keys_prefix))
+    generated_keys = set(keys_line.split("=", maxsplit=1)[1].split(","))
+    assert generated_keys == {
+        "SIR_CONVERT_A_LOT_DEPS_IMAGE",
+        "SIR_CONVERT_A_LOT_SERVICE_REVISION",
+        "SIR_CONVERT_A_LOT_EXPECTED_REVISION",
+        "HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH",
+    }
+    env_secret_line = next(
+        line
+        for line in log_lines
+        if line.startswith(f"env_file_secret_lines {tmp_path}/sir-convert-compose-env.")
+    )
+    assert env_secret_line.endswith("=0")
     assert "superseded dependency image cleanup failed" not in result.stderr
     assert not list(tmp_path.glob("sir-convert-compose-env.*"))
 

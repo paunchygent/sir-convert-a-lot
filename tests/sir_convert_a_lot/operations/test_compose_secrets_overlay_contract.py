@@ -122,21 +122,28 @@ def test_compose_actions_wraps_only_secret_actions_through_agent_secrets() -> No
     assert "run_compose_for_action config config" in script
 
 
-def test_compose_actions_filters_secret_keys_out_of_env_snapshot() -> None:
+def test_compose_actions_passes_source_env_file_without_copy_or_exclude_list() -> None:
     script = COMPOSE_ACTIONS_SCRIPT.read_text(encoding="utf-8")
 
-    assert 'COMPOSE_ENV_EXCLUDE_KEYS="${SIR_CONVERT_A_LOT_COMPOSE_ENV_EXCLUDE_KEYS:-}"' in script
-    assert 'exclude_pattern="^(export )?(${COMPOSE_ENV_EXCLUDE_KEYS// /|})="' in script
-    assert 'grep -vE "${exclude_pattern}"' in script
+    assert "COMPOSE_ENV_EXCLUDE_KEYS" not in script
+    assert "SIR_CONVERT_A_LOT_COMPOSE_ENV_EXCLUDE_KEYS" not in script
+    assert 'cp "${COMPOSE_SOURCE_ENV_FILE}"' not in script
+    assert "grep -vE" not in script
+    assert 'if [[ "${has_dynamic_values}" == "0" ]]; then' in script
+
+    source_env_arg = 'compose_env_args+=(--env-file "${COMPOSE_SOURCE_ENV_FILE}")'
+    dynamic_env_arg = 'compose_env_args+=(--env-file "${COMPOSE_DYNAMIC_ENV_FILE}")'
+    assert source_env_arg in script
+    assert dynamic_env_arg in script
+    assert script.index(source_env_arg) < script.index(dynamic_env_arg)
 
 
-def test_prod_wrapper_declares_overlay_set_and_secret_exclusions() -> None:
+def test_prod_wrapper_declares_overlay_set_without_secret_exclusions() -> None:
     script = PROD_COMPOSE_SCRIPT.read_text(encoding="utf-8")
 
     assert 'SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE="${REPO_ROOT}/compose.secrets.yaml"' in script
     assert 'SIR_CONVERT_A_LOT_AGENT_SECRETS_SET="sir-convert-a-lot-prod"' in script
-    for key in SECRET_KEYS:
-        assert key in script
+    assert "COMPOSE_ENV_EXCLUDE_KEYS" not in script
 
 
 def test_dev_wrapper_keeps_unwrapped_secret_free_lane() -> None:
@@ -155,10 +162,7 @@ def test_remote_proof_lane_routes_every_action_through_its_set() -> None:
         'SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS="start stop build build-clean '
         'recreate logs ps config"' in script
     )
-    assert (
-        "SIR_CONVERT_A_LOT_COMPOSE_ENV_EXCLUDE_KEYS="
-        '"SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY"' in script
-    )
+    assert "COMPOSE_ENV_EXCLUDE_KEYS" not in script
     assert "source <(grep -vE '^(export )?SIR_CONVERT_A_LOT_REMOTE_PROOF_V2_API_KEY='" in script
 
     compose = _load_yaml_mapping(REMOTE_PROOF_FILE)

@@ -22,7 +22,6 @@ COMPOSE_USAGE="${SIR_CONVERT_A_LOT_COMPOSE_USAGE:-Usage: compose wrapper <action
 COMPOSE_SECRETS_FILE="${SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE:-}"
 COMPOSE_SECRETS_SET="${SIR_CONVERT_A_LOT_AGENT_SECRETS_SET:-}"
 COMPOSE_SECRET_ACTIONS="${SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS:-start recreate build build-clean}"
-COMPOSE_ENV_EXCLUDE_KEYS="${SIR_CONVERT_A_LOT_COMPOSE_ENV_EXCLUDE_KEYS:-}"
 
 usage() {
   printf "%s\n" "${COMPOSE_USAGE}" >&2
@@ -139,31 +138,25 @@ prepare_compose_dynamic_env_file() {
       break
     fi
   done
+  if [[ "${has_dynamic_values}" == "0" ]]; then
+    return 0
+  fi
   local compose_env_snapshot_dir="${SIR_CONVERT_A_LOT_COMPOSE_ENV_SNAPSHOT_DIR:-${REPO_ROOT}/build/compose-env}"
   mkdir -p "${compose_env_snapshot_dir}"
   chmod 700 "${compose_env_snapshot_dir}"
   COMPOSE_DYNAMIC_ENV_FILE="$(mktemp "${compose_env_snapshot_dir}/sir-convert-compose-env.XXXXXX")"
   chmod 600 "${COMPOSE_DYNAMIC_ENV_FILE}"
-  if [[ -n "${COMPOSE_ENV_EXCLUDE_KEYS}" ]]; then
-    local exclude_pattern
-    exclude_pattern="^(export )?(${COMPOSE_ENV_EXCLUDE_KEYS// /|})="
-    grep -vE "${exclude_pattern}" "${COMPOSE_SOURCE_ENV_FILE}" >"${COMPOSE_DYNAMIC_ENV_FILE}" || true
-  else
-    cp "${COMPOSE_SOURCE_ENV_FILE}" "${COMPOSE_DYNAMIC_ENV_FILE}"
-  fi
-  if [[ "${has_dynamic_values}" == "1" ]]; then
-    {
-      printf "\n"
-      for key in "${dynamic_keys[@]}"; do
-        write_compose_env_line "${key}"
-      done
-    } >>"${COMPOSE_DYNAMIC_ENV_FILE}"
-  fi
+  for key in "${dynamic_keys[@]}"; do
+    write_compose_env_line "${key}" >>"${COMPOSE_DYNAMIC_ENV_FILE}"
+  done
 }
 
 refresh_compose_command() {
   prepare_compose_dynamic_env_file
   local compose_env_args=()
+  if [[ -n "${COMPOSE_SOURCE_ENV_FILE}" ]]; then
+    compose_env_args+=(--env-file "${COMPOSE_SOURCE_ENV_FILE}")
+  fi
   if [[ -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
     compose_env_args+=(--env-file "${COMPOSE_DYNAMIC_ENV_FILE}")
   fi
