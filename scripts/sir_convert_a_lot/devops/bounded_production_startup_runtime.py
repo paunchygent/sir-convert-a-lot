@@ -109,6 +109,32 @@ def compose_command(environment: Mapping[str, str]) -> list[str]:
     return [*command, "compose"]
 
 
+AGENT_SECRETS_PROD_SET = "sir-convert-a-lot-prod"
+SECRETS_COMPOSE_FILE = "compose.secrets.yaml"
+
+
+def compose_secrets_command(environment: Mapping[str, str]) -> list[str]:
+    command = docker_command()
+    if command == ["sudo", "-n", "docker"]:
+        assignments = [f"{name}={value}" for name, value in sorted(environment.items())]
+        return [
+            "agent-secrets",
+            "run",
+            "--set",
+            AGENT_SECRETS_PROD_SET,
+            "--",
+            "bash",
+            "-c",
+            'exec sudo -n --preserve-env="$AGENT_SECRETS_VARIABLES" "$@"',
+            "bash",
+            "env",
+            *assignments,
+            "docker",
+            "compose",
+        ]
+    return ["agent-secrets", "run", "--set", AGENT_SECRETS_PROD_SET, "--", *command, "compose"]
+
+
 def inspect_image(
     runner: CommandRunner, image: str, *, dependency_boundary: bool = False
 ) -> tuple[str, dict[str, str]]:

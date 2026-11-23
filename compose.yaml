@@ -12,7 +12,6 @@ services:
     container_name: sir_convert_a_lot_prod
     restart: "no"
     environment:
-      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}
       - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
@@ -90,7 +89,6 @@ services:
     container_name: sir_convert_a_lot_gpu_worker
     restart: "no"
     environment:
-      - SIR_CONVERT_A_LOT_V2_API_KEY=${SIR_CONVERT_A_LOT_V2_API_KEY:-dev-only-key}
       - SIR_CONVERT_A_LOT_SERVICE_REVISION=${SIR_CONVERT_A_LOT_SERVICE_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_EXPECTED_REVISION=${SIR_CONVERT_A_LOT_EXPECTED_REVISION:-unknown}
       - SIR_CONVERT_A_LOT_DATA_DIR=/var/lib/sir-convert-a-lot/prod
@@ -178,7 +176,6 @@ services:
       - HF_HOME=/cache/huggingface
       - HF_HUB_CACHE=/cache/huggingface/hub
       - TRANSFORMERS_CACHE=/cache/huggingface
-      - HF_TOKEN=${HF_TOKEN:-}
       - SIR_STT_SIDECAR_BACKEND_PROFILE_ID=stt_sv_en_primary
       - SIR_STT_SIDECAR_BACKEND_VERSION=faster_whisper_pyannote_profile
       - SIR_STT_SIDECAR_STT_PROFILE_LABEL=stt_sv_en_primary

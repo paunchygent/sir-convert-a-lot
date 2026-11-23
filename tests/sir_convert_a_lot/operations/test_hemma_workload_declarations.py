@@ -1,3 +1,4 @@
+import pwd
 import subprocess
 from pathlib import Path
 
@@ -122,6 +123,88 @@ def test_production_start_uses_bounded_command_and_maps_terminal_outcome(
     assert result.outcome is expected
     assert runner.commands == [("pdm", "run", "prod-start-bounded")]
     assert "--build" not in runner.commands[0]
+
+
+def _operator_root_worker(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    sudo_user: str | None = "operator",
+    sudo_uid: str | None = None,
+) -> None:
+    monkeypatch.setattr(hemma_workload.os, "geteuid", lambda: 0)
+    if sudo_user is None:
+        monkeypatch.delenv("SUDO_USER", raising=False)
+    else:
+        monkeypatch.setenv("SUDO_USER", sudo_user)
+    if sudo_uid is None:
+        monkeypatch.delenv("SUDO_UID", raising=False)
+    else:
+        monkeypatch.setenv("SUDO_UID", sudo_uid)
+    entry = pwd.struct_passwd(("operator", "x", 1000, 1000, "", "/home/operator", "/bin/bash"))
+    monkeypatch.setattr(hemma_workload.pwd, "getpwnam", lambda name: entry)
+    monkeypatch.setattr(hemma_workload.pwd, "getpwuid", lambda uid: entry)
+
+
+def test_root_worker_runs_bounded_startup_as_operator_account(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _operator_root_worker(monkeypatch)
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    runner = QueueRunner([hemma_workload.CommandResult(0, "outcome=succeeded\n")])
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.start().outcome is TerminalOutcome.SUCCEEDED
+    command = runner.commands[0]
+    assert command[:4] == ("sudo", "-n", "-u", "operator")
+    assert command[4] == "env"
+    assert command[5].startswith("PATH=/home/operator/.local/bin:")
+    assert command[-3:] == ("pdm", "run", "prod-start-bounded")
+
+
+def test_root_worker_falls_back_to_sudo_uid_for_operator_account(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _operator_root_worker(monkeypatch, sudo_user=None, sudo_uid="1000")
+    runner = QueueRunner([hemma_workload.CommandResult(0, "outcome=succeeded\n")])
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.start().outcome is TerminalOutcome.SUCCEEDED
+    assert runner.commands[0][:4] == ("sudo", "-n", "-u", "operator")
+
+
+def test_root_worker_runs_production_stop_as_operator_account(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _operator_root_worker(monkeypatch)
+    runner = QueueRunner([hemma_workload.CommandResult(0, "")])
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.stop().outcome is TerminalOutcome.SUCCEEDED
+    command = runner.commands[0]
+    assert command[:3] == ("sudo", "-n", "-u")
+    assert command[-5:-3] == ("pdm", "run")
+    assert command[-3:] == (
+        "prod-stop",
+        hemma_workload.GPU_WORKER_CONTAINER,
+        hemma_workload.API_CONTAINER,
+    )
+
+
+def test_root_worker_without_operator_identity_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _operator_root_worker(monkeypatch, sudo_user=None)
+    monkeypatch.setattr(
+        hemma_workload.pwd,
+        "getpwnam",
+        lambda name: pytest.fail("operator lookup without SUDO_USER"),
+    )
+    runner = QueueRunner([])
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.start().outcome is TerminalOutcome.FAILED
+    assert adapter.stop().outcome is TerminalOutcome.FAILED
+    assert runner.commands == []
 
 
 @pytest.mark.parametrize(

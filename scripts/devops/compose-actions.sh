@@ -19,6 +19,9 @@ COMPOSE_LABEL="${SIR_CONVERT_A_LOT_COMPOSE_LABEL:-compose-actions}"
 COMPOSE_FILE="${SIR_CONVERT_A_LOT_COMPOSE_FILE:-}"
 COMPOSE_FILE_DESCRIPTION="${SIR_CONVERT_A_LOT_COMPOSE_FILE_DESCRIPTION:-compose file}"
 COMPOSE_USAGE="${SIR_CONVERT_A_LOT_COMPOSE_USAGE:-Usage: compose wrapper <action> [service...]}"
+COMPOSE_SECRETS_FILE="${SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE:-}"
+COMPOSE_SECRETS_SET="${SIR_CONVERT_A_LOT_AGENT_SECRETS_SET:-}"
+COMPOSE_SECRET_ACTIONS="${SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS:-start recreate build build-clean}"
 
 usage() {
   printf "%s\n" "${COMPOSE_USAGE}" >&2
@@ -36,6 +39,11 @@ fi
 
 if [[ ! -f "${COMPOSE_FILE}" ]]; then
   echo "${COMPOSE_LABEL}: ${COMPOSE_FILE_DESCRIPTION} not found: ${COMPOSE_FILE}" >&2
+  exit 66
+fi
+
+if [[ -n "${COMPOSE_SECRETS_FILE}" && ! -f "${COMPOSE_SECRETS_FILE}" ]]; then
+  echo "${COMPOSE_LABEL}: compose secrets file not found: ${COMPOSE_SECRETS_FILE}" >&2
   exit 66
 fi
 
@@ -130,25 +138,25 @@ prepare_compose_dynamic_env_file() {
       break
     fi
   done
+  if [[ "${has_dynamic_values}" == "0" ]]; then
+    return 0
+  fi
   local compose_env_snapshot_dir="${SIR_CONVERT_A_LOT_COMPOSE_ENV_SNAPSHOT_DIR:-${REPO_ROOT}/build/compose-env}"
   mkdir -p "${compose_env_snapshot_dir}"
   chmod 700 "${compose_env_snapshot_dir}"
   COMPOSE_DYNAMIC_ENV_FILE="$(mktemp "${compose_env_snapshot_dir}/sir-convert-compose-env.XXXXXX")"
   chmod 600 "${COMPOSE_DYNAMIC_ENV_FILE}"
-  cp "${COMPOSE_SOURCE_ENV_FILE}" "${COMPOSE_DYNAMIC_ENV_FILE}"
-  if [[ "${has_dynamic_values}" == "1" ]]; then
-    {
-      printf "\n"
-      for key in "${dynamic_keys[@]}"; do
-        write_compose_env_line "${key}"
-      done
-    } >>"${COMPOSE_DYNAMIC_ENV_FILE}"
-  fi
+  for key in "${dynamic_keys[@]}"; do
+    write_compose_env_line "${key}" >>"${COMPOSE_DYNAMIC_ENV_FILE}"
+  done
 }
 
 refresh_compose_command() {
   prepare_compose_dynamic_env_file
   local compose_env_args=()
+  if [[ -n "${COMPOSE_SOURCE_ENV_FILE}" ]]; then
+    compose_env_args+=(--env-file "${COMPOSE_SOURCE_ENV_FILE}")
+  fi
   if [[ -n "${COMPOSE_DYNAMIC_ENV_FILE}" ]]; then
     compose_env_args+=(--env-file "${COMPOSE_DYNAMIC_ENV_FILE}")
   fi
@@ -158,6 +166,42 @@ refresh_compose_command() {
 run_compose() {
   refresh_compose_command
   "${COMPOSE_CMD[@]}" "$@"
+}
+
+action_needs_secrets() {
+  [[ " ${COMPOSE_SECRET_ACTIONS} " == *" $1 "* ]]
+}
+
+run_compose_wrapped() {
+  refresh_compose_command
+  local wrapped_cmd=("${COMPOSE_CMD[@]}")
+  if [[ -n "${COMPOSE_SECRETS_FILE}" ]]; then
+    wrapped_cmd+=(-f "${COMPOSE_SECRETS_FILE}")
+  fi
+  wrapped_cmd+=("$@")
+  if ! command -v agent-secrets >/dev/null 2>&1; then
+    echo "${COMPOSE_LABEL}: agent-secrets is required to inject set ${COMPOSE_SECRETS_SET}" >&2
+    exit 67
+  fi
+  if [[ "${SIR_CONVERT_DOCKER_CMD[0]:-}" == "sudo" ]]; then
+    # COMPOSE_CMD starts with `sudo -n`; re-wrap it so the variables agent-secrets
+    # injected survive sudo env_reset inside the agent-secrets child process.
+    agent-secrets run --set "${COMPOSE_SECRETS_SET}" -- \
+      bash -c "exec sudo -n --preserve-env=\"\$AGENT_SECRETS_VARIABLES\" \"\$@\"" \
+      bash "${wrapped_cmd[@]:2}"
+  else
+    agent-secrets run --set "${COMPOSE_SECRETS_SET}" -- "${wrapped_cmd[@]}"
+  fi
+}
+
+run_compose_for_action() {
+  local action="$1"
+  shift
+  if [[ -n "${COMPOSE_SECRETS_SET}" ]] && action_needs_secrets "${action}"; then
+    run_compose_wrapped "$@"
+  else
+    run_compose "$@"
+  fi
 }
 
 ensure_dependency_image() {
@@ -183,39 +227,39 @@ ensure_dependency_image() {
 case "${ACTION}" in
   start)
     ensure_dependency_image
-    run_compose up -d --build "$@"
+    run_compose_for_action start up -d --build "$@"
     ;;
   stop)
     if [[ "$#" -eq 0 ]]; then
-      run_compose down
+      run_compose_for_action stop down
     else
-      run_compose stop "$@"
+      run_compose_for_action stop stop "$@"
     fi
     ;;
   build)
     ensure_dependency_image
-    run_compose build "$@"
+    run_compose_for_action build build "$@"
     ;;
   build-clean)
     ensure_dependency_image
-    run_compose build --no-cache "$@"
+    run_compose_for_action build-clean build --no-cache "$@"
     ;;
   recreate)
     ensure_dependency_image
-    run_compose up -d --force-recreate --build "$@"
+    run_compose_for_action recreate up -d --force-recreate --build "$@"
     ;;
   logs)
-    run_compose logs --tail=200 "$@"
+    run_compose_for_action logs logs --tail=200 "$@"
     ;;
   ps)
-    run_compose ps "$@"
+    run_compose_for_action ps ps "$@"
     ;;
   config)
-    run_compose config "$@"
+    run_compose_for_action config config "$@"
     ;;
   check)
-    run_compose config >/dev/null
-    run_compose ps
+    run_compose_for_action config config >/dev/null
+    run_compose_for_action ps ps
     ;;
   *)
     usage

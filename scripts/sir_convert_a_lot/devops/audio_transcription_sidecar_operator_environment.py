@@ -8,8 +8,9 @@ Purpose:
 Relationships:
     - Used by the live-observation producer before launching host or Docker
       runtime probes.
-    - Mirrors the repo-local `.env` precedence used by sanctioned local PDM
-      command wrappers without importing service runtime settings.
+    - Never overwrites a variable already set in the process environment with a
+      `.env` value, so a secret injected through
+      `agent-secrets run --set sir-convert-a-lot-operator` always wins.
 """
 
 from __future__ import annotations
@@ -23,11 +24,12 @@ def merged_operator_environment(
     *,
     env_file: Path,
 ) -> dict[str, str]:
-    """Return process environment overlaid with repo-local operator values."""
+    """Return process environment extended with repo-local operator values."""
 
     merged = dict(base_environment)
     if env_file.is_file():
-        merged.update(_parse_env_file(env_file))
+        for key, value in _parse_env_file(env_file).items():
+            merged.setdefault(key, value)
     return merged
 
 
