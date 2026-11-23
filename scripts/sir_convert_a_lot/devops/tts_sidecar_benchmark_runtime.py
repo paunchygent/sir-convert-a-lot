@@ -142,6 +142,17 @@ def _vllm_use_triton_flash_attn_env(settings: BenchmarkSettings) -> str:
     return f"VLLM_USE_TRITON_FLASH_ATTN={'1' if settings.use_triton_flash_attn else '0'}"
 
 
+def _hf_token_transport(settings: BenchmarkSettings) -> tuple[list[str], tuple[str, ...]]:
+    """Return the Docker `-e HF_TOKEN` arguments and sudo-preserved names.
+
+    Both model-consuming launches (prefetch and serve) use this so the token
+    crosses sudo and Docker by name only; its value never reaches argv.
+    """
+    if not settings.hf_token_present:
+        return [], ()
+    return ["-e", "HF_TOKEN"], ("HF_TOKEN",)
+
+
 def ensure_sidecar_preconditions(settings: BenchmarkSettings) -> None:
     """Fail early if the expected Docker network and service container are missing."""
     if not settings.stage_config_path.resolve().exists():
@@ -234,6 +245,7 @@ def prefetch_qwen3_tts_assets(settings: BenchmarkSettings) -> None:
         )
         """
     ).strip()
+    token_args, preserve_env = _hf_token_transport(settings)
     docker_checked(
         [
             "run",
@@ -248,6 +260,7 @@ def prefetch_qwen3_tts_assets(settings: BenchmarkSettings) -> None:
             _vllm_use_triton_flash_attn_env(settings),
             "-v",
             f"{settings.hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}",
+            *token_args,
             "--entrypoint",
             "python",
             settings.image,
@@ -255,6 +268,7 @@ def prefetch_qwen3_tts_assets(settings: BenchmarkSettings) -> None:
             prefetch_script,
         ],
         label="docker run tts-sidecar tokenizer prefetch",
+        preserve_env=preserve_env,
     )
 
 
@@ -296,8 +310,8 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
         "-v",
         f"{settings.stage_config_path.resolve().as_posix()}:/workspace/tts-sidecar-stage-config.yaml:ro",
     ]
-    if settings.hf_token_present:
-        run_args.extend(["-e", "HF_TOKEN"])
+    token_args, preserve_env = _hf_token_transport(settings)
+    run_args.extend(token_args)
     run_args.extend(
         [
             "--entrypoint",
@@ -319,7 +333,7 @@ def start_sidecar(settings: BenchmarkSettings) -> None:
     docker_checked(
         run_args,
         label="docker run tts-sidecar sidecar",
-        preserve_env=("HF_TOKEN",) if settings.hf_token_present else (),
+        preserve_env=preserve_env,
     )
 
 

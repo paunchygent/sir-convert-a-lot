@@ -15,6 +15,7 @@ Relationships:
 from __future__ import annotations
 
 import ast
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,7 @@ from scripts.sir_convert_a_lot.devops import run_tts_sidecar_hemma_benchmark
 from scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_runtime import (
     CONTAINER_HF_HOME,
     CONTAINER_HF_HUB_CACHE,
+    BenchmarkSettings,
     _build_runtime_metadata_probe_python,
     prefetch_qwen3_tts_assets,
     start_sidecar,
@@ -99,20 +101,22 @@ def test_parse_args_allows_disabling_triton_flash_attention() -> None:
     assert settings.use_triton_flash_attn is False
 
 
+@pytest.mark.parametrize("hf_token_present", [True, False])
 def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_enables_triton(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hf_token_present: bool
 ) -> None:
     stage_config_path = tmp_path / "tts-sidecar-stage-config.yaml"
     stage_config_path.write_text("stage_args: []\n", encoding="utf-8")
     hf_cache_dir = tmp_path / "hf-cache"
     recorded_commands: list[list[str]] = []
+    recorded_preserve_env: list[tuple[str, ...]] = []
 
     def _fake_docker_checked(
         args: list[str], *, label: str, preserve_env: tuple[str, ...] = ()
     ) -> str:
         assert label == "docker run tts-sidecar tokenizer prefetch"
-        assert preserve_env == ()
         recorded_commands.append(args)
+        recorded_preserve_env.append(preserve_env)
         return (
             '{"copied_targets":["/cache/huggingface/hub/models--Qwen--Qwen3-TTS-12Hz-0.6B-'
             'CustomVoice/snapshots/test/speech_tokenizer"]}'
@@ -127,6 +131,7 @@ def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_enables_triton(
         hf_cache_dir=hf_cache_dir,
         voice="Chelsie",
         stage_config_path=stage_config_path,
+        hf_token_present=hf_token_present,
     )
 
     prefetch_qwen3_tts_assets(settings)
@@ -136,6 +141,12 @@ def test_prefetch_qwen3_tts_assets_downloads_tokenizer_and_enables_triton(
     assert f"{hf_cache_dir.as_posix()}:{CONTAINER_HF_HOME}" in command
     assert "VLLM_USE_TRITON_FLASH_ATTN=1" in command
     assert "Qwen/Qwen3-TTS-Tokenizer-12Hz" in command[-1]
+    if hf_token_present:
+        assert recorded_preserve_env == [("HF_TOKEN",)]
+        assert command[command.index("HF_TOKEN") - 1] == "-e"
+    else:
+        assert recorded_preserve_env == [()]
+        assert "HF_TOKEN" not in command
 
 
 def test_prepare_output_root_removes_stale_failure_and_artifacts(tmp_path: Path) -> None:
@@ -209,8 +220,18 @@ def test_start_sidecar_uses_persistent_hf_cache_contract(
     assert "--enforce-eager" in command
 
 
-def test_start_sidecar_preserves_hf_token_name_across_sudo_without_value(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    ("launch", "expected_label"),
+    [
+        (start_sidecar, "docker run tts-sidecar sidecar"),
+        (prefetch_qwen3_tts_assets, "docker run tts-sidecar tokenizer prefetch"),
+    ],
+)
+def test_model_launches_preserve_hf_token_name_across_sudo_without_value(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    launch: Callable[[BenchmarkSettings], None],
+    expected_label: str,
 ) -> None:
     stage_config_path = tmp_path / "tts-sidecar-stage-config.yaml"
     stage_config_path.write_text("model: test\n", encoding="utf-8")
@@ -219,9 +240,9 @@ def test_start_sidecar_preserves_hf_token_name_across_sudo_without_value(
     recorded_commands: list[list[str]] = []
 
     def _fake_run_checked(command: list[str], *, label: str) -> str:
-        assert label == "docker run tts-sidecar sidecar"
+        assert label == expected_label
         recorded_commands.append(command)
-        return "container-id"
+        return "{}"
 
     monkeypatch.setattr(
         "scripts.sir_convert_a_lot.devops.tts_sidecar_benchmark_runtime.run_checked",
@@ -233,7 +254,7 @@ def test_start_sidecar_preserves_hf_token_name_across_sudo_without_value(
         hf_token_present=True,
     )
 
-    start_sidecar(settings)
+    launch(settings)
 
     command = recorded_commands[0]
     assert command[:3] == ["sudo", "-n", "--preserve-env=HF_TOKEN"]
