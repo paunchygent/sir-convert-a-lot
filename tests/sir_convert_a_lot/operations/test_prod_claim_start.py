@@ -154,9 +154,7 @@ def test_prod_compose_recreate_exits_with_claim_code(tmp_path: Path, claim_exit_
 def test_prod_compose_recreate_refuses_non_production_services(tmp_path: Path) -> None:
     env, log_file = _prod_env_with_fakes(tmp_path)
 
-    result = _run_wrapper(
-        PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_stt_sidecar"], env
-    )
+    result = _run_wrapper(PROD_COMPOSE_SCRIPT, ["recreate", "sir_convert_a_lot_stt_sidecar"], env)
     assert result.returncode == 2
     assert "Usage:" in result.stderr
 

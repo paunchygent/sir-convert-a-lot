@@ -342,7 +342,7 @@ def test_prod_compose_helper_targets_production_compose_surface() -> None:
         in script_text
     )
     assert (
-        'SIR_CONVERT_A_LOT_COMPOSE_RECREATE_SERVICES='
+        "SIR_CONVERT_A_LOT_COMPOSE_RECREATE_SERVICES="
         '"sir_convert_a_lot_prod sir_convert_a_lot_gpu_worker"' in script_text
     )
 

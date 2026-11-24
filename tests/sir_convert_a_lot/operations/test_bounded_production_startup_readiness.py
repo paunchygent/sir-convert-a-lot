@@ -160,7 +160,7 @@ def test_empty_gpu_probe_is_failed_outcome_with_one_terminal_line(
 
     monkeypatch.setattr(startup, "execute", execute)
 
-    assert startup.main() == 1
+    assert startup.main([]) == 1
     captured = capsys.readouterr()
     assert captured.out == "outcome=failed\n"
     assert "returned no payload" in captured.err
@@ -179,7 +179,7 @@ def test_main_emits_one_terminal_outcome_and_only_succeeds_with_zero(
 
     monkeypatch.setattr(startup, "execute", execute)
 
-    result = startup.main()
+    result = startup.main([])
     captured = capsys.readouterr()
     expected = "succeeded" if outcome is None else outcome
 

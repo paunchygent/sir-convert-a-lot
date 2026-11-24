@@ -414,9 +414,7 @@ def test_main_prints_claim_reason_and_returns_claim_code(
     report: dict[str, object] = {"status": "failed", "failure": reason}
     claim = hemma_deploy_and_verify.RecreateClaimOutcome(outcome=outcome, reason=reason)
 
-    monkeypatch.setattr(
-        hemma_deploy_and_verify, "_load_workflow_settings", lambda args: settings
-    )
+    monkeypatch.setattr(hemma_deploy_and_verify, "_load_workflow_settings", lambda args: settings)
     monkeypatch.setattr(
         hemma_deploy_and_verify,
         "execute_workflow",
