@@ -12,6 +12,7 @@ Relationships:
 
 from __future__ import annotations
 
+import shutil
 import stat
 import subprocess
 from pathlib import Path
@@ -295,6 +296,26 @@ exec "${args[@]}"
         encoding="utf-8",
     )
     fake_agent_secrets.chmod(fake_agent_secrets.stat().st_mode | stat.S_IXUSR)
+
+
+def _write_fake_pdm(script_dir: Path) -> None:
+    real_pdm = shutil.which("pdm") or "pdm"
+    fake_pdm = script_dir / "pdm"
+    fake_pdm.write_text(
+        f"""#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${{1:-}}" == "run" && "${{2:-}}" == "hemma-workload" ]]; then
+  if [[ -n "${{FAKE_DOCKER_LOG:-}}" ]]; then
+    printf "pdm %s\\n" "$*" >>"${{FAKE_DOCKER_LOG}}"
+  fi
+  exit "${{FAKE_PDM_EXIT:-0}}"
+fi
+exec "{real_pdm}" "$@"
+""",
+        encoding="utf-8",
+    )
+    fake_pdm.chmod(fake_pdm.stat().st_mode | stat.S_IXUSR)
 
 
 def _run_wrapper(

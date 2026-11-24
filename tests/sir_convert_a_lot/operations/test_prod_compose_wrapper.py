@@ -25,6 +25,7 @@ from tests.sir_convert_a_lot.operations.compose_wrapper_fakes import (
     _with_fake_prod_compose_env,
     _write_fake_agent_secrets,
     _write_fake_docker,
+    _write_fake_pdm,
     _write_fake_sudo,
 )
 
@@ -35,6 +36,7 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     _write_fake_docker(fake_bin)
     _write_fake_sudo(fake_bin)
     _write_fake_agent_secrets(fake_bin)
+    _write_fake_pdm(fake_bin)
     log_file = tmp_path / "docker.log"
 
     env = os.environ.copy()
@@ -74,7 +76,7 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
         f"--env-file {source_env_path} --env-file {snapshot_path} "
         f"-f {REPO_ROOT / 'compose.yaml'} "
         f"-f {REPO_ROOT / 'compose.secrets.yaml'} "
-        "up -d --force-recreate --build sir_convert_a_lot_prod"
+        "up -d --no-start --no-build --no-deps --force-recreate sir_convert_a_lot_prod"
     ) in log_lines
     assert "service_revision=prod_rev expected_revision=prod_rev" in log_lines
     assert "secret_env SIR_CONVERT_A_LOT_V2_API_KEY=present" in log_lines

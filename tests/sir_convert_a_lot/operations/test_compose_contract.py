@@ -352,11 +352,20 @@ def test_prod_pdm_scripts_expose_dependency_image_lane() -> None:
     assert '"prod-recreate" = "bash scripts/devops/prod-compose.sh recreate"' in pyproject_text
 
 
+def test_compose_declares_stt_sidecar_restart_no() -> None:
+    compose = _load_compose()
+    service = _require_service(compose, "sir_convert_a_lot_stt_sidecar")
+
+    assert service.get("restart") == "no"
+
+
 def test_prod_start_bounded_reuses_hemma_guard_and_python_coordinator() -> None:
     pyproject_text = PYPROJECT_FILE.read_text(encoding="utf-8")
     wrapper_text = PROD_START_BOUNDED_SCRIPT.read_text(encoding="utf-8")
 
-    assert '"prod-start-bounded" = "bash scripts/devops/prod-start-bounded.sh"' in pyproject_text
+    assert '"prod-start" = "bash scripts/devops/prod-claim-start.sh"' in pyproject_text
+    assert '"prod-start-bounded" = "bash scripts/devops/prod-claim-start.sh"' in pyproject_text
+    assert '"prod-workload-start" = "bash scripts/devops/prod-start-bounded.sh"' in pyproject_text
     assert 'source "${SCRIPT_DIR}/require-hemma-server.sh"' in wrapper_text
     assert 'sir_convert_require_hemma_server "prod-start-bounded"' in wrapper_text
     assert 'export SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in wrapper_text

@@ -22,6 +22,7 @@ COMPOSE_USAGE="${SIR_CONVERT_A_LOT_COMPOSE_USAGE:-Usage: compose wrapper <action
 COMPOSE_SECRETS_FILE="${SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE:-}"
 COMPOSE_SECRETS_SET="${SIR_CONVERT_A_LOT_AGENT_SECRETS_SET:-}"
 COMPOSE_SECRET_ACTIONS="${SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS:-start recreate build build-clean}"
+COMPOSE_RECREATE_CLAIM_START="${SIR_CONVERT_A_LOT_COMPOSE_RECREATE_CLAIM_START:-}"
 
 usage() {
   printf "%s\n" "${COMPOSE_USAGE}" >&2
@@ -246,7 +247,12 @@ case "${ACTION}" in
     ;;
   recreate)
     ensure_dependency_image
-    run_compose_for_action recreate up -d --force-recreate --build "$@"
+    if [[ -n "${COMPOSE_RECREATE_CLAIM_START}" ]]; then
+      run_compose_for_action recreate up -d --no-start --no-build --no-deps --force-recreate "$@"
+      bash "${COMPOSE_RECREATE_CLAIM_START}"
+    else
+      run_compose_for_action recreate up -d --force-recreate --build "$@"
+    fi
     ;;
   logs)
     run_compose_for_action logs logs --tail=200 "$@"
