@@ -35,6 +35,7 @@ from repository_governance.hemma_workload import (
     WorkloadController,
     WorkloadDeclaration,
     WorkloadRegistry,
+    products,
 )
 from repository_governance.hemma_workload.products import (
     CommandExecutor as ProductCommandExecutor,
@@ -59,7 +60,6 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
     API_CONTAINER,
     CONTAINER_HEALTH_FORMAT,
     CONTAINER_STATE_FORMAT,
-    DECLARED_GPU_CONTAINERS,
     DOCKER_COMMAND,
     GPU_CLAIM,
     GPU_WORKER_CONTAINER,
@@ -97,7 +97,6 @@ __all__ = [
     "API_CONTAINER",
     "CONTAINER_HEALTH_FORMAT",
     "CONTAINER_STATE_FORMAT",
-    "DECLARED_GPU_CONTAINERS",
     "DOCKER_COMMAND",
     "GPU_CLAIM",
     "GPU_WORKER_CONTAINER",
@@ -142,21 +141,25 @@ def _operator_account() -> pwd.struct_passwd | None:
     return None
 
 
-def _operator_pdm_command(*arguments: str) -> tuple[str, ...] | None:
-    """Build one `pdm run` command that executes as the operator account.
+def _operator_command(
+    argv: tuple[str, ...], env: dict[str, str] | None = None
+) -> tuple[str, ...] | None:
+    """Wrap one argv so it executes as the invoking operator account.
 
     The workload controller runs inside a fixed root worker, but the bounded
-    production paths must read the operator's agent-secrets store, so under
-    effective UID 0 the command re-enters the invoking sudo user's account
-    with a PATH that can resolve that user's installed tools.
+    production paths must read the operator's agent-secrets store and sibling
+    product workers run in the operator's checkouts, so under effective UID 0
+    the command re-enters the invoking sudo user's account with a PATH that
+    can resolve that user's installed tools. Sudo resets the environment, so
+    the caller's environment entries pass as `env` assignments.
     """
-    argv = ("pdm", "run", *arguments)
     if os.geteuid() != 0:
         return argv
     account = _operator_account()
     if account is None:
         return None
     operator_path = f"{account.pw_dir}/.local/bin:{os.environ.get('PATH', '')}"
+    assignments = tuple(f"{name}={value}" for name, value in sorted((env or {}).items()))
     return (
         "sudo",
         "-n",
@@ -164,8 +167,14 @@ def _operator_pdm_command(*arguments: str) -> tuple[str, ...] | None:
         account.pw_name,
         "env",
         f"PATH={operator_path}",
+        *assignments,
         *argv,
     )
+
+
+def _operator_pdm_command(*arguments: str) -> tuple[str, ...] | None:
+    """Build one `pdm run` command that executes as the operator account."""
+    return _operator_command(("pdm", "run", *arguments))
 
 
 def _missing_operator_account_result() -> AdapterResult:
@@ -326,18 +335,35 @@ class _SiblingCommandRunner:
         cwd: Path | None = None,
         env: dict[str, str] | None = None,
     ) -> CommandResult:
-        command_env = os.environ.copy()
-        if env is not None:
-            command_env.update(env)
-        completed = subprocess.run(
-            argv,
-            check=False,
-            capture_output=True,
-            cwd=cwd,
-            env=command_env,
-            text=True,
-            timeout=timeout,
-        )
+        if os.geteuid() == 0:
+            command = _operator_command(argv, env)
+            if command is None:
+                return CommandResult(
+                    1,
+                    "",
+                    "sibling product workers require the invoking operator account",
+                )
+            completed = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                cwd=cwd,
+                text=True,
+                timeout=timeout,
+            )
+        else:
+            command_env = os.environ.copy()
+            if env is not None:
+                command_env.update(env)
+            completed = subprocess.run(
+                argv,
+                check=False,
+                capture_output=True,
+                cwd=cwd,
+                env=command_env,
+                text=True,
+                timeout=timeout,
+            )
         return CommandResult(completed.returncode, completed.stdout, completed.stderr)
 
 
@@ -377,7 +403,9 @@ def sir_workload_declarations(
             (),
             frozenset({GPU_CLAIM}),
             frozenset({PRODUCTION_WORKLOAD_ID}),
-            ContainerWorkloadAdapter(STT_WORKLOAD_ID, STT_CONTAINER, command_runner),
+            ContainerWorkloadAdapter(
+                STT_WORKLOAD_ID, STT_CONTAINER, command_runner, project_root=root
+            ),
             frozenset({TerminalOutcome.SUCCEEDED}),
             kind=ClaimKind.SERVICE,
         ),
@@ -415,13 +443,17 @@ def sir_workload_controller(
     state_root: Path = HOST_STATE_ROOT,
 ) -> WorkloadController:
     command_runner = runner or CommandRunner()
+    sibling_runner = product_runner or _SiblingCommandRunner()
     return WorkloadController(
         sir_workload_registry(
             runner=command_runner,
-            product_runner=product_runner,
+            product_runner=sibling_runner,
             project_root=project_root,
         ),
-        SirGpuInventory(command_runner),
+        SirGpuInventory(
+            command_runner,
+            products.published_containers(products.product_spec("huleedu"), sibling_runner),
+        ),
         LedgerStore(state_root),
         HostLock(state_root / LOCK_PATH.name),
     )

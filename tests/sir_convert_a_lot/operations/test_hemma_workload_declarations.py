@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 from repository_governance.hemma_workload import (
     ClaimKind,
-    ExpectedState,
     LedgerStore,
     TerminalOutcome,
     WorkloadController,
@@ -15,7 +14,7 @@ from repository_governance.hemma_workload import (
 )
 from repository_governance.hemma_workload.products import WORKER_COMMAND
 
-from scripts.sir_convert_a_lot.devops import hemma_workload, hemma_workload_runtime
+from scripts.sir_convert_a_lot.devops import hemma_workload
 
 
 class QueueRunner:
@@ -45,6 +44,8 @@ class StatefulRunner:
             return hemma_workload.CommandResult(0, "")
         if argv[:4] == (*hemma_workload.DOCKER_COMMAND, "top"):
             return hemma_workload.CommandResult(0, "PID\n")
+        if argv == ("systemctl", "show", "-p", "MainPID", "--value", "hemma-qwen.service"):
+            return hemma_workload.CommandResult(0, "0\n")
         if argv[:4] == (*hemma_workload.DOCKER_COMMAND, "stop"):
             self.running.remove(argv[4])
             return hemma_workload.CommandResult(0, "")
@@ -65,9 +66,9 @@ class StatefulRunner:
         ):
             state = "running" if argv[6] in self.running else "exited"
             restart = (
-                hemma_workload.PRODUCTION_RESTART_POLICY
-                if argv[6] in hemma_workload.PRODUCTION_CONTAINERS
-                else hemma_workload.SIDECAR_RESTART_POLICY
+                "no"
+                if argv[6] in (*hemma_workload.PRODUCTION_CONTAINERS, hemma_workload.STT_CONTAINER)
+                else "unless-stopped"
             )
             return hemma_workload.CommandResult(0, f"{state}\t{restart}\n")
         if argv[:6] == (
@@ -148,6 +149,20 @@ SIBLING_DECLARATIONS: dict[str, tuple[dict[str, object], ...]] = {
 }
 
 
+PUBLISHED_CONTAINERS: dict[str, tuple[str, ...]] = {
+    "hule-prod-core": ("huleedu_api", "huleedu_file_worker"),
+    "hule-prod-rst-parser": ("huleedu_rst_parser_service_gumrrg",),
+    "hule-offload": ("huleedu_essay_embed_offload",),
+    "hule-transformer-train": ("huleedu_essay_transformer_train",),
+    "hule-vision-crop": (
+        "huleedu_vision_crop_offload",
+        "huleedu_vision_crop_validator_phi",
+    ),
+    hemma_workload.PRODUCTION_WORKLOAD_ID: hemma_workload.PRODUCTION_CONTAINERS,
+    hemma_workload.STT_WORKLOAD_ID: (hemma_workload.STT_CONTAINER,),
+}
+
+
 class CompositionRunner:
     """Fake sibling product-worker runner returning fixed published declarations."""
 
@@ -164,10 +179,14 @@ class CompositionRunner:
     ) -> hemma_workload.CommandResult:
         self.calls.append(argv)
         assert argv[:5] == WORKER_COMMAND
-        assert argv[6] == "declarations"
         owner = argv[5]
-        payload = {"declarations": list(SIBLING_DECLARATIONS[owner])}
-        return hemma_workload.CommandResult(0, json.dumps(payload))
+        if argv[6] == "containers":
+            assert owner == "huleedu"
+            containers = {"containers": PUBLISHED_CONTAINERS}
+            return hemma_workload.CommandResult(0, json.dumps(containers))
+        assert argv[6] == "declarations"
+        declarations = {"declarations": list(SIBLING_DECLARATIONS[owner])}
+        return hemma_workload.CommandResult(0, json.dumps(declarations))
 
 
 def _composition_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -262,247 +281,6 @@ def test_registry_composes_host_declarations_with_sir_kinds(
     )
 
 
-@pytest.mark.parametrize(
-    ("returncode", "stdout", "expected"),
-    [
-        (0, "detail\noutcome=succeeded\n", TerminalOutcome.SUCCEEDED),
-        (1, "outcome=timed_out\n", TerminalOutcome.TIMED_OUT),
-        (1, "outcome=dependency_unhealthy\n", TerminalOutcome.DEPENDENCY_UNHEALTHY),
-        (1, "outcome=refused\n", TerminalOutcome.REFUSED),
-        (1, "outcome=failed\n", TerminalOutcome.FAILED),
-    ],
-)
-def test_production_start_uses_bounded_command_and_maps_terminal_outcome(
-    returncode: int, stdout: str, expected: TerminalOutcome
-) -> None:
-    runner = QueueRunner([hemma_workload.CommandResult(returncode, stdout)])
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    result = adapter.start()
-
-    assert result.outcome is expected
-    assert runner.commands == [("pdm", "run", "prod-workload-start")]
-    assert "--build" not in runner.commands[0]
-
-
-def _operator_root_worker(
-    monkeypatch: pytest.MonkeyPatch,
-    *,
-    sudo_user: str | None = "operator",
-    sudo_uid: str | None = None,
-) -> None:
-    monkeypatch.setattr(hemma_workload.os, "geteuid", lambda: 0)
-    if sudo_user is None:
-        monkeypatch.delenv("SUDO_USER", raising=False)
-    else:
-        monkeypatch.setenv("SUDO_USER", sudo_user)
-    if sudo_uid is None:
-        monkeypatch.delenv("SUDO_UID", raising=False)
-    else:
-        monkeypatch.setenv("SUDO_UID", sudo_uid)
-    entry = pwd.struct_passwd(("operator", "x", 1000, 1000, "", "/home/operator", "/bin/bash"))
-    monkeypatch.setattr(hemma_workload.pwd, "getpwnam", lambda name: entry)
-    monkeypatch.setattr(hemma_workload.pwd, "getpwuid", lambda uid: entry)
-
-
-def test_root_worker_runs_bounded_startup_as_operator_account(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _operator_root_worker(monkeypatch)
-    monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    runner = QueueRunner([hemma_workload.CommandResult(0, "outcome=succeeded\n")])
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.start().outcome is TerminalOutcome.SUCCEEDED
-    command = runner.commands[0]
-    assert command[:4] == ("sudo", "-n", "-u", "operator")
-    assert command[4] == "env"
-    assert command[5].startswith("PATH=/home/operator/.local/bin:")
-    assert command[-3:] == ("pdm", "run", "prod-workload-start")
-
-
-def test_root_worker_falls_back_to_sudo_uid_for_operator_account(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _operator_root_worker(monkeypatch, sudo_user=None, sudo_uid="1000")
-    runner = QueueRunner([hemma_workload.CommandResult(0, "outcome=succeeded\n")])
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.start().outcome is TerminalOutcome.SUCCEEDED
-    assert runner.commands[0][:4] == ("sudo", "-n", "-u", "operator")
-
-
-def test_root_worker_runs_production_stop_as_operator_account(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _operator_root_worker(monkeypatch)
-    runner = QueueRunner([hemma_workload.CommandResult(0, "")])
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.stop().outcome is TerminalOutcome.SUCCEEDED
-    command = runner.commands[0]
-    assert command[:3] == ("sudo", "-n", "-u")
-    assert command[-5:-3] == ("pdm", "run")
-    assert command[-3:] == (
-        "prod-stop",
-        hemma_workload.GPU_WORKER_CONTAINER,
-        hemma_workload.API_CONTAINER,
-    )
-
-
-def test_root_worker_without_operator_identity_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _operator_root_worker(monkeypatch, sudo_user=None)
-    monkeypatch.setattr(
-        hemma_workload.pwd,
-        "getpwnam",
-        lambda name: pytest.fail("operator lookup without SUDO_USER"),
-    )
-    runner = QueueRunner([])
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.start().outcome is TerminalOutcome.FAILED
-    assert adapter.stop().outcome is TerminalOutcome.FAILED
-    assert runner.commands == []
-
-
-@pytest.mark.parametrize(
-    "stdout",
-    ["", "outcome=succeeded\noutcome=succeeded\n", "outcome=succeeded\ntrailing\n", "noise\n"],
-)
-def test_production_start_refuses_nonterminal_or_ambiguous_outcome(stdout: str) -> None:
-    adapter = hemma_workload.ProductionWorkloadAdapter(
-        QueueRunner([hemma_workload.CommandResult(0, stdout)]), Path("/srv/sir")
-    )
-
-    assert adapter.start().outcome is TerminalOutcome.FAILED
-
-
-def test_host_command_timeout_exceeds_task04_bounded_startup_timeout() -> None:
-    assert (
-        hemma_workload_runtime.HOST_COMMAND_TIMEOUT_SECONDS > hemma_workload.TOTAL_TIMEOUT_SECONDS
-    )
-
-
-def test_production_stop_uses_only_named_worker_and_api() -> None:
-    runner = QueueRunner([hemma_workload.CommandResult(0, "")])
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.stop().outcome is TerminalOutcome.SUCCEEDED
-    assert runner.commands == [
-        (
-            "pdm",
-            "run",
-            "prod-stop",
-            hemma_workload.GPU_WORKER_CONTAINER,
-            hemma_workload.API_CONTAINER,
-        )
-    ]
-    assert "--build" not in runner.commands[0]
-
-
-def test_production_status_requires_exact_group_and_restart_no() -> None:
-    mixed = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "running\tno\n"),
-            hemma_workload.CommandResult(0, "exited\tno\n"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(mixed, Path("/srv/sir"))
-    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.REFUSED
-
-    running = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "running\tno\n"),
-            hemma_workload.CommandResult(0, "running\tno\n"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(running, Path("/srv/sir"))
-    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.SUCCEEDED
-
-    wrong_restart = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "running\tunless-stopped\n"),
-            hemma_workload.CommandResult(0, "running\tno\n"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(wrong_restart, Path("/srv/sir"))
-    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.FAILED
-
-    stopped_wrong_restart = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "exited\tunless-stopped\n"),
-            hemma_workload.CommandResult(0, "exited\tno\n"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(stopped_wrong_restart, Path("/srv/sir"))
-    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.FAILED
-
-
-def test_production_status_refuses_unknown_container_state() -> None:
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "unknown\tno\n"),
-            hemma_workload.CommandResult(0, "running\tno\n"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.REFUSED
-
-
-def test_production_readiness_reuses_task04_api_and_worker_helpers(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    calls: list[tuple[str, str]] = []
-    monkeypatch.setattr(
-        hemma_workload,
-        "_repository_head",
-        lambda runner: "a" * 40,
-    )
-    monkeypatch.setattr(
-        hemma_workload,
-        "_poll_ready",
-        lambda runner, *, head, docker_prefix: calls.append(
-            ("api", f"{head}:{' '.join(docker_prefix)}")
-        ),
-    )
-    monkeypatch.setattr(
-        hemma_workload,
-        "_prove_gpu_readiness",
-        lambda runner, *, docker_prefix: calls.append(("worker", " ".join(docker_prefix))),
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(QueueRunner([]), Path("/srv/sir"))
-
-    assert adapter.readiness().outcome is TerminalOutcome.SUCCEEDED
-    privileged_docker = " ".join(hemma_workload.DOCKER_COMMAND)
-    assert calls == [
-        ("api", f"{'a' * 40}:{privileged_docker}"),
-        ("worker", privileged_docker),
-    ]
-
-
-def test_production_operations_normalize_subprocess_timeouts(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    class TimeoutRunner:
-        def run(self, argv: tuple[str, ...]) -> hemma_workload.CommandResult:
-            raise subprocess.TimeoutExpired(argv, 1)
-
-    adapter = hemma_workload.ProductionWorkloadAdapter(TimeoutRunner(), Path("/srv/sir"))
-    assert adapter.start().outcome is TerminalOutcome.TIMED_OUT
-    assert adapter.stop().outcome is TerminalOutcome.TIMED_OUT
-    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.TIMED_OUT
-
-    monkeypatch.setattr(
-        hemma_workload,
-        "_repository_head",
-        lambda bounded: (_ for _ in ()).throw(subprocess.TimeoutExpired("git", 1)),
-    )
-    assert adapter.readiness().outcome is TerminalOutcome.TIMED_OUT
-
-
 def test_controller_uses_public_provider_and_owner_state_constants(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -544,6 +322,7 @@ def test_provider_controller_refuses_unknown_consumer_before_transaction(
     runner = QueueRunner(
         [
             hemma_workload.CommandResult(0, "sir_convert_unknown_gpu\n"),
+            hemma_workload.CommandResult(0, "0\n"),
             hemma_workload.CommandResult(0, ""),
         ]
     )
@@ -559,137 +338,131 @@ def test_provider_controller_refuses_unknown_consumer_before_transaction(
     assert not (tmp_path / "claim-ledger.json").exists()
 
 
-def test_shared_controller_restores_only_receipted_conflict_subset(
+def test_service_start_queues_behind_adopted_conflicting_service(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     runner = StatefulRunner()
-    monkeypatch.setattr(hemma_workload, "_repository_head", lambda bounded: "a" * 40)
-    monkeypatch.setattr(
-        hemma_workload,
-        "_poll_ready",
-        lambda bounded, *, head, docker_prefix: None,
+    product_runner = _composition(tmp_path, monkeypatch)
+    registry = hemma_workload.sir_workload_registry(
+        runner=QueueRunner([]),
+        product_runner=product_runner,
+        project_root=Path("/srv/sir"),
     )
-    monkeypatch.setattr(
-        hemma_workload,
-        "_prove_gpu_readiness",
-        lambda bounded, *, docker_prefix: None,
-    )
+    production = registry.declaration(hemma_workload.PRODUCTION_WORKLOAD_ID)
+    sidecar = registry.declaration(hemma_workload.STT_WORKLOAD_ID)
+    assert hemma_workload.STT_WORKLOAD_ID in production.conflicts
+    assert hemma_workload.PRODUCTION_WORKLOAD_ID in sidecar.conflicts
     controller = hemma_workload.sir_workload_controller(
         runner=runner,
-        product_runner=_composition(tmp_path, monkeypatch),
+        product_runner=product_runner,
         project_root=Path("/srv/sir"),
         state_root=tmp_path,
     )
 
-    started = controller.start(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-restore")
-    assert started.outcome is TerminalOutcome.SUCCEEDED
-    assert runner.running == set(hemma_workload.PRODUCTION_CONTAINERS)
+    started = controller.start(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-service")
 
-    stopped = controller.stop(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-restore")
-    assert stopped.outcome is TerminalOutcome.SUCCEEDED
+    assert started.outcome is TerminalOutcome.QUEUED
+    assert hemma_workload.STT_WORKLOAD_ID in started.reason
     assert runner.running == {hemma_workload.STT_CONTAINER}
-    started_containers = {command[4] for command in runner.commands if command[3:4] == ("start",)}
-    assert started_containers <= set(hemma_workload.PRODUCTION_CONTAINERS) | {
-        hemma_workload.STT_CONTAINER
-    }
+    stopped_containers = {command[4] for command in runner.commands if command[3:4] == ("stop",)}
+    assert hemma_workload.STT_CONTAINER not in stopped_containers
     ledger = LedgerStore(tmp_path).read()
-    assert ledger.holders == ()
-    assert ledger.queue == ()
+    assert {holder.identity for holder in ledger.holders} == {hemma_workload.STT_WORKLOAD_ID}
+    assert [waiter.identity for waiter in ledger.queue] == [hemma_workload.PRODUCTION_WORKLOAD_ID]
 
 
-def test_production_start_existing_starts_matching_containers() -> None:
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
-            hemma_workload.CommandResult(0, "sha256:app\n"),
-            hemma_workload.CommandResult(0, "sha256:app\n"),
-            hemma_workload.CommandResult(0, "sha256:app\n"),
-            hemma_workload.CommandResult(0, ""),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
-    assert runner.commands[-1] == (
-        *hemma_workload.DOCKER_COMMAND,
-        "start",
-        *hemma_workload.PRODUCTION_CONTAINERS,
-    )
+def _operator_root_worker(monkeypatch: pytest.MonkeyPatch, *, operator: bool = True) -> None:
+    monkeypatch.setattr(hemma_workload.os, "geteuid", lambda: 0)
+    if operator:
+        monkeypatch.setenv("SUDO_USER", "operator")
+        entry = pwd.struct_passwd(("operator", "x", 1000, 1000, "", "/home/operator", "/bin/bash"))
+        monkeypatch.setattr(hemma_workload.pwd, "getpwnam", lambda name: entry)
+        monkeypatch.setattr(hemma_workload.pwd, "getpwuid", lambda uid: entry)
+    else:
+        monkeypatch.delenv("SUDO_USER", raising=False)
+        monkeypatch.delenv("SUDO_UID", raising=False)
 
 
-def test_production_start_existing_refuses_absent_container() -> None:
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
-            hemma_workload.CommandResult(0, "sha256:app\n"),
-            hemma_workload.CommandResult(1, "No such object"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+def test_sibling_runner_root_launches_as_operator_with_worker_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _operator_root_worker(monkeypatch)
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    calls: list[tuple[tuple[str, ...], dict[str, object]]] = []
 
-    result = adapter.start_existing()
+    def fake_run(argv: tuple[str, ...], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 0, "ok", "")
 
-    assert result.outcome is TerminalOutcome.FAILED
-    assert "absent" in result.reason
-    assert all(command[3:4] != ("start",) for command in runner.commands)
+    monkeypatch.setattr(hemma_workload.subprocess, "run", fake_run)
+    worker_cwd = tmp_path / "huleedu"
+    worker_argv = (*WORKER_COMMAND, "huleedu", "declarations")
 
-
-def test_production_start_existing_refuses_stale_image() -> None:
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
-            hemma_workload.CommandResult(0, "sha256:app\n"),
-            hemma_workload.CommandResult(0, "sha256:app\n"),
-            hemma_workload.CommandResult(0, "sha256:old\n"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    result = adapter.start_existing()
-
-    assert result.outcome is TerminalOutcome.FAILED
-    assert "stale application image" in result.reason
-    assert all(command[3:4] != ("start",) for command in runner.commands)
-
-
-def test_production_start_existing_refuses_missing_application_image() -> None:
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
-            hemma_workload.CommandResult(1, "No such image"),
-        ]
-    )
-    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
-
-    assert adapter.start_existing().outcome is TerminalOutcome.FAILED
-
-
-def test_container_start_existing_starts_existing_container() -> None:
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "sha256:stt\n"),
-            hemma_workload.CommandResult(0, ""),
-        ]
-    )
-    adapter = hemma_workload.ContainerWorkloadAdapter(
-        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
+    result = hemma_workload._SiblingCommandRunner().run(
+        worker_argv, timeout=30.0, cwd=worker_cwd, env={"PYTHONPATH": "/srv/huleedu"}
     )
 
-    assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
-    assert runner.commands[-1] == (
-        *hemma_workload.DOCKER_COMMAND,
-        "start",
-        hemma_workload.STT_CONTAINER,
+    assert result.returncode == 0
+    command, kwargs = calls[0]
+    assert command[:6] == (
+        "sudo",
+        "-n",
+        "-u",
+        "operator",
+        "env",
+        "PATH=/home/operator/.local/bin:/usr/bin:/bin",
+    )
+    assert command[6] == "PYTHONPATH=/srv/huleedu"
+    assert command[7:] == worker_argv
+    assert kwargs["cwd"] == worker_cwd
+    assert kwargs["timeout"] == 30.0
+
+
+def test_sibling_runner_non_root_merges_worker_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(hemma_workload.os, "geteuid", lambda: 1000)
+    calls: list[tuple[tuple[str, ...], dict[str, object]]] = []
+
+    def fake_run(argv: tuple[str, ...], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+    monkeypatch.setattr(hemma_workload.subprocess, "run", fake_run)
+    worker_argv = (*WORKER_COMMAND, "huleedu", "declarations")
+
+    result = hemma_workload._SiblingCommandRunner().run(
+        worker_argv, timeout=5.0, cwd=tmp_path, env={"PYTHONPATH": "/srv/huleedu"}
     )
 
+    assert result.returncode == 0
+    command, kwargs = calls[0]
+    assert command == worker_argv
+    assert kwargs["cwd"] == tmp_path
+    environment = kwargs["env"]
+    assert isinstance(environment, dict)
+    assert environment["PYTHONPATH"] == "/srv/huleedu"
+    assert "PATH" in environment
 
-def test_container_start_existing_refuses_absent_container() -> None:
-    runner = QueueRunner([hemma_workload.CommandResult(1, "No such object")])
-    adapter = hemma_workload.ContainerWorkloadAdapter(
-        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
+
+def test_sibling_runner_root_without_operator_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _operator_root_worker(monkeypatch, operator=False)
+    monkeypatch.setattr(
+        hemma_workload.pwd,
+        "getpwnam",
+        lambda name: pytest.fail("operator lookup without SUDO_USER"),
+    )
+    monkeypatch.setattr(
+        hemma_workload.subprocess,
+        "run",
+        lambda argv, **kwargs: pytest.fail("no subprocess without an operator account"),
     )
 
-    result = adapter.start_existing()
+    result = hemma_workload._SiblingCommandRunner().run(
+        (*WORKER_COMMAND, "huleedu", "declarations"), timeout=5.0
+    )
 
-    assert result.outcome is TerminalOutcome.FAILED
-    assert "absent" in result.reason
+    assert result.returncode != 0
+    assert "operator" in result.stderr

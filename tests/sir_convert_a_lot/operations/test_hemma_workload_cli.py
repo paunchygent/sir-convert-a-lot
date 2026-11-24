@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from repository_governance.hemma_workload import (
     ControllerCommand,
+    RedeployCommand,
     TerminalOutcome,
     TransactionResult,
     WorkloadTransactionError,
@@ -136,6 +137,76 @@ def test_root_worker_returns_exit_three_for_queued(
 
     assert exit_code == 3
     assert capsys.readouterr().out == render_result(result) + "\n"
+
+
+def test_public_cli_launches_worker_for_redeploy(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    calls: list[tuple[str, ...]] = []
+
+    def run_worker(
+        argv: tuple[str, ...],
+        *,
+        capture_output: bool,
+        check: bool,
+        cwd: Path,
+        text: bool,
+        timeout: float,
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(argv)
+        return subprocess.CompletedProcess(
+            argv, 0, _rendered(TerminalOutcome.SUCCEEDED, transaction_id="tx-9"), ""
+        )
+
+    monkeypatch.setattr(hemma_workload_cli, "_guard_reason", lambda: None)
+    monkeypatch.setattr(hemma_workload_cli.subprocess, "run", run_worker)
+
+    assert hemma_workload_cli.main(("redeploy", "sir-production", "tx-9")) == 0
+    assert (
+        capsys.readouterr().out
+        == _rendered(TerminalOutcome.SUCCEEDED, transaction_id="tx-9") + "\n"
+    )
+    assert calls[0][-4:] == (
+        "--worker",
+        "redeploy",
+        "sir-production",
+        "tx-9",
+    )
+
+
+def test_root_worker_redeploy_reaches_controller_and_maps_exit(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = TransactionResult(
+        TerminalOutcome.QUEUED, "sir-production", "tx-redeploy", "claim queued"
+    )
+    commands: list[ControllerCommand] = []
+    monkeypatch.setattr(hemma_workload_cli.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(hemma_workload_cli, "_guard_reason", lambda: None)
+    monkeypatch.setattr(hemma_workload_cli, "sir_workload_controller", lambda: None)
+
+    def execute(controller: None, command: ControllerCommand) -> TransactionResult:
+        commands.append(command)
+        return result
+
+    monkeypatch.setattr(hemma_workload_cli, "execute_command", execute)
+
+    assert hemma_workload_cli.main(("--worker", "redeploy", "sir-production", "tx-redeploy")) == 3
+    assert commands == [RedeployCommand("sir-production", "tx-redeploy")]
+    assert capsys.readouterr().out == render_result(result) + "\n"
+
+
+def test_root_worker_redeploy_refusal_keeps_transaction_id(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(hemma_workload_cli.os, "geteuid", lambda: 501)
+
+    assert hemma_workload_cli.main(("--worker", "redeploy", "sir-production", "tx-redeploy")) == 1
+
+    rendered = json.loads(capsys.readouterr().out)
+    assert rendered["outcome"] == "refused"
+    assert rendered["target_identity"] == "sir-production"
+    assert rendered["transaction_id"] == "tx-redeploy"
 
 
 def test_worker_timeout_covers_sidecar_readiness_and_one_host_command() -> None:

@@ -1,15 +1,16 @@
 """GPU inventory for Sir Hemma workloads.
 
 Purpose:
-    Inspect running Docker containers, ROCm KFD GPU processes, and declared
-    container PIDs so the shared workload controller sees exact Sir workloads
-    and fails closed on unknown GPU consumers.
+    Inspect running Docker containers, the declared Qwen systemd process, and
+    ROCm KFD GPU processes so the shared workload controller sees every
+    declared host GPU workload and fails closed on unknown GPU consumers.
 
 Relationships:
     - Imported by `hemma_workload.py`, which wires `SirGpuInventory` into the
-      Sir workload controller and re-exports it.
-    - Uses `hemma_workload_constants.py` for claims, workload IDs, container
-      names, and the privileged Docker prefix.
+      Sir workload controller with the composed container map published by
+      the HuleEdu product worker, and re-exports it.
+    - Uses `hemma_workload_constants.py` for claims, the Qwen identity, and
+      the privileged Docker prefix.
     - Runs host commands through `hemma_workload_runtime.CommandExecutor`.
 """
 
@@ -26,15 +27,16 @@ from repository_governance.hemma_workload import (
 from repository_governance.retained_context.json_contract import JsonValue, strict_pairs
 
 from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
-    DECLARED_GPU_CONTAINERS,
     DOCKER_COMMAND,
     GPU_CLAIM,
-    PRODUCTION_CONTAINERS,
     PRODUCTION_WORKLOAD_ID,
-    STT_CONTAINER,
+    QWEN_SERVICE_NAME,
+    QWEN_WORKLOAD_ID,
     STT_WORKLOAD_ID,
 )
 from scripts.sir_convert_a_lot.devops.hemma_workload_runtime import CommandExecutor
+
+SIR_WORKLOAD_IDENTITIES = frozenset({PRODUCTION_WORKLOAD_ID, STT_WORKLOAD_ID})
 
 
 @dataclass(frozen=True)
@@ -44,31 +46,40 @@ class GpuProcess:
 
 
 class SirGpuInventory:
-    """Inventory exact Sir workloads and fail closed on unknown GPU consumers."""
+    """Inventory declared host GPU workloads and fail closed on unknown consumers."""
 
-    def __init__(self, runner: CommandExecutor) -> None:
+    def __init__(self, runner: CommandExecutor, containers: dict[str, tuple[str, ...]]) -> None:
         self._runner = runner
+        missing = SIR_WORKLOAD_IDENTITIES - containers.keys()
+        if missing:
+            raise ValueError(f"published containers lack Sir workloads {sorted(missing)}")
+        self._containers = dict(containers)
 
     def inspect(self, resource_claims: frozenset[str]) -> InventorySnapshot:
         try:
             if resource_claims != frozenset({GPU_CLAIM}):
                 raise ValueError(f"Sir inventory cannot inspect claims {sorted(resource_claims)}")
             running = _running_containers(self._runner)
-            production_members = frozenset(PRODUCTION_CONTAINERS) & running
-            if production_members and production_members != frozenset(PRODUCTION_CONTAINERS):
-                raise ValueError("production API and GPU worker have a partial running state")
+            declared_names = frozenset(
+                name for members in self._containers.values() for name in members
+            )
             workloads: set[str] = set()
-            if production_members:
-                workloads.add(PRODUCTION_WORKLOAD_ID)
-            if STT_CONTAINER in running:
-                workloads.add(STT_WORKLOAD_ID)
-            declared_services = frozenset((*PRODUCTION_CONTAINERS, STT_CONTAINER))
+            for identity, members in self._containers.items():
+                present = frozenset(members) & running
+                if present and present != frozenset(members):
+                    raise ValueError(f"declared workload {identity} has a partial running state")
+                if present:
+                    workloads.add(identity)
             unknown = {
                 f"container {name}"
-                for name in running - declared_services
+                for name in running - declared_names
                 if name.startswith(("sir_convert", "sir-convert"))
             }
-            owned_pids = _declared_container_pids(self._runner, running)
+            owned_pids = set(_declared_container_pids(self._runner, running & declared_names))
+            qwen_pid = _qwen_main_pid(self._runner)
+            if qwen_pid > 0:
+                workloads.add(QWEN_WORKLOAD_ID)
+                owned_pids.add(qwen_pid)
             unknown.update(
                 f"PID {process.pid}"
                 for process in _rocm_processes(self._runner)
@@ -111,11 +122,16 @@ def _rocm_processes(runner: CommandExecutor) -> tuple[GpuProcess, ...]:
     return tuple(processes)
 
 
+def _qwen_main_pid(runner: CommandExecutor) -> int:
+    result = runner.run(("systemctl", "show", "-p", "MainPID", "--value", QWEN_SERVICE_NAME))
+    if result.returncode != 0 or not result.stdout.strip().isdigit():
+        raise ValueError("cannot inspect declared Qwen systemd PID")
+    return int(result.stdout.strip())
+
+
 def _declared_container_pids(runner: CommandExecutor, running: frozenset[str]) -> frozenset[int]:
     pids: set[int] = set()
-    for container in DECLARED_GPU_CONTAINERS:
-        if container not in running:
-            continue
+    for container in sorted(running):
         result = runner.run((*DOCKER_COMMAND, "top", container, "-eo", "pid"))
         if result.returncode != 0:
             raise ValueError(f"cannot inspect declared GPU container {container}")

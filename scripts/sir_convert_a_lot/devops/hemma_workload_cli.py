@@ -50,7 +50,9 @@ def _command_identifiers(command: ControllerCommand) -> tuple[str, str | None]:
 def _raw_identifiers(arguments: tuple[str, ...]) -> tuple[str, str | None]:
     target_identity = arguments[1] if len(arguments) > 1 else ""
     transaction_id = (
-        arguments[2] if len(arguments) > 2 and arguments[0] in {"start", "stop"} else None
+        arguments[2]
+        if len(arguments) > 2 and arguments[0] in {"start", "stop", "redeploy"}
+        else None
     )
     return target_identity, transaction_id
 

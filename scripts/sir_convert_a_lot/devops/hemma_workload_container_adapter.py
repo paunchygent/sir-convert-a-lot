@@ -16,10 +16,14 @@ Relationships:
 
 from __future__ import annotations
 
+import os
+import re
 import subprocess
 import time
 from collections.abc import Callable
+from pathlib import Path
 
+import yaml
 from repository_governance.hemma_workload import (
     AdapterResult,
     ExpectedState,
@@ -49,6 +53,7 @@ class ContainerWorkloadAdapter:
         container: str,
         runner: CommandExecutor,
         *,
+        project_root: Path | None = None,
         monotonic: Callable[[], float] = time.monotonic,
         sleeper: Callable[[float], None] = time.sleep,
         readiness_timeout_seconds: float = SIDECAR_READINESS_TIMEOUT_SECONDS,
@@ -61,6 +66,7 @@ class ContainerWorkloadAdapter:
         self._identity = identity
         self._container = container
         self._runner = runner
+        self._project_root = project_root
         self._monotonic = monotonic
         self._sleeper = sleeper
         self._readiness_timeout_seconds = readiness_timeout_seconds
@@ -77,6 +83,10 @@ class ContainerWorkloadAdapter:
     def start_existing(self) -> AdapterResult:
         try:
             image_id = _container_image_id(self._runner, self._container)
+            if image_id is not None:
+                expected_image = _declared_image_id(
+                    self._runner, self._compose_path(), self._container
+                )
         except subprocess.TimeoutExpired as error:
             return AdapterResult(self._identity, TerminalOutcome.TIMED_OUT, str(error))
         except (OSError, ValueError) as error:
@@ -87,12 +97,21 @@ class ContainerWorkloadAdapter:
                 TerminalOutcome.FAILED,
                 f"declared container {self._container} is absent",
             )
+        if image_id != expected_image:
+            return AdapterResult(
+                self._identity,
+                TerminalOutcome.FAILED,
+                f"declared container {self._container} has a stale sidecar image",
+            )
         return _command_result(
             self._identity,
             self._runner,
             (*DOCKER_COMMAND, "start", self._container),
             f"declared container {self._container} start failed",
         )
+
+    def _compose_path(self) -> Path:
+        return (self._project_root or Path.cwd()) / "compose.yaml"
 
     def stop(self) -> AdapterResult:
         return _command_result(
@@ -206,6 +225,46 @@ def _container_image_id(runner: CommandExecutor, container: str) -> str | None:
     if not image_id:
         raise ValueError(f"declared container {container} has an empty image record")
     return image_id
+
+
+def _declared_image_id(runner: CommandExecutor, compose_path: Path, service: str) -> str:
+    reference = _compose_image_reference(compose_path, service)
+    result = runner.run((*DOCKER_COMMAND, "image", "inspect", "--format", "{{.Id}}", reference))
+    image_id = result.stdout.strip()
+    if result.returncode != 0 or not image_id:
+        raise ValueError(f"declared sidecar image {reference} is absent")
+    return image_id
+
+
+def _compose_image_reference(compose_path: Path, service: str) -> str:
+    try:
+        loaded = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise ValueError(f"compose configuration is not readable: {error}") from error
+    services = loaded.get("services") if isinstance(loaded, dict) else None
+    record = services.get(service) if isinstance(services, dict) else None
+    image = record.get("image") if isinstance(record, dict) else None
+    if not isinstance(image, str) or not image:
+        raise ValueError(f"compose service {service} does not declare an image")
+    return _interpolate_compose_value(image)
+
+
+_COMPOSE_INTERPOLATION = re.compile(r"\$\$|\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
+
+
+def _interpolate_compose_value(value: str) -> str:
+    def substitute(match: re.Match[str]) -> str:
+        if match.group(0) == "$$":
+            return "$"
+        name = match.group(1)
+        default = match.group(2)
+        if name in os.environ:
+            return os.environ[name]
+        if default is not None:
+            return default
+        raise ValueError(f"compose environment variable {name} is unset")
+
+    return _COMPOSE_INTERPOLATION.sub(substitute, value)
 
 
 def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]:
