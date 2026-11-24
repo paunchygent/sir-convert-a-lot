@@ -20,5 +20,10 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+if [[ "$#" -gt 0 ]]; then
+  printf '%s\n' "Usage: pdm run prod-start" "       pdm run prod-start-bounded" >&2
+  exit 2
+fi
+
 transaction_id="$(python3 -c 'import uuid; print(uuid.uuid4())')"
 exec pdm run hemma-workload start sir-production "${transaction_id}"

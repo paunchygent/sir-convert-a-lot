@@ -15,6 +15,7 @@ from __future__ import annotations
 import shutil
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
 from scripts.sir_convert_a_lot.devops.service_dependency_inputs import (
@@ -296,6 +297,32 @@ exec "${args[@]}"
         encoding="utf-8",
     )
     fake_agent_secrets.chmod(fake_agent_secrets.stat().st_mode | stat.S_IXUSR)
+
+
+def _write_fake_python(script_dir: Path) -> None:
+    real_python = sys.executable
+    fake_python = script_dir / "python"
+    fake_python.write_text(
+        f"""#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${{1:-}}" == "-m" \\
+  && "${{2:-}}" == "scripts.sir_convert_a_lot.devops.bounded_production_startup" \\
+  && "${{3:-}}" == "prepare-image" ]]; then
+  if [[ "${{FAKE_PREPARE_IMAGE_EXIT:-0}}" == "0" ]]; then
+    printf "image_tag=%s\\n" "${{FAKE_PREPARE_IMAGE_TAG:-fake_prepared_head}}"
+    printf "outcome=succeeded\\n"
+  else
+    printf "outcome=failed\\n"
+    exit "${{FAKE_PREPARE_IMAGE_EXIT:-0}}"
+  fi
+  exit 0
+fi
+exec "{real_python}" "$@"
+""",
+        encoding="utf-8",
+    )
+    fake_python.chmod(fake_python.stat().st_mode | stat.S_IXUSR)
 
 
 def _write_fake_pdm(script_dir: Path) -> None:

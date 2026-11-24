@@ -80,6 +80,41 @@ def test_remote_recreate_service_raises_on_non_permission_error(
     ]
 
 
+def test_remote_recreate_service_propagates_claim_outcome(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    claim_line = json.dumps(
+        {
+            "outcome": "queued",
+            "reason": "queued position 1 awaiting huleedu-research",
+            "target_identity": "sir-production",
+            "transaction_id": "txn-1",
+        },
+        sort_keys=True,
+    )
+
+    def fake_run_remote(
+        remote_args: list[str],
+        *,
+        label: str,
+    ) -> str:
+        del remote_args, label
+        raise hemma_deploy_and_verify.CommandExecutionError(
+            "remote pdm run prod-recreate private services failed (exit=3).",
+            returncode=3,
+            stdout=f"some compose output\n{claim_line}\n",
+        )
+
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
+
+    with pytest.raises(hemma_deploy_and_verify.RecreateClaimOutcome) as excinfo:
+        hemma_deploy_and_verify._remote_recreate_service("verified-revision")
+
+    assert excinfo.value.outcome == "queued"
+    assert excinfo.value.reason == "queued position 1 awaiting huleedu-research"
+    assert excinfo.value.exit_code == 3
+
+
 def test_remote_recreate_service_injects_verified_revision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -190,6 +225,7 @@ def assert_private_artifacts(output_root: Path, report: dict[str, object]) -> No
         ("smoke_failure", "passed"),
         ("pull_failure", "failed"),
         ("revision_mismatch", "failed"),
+        ("queued_recreate", "failed"),
         ("service_mismatch", "failed"),
         ("unsafe_metrics", "failed"),
     ],
@@ -246,6 +282,20 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
         if remote_args == revision:
             return "wrong\n" if scenario == "revision_mismatch" else "abc\n"
         if remote_args == recreate:
+            if scenario == "queued_recreate":
+                raise hemma_deploy_and_verify.CommandExecutionError(
+                    "remote pdm run prod-recreate private services failed (exit=3).",
+                    returncode=3,
+                    stdout=json.dumps(
+                        {
+                            "outcome": "queued",
+                            "reason": "queued position 1 awaiting huleedu-research",
+                            "target_identity": "sir-production",
+                            "transaction_id": "txn-queued",
+                        },
+                        sort_keys=True,
+                    ),
+                )
             return ""
         if remote_args == readyz:
             return json.dumps(
@@ -264,7 +314,7 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
 
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_command", reject_local)
     monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
-    report = hemma_deploy_and_verify.execute_workflow(
+    report, claim_outcome = hemma_deploy_and_verify.execute_workflow(
         hemma_deploy_and_verify.WorkflowSettings(
             expected_revision="abc",
             lane="host",
@@ -276,7 +326,12 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
     assert report["status"] == expected_status
     assert_private_artifacts(tmp_path, report)
     expected_calls = [pull, revision, recreate, readyz, smoke, metrics]
-    count = {"pull_failure": 1, "revision_mismatch": 2, "service_mismatch": 4}.get(scenario, 6)
+    count = {
+        "pull_failure": 1,
+        "revision_mismatch": 2,
+        "queued_recreate": 3,
+        "service_mismatch": 4,
+    }.get(scenario, 6)
     assert remote_calls == expected_calls[:count]
     checks = report["checks"]
     assert isinstance(checks, dict)
@@ -289,6 +344,13 @@ def test_execute_workflow_uses_only_published_source_and_private_commands(
         assert checks["live_smoke_passed"] is (scenario == "success")
     else:
         assert report["failure"]
+    if scenario == "queued_recreate":
+        assert claim_outcome is not None
+        assert claim_outcome.outcome == "queued"
+        assert claim_outcome.exit_code == 3
+        assert report["failure"] == "queued position 1 awaiting huleedu-research"
+    else:
+        assert claim_outcome is None
     if scenario == "smoke_failure":
         assert report["live_smoke_failure"] == "gpu_not_available"
         assert "## Non-Blocking Evidence" in (tmp_path / "report.md").read_text()
@@ -326,3 +388,52 @@ def test_main_settings_failure_writes_only_private_artifacts(
     assert json.loads((tmp_path / "readyz.json").read_text()) == {}
     assert (tmp_path / "metrics.prom").read_text() == "# metrics not captured\n"
     assert (tmp_path / "remote_head.txt").read_text() == "unavailable\n"
+
+
+@pytest.mark.parametrize(
+    "outcome,reason,expected_code",
+    [
+        ("queued", "queued position 1 awaiting huleedu-research", 3),
+        ("refused", "claim sir-production is suspended", 1),
+    ],
+)
+def test_main_prints_claim_reason_and_returns_claim_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    outcome: str,
+    reason: str,
+    expected_code: int,
+) -> None:
+    settings = hemma_deploy_and_verify.WorkflowSettings(
+        expected_revision="abc",
+        lane="host",
+        service_url="http://127.0.0.1:28085",
+        output_root=tmp_path,
+    )
+    report: dict[str, object] = {"status": "failed", "failure": reason}
+    claim = hemma_deploy_and_verify.RecreateClaimOutcome(outcome=outcome, reason=reason)
+
+    monkeypatch.setattr(
+        hemma_deploy_and_verify, "_load_workflow_settings", lambda args: settings
+    )
+    monkeypatch.setattr(
+        hemma_deploy_and_verify,
+        "execute_workflow",
+        lambda resolved: (report, claim),
+    )
+
+    assert (
+        hemma_deploy_and_verify.main(
+            [
+                "--expected-revision",
+                "abc",
+                "--output-root",
+                str(tmp_path),
+            ]
+        )
+        == expected_code
+    )
+    captured = capsys.readouterr()
+    assert reason in captured.err
+    assert (tmp_path / "report.md").as_posix() in captured.out

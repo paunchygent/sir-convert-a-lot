@@ -368,6 +368,28 @@ def _apply_restart_truth(runner: CommandRunner) -> None:
             raise StartupFailure(f"selected service restart policy is not no: {name}")
 
 
+def prepare_application_image(project_root: Path) -> str:
+    """Admit or build the HEAD-tagged application image and return its tag."""
+    runner = CommandRunner(
+        project_root=project_root,
+        deadline=time.monotonic() + TOTAL_TIMEOUT_SECONDS,
+    )
+    _require_clean_repository(runner)
+    runner.run([*docker_command(), "compose", "version"])
+    head = _repository_head(runner)
+    identity = _dependency_identity(project_root)
+    dependency_image = _require_dependency_image(runner, identity)
+    environment = _compose_environment(head=head, dependency_image=dependency_image)
+    _admit_application_image(
+        runner,
+        head=head,
+        dependency_hash=identity["dependency_image_hash"],
+        dependency_image=dependency_image,
+        environment=environment,
+    )
+    return head
+
+
 def execute(project_root: Path) -> None:
     runner = CommandRunner(
         project_root=project_root,
@@ -428,7 +450,34 @@ def execute(project_root: Path) -> None:
         raise primary_failure
 
 
-def main() -> int:
+def _prepare_image_entry() -> int:
+    outcome = "succeeded"
+    image_tag = ""
+    try:
+        image_tag = prepare_application_image(Path.cwd())
+    except StartupFailure as exc:
+        outcome = exc.outcome
+        print(f"prepare-image: {exc}", file=sys.stderr)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        outcome = "failed"
+        print(f"prepare-image: {exc}", file=sys.stderr)
+    if outcome == "succeeded":
+        print(f"image_tag={image_tag}")
+    print(f"outcome={outcome}")
+    return 0 if outcome == "succeeded" else 1
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments == ["prepare-image"]:
+        return _prepare_image_entry()
+    if arguments:
+        print(
+            "usage: python -m scripts.sir_convert_a_lot.devops."
+            "bounded_production_startup [prepare-image]",
+            file=sys.stderr,
+        )
+        return 2
     outcome = "succeeded"
     try:
         execute(Path.cwd())

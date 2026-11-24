@@ -336,6 +336,15 @@ def test_prod_compose_helper_targets_production_compose_surface() -> None:
     )
     assert 'SIR_CONVERT_A_LOT_DEPS_RUNTIME="rocm"' in script_text
     assert 'SIR_CONVERT_A_LOT_DOCKER_USE_SUDO="1"' in script_text
+    assert 'export SIR_CONVERT_A_LOT_COMPOSE_REFUSED_ACTIONS="start"' in script_text
+    assert (
+        'SIR_CONVERT_A_LOT_COMPOSE_RECREATE_CLAIM="${SCRIPT_DIR}/prod-claim-redeploy.sh"'
+        in script_text
+    )
+    assert (
+        'SIR_CONVERT_A_LOT_COMPOSE_RECREATE_SERVICES='
+        '"sir_convert_a_lot_prod sir_convert_a_lot_gpu_worker"' in script_text
+    )
 
 
 def test_prod_pdm_scripts_expose_dependency_image_lane() -> None:

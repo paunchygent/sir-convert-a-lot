@@ -67,6 +67,8 @@ class _Runner(CommandRunner):
         self.calls.append((command_vector, copied_environment, dependency_boundary))
         if command_vector == ["git", "status", "--porcelain", "--untracked-files=normal"]:
             return CommandResult(stdout=self.git_status, stderr="")
+        if command_vector == ["git", "rev-parse", "HEAD"]:
+            return CommandResult(stdout=f"{HEAD}\n", stderr="")
         if command_vector == ["docker", "port", startup.API_SERVICE, "8085/tcp"]:
             return CommandResult(stdout=self.port_output, stderr="")
         if command_vector == ["docker", "ps", "-a", "--format", "{{.Names}}"]:
@@ -296,3 +298,87 @@ def test_hemma_guard_refusal_emits_failed_outcome_without_starting_coordinator(
     assert "Use: pdm run run-hemma -- <command> [args...]" in result.stderr
     assert result.stdout.splitlines() == ["outcome=failed"]
     assert not coordinator_probe.exists()
+
+
+def test_prepare_application_image_runs_head_admission_without_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    identity = startup._dependency_identity(REPO_ROOT)
+    dependency_image = f"sir-convert-a-lot-deps-rocm:{identity['dependency_image_hash']}"
+    dependency_labels = {
+        startup.DEPENDENCY_LABELS[0]: identity["dependency_hash"],
+        startup.DEPENDENCY_LABELS[1]: identity["recipe_hash"],
+        startup.DEPENDENCY_LABELS[2]: identity["dependency_image_hash"],
+    }
+    application_labels = {
+        "org.opencontainers.image.revision": HEAD,
+        "sir-convert-a-lot.dependency-image-hash": identity["dependency_image_hash"],
+    }
+    runner = _Runner()
+    inspected: list[str] = []
+
+    def fake_inspect_image(
+        inspected_runner: CommandRunner,
+        image: str,
+        *,
+        dependency_boundary: bool = False,
+    ) -> tuple[str, dict[str, str]]:
+        del inspected_runner
+        inspected.append(image)
+        if dependency_boundary:
+            return "sha256:dependency", dependency_labels
+        return APPLICATION_IMAGE_ID, application_labels
+
+    def command_runner(*, project_root: Path, deadline: float) -> _Runner:
+        del project_root, deadline
+        return runner
+
+    monkeypatch.setattr(startup, "CommandRunner", command_runner)
+    monkeypatch.setattr(startup, "inspect_image", fake_inspect_image)
+
+    image_tag = startup.prepare_application_image(REPO_ROOT)
+
+    assert image_tag == HEAD
+    assert inspected == [
+        dependency_image,
+        f"sir-convert-a-lot-runtime:{HEAD}",
+        f"sir-convert-a-lot-runtime:{HEAD}",
+    ]
+    commands = [call[0] for call in runner.calls]
+    assert not any("up" in command for command in commands)
+    assert not any("build" in command for command in commands)
+    assert not any("start" in command for command in commands)
+
+
+def test_prepare_image_entry_emits_admitted_tag(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(startup, "prepare_application_image", lambda root: HEAD)
+
+    assert startup.main(["prepare-image"]) == 0
+
+    assert capsys.readouterr().out.splitlines() == [
+        f"image_tag={HEAD}",
+        "outcome=succeeded",
+    ]
+
+
+def test_prepare_image_entry_reports_admission_failure(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail(root: Path) -> str:
+        del root
+        raise StartupFailure("dependency image is absent", outcome="dependency_unhealthy")
+
+    monkeypatch.setattr(startup, "prepare_application_image", fail)
+
+    assert startup.main(["prepare-image"]) == 1
+
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == ["outcome=dependency_unhealthy"]
+    assert "prepare-image: dependency image is absent" in captured.err
+
+
+def test_unknown_entry_argument_is_a_usage_error(capsys: pytest.CaptureFixture[str]) -> None:
+    assert startup.main(["unexpected-argument"]) == 2
+    assert "usage:" in capsys.readouterr().err

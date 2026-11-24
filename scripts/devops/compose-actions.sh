@@ -22,7 +22,9 @@ COMPOSE_USAGE="${SIR_CONVERT_A_LOT_COMPOSE_USAGE:-Usage: compose wrapper <action
 COMPOSE_SECRETS_FILE="${SIR_CONVERT_A_LOT_COMPOSE_SECRETS_FILE:-}"
 COMPOSE_SECRETS_SET="${SIR_CONVERT_A_LOT_AGENT_SECRETS_SET:-}"
 COMPOSE_SECRET_ACTIONS="${SIR_CONVERT_A_LOT_COMPOSE_SECRET_ACTIONS:-start recreate build build-clean}"
-COMPOSE_RECREATE_CLAIM_START="${SIR_CONVERT_A_LOT_COMPOSE_RECREATE_CLAIM_START:-}"
+COMPOSE_RECREATE_CLAIM="${SIR_CONVERT_A_LOT_COMPOSE_RECREATE_CLAIM:-}"
+COMPOSE_RECREATE_SERVICES="${SIR_CONVERT_A_LOT_COMPOSE_RECREATE_SERVICES:-}"
+COMPOSE_REFUSED_ACTIONS="${SIR_CONVERT_A_LOT_COMPOSE_REFUSED_ACTIONS:-}"
 
 usage() {
   printf "%s\n" "${COMPOSE_USAGE}" >&2
@@ -127,6 +129,7 @@ prepare_compose_dynamic_env_file() {
 
   local dynamic_keys=(
     SIR_CONVERT_A_LOT_DEPS_IMAGE
+    SIR_CONVERT_A_LOT_IMAGE_TAG
     SIR_CONVERT_A_LOT_SERVICE_REVISION
     SIR_CONVERT_A_LOT_EXPECTED_REVISION
     HULEEDU_INTERNAL_IDENTITY_REMOTE_PROOF_PUBLIC_KEY_HOST_PATH
@@ -225,6 +228,64 @@ ensure_dependency_image() {
   exit 69
 }
 
+prepare_application_image() {
+  local prepare_output=""
+  local prepare_status=0
+  prepare_output="$(
+    python -m scripts.sir_convert_a_lot.devops.bounded_production_startup prepare-image
+  )" || prepare_status="$?"
+  if [[ "${prepare_status}" -ne 0 ]]; then
+    printf '%s\n' "${prepare_output}" >&2
+    exit "${prepare_status}"
+  fi
+  local image_tag=""
+  while IFS='=' read -r key value; do
+    if [[ "${key}" == "image_tag" ]]; then
+      image_tag="${value}"
+    fi
+  done <<<"${prepare_output}"
+  if [[ -z "${image_tag}" ]]; then
+    echo "${COMPOSE_LABEL}: application image admission did not emit image_tag" >&2
+    echo "${prepare_output}" >&2
+    exit 69
+  fi
+  export SIR_CONVERT_A_LOT_IMAGE_TAG="${image_tag}"
+}
+
+recreate_through_claim() {
+  local -a services=()
+  read -r -a services <<<"${COMPOSE_RECREATE_SERVICES}"
+  if [[ "${#services[@]}" -eq 0 ]]; then
+    echo "${COMPOSE_LABEL}: recreate service set is not configured" >&2
+    exit 65
+  fi
+  local requested=""
+  local known=0
+  local name=""
+  for requested in "$@"; do
+    known=0
+    for name in "${services[@]}"; do
+      if [[ "${requested}" == "${name}" ]]; then
+        known=1
+        break
+      fi
+    done
+    if [[ "${known}" -eq 0 ]]; then
+      usage
+      exit 2
+    fi
+  done
+  ensure_dependency_image
+  prepare_application_image
+  run_compose_for_action recreate up -d --no-start --no-build --no-deps --force-recreate "${services[@]}"
+  bash "${COMPOSE_RECREATE_CLAIM}"
+}
+
+if [[ " ${COMPOSE_REFUSED_ACTIONS} " == *" ${ACTION} "* ]]; then
+  usage
+  exit 2
+fi
+
 case "${ACTION}" in
   start)
     ensure_dependency_image
@@ -246,11 +307,10 @@ case "${ACTION}" in
     run_compose_for_action build-clean build --no-cache "$@"
     ;;
   recreate)
-    ensure_dependency_image
-    if [[ -n "${COMPOSE_RECREATE_CLAIM_START}" ]]; then
-      run_compose_for_action recreate up -d --no-start --no-build --no-deps --force-recreate "$@"
-      bash "${COMPOSE_RECREATE_CLAIM_START}"
+    if [[ -n "${COMPOSE_RECREATE_CLAIM}" ]]; then
+      recreate_through_claim "$@"
     else
+      ensure_dependency_image
       run_compose_for_action recreate up -d --force-recreate --build "$@"
     fi
     ;;
