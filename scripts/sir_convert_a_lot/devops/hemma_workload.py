@@ -444,15 +444,21 @@ def sir_workload_controller(
 ) -> WorkloadController:
     command_runner = runner or CommandRunner()
     sibling_runner = product_runner or _SiblingCommandRunner()
+    registry = sir_workload_registry(
+        runner=command_runner,
+        product_runner=sibling_runner,
+        project_root=project_root,
+    )
     return WorkloadController(
-        sir_workload_registry(
-            runner=command_runner,
-            product_runner=sibling_runner,
-            project_root=project_root,
-        ),
+        registry,
         SirGpuInventory(
             command_runner,
             products.published_containers(products.product_spec("huleedu"), sibling_runner),
+            frozenset(
+                declaration.identity
+                for declaration in registry.declarations
+                if GPU_CLAIM in declaration.resource_claims
+            ),
         ),
         LedgerStore(state_root),
         HostLock(state_root / LOCK_PATH.name),

@@ -328,16 +328,6 @@ def test_production_start_existing_refuses_missing_application_image() -> None:
     assert adapter.start_existing().outcome is TerminalOutcome.FAILED
 
 
-def _write_sidecar_compose(root: Path) -> None:
-    (root / "compose.yaml").write_text(
-        "services:\n"
-        "  sir_convert_a_lot_stt_sidecar:\n"
-        '    image: "sir-convert-a-lot-stt-sidecar:'
-        '${SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG:-local}"\n',
-        encoding="utf-8",
-    )
-
-
 def _sidecar_adapter(
     runner: QueueRunner, project_root: Path
 ) -> hemma_workload.ContainerWorkloadAdapter:
@@ -349,11 +339,62 @@ def _sidecar_adapter(
     )
 
 
+def _sidecar_compose_query(project_root: Path) -> tuple[str, ...]:
+    return (
+        *hemma_workload.DOCKER_COMMAND,
+        "compose",
+        "--env-file",
+        str(project_root / ".env"),
+        "--project-directory",
+        str(project_root),
+        "-f",
+        str(project_root / "compose.yaml"),
+        "config",
+        "--no-env-resolution",
+        "--images",
+        hemma_workload.STT_CONTAINER,
+    )
+
+
 def test_container_start_existing_starts_matching_declared_image(tmp_path: Path) -> None:
-    _write_sidecar_compose(tmp_path)
     runner = QueueRunner(
         [
             hemma_workload.CommandResult(0, "sha256:stt\n"),
+            hemma_workload.CommandResult(0, "sir-convert-a-lot-stt-sidecar:shift-check\n"),
+            hemma_workload.CommandResult(0, "sha256:stt\n"),
+            hemma_workload.CommandResult(0, ""),
+        ]
+    )
+    adapter = _sidecar_adapter(runner, tmp_path)
+
+    assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
+    assert runner.commands[1] == _sidecar_compose_query(tmp_path)
+    assert runner.commands[2] == (
+        *hemma_workload.DOCKER_COMMAND,
+        "image",
+        "inspect",
+        "--format",
+        "{{.Id}}",
+        "sir-convert-a-lot-stt-sidecar:shift-check",
+    )
+    assert runner.commands[-1] == (
+        *hemma_workload.DOCKER_COMMAND,
+        "start",
+        hemma_workload.STT_CONTAINER,
+    )
+
+
+def test_container_start_existing_uses_configured_compose_env_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / "deploy" / "prod.env"
+    env_file.parent.mkdir()
+    env_file.write_text("SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG=shift-check\n")
+    monkeypatch.setenv("SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE", str(env_file))
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "sha256:stt\n"),
+            hemma_workload.CommandResult(0, "sir-convert-a-lot-stt-sidecar:shift-check\n"),
             hemma_workload.CommandResult(0, "sha256:stt\n"),
             hemma_workload.CommandResult(0, ""),
         ]
@@ -363,42 +404,25 @@ def test_container_start_existing_starts_matching_declared_image(tmp_path: Path)
     assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
     assert runner.commands[1] == (
         *hemma_workload.DOCKER_COMMAND,
-        "image",
-        "inspect",
-        "--format",
-        "{{.Id}}",
-        "sir-convert-a-lot-stt-sidecar:local",
-    )
-    assert runner.commands[-1] == (
-        *hemma_workload.DOCKER_COMMAND,
-        "start",
+        "compose",
+        "--env-file",
+        str(env_file),
+        "--project-directory",
+        str(tmp_path),
+        "-f",
+        str(tmp_path / "compose.yaml"),
+        "config",
+        "--no-env-resolution",
+        "--images",
         hemma_workload.STT_CONTAINER,
     )
 
 
-def test_container_start_existing_resolves_tag_from_environment(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    _write_sidecar_compose(tmp_path)
-    monkeypatch.setenv("SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG", "v2")
-    runner = QueueRunner(
-        [
-            hemma_workload.CommandResult(0, "sha256:stt\n"),
-            hemma_workload.CommandResult(0, "sha256:stt\n"),
-            hemma_workload.CommandResult(0, ""),
-        ]
-    )
-    adapter = _sidecar_adapter(runner, tmp_path)
-
-    assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
-    assert runner.commands[1][-1] == "sir-convert-a-lot-stt-sidecar:v2"
-
-
 def test_container_start_existing_refuses_stale_declared_image(tmp_path: Path) -> None:
-    _write_sidecar_compose(tmp_path)
     runner = QueueRunner(
         [
             hemma_workload.CommandResult(0, "sha256:old\n"),
+            hemma_workload.CommandResult(0, "sir-convert-a-lot-stt-sidecar:shift-check\n"),
             hemma_workload.CommandResult(0, "sha256:new\n"),
         ]
     )
@@ -422,10 +446,10 @@ def test_container_start_existing_refuses_absent_container(tmp_path: Path) -> No
 
 
 def test_container_start_existing_refuses_absent_declared_image(tmp_path: Path) -> None:
-    _write_sidecar_compose(tmp_path)
     runner = QueueRunner(
         [
             hemma_workload.CommandResult(0, "sha256:stt\n"),
+            hemma_workload.CommandResult(0, "sir-convert-a-lot-stt-sidecar:local\n"),
             hemma_workload.CommandResult(1, "No such image"),
         ]
     )
@@ -438,12 +462,31 @@ def test_container_start_existing_refuses_absent_declared_image(tmp_path: Path) 
     assert all(command[3:4] != ("start",) for command in runner.commands)
 
 
-def test_container_start_existing_refuses_undeclared_compose_image(tmp_path: Path) -> None:
-    (tmp_path / "compose.yaml").write_text("services: {}\n", encoding="utf-8")
-    runner = QueueRunner([hemma_workload.CommandResult(0, "sha256:stt\n")])
+@pytest.mark.parametrize(
+    "query_result",
+    [
+        hemma_workload.CommandResult(1, "", "compose config failed"),
+        hemma_workload.CommandResult(0, ""),
+        hemma_workload.CommandResult(0, "  \n\n"),
+        hemma_workload.CommandResult(
+            0, "sir-convert-a-lot-stt-sidecar:a\nsir-convert-a-lot-stt-sidecar:b\n"
+        ),
+    ],
+)
+def test_container_start_existing_refuses_unresolved_compose_image(
+    tmp_path: Path, query_result: hemma_workload.CommandResult
+) -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "sha256:stt\n"),
+            query_result,
+        ]
+    )
     adapter = _sidecar_adapter(runner, tmp_path)
 
     result = adapter.start_existing()
 
     assert result.outcome is TerminalOutcome.FAILED
-    assert "does not declare an image" in result.reason
+    assert "exactly one" in result.reason
+    assert len(runner.commands) == 2
+    assert all(command[3:4] != ("start",) for command in runner.commands)

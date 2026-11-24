@@ -17,13 +17,11 @@ Relationships:
 from __future__ import annotations
 
 import os
-import re
 import subprocess
 import time
 from collections.abc import Callable
 from pathlib import Path
 
-import yaml
 from repository_governance.hemma_workload import (
     AdapterResult,
     ExpectedState,
@@ -85,7 +83,7 @@ class ContainerWorkloadAdapter:
             image_id = _container_image_id(self._runner, self._container)
             if image_id is not None:
                 expected_image = _declared_image_id(
-                    self._runner, self._compose_path(), self._container
+                    self._runner, self._project_root or Path.cwd(), self._container
                 )
         except subprocess.TimeoutExpired as error:
             return AdapterResult(self._identity, TerminalOutcome.TIMED_OUT, str(error))
@@ -109,9 +107,6 @@ class ContainerWorkloadAdapter:
             (*DOCKER_COMMAND, "start", self._container),
             f"declared container {self._container} start failed",
         )
-
-    def _compose_path(self) -> Path:
-        return (self._project_root or Path.cwd()) / "compose.yaml"
 
     def stop(self) -> AdapterResult:
         return _command_result(
@@ -227,8 +222,8 @@ def _container_image_id(runner: CommandExecutor, container: str) -> str | None:
     return image_id
 
 
-def _declared_image_id(runner: CommandExecutor, compose_path: Path, service: str) -> str:
-    reference = _compose_image_reference(compose_path, service)
+def _declared_image_id(runner: CommandExecutor, project_root: Path, service: str) -> str:
+    reference = _compose_image_reference(runner, project_root, service)
     result = runner.run((*DOCKER_COMMAND, "image", "inspect", "--format", "{{.Id}}", reference))
     image_id = result.stdout.strip()
     if result.returncode != 0 or not image_id:
@@ -236,35 +231,37 @@ def _declared_image_id(runner: CommandExecutor, compose_path: Path, service: str
     return image_id
 
 
-def _compose_image_reference(compose_path: Path, service: str) -> str:
-    try:
-        loaded = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
-    except OSError as error:
-        raise ValueError(f"compose configuration is not readable: {error}") from error
-    services = loaded.get("services") if isinstance(loaded, dict) else None
-    record = services.get(service) if isinstance(services, dict) else None
-    image = record.get("image") if isinstance(record, dict) else None
-    if not isinstance(image, str) or not image:
-        raise ValueError(f"compose service {service} does not declare an image")
-    return _interpolate_compose_value(image)
+def _compose_env_file(project_root: Path) -> Path:
+    configured = os.environ.get("SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE")
+    if not configured:
+        return project_root / ".env"
+    env_file = Path(configured)
+    return env_file if env_file.is_absolute() else project_root / env_file
 
 
-_COMPOSE_INTERPOLATION = re.compile(r"\$\$|\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
-
-
-def _interpolate_compose_value(value: str) -> str:
-    def substitute(match: re.Match[str]) -> str:
-        if match.group(0) == "$$":
-            return "$"
-        name = match.group(1)
-        default = match.group(2)
-        if name in os.environ:
-            return os.environ[name]
-        if default is not None:
-            return default
-        raise ValueError(f"compose environment variable {name} is unset")
-
-    return _COMPOSE_INTERPOLATION.sub(substitute, value)
+def _compose_image_reference(runner: CommandExecutor, project_root: Path, service: str) -> str:
+    result = runner.run(
+        (
+            *DOCKER_COMMAND,
+            "compose",
+            "--env-file",
+            str(_compose_env_file(project_root)),
+            "--project-directory",
+            str(project_root),
+            "-f",
+            str(project_root / "compose.yaml"),
+            "config",
+            "--no-env-resolution",
+            "--images",
+            service,
+        )
+    )
+    references = tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
+    if result.returncode != 0 or len(references) != 1:
+        raise ValueError(
+            f"compose did not resolve exactly one {service} image: {_diagnostic(result)}"
+        )
+    return references[0]
 
 
 def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]:

@@ -48,12 +48,21 @@ class GpuProcess:
 class SirGpuInventory:
     """Inventory declared host GPU workloads and fail closed on unknown consumers."""
 
-    def __init__(self, runner: CommandExecutor, containers: dict[str, tuple[str, ...]]) -> None:
+    def __init__(
+        self,
+        runner: CommandExecutor,
+        containers: dict[str, tuple[str, ...]],
+        gpu_identities: frozenset[str],
+    ) -> None:
         self._runner = runner
         missing = SIR_WORKLOAD_IDENTITIES - containers.keys()
         if missing:
             raise ValueError(f"published containers lack Sir workloads {sorted(missing)}")
-        self._containers = dict(containers)
+        self._containers = {
+            identity: members
+            for identity, members in containers.items()
+            if identity in gpu_identities
+        }
 
     def inspect(self, resource_claims: frozenset[str]) -> InventorySnapshot:
         try:

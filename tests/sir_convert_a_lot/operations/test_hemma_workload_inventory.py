@@ -44,6 +44,9 @@ DECLARED_CONTAINERS = {
     hemma_workload.STT_WORKLOAD_ID: (hemma_workload.STT_CONTAINER,),
     RST_WORKLOAD_ID: (RST_CONTAINER,),
 }
+GPU_IDENTITIES = frozenset(DECLARED_CONTAINERS)
+CORE_WORKLOAD_ID = "hule-prod-core"
+CORE_CONTAINERS = ("huleedu_api", "huleedu_file_worker")
 
 
 def _inventory_runner(
@@ -241,7 +244,7 @@ def test_inventory_maps_exact_group_and_sidecars_with_blank_rocm_output() -> Non
         },
     )
 
-    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
         frozenset({hemma_workload.GPU_CLAIM})
     )
 
@@ -258,7 +261,7 @@ def test_inventory_refuses_partial_production_group() -> None:
     runner = _inventory_runner(running=(hemma_workload.API_CONTAINER,))
 
     with pytest.raises(InventoryInspectionError, match="partial running state"):
-        hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+        hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
             frozenset({hemma_workload.GPU_CLAIM})
         )
 
@@ -269,16 +272,16 @@ def test_inventory_timeout_fails_closed() -> None:
             raise subprocess.TimeoutExpired(argv, 1)
 
     with pytest.raises(InventoryInspectionError, match="timed out"):
-        hemma_workload.SirGpuInventory(TimeoutRunner(), DECLARED_CONTAINERS).inspect(
-            frozenset({hemma_workload.GPU_CLAIM})
-        )
+        hemma_workload.SirGpuInventory(
+            TimeoutRunner(), DECLARED_CONTAINERS, GPU_IDENTITIES
+        ).inspect(frozenset({hemma_workload.GPU_CLAIM}))
 
 
 def test_inventory_reports_prefixed_container_and_unmapped_nonzero_vram_pid() -> None:
     rocm = json.dumps({"system": {"PID123": "python, card0, 4096"}})
     runner = _inventory_runner(running=("sir_convert_unknown_gpu",), rocm=rocm)
 
-    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
         frozenset({hemma_workload.GPU_CLAIM})
     )
 
@@ -288,7 +291,7 @@ def test_inventory_reports_prefixed_container_and_unmapped_nonzero_vram_pid() ->
 def test_inventory_reports_lingering_retired_edge_as_unknown() -> None:
     runner = _inventory_runner(running=("sir_convert_a_lot_public_reserved",))
 
-    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
         frozenset({hemma_workload.GPU_CLAIM})
     )
 
@@ -308,7 +311,9 @@ def test_inventory_refuses_nonexclusive_claim_sets(resource_claims: frozenset[st
     runner = _inventory_runner(running=())
 
     with pytest.raises(InventoryInspectionError, match="cannot inspect claims"):
-        hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(resource_claims)
+        hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
+            resource_claims
+        )
 
 
 @pytest.mark.parametrize(
@@ -319,7 +324,7 @@ def test_inventory_raises_typed_error_for_malformed_rocm_payload(payload: str) -
     runner = _inventory_runner(running=(), rocm=payload)
 
     with pytest.raises(InventoryInspectionError):
-        hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+        hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
             frozenset({hemma_workload.GPU_CLAIM})
         )
 
@@ -332,7 +337,7 @@ def test_inventory_maps_nonzero_vram_pid_to_exact_declared_gpu_container() -> No
         pids={hemma_workload.STT_CONTAINER: (321,)},
     )
 
-    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
         frozenset({hemma_workload.GPU_CLAIM})
     )
 
@@ -344,7 +349,30 @@ def test_inventory_maps_nonzero_vram_pid_to_declared_rst_container() -> None:
     rocm = json.dumps({"system": {"PID4001": "python, card0, 8192"}})
     runner = _inventory_runner(running=(RST_CONTAINER,), rocm=rocm, pids={RST_CONTAINER: (4001,)})
 
-    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
+        frozenset({hemma_workload.GPU_CLAIM})
+    )
+
+    assert snapshot.running_workloads == frozenset({RST_WORKLOAD_ID})
+    assert snapshot.unknown_consumers == ()
+
+
+@pytest.mark.parametrize(
+    "running_core",
+    [("huleedu_api",), CORE_CONTAINERS],
+)
+def test_inventory_ignores_cpu_only_group_without_gpu_claim(
+    running_core: tuple[str, ...],
+) -> None:
+    containers = {**DECLARED_CONTAINERS, CORE_WORKLOAD_ID: CORE_CONTAINERS}
+    rocm = json.dumps({"system": {"PID4001": "python, card0, 8192"}})
+    runner = _inventory_runner(
+        running=(*running_core, RST_CONTAINER),
+        rocm=rocm,
+        pids={RST_CONTAINER: (4001,)},
+    )
+
+    snapshot = hemma_workload.SirGpuInventory(runner, containers, GPU_IDENTITIES).inspect(
         frozenset({hemma_workload.GPU_CLAIM})
     )
 
@@ -356,7 +384,7 @@ def test_inventory_maps_qwen_main_pid_to_declared_workload() -> None:
     rocm = json.dumps({"system": {"PID4321": "llama-server, card0, 16384"}})
     runner = _inventory_runner(running=(), rocm=rocm, qwen_main_pid="4321\n")
 
-    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS).inspect(
+    snapshot = hemma_workload.SirGpuInventory(runner, DECLARED_CONTAINERS, GPU_IDENTITIES).inspect(
         frozenset({hemma_workload.GPU_CLAIM})
     )
 
