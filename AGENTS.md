@@ -19,17 +19,10 @@ Run from the repository root; the full list is in `pyproject.toml` and `README.m
 
 ## Product Facts
 
-- Sir GPU workloads change state through the shared Hemma workload switch,
-  `pdm run hemma-workload start|stop|restore|redeploy`. `pdm run prod-start`
-  and `pdm run prod-start-bounded` start production through the owner's claim
-  (`hemma-workload start sir-production`); `prod-recreate` and
-  `hemma-prod-recreate` recreate the containers and end with the claim
-  `redeploy`, which starts the claim when unheld, replaces it when held, and
-  is refused when suspended. `prod-workload-start` is internal to the claim
-  adapter. The claim's exit code is the result — `0` on `succeeded`, `3` on
-  `queued`, `1` on any other outcome — and a `queued` result's reason names
-  the queue position and the awaited holders or waiters; the work runs when
-  the queue advances. `pdm run hemma-services claims` shows the claim ledger.
+- Sir GPU workloads change state through owner claims: `pdm run prod-start` and
+  `prod-recreate` route through `hemma-workload start|redeploy sir-production`;
+  exit `0` succeeded, `3` queued, `1` otherwise. Details:
+  `docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot.md`.
 - Local integration uses the CPU-only Docker dev service on `:8085`; never run
   `serve:sir-convert-a-lot` or `uvicorn` there directly.
 - The direct public hostname is retired (ADR-SIRCON-0014); there is no public lane.
