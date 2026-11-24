@@ -116,6 +116,10 @@ def test_compose_actions_wraps_only_secret_actions_through_agent_secrets() -> No
     assert 'wrapped_cmd+=(-f "${COMPOSE_SECRETS_FILE}")' in script
 
     assert "run_compose_for_action start up -d --build" in script
+    assert (
+        "run_compose_for_action recreate up -d --no-start --no-build --no-deps --force-recreate"
+        in script
+    )
     assert "run_compose_for_action recreate up -d --force-recreate --build" in script
     assert "run_compose_for_action build build" in script
     assert "run_compose_for_action logs logs" in script

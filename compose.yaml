@@ -171,7 +171,7 @@ services:
           "${SIR_CONVERT_A_LOT_DEPS_IMAGE:-sir-convert-a-lot-deps-rocm:\
           local}"
     container_name: sir_convert_a_lot_stt_sidecar
-    restart: unless-stopped
+    restart: "no"
     environment:
       - HF_HOME=/cache/huggingface
       - HF_HUB_CACHE=/cache/huggingface/hub

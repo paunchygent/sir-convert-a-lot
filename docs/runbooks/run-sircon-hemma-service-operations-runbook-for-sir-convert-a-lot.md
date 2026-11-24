@@ -103,7 +103,7 @@ current or was rewritten, `1` when a dry run found manifests to rewrite, and
 
 The command runs inside the runtime image of the revision about to start,
 `sir-convert-a-lot-runtime:<40-character HEAD>`, because older images do not
-contain the migration module. Today only `prod-start-bounded` builds that
+contain the migration module. Today only `prod-workload-start` builds that
 image, and it also starts services, so no committed command yet builds it on
 its own. Until one exists, stop here and escalate rather than starting services
 to get the image. This procedure has not yet been run on Hemma, because
@@ -133,7 +133,9 @@ changes nothing. Keep the JSON reports as start evidence.
 
 ## Bounded Production Start
 
-`pdm run prod-start-bounded` is Hemma Server-only. It admits the current repository `HEAD` only with the exact, already-present hash-addressed ROCm dependency image and all three identity labels: dependency hash, recipe hash, and dependency-image hash. Before a selected service starts, the revision-tagged application image for that `HEAD` must prove its tag and image ID, OCI revision label, and dependency-hash label; injected runtime revision values are not provenance.
+`pdm run prod-start` and `pdm run prod-start-bounded` are the Hemma Server-only operator start commands. Both end with `pdm run hemma-workload start sir-production <transaction-id>`: production starts only through the owner's claim, never directly through Compose. The claim's exit code is the result — `0` on `succeeded`, `3` on `queued`, `1` on any other outcome — and the command prints the rendered result line with its reason. Exit `3` with outcome `queued` means a conflicting held claim — a service, batch or interactive holder — or an earlier waiter blocks the start; the reason names the queue position and the holders or waiters it awaits, and the start happens when the queue advances. The recreate surfaces (`pdm run prod-recreate`, `pdm run hemma-prod-recreate`, and the deploy-and-verify recreate) admit or build `sir-convert-a-lot-runtime:<HEAD>`, create the two production containers with `up -d --no-start --no-build --no-deps --force-recreate`, and end with `pdm run hemma-workload redeploy sir-production <transaction-id>` instead of start: redeploy starts the claim when unheld, replaces it when held, and is refused when suspended, so their exit code is also the claim's.
+
+`pdm run prod-workload-start` is the claim adapter's internal start command, not an operator surface. It admits the current repository `HEAD` only with the exact, already-present hash-addressed ROCm dependency image and all three identity labels: dependency hash, recipe hash, and dependency-image hash. Before a selected service starts, the revision-tagged application image for that `HEAD` must prove its tag and image ID, OCI revision label, and dependency-hash label; injected runtime revision values are not provenance.
 
 The command starts only `sir_convert_a_lot_prod` and `sir_convert_a_lot_gpu_worker`, separately, with `--no-deps --no-build`. It repairs a stale API by building and force-recreating only that API; it refuses a stale running worker rather than recreating it. Within 120 seconds, `/readyz` must prove exact revision, production profile, and data-root parity. GPU proof targets `sir_convert_a_lot_gpu_worker` and requires ROCm Torch, `/dev/kfd`, `/dev/dri`, and `rocm-smi` visibility without a live conversion or CPU fallback. The source and live restart policies for both selected services must finish as `restart=no`.
 
@@ -149,14 +151,15 @@ Stop when dependency ensure or build, a broad recreate, an excluded service acti
 pdm run hemma-workload start <target> <transaction-id>
 pdm run hemma-workload stop <target> <transaction-id>
 pdm run hemma-workload restore <target>
+pdm run hemma-workload redeploy <target> <transaction-id>
 ```
 
-| Target            | Exact container membership                               | Restart policy and operation                                                                                               |
-| ----------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `sir-production`  | `sir_convert_a_lot_prod`, `sir_convert_a_lot_gpu_worker` | `restart=no`; start delegates to Task04 `prod-start-bounded`, and stop names only the GPU worker then API.                 |
-| `sir-stt-sidecar` | `sir_convert_a_lot_stt_sidecar`                          | `restart=unless-stopped`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
+| Target            | Exact container membership                               | Restart policy and operation                                                                                   |
+| ----------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `sir-production`  | `sir_convert_a_lot_prod`, `sir_convert_a_lot_gpu_worker` | `restart=no`; start delegates to `prod-workload-start`, and stop names only the GPU worker then API.           |
+| `sir-stt-sidecar` | `sir_convert_a_lot_stt_sidecar`                          | `restart=no`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
 
-Both targets claim `gpu:amdgpu` and conflict with each other. After the Hemma Server guard, the public command crosses one fixed `sudo -n` Python worker boundary; that root worker rechecks the guard, owns the provider transaction, and uses `sudo -n docker` for direct container inspection and control. The provider renders the terminal result as JSON; only `succeeded` exits zero. It owns `/var/lib/hemma/workload-switch/active-receipt.json` and `/var/lib/hemma/workload-switch/active.lock`, and recovery restores only the prior Sir services recorded in that receipt. The public reserved workload is retired; a lingering retired container or unknown GPU consumer causes refusal.
+Both targets claim `gpu:amdgpu` and conflict with each other. After the Hemma Server guard, the public command crosses one fixed `sudo -n` Python worker boundary; that root worker rechecks the guard, owns the provider transaction, and uses `sudo -n docker` for direct container inspection and control. The provider renders the terminal result as JSON; `succeeded` exits `0`, `queued` exits `3`, and any other outcome exits `1`. A `queued` result's reason names the queue position and the holders or waiters it awaits. It owns `/var/lib/hemma/workload-switch/active.lock`; `pdm run hemma-services claims` in the shared skill repository shows the claim ledger for queue review. The public reserved workload is retired; a lingering retired container or unknown GPU consumer causes refusal.
 
 ## Dependency Image Cleanup
 

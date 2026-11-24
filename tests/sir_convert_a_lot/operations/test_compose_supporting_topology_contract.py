@@ -67,7 +67,7 @@ def test_compose_declares_private_stt_sidecar_runtime() -> None:
         "sir-convert-a-lot-stt-sidecar:${SIR_CONVERT_A_LOT_STT_SIDECAR_IMAGE_TAG:-local}"
     )
     assert service.get("container_name") == "sir_convert_a_lot_stt_sidecar"
-    assert service.get("restart") == "unless-stopped"
+    assert service.get("restart") == "no"
     assert service.get("ports") is None
     assert service.get("expose") == ["8095"]
     assert service.get("command") == [

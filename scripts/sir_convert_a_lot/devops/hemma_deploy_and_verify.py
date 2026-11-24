@@ -44,6 +44,33 @@ REMOTE_VERIFIER_KEY_SOURCE = "agent-secrets:sir-convert-a-lot-operator"
 class CommandExecutionError(RuntimeError):
     """Raised when subprocess execution fails."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        returncode: int | None = None,
+        stdout: str = "",
+        stderr: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+class RecreateClaimOutcome(RuntimeError):
+    """The remote recreate reached the owner's claim, which did not succeed."""
+
+    def __init__(self, *, outcome: str, reason: str) -> None:
+        super().__init__(reason)
+        self.outcome = outcome
+        self.reason = reason
+
+    @property
+    def exit_code(self) -> int:
+        """Return the claim's exit code: 3 when queued, 1 otherwise."""
+        return 3 if self.outcome == "queued" else 1
+
 
 @dataclass(frozen=True)
 class WorkflowSettings:
@@ -101,7 +128,10 @@ def _run_command(
         raise CommandExecutionError(
             f"{label} failed (exit={result.returncode}).\n"
             f"stdout:\n{result.stdout.strip()}\n"
-            f"stderr:\n{result.stderr.strip()}"
+            f"stderr:\n{result.stderr.strip()}",
+            returncode=result.returncode,
+            stdout=result.stdout,
+            stderr=result.stderr,
         )
     return result.stdout
 
@@ -206,28 +236,61 @@ def _initialize_artifacts(output_root: Path) -> tuple[Path, Path, Path, Path, Pa
     return report_json_path, report_md_path, readyz_path, metrics_path, remote_head_path
 
 
+_CLAIM_RESULT_FIELDS = {"outcome", "target_identity", "transaction_id", "reason"}
+
+
+def _claim_outcome_from_output(output: str) -> dict[str, str] | None:
+    """Return the owner claim's rendered result when it closed the remote output."""
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    if not lines:
+        return None
+    try:
+        decoded = json.loads(lines[-1])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(decoded, dict) or set(decoded) != _CLAIM_RESULT_FIELDS:
+        return None
+    outcome = decoded["outcome"]
+    reason = decoded["reason"]
+    if not isinstance(outcome, str) or not isinstance(reason, str):
+        return None
+    return {"outcome": outcome, "reason": reason}
+
+
 def _remote_recreate_service(remote_revision: str) -> None:
     """Recreate the remote private services once as the invoking user.
 
-    `prod-recreate` owns Docker elevation; any failure propagates unchanged.
+    `prod-recreate` owns Docker elevation and ends with the owner's claim;
+    a claim outcome propagates unchanged while other failures raise.
     """
-    _run_remote(
-        [
-            "env",
-            f"SIR_CONVERT_A_LOT_SERVICE_REVISION={remote_revision}",
-            f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={remote_revision}",
-            "pdm",
-            "run",
-            "prod-recreate",
-            "sir_convert_a_lot_gpu_worker",
-            "sir_convert_a_lot_prod",
-        ],
-        label="remote pdm run prod-recreate private services",
-    )
+    try:
+        _run_remote(
+            [
+                "env",
+                f"SIR_CONVERT_A_LOT_SERVICE_REVISION={remote_revision}",
+                f"SIR_CONVERT_A_LOT_EXPECTED_REVISION={remote_revision}",
+                "pdm",
+                "run",
+                "prod-recreate",
+                "sir_convert_a_lot_gpu_worker",
+                "sir_convert_a_lot_prod",
+            ],
+            label="remote pdm run prod-recreate private services",
+        )
+    except CommandExecutionError as exc:
+        claim = _claim_outcome_from_output(exc.stdout)
+        if claim is not None:
+            raise RecreateClaimOutcome(
+                outcome=claim["outcome"],
+                reason=claim["reason"],
+            ) from exc
+        raise
 
 
-def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
-    """Run deploy + verify sequence and return report payload."""
+def execute_workflow(
+    settings: WorkflowSettings,
+) -> tuple[dict[str, object], RecreateClaimOutcome | None]:
+    """Run deploy + verify sequence; return the report and any claim outcome."""
     report: dict[str, object] = {
         "generated_at": _utc_now_iso(),
         "status": "failed",
@@ -253,6 +316,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
         _initialize_artifacts(settings.output_root)
     )
 
+    claim_outcome: RecreateClaimOutcome | None = None
     try:
         _run_remote(["git", "pull", "--ff-only"], label="remote git pull --ff-only")
 
@@ -331,6 +395,10 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
 
         report["status"] = "passed"
         report["failure"] = None
+    except RecreateClaimOutcome as exc:
+        report["status"] = "failed"
+        report["failure"] = exc.reason
+        claim_outcome = exc
     except (
         CommandExecutionError,
         VerificationContractError,
@@ -341,7 +409,7 @@ def execute_workflow(settings: WorkflowSettings) -> dict[str, object]:
 
     _write_json(report_json_path, report)
     report_md_path.write_text(build_report_markdown(report) + "\n", encoding="utf-8")
-    return report
+    return report, claim_outcome
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -383,8 +451,12 @@ def main(argv: list[str] | None = None) -> int:
         print(report_md_path.as_posix())
         return 1
 
-    report = execute_workflow(settings)
+    report, claim_outcome = execute_workflow(settings)
     report_md = settings.output_root / "report.md"
+    if claim_outcome is not None:
+        print(claim_outcome.reason, file=sys.stderr)
+        print(report_md.as_posix())
+        return claim_outcome.exit_code
     print(report_md.as_posix())
     return 0 if report.get("status") == "passed" else 1
 

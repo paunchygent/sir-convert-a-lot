@@ -4,7 +4,7 @@
 #   Provide the Hemma-only command surface for bounded production startup.
 #
 # Relationships:
-#   - Referenced by the PDM `prod-start-bounded` script in pyproject.toml.
+#   - Referenced by the PDM `prod-workload-start` script in pyproject.toml.
 #   - Delegates bounded startup orchestration to its typed Python coordinator.
 #
 

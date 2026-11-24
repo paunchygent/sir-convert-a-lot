@@ -16,9 +16,11 @@ Relationships:
 
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from collections.abc import Callable
+from pathlib import Path
 
 from repository_governance.hemma_workload import (
     AdapterResult,
@@ -49,6 +51,7 @@ class ContainerWorkloadAdapter:
         container: str,
         runner: CommandExecutor,
         *,
+        project_root: Path | None = None,
         monotonic: Callable[[], float] = time.monotonic,
         sleeper: Callable[[float], None] = time.sleep,
         readiness_timeout_seconds: float = SIDECAR_READINESS_TIMEOUT_SECONDS,
@@ -61,12 +64,43 @@ class ContainerWorkloadAdapter:
         self._identity = identity
         self._container = container
         self._runner = runner
+        self._project_root = project_root
         self._monotonic = monotonic
         self._sleeper = sleeper
         self._readiness_timeout_seconds = readiness_timeout_seconds
         self._readiness_interval_seconds = readiness_interval_seconds
 
     def start(self) -> AdapterResult:
+        return _command_result(
+            self._identity,
+            self._runner,
+            (*DOCKER_COMMAND, "start", self._container),
+            f"declared container {self._container} start failed",
+        )
+
+    def start_existing(self) -> AdapterResult:
+        try:
+            image_id = _container_image_id(self._runner, self._container)
+            if image_id is not None:
+                expected_image = _declared_image_id(
+                    self._runner, self._project_root or Path.cwd(), self._container
+                )
+        except subprocess.TimeoutExpired as error:
+            return AdapterResult(self._identity, TerminalOutcome.TIMED_OUT, str(error))
+        except (OSError, ValueError) as error:
+            return AdapterResult(self._identity, TerminalOutcome.FAILED, str(error))
+        if image_id is None:
+            return AdapterResult(
+                self._identity,
+                TerminalOutcome.FAILED,
+                f"declared container {self._container} is absent",
+            )
+        if image_id != expected_image:
+            return AdapterResult(
+                self._identity,
+                TerminalOutcome.FAILED,
+                f"declared container {self._container} has a stale sidecar image",
+            )
         return _command_result(
             self._identity,
             self._runner,
@@ -176,6 +210,58 @@ def _command_result(
 
 def _diagnostic(result: CommandResult) -> str:
     return result.stderr.strip() or result.stdout.strip() or "no diagnostic"
+
+
+def _container_image_id(runner: CommandExecutor, container: str) -> str | None:
+    result = runner.run((*DOCKER_COMMAND, "inspect", "--format", "{{.Image}}", container))
+    if result.returncode != 0:
+        return None
+    image_id = result.stdout.strip()
+    if not image_id:
+        raise ValueError(f"declared container {container} has an empty image record")
+    return image_id
+
+
+def _declared_image_id(runner: CommandExecutor, project_root: Path, service: str) -> str:
+    reference = _compose_image_reference(runner, project_root, service)
+    result = runner.run((*DOCKER_COMMAND, "image", "inspect", "--format", "{{.Id}}", reference))
+    image_id = result.stdout.strip()
+    if result.returncode != 0 or not image_id:
+        raise ValueError(f"declared sidecar image {reference} is absent")
+    return image_id
+
+
+def _compose_env_file(project_root: Path) -> Path:
+    configured = os.environ.get("SIR_CONVERT_A_LOT_COMPOSE_ENV_FILE")
+    if not configured:
+        return project_root / ".env"
+    env_file = Path(configured)
+    return env_file if env_file.is_absolute() else project_root / env_file
+
+
+def _compose_image_reference(runner: CommandExecutor, project_root: Path, service: str) -> str:
+    result = runner.run(
+        (
+            *DOCKER_COMMAND,
+            "compose",
+            "--env-file",
+            str(_compose_env_file(project_root)),
+            "--project-directory",
+            str(project_root),
+            "-f",
+            str(project_root / "compose.yaml"),
+            "config",
+            "--no-env-resolution",
+            "--images",
+            service,
+        )
+    )
+    references = tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
+    if result.returncode != 0 or len(references) != 1:
+        raise ValueError(
+            f"compose did not resolve exactly one {service} image: {_diagnostic(result)}"
+        )
+    return references[0]
 
 
 def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]:

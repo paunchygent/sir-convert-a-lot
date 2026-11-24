@@ -12,13 +12,14 @@ from pathlib import Path
 from repository_governance.hemma_workload import (
     ControllerCommand,
     InventoryInspectionError,
+    LedgerError,
     LockContendedError,
-    ReceiptError,
     RestoreCommand,
     TerminalOutcome,
     TransactionResult,
     WorkloadTransactionError,
     execute_command,
+    exit_code,
     parse_command,
     render_result,
 )
@@ -49,7 +50,9 @@ def _command_identifiers(command: ControllerCommand) -> tuple[str, str | None]:
 def _raw_identifiers(arguments: tuple[str, ...]) -> tuple[str, str | None]:
     target_identity = arguments[1] if len(arguments) > 1 else ""
     transaction_id = (
-        arguments[2] if len(arguments) > 2 and arguments[0] in {"start", "stop"} else None
+        arguments[2]
+        if len(arguments) > 2 and arguments[0] in {"start", "stop", "redeploy"}
+        else None
     )
     return target_identity, transaction_id
 
@@ -159,7 +162,7 @@ def _public_main(arguments: tuple[str, ...]) -> int:
         except (json.JSONDecodeError, ValueError) as error:
             diagnostic = worker.stderr.strip() or "no worker diagnostic"
             raise ValueError(f"{error}; worker stderr: {diagnostic}") from error
-        if (worker.returncode == 0) is not (result.outcome is TerminalOutcome.SUCCEEDED):
+        if worker.returncode != exit_code(result.outcome):
             raise ValueError("root worker exit code contradicts its provider result")
         if (result.target_identity, result.transaction_id) != (
             target_identity,
@@ -190,16 +193,16 @@ def _worker_main(arguments: tuple[str, ...]) -> int:
         result = execute_command(sir_workload_controller(), command)
     except (
         InventoryInspectionError,
+        LedgerError,
         LockContendedError,
         OSError,
-        ReceiptError,
         ValueError,
         WorkloadTransactionError,
         subprocess.TimeoutExpired,
     ) as error:
         result = _refused_result(target_identity, transaction_id, str(error))
     print(render_result(result))
-    return 0 if result.outcome is TerminalOutcome.SUCCEEDED else 1
+    return exit_code(result.outcome)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
