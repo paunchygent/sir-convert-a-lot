@@ -1,14 +1,19 @@
+import json
 import pwd
 import subprocess
 from pathlib import Path
 
 import pytest
 from repository_governance.hemma_workload import (
+    ClaimKind,
     ExpectedState,
+    LedgerStore,
     TerminalOutcome,
     WorkloadController,
     WorkloadTransactionError,
+    products,
 )
+from repository_governance.hemma_workload.products import WORKER_COMMAND
 
 from scripts.sir_convert_a_lot.devops import hemma_workload, hemma_workload_runtime
 
@@ -46,7 +51,7 @@ class StatefulRunner:
         if argv[:4] == (*hemma_workload.DOCKER_COMMAND, "start"):
             self.running.add(argv[4])
             return hemma_workload.CommandResult(0, "")
-        if argv == ("pdm", "run", "prod-start-bounded"):
+        if argv == ("pdm", "run", "prod-workload-start"):
             self.running.update(hemma_workload.PRODUCTION_CONTAINERS)
             return hemma_workload.CommandResult(0, "outcome=succeeded\n")
         if argv[:3] == ("pdm", "run", "prod-stop"):
@@ -72,21 +77,164 @@ class StatefulRunner:
             hemma_workload.CONTAINER_HEALTH_FORMAT,
         ):
             return hemma_workload.CommandResult(0, "healthy\n")
+        if argv[:6] == (
+            *hemma_workload.DOCKER_COMMAND,
+            "inspect",
+            "--format",
+            "{{.Image}}",
+        ):
+            if argv[6] in (*hemma_workload.PRODUCTION_CONTAINERS, hemma_workload.STT_CONTAINER):
+                return hemma_workload.CommandResult(0, "sha256:existing\n")
+            return hemma_workload.CommandResult(1, "No such object")
         raise AssertionError(f"unexpected command: {argv}")
 
 
-def test_registry_declares_only_sir_gpu_workloads() -> None:
-    registry = hemma_workload.sir_workload_registry(
+def _declaration_payload(
+    identity: str,
+    *,
+    claims: list[str],
+    kind: str | None,
+    dependencies: list[str] | None = None,
+    conflicts: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "identity": identity,
+        "services": [identity],
+        "dependencies": dependencies or [],
+        "claims": claims,
+        "conflicts": conflicts or [],
+        "outcomes": ["succeeded"],
+        "kind": kind,
+    }
+
+
+SIBLING_DECLARATIONS: dict[str, tuple[dict[str, object], ...]] = {
+    "huleedu": (
+        _declaration_payload("hule-prod-core", claims=["hule:prod-core"], kind=None),
+        _declaration_payload(
+            "hule-prod-rst-parser",
+            claims=["gpu:amdgpu"],
+            kind="service",
+            dependencies=["hule-prod-core"],
+        ),
+        _declaration_payload("hule-offload", claims=["gpu:amdgpu"], kind="batch"),
+        _declaration_payload("hule-transformer-train", claims=["gpu:amdgpu"], kind="batch"),
+        _declaration_payload("hule-vision-crop", claims=["gpu:amdgpu"], kind="batch"),
+    ),
+    "skriptoteket": (
+        _declaration_payload("skriptoteket-web", claims=["product:skriptoteket"], kind=None),
+        _declaration_payload(
+            "skriptoteket-worker",
+            claims=["product:skriptoteket"],
+            kind=None,
+            dependencies=["skriptoteket-web"],
+        ),
+    ),
+    "qwen": (
+        _declaration_payload(
+            "qwen3.8-27b-q8kl-mtp",
+            claims=["gpu:amdgpu"],
+            kind="interactive",
+            conflicts=[
+                "hule-prod-rst-parser",
+                "hule-offload",
+                "hule-transformer-train",
+                "hule-vision-crop",
+                "sir-production",
+                "sir-stt-sidecar",
+            ],
+        ),
+    ),
+}
+
+
+class CompositionRunner:
+    """Fake sibling product-worker runner returning fixed published declarations."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, ...]] = []
+
+    def run(
+        self,
+        argv: tuple[str, ...],
+        *,
+        timeout: float,
+        cwd: Path | None = None,
+        env: dict[str, str] | None = None,
+    ) -> hemma_workload.CommandResult:
+        self.calls.append(argv)
+        assert argv[:5] == WORKER_COMMAND
+        assert argv[6] == "declarations"
+        owner = argv[5]
+        payload = {"declarations": list(SIBLING_DECLARATIONS[owner])}
+        return hemma_workload.CommandResult(0, json.dumps(payload))
+
+
+def _composition_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = tmp_path / "hemma-workload.toml"
+    settings.write_text(
+        "declaration_timeout_seconds = 60.0\n"
+        "[operation_timeout_seconds]\n"
+        + "".join(
+            f'"{identity}" = 60.0\n'
+            for declarations in SIBLING_DECLARATIONS.values()
+            for declaration in declarations
+            for identity in [declaration["identity"]]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(products, "role_resource", lambda relative: settings)
+    monkeypatch.setattr(
+        products,
+        "product_spec",
+        lambda name: products.ProductSpec(name, tmp_path / name),
+    )
+
+
+def _composition(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> CompositionRunner:
+    _composition_settings(tmp_path, monkeypatch)
+    return CompositionRunner()
+
+
+def test_sir_declarations_publish_service_kinds() -> None:
+    declarations = hemma_workload.sir_workload_declarations(
         runner=QueueRunner([]), project_root=Path("/srv/sir")
     )
 
+    assert [item.identity for item in declarations] == [
+        hemma_workload.PRODUCTION_WORKLOAD_ID,
+        hemma_workload.STT_WORKLOAD_ID,
+    ]
+    for declaration in declarations:
+        assert declaration.kind is ClaimKind.SERVICE
+        assert declaration.resource_claims == frozenset({"gpu:amdgpu"})
+
+
+def test_registry_composes_host_declarations_with_sir_kinds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    product_runner = _composition(tmp_path, monkeypatch)
+    registry = hemma_workload.sir_workload_registry(
+        runner=QueueRunner([]),
+        product_runner=product_runner,
+        project_root=Path("/srv/sir"),
+    )
+
     assert registry.host_identity == "hemma"
+    expected_identities = {
+        declaration["identity"]
+        for declarations in SIBLING_DECLARATIONS.values()
+        for declaration in declarations
+    }
     assert registry.identities == frozenset(
         {
             hemma_workload.PRODUCTION_WORKLOAD_ID,
             hemma_workload.STT_WORKLOAD_ID,
+            *expected_identities,
         }
     )
+    assert {call[5] for call in product_runner.calls} == {"huleedu", "skriptoteket", "qwen"}
+
     production = registry.declaration(hemma_workload.PRODUCTION_WORKLOAD_ID)
     stt = registry.declaration(hemma_workload.STT_WORKLOAD_ID)
     assert production.service_identities == (
@@ -95,11 +243,23 @@ def test_registry_declares_only_sir_gpu_workloads() -> None:
     )
     assert stt.service_identities == (hemma_workload.STT_CONTAINER,)
     for declaration in (production, stt):
+        assert declaration.kind is ClaimKind.SERVICE
         assert declaration.resource_claims == frozenset({"gpu:amdgpu"})
         assert declaration.dependencies == ()
         assert declaration.accepted_terminal_outcomes == frozenset({TerminalOutcome.SUCCEEDED})
-    assert production.conflicts == frozenset({hemma_workload.STT_WORKLOAD_ID})
-    assert stt.conflicts == frozenset({hemma_workload.PRODUCTION_WORKLOAD_ID})
+    gpu_products = {
+        "hule-offload",
+        "hule-transformer-train",
+        "hule-vision-crop",
+        "qwen3.8-27b-q8kl-mtp",
+    }
+    assert production.conflicts == frozenset({hemma_workload.STT_WORKLOAD_ID, *gpu_products})
+    assert stt.conflicts == frozenset({hemma_workload.PRODUCTION_WORKLOAD_ID, *gpu_products})
+    assert isinstance(production.adapter, hemma_workload.ProductionWorkloadAdapter)
+    assert isinstance(
+        registry.declaration("hule-prod-rst-parser").adapter,
+        products.ProductWorkloadAdapter,
+    )
 
 
 @pytest.mark.parametrize(
@@ -121,7 +281,7 @@ def test_production_start_uses_bounded_command_and_maps_terminal_outcome(
     result = adapter.start()
 
     assert result.outcome is expected
-    assert runner.commands == [("pdm", "run", "prod-start-bounded")]
+    assert runner.commands == [("pdm", "run", "prod-workload-start")]
     assert "--build" not in runner.commands[0]
 
 
@@ -158,7 +318,7 @@ def test_root_worker_runs_bounded_startup_as_operator_account(
     assert command[:4] == ("sudo", "-n", "-u", "operator")
     assert command[4] == "env"
     assert command[5].startswith("PATH=/home/operator/.local/bin:")
-    assert command[-3:] == ("pdm", "run", "prod-start-bounded")
+    assert command[-3:] == ("pdm", "run", "prod-workload-start")
 
 
 def test_root_worker_falls_back_to_sudo_uid_for_operator_account(
@@ -343,33 +503,44 @@ def test_production_operations_normalize_subprocess_timeouts(
     assert adapter.readiness().outcome is TerminalOutcome.TIMED_OUT
 
 
-def test_controller_uses_public_provider_and_owner_state_constants(tmp_path: Path) -> None:
+def test_controller_uses_public_provider_and_owner_state_constants(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     controller = hemma_workload.sir_workload_controller(
-        runner=QueueRunner([]), project_root=Path("/srv/sir"), state_root=tmp_path
+        runner=QueueRunner([]),
+        product_runner=_composition(tmp_path, monkeypatch),
+        project_root=Path("/srv/sir"),
+        state_root=tmp_path,
     )
 
     assert isinstance(controller, WorkloadController)
     assert hemma_workload.HOST_STATE_ROOT == Path("/var/lib/hemma/workload-switch")
-    assert hemma_workload.RECEIPT_PATH == Path("/var/lib/hemma/workload-switch/active-receipt.json")
     assert hemma_workload.LOCK_PATH == Path("/var/lib/hemma/workload-switch/active.lock")
-    assert not (tmp_path / "active-receipt.json").exists()
+    assert not (tmp_path / "claim-ledger.json").exists()
     assert not (tmp_path / "active.lock").exists()
 
 
-def test_controller_refuses_retired_edge_without_host_commands(tmp_path: Path) -> None:
+def test_controller_refuses_retired_edge_without_host_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runner = QueueRunner([])
     controller = hemma_workload.sir_workload_controller(
-        runner=runner, project_root=Path("/srv/sir"), state_root=tmp_path
+        runner=runner,
+        product_runner=_composition(tmp_path, monkeypatch),
+        project_root=Path("/srv/sir"),
+        state_root=tmp_path,
     )
 
     with pytest.raises(ValueError, match="unknown workload identity 'sir-public-reserved-edge'"):
         controller.start("sir-public-reserved-edge", "tx-retired")
 
     assert runner.commands == []
-    assert not (tmp_path / "active-receipt.json").exists()
+    assert not (tmp_path / "claim-ledger.json").exists()
 
 
-def test_provider_controller_refuses_unknown_consumer_before_transaction(tmp_path: Path) -> None:
+def test_provider_controller_refuses_unknown_consumer_before_transaction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runner = QueueRunner(
         [
             hemma_workload.CommandResult(0, "sir_convert_unknown_gpu\n"),
@@ -377,12 +548,15 @@ def test_provider_controller_refuses_unknown_consumer_before_transaction(tmp_pat
         ]
     )
     controller = hemma_workload.sir_workload_controller(
-        runner=runner, project_root=Path("/srv/sir"), state_root=tmp_path
+        runner=runner,
+        product_runner=_composition(tmp_path, monkeypatch),
+        project_root=Path("/srv/sir"),
+        state_root=tmp_path,
     )
 
     with pytest.raises(WorkloadTransactionError, match="unknown consumers require declaration"):
         controller.start(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-unknown")
-    assert not (tmp_path / "active-receipt.json").exists()
+    assert not (tmp_path / "claim-ledger.json").exists()
 
 
 def test_shared_controller_restores_only_receipted_conflict_subset(
@@ -401,7 +575,10 @@ def test_shared_controller_restores_only_receipted_conflict_subset(
         lambda bounded, *, docker_prefix: None,
     )
     controller = hemma_workload.sir_workload_controller(
-        runner=runner, project_root=Path("/srv/sir"), state_root=tmp_path
+        runner=runner,
+        product_runner=_composition(tmp_path, monkeypatch),
+        project_root=Path("/srv/sir"),
+        state_root=tmp_path,
     )
 
     started = controller.start(hemma_workload.PRODUCTION_WORKLOAD_ID, "tx-restore")
@@ -415,4 +592,104 @@ def test_shared_controller_restores_only_receipted_conflict_subset(
     assert started_containers <= set(hemma_workload.PRODUCTION_CONTAINERS) | {
         hemma_workload.STT_CONTAINER
     }
-    assert not (tmp_path / "active-receipt.json").exists()
+    ledger = LedgerStore(tmp_path).read()
+    assert ledger.holders == ()
+    assert ledger.queue == ()
+
+
+def test_production_start_existing_starts_matching_containers() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
+            hemma_workload.CommandResult(0, "sha256:app\n"),
+            hemma_workload.CommandResult(0, "sha256:app\n"),
+            hemma_workload.CommandResult(0, "sha256:app\n"),
+            hemma_workload.CommandResult(0, ""),
+        ]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
+    assert runner.commands[-1] == (
+        *hemma_workload.DOCKER_COMMAND,
+        "start",
+        *hemma_workload.PRODUCTION_CONTAINERS,
+    )
+
+
+def test_production_start_existing_refuses_absent_container() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
+            hemma_workload.CommandResult(0, "sha256:app\n"),
+            hemma_workload.CommandResult(1, "No such object"),
+        ]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    result = adapter.start_existing()
+
+    assert result.outcome is TerminalOutcome.FAILED
+    assert "absent" in result.reason
+    assert all(command[3:4] != ("start",) for command in runner.commands)
+
+
+def test_production_start_existing_refuses_stale_image() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
+            hemma_workload.CommandResult(0, "sha256:app\n"),
+            hemma_workload.CommandResult(0, "sha256:app\n"),
+            hemma_workload.CommandResult(0, "sha256:old\n"),
+        ]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    result = adapter.start_existing()
+
+    assert result.outcome is TerminalOutcome.FAILED
+    assert "stale application image" in result.reason
+    assert all(command[3:4] != ("start",) for command in runner.commands)
+
+
+def test_production_start_existing_refuses_missing_application_image() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "a" * 40 + "\n"),
+            hemma_workload.CommandResult(1, "No such image"),
+        ]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.start_existing().outcome is TerminalOutcome.FAILED
+
+
+def test_container_start_existing_starts_existing_container() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "sha256:stt\n"),
+            hemma_workload.CommandResult(0, ""),
+        ]
+    )
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
+    )
+
+    assert adapter.start_existing().outcome is TerminalOutcome.SUCCEEDED
+    assert runner.commands[-1] == (
+        *hemma_workload.DOCKER_COMMAND,
+        "start",
+        hemma_workload.STT_CONTAINER,
+    )
+
+
+def test_container_start_existing_refuses_absent_container() -> None:
+    runner = QueueRunner([hemma_workload.CommandResult(1, "No such object")])
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
+    )
+
+    result = adapter.start_existing()
+
+    assert result.outcome is TerminalOutcome.FAILED
+    assert "absent" in result.reason

@@ -75,11 +75,67 @@ def test_public_cli_propagates_provider_nonzero_result(
     monkeypatch.setattr(
         hemma_workload_cli.subprocess,
         "run",
-        lambda argv, **kwargs: subprocess.CompletedProcess(argv, 7, refused, ""),
+        lambda argv, **kwargs: subprocess.CompletedProcess(argv, 1, refused, ""),
     )
 
-    assert hemma_workload_cli.main(("start", "sir-production", "tx-1")) == 7
+    assert hemma_workload_cli.main(("start", "sir-production", "tx-1")) == 1
     assert capsys.readouterr().out == refused + "\n"
+
+
+def test_public_cli_propagates_worker_queued_exit_three(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    queued = _rendered(TerminalOutcome.QUEUED, reason="claim queued behind a holder")
+    monkeypatch.setattr(hemma_workload_cli, "_guard_reason", lambda: None)
+    monkeypatch.setattr(
+        hemma_workload_cli.subprocess,
+        "run",
+        lambda argv, **kwargs: subprocess.CompletedProcess(argv, 3, queued, ""),
+    )
+
+    assert hemma_workload_cli.main(("start", "sir-production", "tx-1")) == 3
+    assert capsys.readouterr().out == queued + "\n"
+
+
+@pytest.mark.parametrize("returncode", [0, 1, 2, 7])
+def test_public_cli_refuses_contradicting_worker_exit_for_queued(
+    returncode: int, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    queued = _rendered(TerminalOutcome.QUEUED, reason="claim queued behind a holder")
+    monkeypatch.setattr(hemma_workload_cli, "_guard_reason", lambda: None)
+    monkeypatch.setattr(
+        hemma_workload_cli.subprocess,
+        "run",
+        lambda argv, **kwargs: subprocess.CompletedProcess(argv, returncode, queued, ""),
+    )
+
+    exit_code = hemma_workload_cli.main(("start", "sir-production", "tx-1"))
+
+    rendered = json.loads(capsys.readouterr().out)
+    assert exit_code == 1
+    assert rendered["outcome"] == "refused"
+    assert "contradicts" in rendered["reason"]
+
+
+def test_root_worker_returns_exit_three_for_queued(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = TransactionResult(
+        TerminalOutcome.QUEUED, "sir-production", "tx-queued", "claim queued"
+    )
+    monkeypatch.setattr(hemma_workload_cli.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(hemma_workload_cli, "_guard_reason", lambda: None)
+    monkeypatch.setattr(hemma_workload_cli, "sir_workload_controller", lambda: None)
+    monkeypatch.setattr(
+        hemma_workload_cli,
+        "execute_command",
+        lambda controller, command: result,
+    )
+
+    exit_code = hemma_workload_cli.main(("--worker", "start", "sir-production", "tx-queued"))
+
+    assert exit_code == 3
+    assert capsys.readouterr().out == render_result(result) + "\n"
 
 
 def test_worker_timeout_covers_sidecar_readiness_and_one_host_command() -> None:

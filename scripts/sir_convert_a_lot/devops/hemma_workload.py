@@ -2,8 +2,8 @@
 
 Purpose:
     Declare the Sir production and STT sidecar workloads,
-    operate the production API and GPU worker as one workload, and build the
-    shared workload registry and controller for the Hemma host.
+    operate the production API and GPU worker as one workload, and compose the
+    host-wide workload registry and controller for the Hemma host.
 
 Relationships:
     - Public surface for `hemma_workload_cli.py` and the operations tests;
@@ -27,13 +27,20 @@ from pathlib import Path
 
 from repository_governance.hemma_workload import (
     AdapterResult,
+    ClaimKind,
     ExpectedState,
     HostLock,
-    ReceiptStore,
+    LedgerStore,
     TerminalOutcome,
     WorkloadController,
     WorkloadDeclaration,
     WorkloadRegistry,
+)
+from repository_governance.hemma_workload.products import (
+    CommandExecutor as ProductCommandExecutor,
+)
+from repository_governance.hemma_workload.products import (
+    composed_declarations,
 )
 
 from scripts.sir_convert_a_lot.devops.bounded_production_startup import (
@@ -62,7 +69,6 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
     PRODUCTION_CONTAINERS,
     PRODUCTION_RESTART_POLICY,
     PRODUCTION_WORKLOAD_ID,
-    RECEIPT_PATH,
     SIDECAR_READINESS_INTERVAL_SECONDS,
     SIDECAR_READINESS_TIMEOUT_SECONDS,
     SIDECAR_RESTART_POLICY,
@@ -72,6 +78,7 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
 from scripts.sir_convert_a_lot.devops.hemma_workload_container_adapter import (
     ContainerWorkloadAdapter,
     _command_result,
+    _container_image_id,
     _container_state,
     _diagnostic,
     _state_category,
@@ -100,7 +107,6 @@ __all__ = [
     "PRODUCTION_CONTAINERS",
     "PRODUCTION_RESTART_POLICY",
     "PRODUCTION_WORKLOAD_ID",
-    "RECEIPT_PATH",
     "SIDECAR_READINESS_INTERVAL_SECONDS",
     "SIDECAR_READINESS_TIMEOUT_SECONDS",
     "SIDECAR_RESTART_POLICY",
@@ -115,6 +121,7 @@ __all__ = [
     "ProductionWorkloadAdapter",
     "SirGpuInventory",
     "sir_workload_controller",
+    "sir_workload_declarations",
     "sir_workload_registry",
 ]
 
@@ -177,7 +184,7 @@ class ProductionWorkloadAdapter:
         self._project_root = project_root
 
     def start(self) -> AdapterResult:
-        command = _operator_pdm_command("prod-start-bounded")
+        command = _operator_pdm_command("prod-workload-start")
         if command is None:
             return _missing_operator_account_result()
         try:
@@ -203,6 +210,35 @@ class ProductionWorkloadAdapter:
             PRODUCTION_WORKLOAD_ID,
             outcome,
             "" if outcome is TerminalOutcome.SUCCEEDED else _diagnostic(result),
+        )
+
+    def start_existing(self) -> AdapterResult:
+        """Start the existing API and GPU worker only; never create or replace them."""
+        try:
+            expected_image = _application_image_id(self._runner, self._project_root)
+            for name in PRODUCTION_CONTAINERS:
+                image_id = _container_image_id(self._runner, name)
+                if image_id is None:
+                    return AdapterResult(
+                        PRODUCTION_WORKLOAD_ID,
+                        TerminalOutcome.FAILED,
+                        f"production container {name} is absent",
+                    )
+                if image_id != expected_image:
+                    return AdapterResult(
+                        PRODUCTION_WORKLOAD_ID,
+                        TerminalOutcome.FAILED,
+                        f"production container {name} has a stale application image",
+                    )
+        except subprocess.TimeoutExpired as error:
+            return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.TIMED_OUT, str(error))
+        except (OSError, ValueError) as error:
+            return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.FAILED, str(error))
+        return _command_result(
+            PRODUCTION_WORKLOAD_ID,
+            self._runner,
+            (*DOCKER_COMMAND, "start", *PRODUCTION_CONTAINERS),
+            "production container start failed",
         )
 
     def stop(self) -> AdapterResult:
@@ -279,33 +315,92 @@ class ProductionWorkloadAdapter:
         return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.SUCCEEDED)
 
 
-def sir_workload_registry(
+class _SiblingCommandRunner:
+    """Run sibling product-worker commands with the composition executor surface."""
+
+    def run(
+        self,
+        argv: tuple[str, ...],
+        *,
+        timeout: float,
+        cwd: Path | None = None,
+        env: dict[str, str] | None = None,
+    ) -> CommandResult:
+        command_env = os.environ.copy()
+        if env is not None:
+            command_env.update(env)
+        completed = subprocess.run(
+            argv,
+            check=False,
+            capture_output=True,
+            cwd=cwd,
+            env=command_env,
+            text=True,
+            timeout=timeout,
+        )
+        return CommandResult(completed.returncode, completed.stdout, completed.stderr)
+
+
+def _application_image_id(runner: CommandExecutor, project_root: Path) -> str:
+    head_result = runner.run(("git", "-C", str(project_root), "rev-parse", "HEAD"))
+    head = head_result.stdout.strip() if head_result.returncode == 0 else ""
+    if len(head) != 40:
+        raise ValueError("cannot resolve repository HEAD for the application image")
+    image = f"sir-convert-a-lot-runtime:{head}"
+    result = runner.run((*DOCKER_COMMAND, "image", "inspect", "--format", "{{.Id}}", image))
+    image_id = result.stdout.strip()
+    if result.returncode != 0 or not image_id:
+        raise ValueError(f"application image {image} is absent")
+    return image_id
+
+
+def sir_workload_declarations(
     *, runner: CommandExecutor | None = None, project_root: Path | None = None
-) -> WorkloadRegistry:
+) -> tuple[WorkloadDeclaration, ...]:
+    """Publish only Sir's owner-local declarations; publication never composes."""
     command_runner = runner or CommandRunner()
     root = project_root or Path.cwd()
-    production_conflicts = frozenset({STT_WORKLOAD_ID})
+    return (
+        WorkloadDeclaration(
+            PRODUCTION_WORKLOAD_ID,
+            PRODUCTION_CONTAINERS,
+            (),
+            frozenset({GPU_CLAIM}),
+            frozenset({STT_WORKLOAD_ID}),
+            ProductionWorkloadAdapter(command_runner, root),
+            frozenset({TerminalOutcome.SUCCEEDED}),
+            kind=ClaimKind.SERVICE,
+        ),
+        WorkloadDeclaration(
+            STT_WORKLOAD_ID,
+            (STT_CONTAINER,),
+            (),
+            frozenset({GPU_CLAIM}),
+            frozenset({PRODUCTION_WORKLOAD_ID}),
+            ContainerWorkloadAdapter(STT_WORKLOAD_ID, STT_CONTAINER, command_runner),
+            frozenset({TerminalOutcome.SUCCEEDED}),
+            kind=ClaimKind.SERVICE,
+        ),
+    )
+
+
+def sir_workload_registry(
+    *,
+    runner: CommandExecutor | None = None,
+    product_runner: ProductCommandExecutor | None = None,
+    project_root: Path | None = None,
+) -> WorkloadRegistry:
+    """Compose one validated registry without importing a sibling controller."""
+    command_runner = runner or CommandRunner()
+    sibling_runner = product_runner or _SiblingCommandRunner()
     registry = WorkloadRegistry(
         HOST_IDENTITY,
-        (
-            WorkloadDeclaration(
-                PRODUCTION_WORKLOAD_ID,
-                PRODUCTION_CONTAINERS,
-                (),
-                frozenset({GPU_CLAIM}),
-                production_conflicts,
-                ProductionWorkloadAdapter(command_runner, root),
-                frozenset({TerminalOutcome.SUCCEEDED}),
+        composed_declarations(
+            owner="sir",
+            local_declarations=sir_workload_declarations(
+                runner=command_runner, project_root=project_root
             ),
-            WorkloadDeclaration(
-                STT_WORKLOAD_ID,
-                (STT_CONTAINER,),
-                (),
-                frozenset({GPU_CLAIM}),
-                frozenset({PRODUCTION_WORKLOAD_ID}),
-                ContainerWorkloadAdapter(STT_WORKLOAD_ID, STT_CONTAINER, command_runner),
-                frozenset({TerminalOutcome.SUCCEEDED}),
-            ),
+            runner=sibling_runner,
         ),
     )
     registry.validate()
@@ -315,14 +410,19 @@ def sir_workload_registry(
 def sir_workload_controller(
     *,
     runner: CommandExecutor | None = None,
+    product_runner: ProductCommandExecutor | None = None,
     project_root: Path | None = None,
     state_root: Path = HOST_STATE_ROOT,
 ) -> WorkloadController:
     command_runner = runner or CommandRunner()
     return WorkloadController(
-        sir_workload_registry(runner=command_runner, project_root=project_root),
+        sir_workload_registry(
+            runner=command_runner,
+            product_runner=product_runner,
+            project_root=project_root,
+        ),
         SirGpuInventory(command_runner),
-        ReceiptStore(state_root / RECEIPT_PATH.name),
+        LedgerStore(state_root),
         HostLock(state_root / LOCK_PATH.name),
     )
 

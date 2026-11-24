@@ -26,7 +26,6 @@ STT_CONTAINER = "sir_convert_a_lot_stt_sidecar"
 PRODUCTION_CONTAINERS = (API_CONTAINER, GPU_WORKER_CONTAINER)
 DECLARED_GPU_CONTAINERS = (GPU_WORKER_CONTAINER, STT_CONTAINER)
 HOST_STATE_ROOT = Path("/var/lib/hemma/workload-switch")
-RECEIPT_PATH = HOST_STATE_ROOT / "active-receipt.json"
 LOCK_PATH = HOST_STATE_ROOT / "active.lock"
 CONTAINER_STATE_FORMAT = "{{.State.Status}}\t{{.HostConfig.RestartPolicy.Name}}"
 CONTAINER_HEALTH_FORMAT = (

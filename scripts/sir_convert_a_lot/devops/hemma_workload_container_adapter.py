@@ -74,6 +74,26 @@ class ContainerWorkloadAdapter:
             f"declared container {self._container} start failed",
         )
 
+    def start_existing(self) -> AdapterResult:
+        try:
+            image_id = _container_image_id(self._runner, self._container)
+        except subprocess.TimeoutExpired as error:
+            return AdapterResult(self._identity, TerminalOutcome.TIMED_OUT, str(error))
+        except (OSError, ValueError) as error:
+            return AdapterResult(self._identity, TerminalOutcome.FAILED, str(error))
+        if image_id is None:
+            return AdapterResult(
+                self._identity,
+                TerminalOutcome.FAILED,
+                f"declared container {self._container} is absent",
+            )
+        return _command_result(
+            self._identity,
+            self._runner,
+            (*DOCKER_COMMAND, "start", self._container),
+            f"declared container {self._container} start failed",
+        )
+
     def stop(self) -> AdapterResult:
         return _command_result(
             self._identity,
@@ -176,6 +196,16 @@ def _command_result(
 
 def _diagnostic(result: CommandResult) -> str:
     return result.stderr.strip() or result.stdout.strip() or "no diagnostic"
+
+
+def _container_image_id(runner: CommandExecutor, container: str) -> str | None:
+    result = runner.run((*DOCKER_COMMAND, "inspect", "--format", "{{.Image}}", container))
+    if result.returncode != 0:
+        return None
+    image_id = result.stdout.strip()
+    if not image_id:
+        raise ValueError(f"declared container {container} has an empty image record")
+    return image_id
 
 
 def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]:
