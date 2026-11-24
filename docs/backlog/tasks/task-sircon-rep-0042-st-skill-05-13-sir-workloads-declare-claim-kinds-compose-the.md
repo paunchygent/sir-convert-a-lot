@@ -14,8 +14,9 @@ closeout_review:
 task_kind: repository
 acceptance_criteria:
   - sir-production and sir-stt-sidecar declare claim kind service, and sir_workload_registry composes the host-wide registry with owner sir, so RST and the other products are known consumers.
-  - The STT sidecar declares restart no; prod-start, prod-start-bounded, prod-recreate, hemma-prod-recreate and the deploy-and-verify recreate end by starting through the owner's claim (hemma-workload start), creating containers with up --no-start where they create or recreate.
-  - Both adapters provide start_existing, which starts existing containers only and fails when a container is absent or its image is stale; the hemma-workload CLI accepts exit 3 with outcome queued.
+  - The STT sidecar declares restart no; prod-start and prod-start-bounded end with the owner's claim start; prod-recreate, hemma-prod-recreate and the deploy-and-verify recreate prepare the runtime:<HEAD> application image, recreate the two production services with up --no-start and end with the owner's claim redeploy; the production wrapper has no unclaimed start.
+  - Both adapters provide start_existing, which starts existing containers only and fails when a container is absent or its image is stale; the hemma-workload CLI accepts exit 3 with outcome queued and has a redeploy verb.
+  - The Sir root worker runs sibling product workers as the operator account, and Sir's inventory recognises every published host GPU container and the Qwen process.
 backlog_document_profile: contract-derived
 ---
 
@@ -34,11 +35,14 @@ import the engine from the -08 worktree's `packages/repository_governance/src`
    `repository_governance.hemma_workload.products.composed_declarations`
    (owner `sir`, its two declarations as the local tuple), like HuleEdu's
    `workload_registry`.
+
 2. **STT sidecar policy (D03).** `compose.yaml`: `sir_convert_a_lot_stt_sidecar`
    `restart: unless-stopped` becomes `restart: "no"`.
+
 3. **Start through the claim (D03).** The commands that start production end
    with `pdm run hemma-workload start sir-production <transaction-id>` instead
    of starting containers themselves:
+
    - `prod-start` and `prod-start-bounded`;
    - `prod-recreate` and `hemma-prod-recreate`: recreate with
      `docker compose -f compose.yaml -f compose.secrets.yaml up -d --no-start --no-build --no-deps --force-recreate <services>` (through the existing
@@ -50,19 +54,29 @@ import the engine from the -08 worktree's `packages/repository_governance/src`
      `cmd/compose/up.go`). A `queued` or other non-succeeded claim result makes
      the command exit with the claim's code (3 queued, 1 otherwise) and print
      its reason.
+
 4. **Start-existing (D04).** `ProductionWorkloadAdapter` and the sidecar
    container adapter implement `start_existing`: `sudo -n docker start` of the
    existing containers only; `failed` when a container is absent or its image
    differs from the application image (the checks in
    `bounded_production_startup.py:151-211`); never `up`, build or
    `compose.secrets.yaml`.
+
 5. **CLI (D05).** `scripts/sir_convert_a_lot/devops/hemma_workload_cli.py`:
    `_worker_main` (`:180-202`) returns 3 for `queued`; `_public_main`
    (`:162-163`) accepts exit 3 with outcome `queued` (0 only with
    `succeeded`, 1 for other outcomes); the field set stays the four keys.
+
 6. **Docs.** `docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot.md`
    (`:146-151`) and `AGENTS.md:23` state that production starts through the
    owner's claim and how a queued start reads.
+
+7. **Review repairs (D07-D09, 24 Nov 2026).** The orchestrator admitted
+   `hemma_workload_inventory.py`, `hemma_workload_constants.py`,
+   `hemma_workload_container_adapter.py`, `bounded_production_startup.py`
+   (image admission reused by recreate), `scripts/devops/compose-actions.sh`,
+   `prod-compose.sh`, `prod-claim-start.sh` and `hemma_deploy_and_verify.py`
+   status propagation into this task's boundary.
 
 ## Contract Inputs
 
@@ -91,11 +105,14 @@ Units (one junior each): (a) steps 1, 4, 5; (b) steps 2, 3, 6.
 
 ## Decided Contract Terms
 
-| ID  | Decided contract term                                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D01 | Sir production and the STT sidecar are service claims (skill-repository T3 plan L08).                                                                  |
-| D02 | Sir's registry composes the host-wide registry with owner `sir` (L29).                                                                                 |
-| D03 | The STT sidecar restarts `no`; Sir's start, recreate and deploy commands end with the owner's claim (L03, Olof; story D07).                            |
-| D04 | Boot resume is start-only: `start_existing` never runs `up`, build or the secrets overlay, and fails on an absent or stale container (L18; story D12). |
-| D05 | `queued` keeps the four keys and exits 3 (L31).                                                                                                        |
-| D06 | This task lands in the TASK-SKILL-05-13-11 window after the runtime release (L28).                                                                     |
+| ID  | Decided contract term                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D01 | Sir production and the STT sidecar are service claims (skill-repository T3 plan L08).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| D02 | Sir's registry composes the host-wide registry with owner `sir` (L29).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| D03 | The STT sidecar restarts `no`; Sir's start, recreate and deploy commands end with the owner's claim (L03, Olof; story D07).                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| D04 | Boot resume is start-only: `start_existing` never runs `up`, build or the secrets overlay, and fails on an absent or stale container (L18; story D12).                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| D05 | `queued` keeps the four keys and exits 3 (L31).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| D06 | This task lands in the TASK-SKILL-05-13-11 window after the runtime release (L28).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| D07 | The root worker runs sibling product workers as the invoking operator account with that account's PATH, like `_operator_pdm_command`; root never runs `pdm` in a user checkout (skill-repository T3 plan L40).                                                                                                                                                                                                                                                                                                                                                                           |
+| D08 | Sir's inventory recognises every declared host GPU workload from HuleEdu's published container map and the Qwen service main PID; an unknown nonzero-VRAM PID still refuses (L41).                                                                                                                                                                                                                                                                                                                                                                                                       |
+| D09 | Recreate prepares `runtime:<HEAD>` through the existing bounded-startup admission, passes its tag to Compose, recreates exactly the two production services with `up --no-start --no-build --no-deps --force-recreate` and ends with the owner's claim `redeploy` (start when unheld, replacement when held, refused when suspended); the production wrapper has no raw `start`; deploy-and-verify returns the claim's 3 or 1 and prints its reason; the sidecar's `start_existing` compares its image ID with the compose sidecar image and its status expects restart `no` (L39, L42). |
