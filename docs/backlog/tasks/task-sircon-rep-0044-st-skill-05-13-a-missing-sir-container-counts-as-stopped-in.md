@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-11-25'
-status: ready
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: agent-orchestrator
+  decided_at: '2026-11-25T12:45:58+00:00'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: 'Whole-task code review approved 3216d9f with no material findings; 38 focused adapter tests passed; pdm run check at 3216d9f ended failed_phases=none. The reviewer noted that step 4 describes production start too narrowly (it can build the application image and create containers); D02 keeps start unchanged and no code change was requested. The live release of the stale sir-production holder and a judge claim follow the landing and are recorded in ST-SKILL-05-13.'
 task_kind: repository
 acceptance_criteria:
   - With no sir_convert_a_lot_prod or sidecar container on the host, the Sir production and sidecar adapters report stopped for an expected stopped state and not running for an expected running state, and hemma-services release sir-production removes the stale holder row.

@@ -123,7 +123,7 @@ class ContainerWorkloadAdapter:
             return AdapterResult(self._identity, TerminalOutcome.TIMED_OUT, str(error))
         except (OSError, ValueError) as error:
             return AdapterResult(self._identity, TerminalOutcome.REFUSED, str(error))
-        if restart != SIDECAR_RESTART_POLICY:
+        if state != "absent" and restart != SIDECAR_RESTART_POLICY:
             return AdapterResult(
                 self._identity,
                 TerminalOutcome.FAILED,
@@ -267,6 +267,9 @@ def _compose_image_reference(runner: CommandExecutor, project_root: Path, servic
 def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]:
     result = runner.run((*DOCKER_COMMAND, "inspect", "--format", CONTAINER_STATE_FORMAT, container))
     if result.returncode != 0:
+        stderr = result.stderr.lower()
+        if "no such object" in stderr or "no such container" in stderr:
+            return "absent", ""
         raise ValueError(f"cannot inspect declared container {container}")
     fields = result.stdout.strip().split("\t")
     known_states = {"created", "running", "paused", "restarting", "removing", "exited", "dead"}
@@ -278,6 +281,6 @@ def _container_state(runner: CommandExecutor, container: str) -> tuple[str, str]
 def _state_category(state: str) -> str | None:
     if state == "running":
         return "running"
-    if state in {"created", "exited"}:
+    if state in {"created", "exited", "absent"}:
         return "stopped"
     return None

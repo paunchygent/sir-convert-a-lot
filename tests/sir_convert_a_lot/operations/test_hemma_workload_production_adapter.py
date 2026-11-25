@@ -120,6 +120,51 @@ def test_production_status_refuses_unknown_container_state() -> None:
     assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.REFUSED
 
 
+def test_production_status_counts_missing_containers_as_stopped() -> None:
+    missing = hemma_workload.CommandResult(1, "", "error: no such object: sir_convert_a_lot_prod\n")
+
+    stopped = QueueRunner([missing, missing])
+    adapter = hemma_workload.ProductionWorkloadAdapter(stopped, Path("/srv/sir"))
+    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.SUCCEEDED
+
+    running = QueueRunner([missing, missing])
+    adapter = hemma_workload.ProductionWorkloadAdapter(running, Path("/srv/sir"))
+    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.FAILED
+
+
+def test_production_status_counts_one_missing_container_as_stopped() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(1, "", "error: no such object: sir_convert_a_lot_prod\n"),
+            hemma_workload.CommandResult(0, "exited\tno\n"),
+        ]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.SUCCEEDED
+
+
+def test_production_status_refuses_missing_plus_running() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(1, "", "error: no such object: sir_convert_a_lot_prod\n"),
+            hemma_workload.CommandResult(0, "running\tno\n"),
+        ]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.REFUSED
+
+
+def test_production_status_refuses_other_inspect_failure() -> None:
+    runner = QueueRunner(
+        [hemma_workload.CommandResult(1, "", "permission denied while trying to connect\n")]
+    )
+    adapter = hemma_workload.ProductionWorkloadAdapter(runner, Path("/srv/sir"))
+
+    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.REFUSED
+
+
 def test_production_readiness_reuses_task04_api_and_worker_helpers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
