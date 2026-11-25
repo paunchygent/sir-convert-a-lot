@@ -159,7 +159,7 @@ hemma-services claims
 | `sir-production`  | `sir_convert_a_lot_prod`, `sir_convert_a_lot_gpu_worker` | `restart=no`; start delegates to `prod-workload-start`, and stop names only the GPU worker then API.           |
 | `sir-stt-sidecar` | `sir_convert_a_lot_stt_sidecar`                          | `restart=no`; starts and stops only this pre-existing container and waits for bounded Docker-health readiness. |
 
-Both targets claim `gpu:amdgpu` and conflict with each other. Each of `claim`, `redeploy` and `release` prints one JSON line with `outcome`, `reason`, `target_identity` and `transaction_id`; `transaction_id` is `null` when a refusal precedes a transaction. `succeeded` exits `0`, `queued` exits `3`, and any other outcome exits `1`. A `queued` result's reason names the queue position and the holders or waiters it awaits. `hemma-services claims` shows the claim ledger for queue review. The public reserved workload is retired; a lingering retired container or unknown GPU consumer causes refusal.
+Both targets claim `gpu:amdgpu` and conflict with each other. Each of `claim`, `redeploy` and `release` prints one JSON line with `outcome`, `reason`, `target_identity` and `transaction_id`; `transaction_id` is `null` when a refusal precedes a transaction. `succeeded` exits `0`, `queued` exits `3`, and any other outcome exits `1`. A `queued` result's reason names the queue position and the holders or waiters it awaits. `hemma-services claims` shows the claim ledger for queue review. The public reserved workload is retired. An unknown GPU consumer causes a refusal, which the shared inventory reports through its own alert.
 
 ## Dependency Image Cleanup
 

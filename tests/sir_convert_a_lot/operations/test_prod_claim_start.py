@@ -1,10 +1,10 @@
 """Wrapper tests for the claim-routed production start and recreate surfaces.
 
 Purpose:
-    Ensure `scripts/devops/prod-claim-start.sh` starts production through the
-    owner's Hemma workload claim, and that the production `recreate` action
+    Ensure `scripts/devops/prod-claim-start.sh` starts production through
+    `hemma-services claim sir-production`, and that the production `recreate` action
     prepares the HEAD application image, creates the two production containers
-    without starting them, and ends with the owner's claim redeploy.
+    without starting them, and ends with `hemma-services redeploy sir-production`.
 
 Relationships:
     - Exercises `scripts/devops/prod-claim-start.sh`,

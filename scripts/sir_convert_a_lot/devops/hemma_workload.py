@@ -117,17 +117,13 @@ def _operator_account() -> pwd.struct_passwd | None:
     return None
 
 
-def _operator_command(
-    argv: tuple[str, ...], env: dict[str, str] | None = None
-) -> tuple[str, ...] | None:
+def _operator_command(argv: tuple[str, ...]) -> tuple[str, ...] | None:
     """Wrap one argv so it executes as the invoking operator account.
 
-    The shared workload controller runs inside a fixed root worker, but the bounded
-    production paths must read the operator's agent-secrets store and sibling
-    product workers run in the operator's checkouts, so under effective UID 0
-    the command re-enters the invoking sudo user's account with a PATH that
-    can resolve that user's installed tools. Sudo resets the environment, so
-    the caller's environment entries pass as `env` assignments.
+    The root worker that `hemma-services` launches runs the production adapter,
+    but the bounded production paths must read the operator's agent-secrets
+    store, so under effective UID 0 the command re-enters the invoking sudo
+    user's account with a PATH that can resolve that user's installed tools.
     """
     if os.geteuid() != 0:
         return argv
@@ -135,7 +131,6 @@ def _operator_command(
     if account is None:
         return None
     operator_path = f"{account.pw_dir}/.local/bin:{os.environ.get('PATH', '')}"
-    assignments = tuple(f"{name}={value}" for name, value in sorted((env or {}).items()))
     return (
         "sudo",
         "-n",
@@ -143,7 +138,6 @@ def _operator_command(
         account.pw_name,
         "env",
         f"PATH={operator_path}",
-        *assignments,
         *argv,
     )
 

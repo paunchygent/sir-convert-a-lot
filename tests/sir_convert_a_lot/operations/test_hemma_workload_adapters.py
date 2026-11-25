@@ -20,6 +20,19 @@ class QueueRunner:
         return self.results.pop(0)
 
 
+class CommandMapRunner:
+    def __init__(self, results: dict[tuple[str, ...], hemma_workload.CommandResult]) -> None:
+        self.results = results
+        self.commands: list[tuple[str, ...]] = []
+
+    def run(self, argv: tuple[str, ...]) -> hemma_workload.CommandResult:
+        self.commands.append(argv)
+        try:
+            return self.results[argv]
+        except KeyError as error:
+            raise AssertionError(f"unexpected command: {argv}") from error
+
+
 @pytest.mark.parametrize(
     ("returncode", "stdout", "expected"),
     [
@@ -490,3 +503,152 @@ def test_container_start_existing_refuses_unresolved_compose_image(
     assert "exactly one" in result.reason
     assert len(runner.commands) == 2
     assert all(command[3:4] != ("start",) for command in runner.commands)
+
+
+@pytest.mark.parametrize(
+    ("identity", "container"),
+    [
+        (hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER),
+    ],
+)
+def test_sidecars_use_exact_container_commands_and_declared_health(
+    identity: str, container: str
+) -> None:
+    assert hemma_workload.DOCKER_COMMAND == ("sudo", "-n", "docker")
+    runner = CommandMapRunner(
+        {
+            (*hemma_workload.DOCKER_COMMAND, "start", container): hemma_workload.CommandResult(
+                0, ""
+            ),
+            (*hemma_workload.DOCKER_COMMAND, "stop", container): hemma_workload.CommandResult(
+                0, ""
+            ),
+            (
+                *hemma_workload.DOCKER_COMMAND,
+                "inspect",
+                "--format",
+                hemma_workload.CONTAINER_STATE_FORMAT,
+                container,
+            ): hemma_workload.CommandResult(0, "running\tno\n"),
+            (
+                *hemma_workload.DOCKER_COMMAND,
+                "inspect",
+                "--format",
+                hemma_workload.CONTAINER_HEALTH_FORMAT,
+                container,
+            ): hemma_workload.CommandResult(0, "healthy\n"),
+        }
+    )
+    adapter = hemma_workload.ContainerWorkloadAdapter(identity, container, runner)
+
+    assert adapter.start().outcome is TerminalOutcome.SUCCEEDED
+    assert adapter.stop().outcome is TerminalOutcome.SUCCEEDED
+    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.SUCCEEDED
+    assert adapter.readiness().outcome is TerminalOutcome.SUCCEEDED
+    assert all("compose" not in command and "--build" not in command for command in runner.commands)
+
+
+def test_sidecar_readiness_refuses_missing_declared_health() -> None:
+    runner = CommandMapRunner(
+        {
+            (
+                *hemma_workload.DOCKER_COMMAND,
+                "inspect",
+                "--format",
+                hemma_workload.CONTAINER_HEALTH_FORMAT,
+                hemma_workload.STT_CONTAINER,
+            ): hemma_workload.CommandResult(0, "no-healthcheck\n")
+        }
+    )
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
+    )
+
+    assert adapter.readiness().outcome is TerminalOutcome.DEPENDENCY_UNHEALTHY
+
+
+def test_sidecar_status_enforces_restart_policy_when_stopped() -> None:
+    runner = QueueRunner([hemma_workload.CommandResult(0, "exited\tunless-stopped\n")])
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, runner
+    )
+
+    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.FAILED
+
+
+def test_sidecar_readiness_polls_starting_until_healthy() -> None:
+    runner = QueueRunner(
+        [
+            hemma_workload.CommandResult(0, "starting\n"),
+            hemma_workload.CommandResult(0, "healthy\n"),
+        ]
+    )
+    sleeps: list[float] = []
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID,
+        hemma_workload.STT_CONTAINER,
+        runner,
+        monotonic=lambda: 0.0,
+        sleeper=sleeps.append,
+        readiness_timeout_seconds=5.0,
+        readiness_interval_seconds=1.0,
+    )
+
+    assert adapter.readiness().outcome is TerminalOutcome.SUCCEEDED
+    assert sleeps == [1.0]
+    assert len(runner.commands) == 2
+
+
+def test_sidecar_starting_health_returns_typed_timeout() -> None:
+    times = iter((0.0, 2.0))
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID,
+        hemma_workload.STT_CONTAINER,
+        QueueRunner([hemma_workload.CommandResult(0, "starting\n")]),
+        monotonic=lambda: next(times),
+        sleeper=lambda seconds: None,
+        readiness_timeout_seconds=1.0,
+        readiness_interval_seconds=0.0,
+    )
+
+    assert adapter.readiness().outcome is TerminalOutcome.TIMED_OUT
+
+
+def test_sidecar_operations_normalize_subprocess_timeouts() -> None:
+    class TimeoutRunner:
+        def run(self, argv: tuple[str, ...]) -> hemma_workload.CommandResult:
+            raise subprocess.TimeoutExpired(argv, 1)
+
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID,
+        hemma_workload.STT_CONTAINER,
+        TimeoutRunner(),
+    )
+
+    assert adapter.start().outcome is TerminalOutcome.TIMED_OUT
+    assert adapter.stop().outcome is TerminalOutcome.TIMED_OUT
+    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.TIMED_OUT
+    assert adapter.readiness().outcome is TerminalOutcome.TIMED_OUT
+
+
+def test_command_runner_passes_named_timeout_to_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeouts: list[float] = []
+
+    def fake_run(
+        argv: tuple[str, ...],
+        *,
+        check: bool,
+        capture_output: bool,
+        text: bool,
+        timeout: float,
+    ) -> subprocess.CompletedProcess[str]:
+        timeouts.append(timeout)
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(hemma_workload_runtime.subprocess, "run", fake_run)
+
+    hemma_workload_runtime.CommandRunner().run(("docker", "ps"))
+
+    assert timeouts == [hemma_workload_runtime.HOST_COMMAND_TIMEOUT_SECONDS]
