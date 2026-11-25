@@ -178,7 +178,9 @@ class ProductionWorkloadAdapter:
             return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.TIMED_OUT, str(error))
         except (OSError, ValueError) as error:
             return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.REFUSED, str(error))
-        if any(restart != PRODUCTION_RESTART_POLICY for _, restart in states):
+        if any(
+            state != "absent" and restart != PRODUCTION_RESTART_POLICY for state, restart in states
+        ):
             return AdapterResult(
                 PRODUCTION_WORKLOAD_ID,
                 TerminalOutcome.FAILED,

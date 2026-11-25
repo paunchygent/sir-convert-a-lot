@@ -258,6 +258,24 @@ def test_sidecar_readiness_refuses_missing_declared_health() -> None:
     assert adapter.readiness().outcome is TerminalOutcome.DEPENDENCY_UNHEALTHY
 
 
+def test_sidecar_status_counts_missing_container_as_stopped() -> None:
+    stopped = QueueRunner(
+        [hemma_workload.CommandResult(1, "", "error: no such object: sir_convert_a_lot_stt\n")]
+    )
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, stopped
+    )
+    assert adapter.status(ExpectedState.STOPPED).outcome is TerminalOutcome.SUCCEEDED
+
+    running = QueueRunner(
+        [hemma_workload.CommandResult(1, "", "error: no such object: sir_convert_a_lot_stt\n")]
+    )
+    adapter = hemma_workload.ContainerWorkloadAdapter(
+        hemma_workload.STT_WORKLOAD_ID, hemma_workload.STT_CONTAINER, running
+    )
+    assert adapter.status(ExpectedState.RUNNING).outcome is TerminalOutcome.FAILED
+
+
 def test_sidecar_status_enforces_restart_policy_when_stopped() -> None:
     runner = QueueRunner([hemma_workload.CommandResult(0, "exited\tunless-stopped\n")])
     adapter = hemma_workload.ContainerWorkloadAdapter(
