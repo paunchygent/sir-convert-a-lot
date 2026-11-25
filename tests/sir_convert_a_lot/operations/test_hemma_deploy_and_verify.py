@@ -115,6 +115,41 @@ def test_remote_recreate_service_propagates_claim_outcome(
     assert excinfo.value.exit_code == 3
 
 
+def test_remote_recreate_service_propagates_refusal_without_transaction_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    claim_line = json.dumps(
+        {
+            "outcome": "refused",
+            "reason": "host claim lock is held by another transaction",
+            "target_identity": "sir-production",
+            "transaction_id": None,
+        },
+        sort_keys=True,
+    )
+
+    def fake_run_remote(
+        remote_args: list[str],
+        *,
+        label: str,
+    ) -> str:
+        del remote_args, label
+        raise hemma_deploy_and_verify.CommandExecutionError(
+            "remote pdm run prod-recreate private services failed (exit=1).",
+            returncode=1,
+            stdout=f"{claim_line}\n",
+        )
+
+    monkeypatch.setattr(hemma_deploy_and_verify, "_run_remote", fake_run_remote)
+
+    with pytest.raises(hemma_deploy_and_verify.RecreateClaimOutcome) as excinfo:
+        hemma_deploy_and_verify._remote_recreate_service("verified-revision")
+
+    assert excinfo.value.outcome == "refused"
+    assert excinfo.value.reason == "host claim lock is held by another transaction"
+    assert excinfo.value.exit_code == 1
+
+
 def test_remote_recreate_service_injects_verified_revision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -394,7 +429,7 @@ def test_main_settings_failure_writes_only_private_artifacts(
     "outcome,reason,expected_code",
     [
         ("queued", "queued position 1 awaiting huleedu-research", 3),
-        ("refused", "claim sir-production is suspended", 1),
+        ("refused", "host claim lock is held by another transaction", 1),
     ],
 )
 def test_main_prints_claim_reason_and_returns_claim_code(

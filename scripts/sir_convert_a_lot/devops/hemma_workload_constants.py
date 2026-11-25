@@ -1,22 +1,19 @@
 """Fixed identities, paths, and policies for Sir Hemma GPU workloads.
 
 Purpose:
-    Hold the host identity, resource claims, workload IDs, container names,
-    host state paths, Docker inspect formats, readiness timeouts, restart
+    Hold the resource claims, workload IDs, container names,
+    Docker inspect formats, readiness timeouts, restart
     policies, and privileged Docker prefix shared by the Sir workload binding.
 
 Relationships:
-    - Imported by `hemma_workload.py`, which re-exports every constant as the
-      public surface for the CLI and tests.
-    - Imported by `hemma_workload_inventory.py` and
-      `hemma_workload_container_adapter.py` for container names and commands.
+    - Imported by `hemma_workload.py`, which re-exports most of the constants
+      as the public surface for the tests.
+    - Imported by `hemma_workload_container_adapter.py` for container names
+      and commands.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-
-HOST_IDENTITY = "hemma"
 GPU_CLAIM = "gpu:amdgpu"
 PRODUCTION_WORKLOAD_ID = "sir-production"
 STT_WORKLOAD_ID = "sir-stt-sidecar"
@@ -24,10 +21,6 @@ API_CONTAINER = "sir_convert_a_lot_prod"
 GPU_WORKER_CONTAINER = "sir_convert_a_lot_gpu_worker"
 STT_CONTAINER = "sir_convert_a_lot_stt_sidecar"
 PRODUCTION_CONTAINERS = (API_CONTAINER, GPU_WORKER_CONTAINER)
-QWEN_WORKLOAD_ID = "qwen3.8-27b-q8kl-mtp"
-QWEN_SERVICE_NAME = "hemma-qwen.service"
-HOST_STATE_ROOT = Path("/var/lib/hemma/workload-switch")
-LOCK_PATH = HOST_STATE_ROOT / "active.lock"
 CONTAINER_STATE_FORMAT = "{{.State.Status}}\t{{.HostConfig.RestartPolicy.Name}}"
 CONTAINER_HEALTH_FORMAT = (
     "{{if .Config.Healthcheck}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}"

@@ -25,7 +25,7 @@ from tests.sir_convert_a_lot.operations.compose_wrapper_fakes import (
     _with_fake_prod_compose_env,
     _write_fake_agent_secrets,
     _write_fake_docker,
-    _write_fake_pdm,
+    _write_fake_hemma_services,
     _write_fake_python,
     _write_fake_sudo,
 )
@@ -37,7 +37,7 @@ def test_prod_compose_recreate_maps_to_production_compose_surface(tmp_path: Path
     _write_fake_docker(fake_bin)
     _write_fake_sudo(fake_bin)
     _write_fake_agent_secrets(fake_bin)
-    _write_fake_pdm(fake_bin)
+    _write_fake_hemma_services(fake_bin)
     _write_fake_python(fake_bin)
     log_file = tmp_path / "docker.log"
 
@@ -126,7 +126,7 @@ def test_prod_compose_refuses_raw_start_without_a_claim(tmp_path: Path) -> None:
     log_text = log_file.read_text(encoding="utf-8") if log_file.exists() else ""
     assert "up -d --build" not in log_text
     assert "agent-secrets run" not in log_text
-    assert "pdm run hemma-workload" not in log_text
+    assert "hemma-services" not in log_text
 
 
 def test_prod_compose_ps_uses_base_file_without_agent_secrets(tmp_path: Path) -> None:

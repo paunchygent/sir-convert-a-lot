@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 #
 # Purpose:
-#   Redeploy Sir Convert-a-Lot production through the owner's Hemma workload
+#   Redeploy Sir Convert-a-Lot production through the shared `hemma-services`
 #   claim so a recreated deployment honors the shared GPU claim queue.
 #
 # Relationships:
 #   - Referenced by scripts/devops/prod-compose.sh as the claim step of the
 #     production `recreate` action.
-#   - Ends with `pdm run hemma-workload redeploy sir-production <transaction-id>`;
-#     the claim's exit code is the result (0 succeeded, 3 queued, 1 otherwise).
-#     Redeploy starts the claim when unheld, replaces a held claim, and is
-#     refused when the claim is suspended.
+#   - Ends with `hemma-services redeploy sir-production`, which prints one JSON
+#     line with `outcome`, `reason`, `target_identity` and `transaction_id`
+#     (null when the refusal precedes a transaction); the command's exit code
+#     is the result (0 succeeded, 3 queued, 1 otherwise). Redeploy starts the
+#     claim when unheld, replaces a held claim, and is refused when the claim
+#     is suspended.
 #
 
 set -euo pipefail
@@ -25,5 +27,4 @@ if [[ "$#" -gt 0 ]]; then
   exit 2
 fi
 
-transaction_id="$(python3 -c 'import uuid; print(uuid.uuid4())')"
-exec pdm run hemma-workload redeploy sir-production "${transaction_id}"
+exec hemma-services redeploy sir-production

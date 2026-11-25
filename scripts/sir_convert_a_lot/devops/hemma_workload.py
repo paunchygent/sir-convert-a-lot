@@ -1,17 +1,18 @@
-"""Bind exact Sir GPU workloads to the shared Hemma transaction engine.
+"""Declare exact Sir GPU workloads for the shared Hemma claim queue.
 
 Purpose:
-    Declare the Sir production and STT sidecar workloads,
-    operate the production API and GPU worker as one workload, and compose the
-    host-wide workload registry and controller for the Hemma host.
+    Declare the Sir production and STT sidecar workloads and operate the
+    production API and GPU worker as one workload. Claims, the controller and
+    the GPU inventory belong to `hemma-services` in skill-repository.
 
 Relationships:
-    - Public surface for `hemma_workload_cli.py` and the operations tests;
-      re-exports constants, `SirGpuInventory`, `ContainerWorkloadAdapter`,
-      `CommandResult`, and `TOTAL_TIMEOUT_SECONDS`.
-    - Constants live in `hemma_workload_constants.py`, GPU inventory in
-      `hemma_workload_inventory.py`, and the sidecar adapter plus shared
-      adapter helpers in `hemma_workload_container_adapter.py`.
+    - The skill-repository product worker imports `sir_workload_declarations`
+      from this module and runs the adapters; operators claim through
+      `hemma-services claim|redeploy sir-production`.
+    - Public surface for the operations tests; re-exports constants,
+      `ContainerWorkloadAdapter`, `CommandResult`, and `TOTAL_TIMEOUT_SECONDS`.
+    - Constants live in `hemma_workload_constants.py` and the sidecar adapter
+      plus shared adapter helpers in `hemma_workload_container_adapter.py`.
     - Reuses bounded production startup helpers from
       `bounded_production_startup.py` for production readiness.
 """
@@ -19,8 +20,6 @@ Relationships:
 from __future__ import annotations
 
 import json
-import os
-import pwd
 import subprocess
 import time
 from pathlib import Path
@@ -29,19 +28,8 @@ from repository_governance.hemma_workload import (
     AdapterResult,
     ClaimKind,
     ExpectedState,
-    HostLock,
-    LedgerStore,
     TerminalOutcome,
-    WorkloadController,
     WorkloadDeclaration,
-    WorkloadRegistry,
-    products,
-)
-from repository_governance.hemma_workload.products import (
-    CommandExecutor as ProductCommandExecutor,
-)
-from repository_governance.hemma_workload.products import (
-    composed_declarations,
 )
 
 from scripts.sir_convert_a_lot.devops.bounded_production_startup import (
@@ -63,14 +51,10 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
     DOCKER_COMMAND,
     GPU_CLAIM,
     GPU_WORKER_CONTAINER,
-    HOST_IDENTITY,
-    HOST_STATE_ROOT,
-    LOCK_PATH,
     PRODUCTION_CONTAINERS,
     PRODUCTION_RESTART_POLICY,
     PRODUCTION_WORKLOAD_ID,
     SIDECAR_READINESS_INTERVAL_SECONDS,
-    SIDECAR_READINESS_TIMEOUT_SECONDS,
     SIDECAR_RESTART_POLICY,
     STT_CONTAINER,
     STT_WORKLOAD_ID,
@@ -82,10 +66,6 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_container_adapter import (
     _container_state,
     _diagnostic,
     _state_category,
-)
-from scripts.sir_convert_a_lot.devops.hemma_workload_inventory import (
-    GpuProcess,
-    SirGpuInventory,
 )
 from scripts.sir_convert_a_lot.devops.hemma_workload_runtime import (
     CommandExecutor,
@@ -100,14 +80,10 @@ __all__ = [
     "DOCKER_COMMAND",
     "GPU_CLAIM",
     "GPU_WORKER_CONTAINER",
-    "HOST_IDENTITY",
-    "HOST_STATE_ROOT",
-    "LOCK_PATH",
     "PRODUCTION_CONTAINERS",
     "PRODUCTION_RESTART_POLICY",
     "PRODUCTION_WORKLOAD_ID",
     "SIDECAR_READINESS_INTERVAL_SECONDS",
-    "SIDECAR_READINESS_TIMEOUT_SECONDS",
     "SIDECAR_RESTART_POLICY",
     "STT_CONTAINER",
     "STT_WORKLOAD_ID",
@@ -116,88 +92,25 @@ __all__ = [
     "CommandResult",
     "CommandRunner",
     "ContainerWorkloadAdapter",
-    "GpuProcess",
     "ProductionWorkloadAdapter",
-    "SirGpuInventory",
-    "sir_workload_controller",
     "sir_workload_declarations",
-    "sir_workload_registry",
 ]
 
 
-def _operator_account() -> pwd.struct_passwd | None:
-    sudo_user = os.environ.get("SUDO_USER")
-    if sudo_user:
-        try:
-            return pwd.getpwnam(sudo_user)
-        except KeyError:
-            return None
-    sudo_uid = os.environ.get("SUDO_UID")
-    if sudo_uid:
-        try:
-            return pwd.getpwuid(int(sudo_uid))
-        except (KeyError, ValueError):
-            return None
-    return None
-
-
-def _operator_command(
-    argv: tuple[str, ...], env: dict[str, str] | None = None
-) -> tuple[str, ...] | None:
-    """Wrap one argv so it executes as the invoking operator account.
-
-    The workload controller runs inside a fixed root worker, but the bounded
-    production paths must read the operator's agent-secrets store and sibling
-    product workers run in the operator's checkouts, so under effective UID 0
-    the command re-enters the invoking sudo user's account with a PATH that
-    can resolve that user's installed tools. Sudo resets the environment, so
-    the caller's environment entries pass as `env` assignments.
-    """
-    if os.geteuid() != 0:
-        return argv
-    account = _operator_account()
-    if account is None:
-        return None
-    operator_path = f"{account.pw_dir}/.local/bin:{os.environ.get('PATH', '')}"
-    assignments = tuple(f"{name}={value}" for name, value in sorted((env or {}).items()))
-    return (
-        "sudo",
-        "-n",
-        "-u",
-        account.pw_name,
-        "env",
-        f"PATH={operator_path}",
-        *assignments,
-        *argv,
-    )
-
-
-def _operator_pdm_command(*arguments: str) -> tuple[str, ...] | None:
-    """Build one `pdm run` command that executes as the operator account."""
-    return _operator_command(("pdm", "run", *arguments))
-
-
-def _missing_operator_account_result() -> AdapterResult:
-    return AdapterResult(
-        PRODUCTION_WORKLOAD_ID,
-        TerminalOutcome.FAILED,
-        "production commands require the invoking operator account",
-    )
-
-
 class ProductionWorkloadAdapter:
-    """Treat the production API and GPU worker as one exact workload."""
+    """Treat the production API and GPU worker as one exact workload.
+
+    The skill-repository product worker runs these commands as the operator
+    account in this checkout, so they run directly without account switching.
+    """
 
     def __init__(self, runner: CommandExecutor, project_root: Path) -> None:
         self._runner = runner
         self._project_root = project_root
 
     def start(self) -> AdapterResult:
-        command = _operator_pdm_command("prod-workload-start")
-        if command is None:
-            return _missing_operator_account_result()
         try:
-            result = self._runner.run(command)
+            result = self._runner.run(("pdm", "run", "prod-workload-start"))
             outcome = _terminal_outcome(result.stdout)
         except subprocess.TimeoutExpired as error:
             return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.TIMED_OUT, str(error))
@@ -251,13 +164,10 @@ class ProductionWorkloadAdapter:
         )
 
     def stop(self) -> AdapterResult:
-        command = _operator_pdm_command("prod-stop", GPU_WORKER_CONTAINER, API_CONTAINER)
-        if command is None:
-            return _missing_operator_account_result()
         return _command_result(
             PRODUCTION_WORKLOAD_ID,
             self._runner,
-            command,
+            ("pdm", "run", "prod-stop", GPU_WORKER_CONTAINER, API_CONTAINER),
             "bounded production stop failed",
         )
 
@@ -324,49 +234,6 @@ class ProductionWorkloadAdapter:
         return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.SUCCEEDED)
 
 
-class _SiblingCommandRunner:
-    """Run sibling product-worker commands with the composition executor surface."""
-
-    def run(
-        self,
-        argv: tuple[str, ...],
-        *,
-        timeout: float,
-        cwd: Path | None = None,
-        env: dict[str, str] | None = None,
-    ) -> CommandResult:
-        if os.geteuid() == 0:
-            command = _operator_command(argv, env)
-            if command is None:
-                return CommandResult(
-                    1,
-                    "",
-                    "sibling product workers require the invoking operator account",
-                )
-            completed = subprocess.run(
-                command,
-                check=False,
-                capture_output=True,
-                cwd=cwd,
-                text=True,
-                timeout=timeout,
-            )
-        else:
-            command_env = os.environ.copy()
-            if env is not None:
-                command_env.update(env)
-            completed = subprocess.run(
-                argv,
-                check=False,
-                capture_output=True,
-                cwd=cwd,
-                env=command_env,
-                text=True,
-                timeout=timeout,
-            )
-        return CommandResult(completed.returncode, completed.stdout, completed.stderr)
-
-
 def _application_image_id(runner: CommandExecutor, project_root: Path) -> str:
     head_result = runner.run(("git", "-C", str(project_root), "rev-parse", "HEAD"))
     head = head_result.stdout.strip() if head_result.returncode == 0 else ""
@@ -409,59 +276,6 @@ def sir_workload_declarations(
             frozenset({TerminalOutcome.SUCCEEDED}),
             kind=ClaimKind.SERVICE,
         ),
-    )
-
-
-def sir_workload_registry(
-    *,
-    runner: CommandExecutor | None = None,
-    product_runner: ProductCommandExecutor | None = None,
-    project_root: Path | None = None,
-) -> WorkloadRegistry:
-    """Compose one validated registry without importing a sibling controller."""
-    command_runner = runner or CommandRunner()
-    sibling_runner = product_runner or _SiblingCommandRunner()
-    registry = WorkloadRegistry(
-        HOST_IDENTITY,
-        composed_declarations(
-            owner="sir",
-            local_declarations=sir_workload_declarations(
-                runner=command_runner, project_root=project_root
-            ),
-            runner=sibling_runner,
-        ),
-    )
-    registry.validate()
-    return registry
-
-
-def sir_workload_controller(
-    *,
-    runner: CommandExecutor | None = None,
-    product_runner: ProductCommandExecutor | None = None,
-    project_root: Path | None = None,
-    state_root: Path = HOST_STATE_ROOT,
-) -> WorkloadController:
-    command_runner = runner or CommandRunner()
-    sibling_runner = product_runner or _SiblingCommandRunner()
-    registry = sir_workload_registry(
-        runner=command_runner,
-        product_runner=sibling_runner,
-        project_root=project_root,
-    )
-    return WorkloadController(
-        registry,
-        SirGpuInventory(
-            command_runner,
-            products.published_containers(products.product_spec("huleedu"), sibling_runner),
-            frozenset(
-                declaration.identity
-                for declaration in registry.declarations
-                if GPU_CLAIM in declaration.resource_claims
-            ),
-        ),
-        LedgerStore(state_root),
-        HostLock(state_root / LOCK_PATH.name),
     )
 
 

@@ -19,8 +19,8 @@ Run from the repository root; the full list is in `pyproject.toml` and `README.m
 
 ## Product Facts
 
-- Sir GPU workloads change state through owner claims: `pdm run prod-start` and
-  `prod-recreate` route through `hemma-workload start|redeploy sir-production`;
+- Sir GPU workloads change state through shared claims: `pdm run prod-start` and
+  `prod-recreate` run `hemma-services claim|redeploy sir-production`;
   exit `0` succeeded, `3` queued, `1` otherwise. Details:
   `docs/runbooks/run-sircon-hemma-service-operations-runbook-for-sir-convert-a-lot.md`.
 - Local integration uses the CPU-only Docker dev service on `:8085`; never run
