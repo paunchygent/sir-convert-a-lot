@@ -73,7 +73,7 @@ def test_prod_claim_start_runs_hemma_services_claim(tmp_path: Path) -> None:
     claim = json.loads(result.stdout.strip().splitlines()[-1])
     assert claim["outcome"] == "succeeded"
     assert claim["target_identity"] == "sir-production"
-    assert claim["transaction_id"] is None
+    assert claim["transaction_id"] == "fake-transaction-id"
 
 
 def test_prod_claim_redeploy_runs_hemma_services_redeploy(tmp_path: Path) -> None:
@@ -86,15 +86,25 @@ def test_prod_claim_redeploy_runs_hemma_services_redeploy(tmp_path: Path) -> Non
     assert log_lines.count(CLAIM_REDEPLOY_LINE) == 1
 
 
-@pytest.mark.parametrize("claim_exit_code", [0, 3, 1])
+@pytest.mark.parametrize(
+    ("claim_exit_code", "outcome", "transaction_id"),
+    [
+        (0, "succeeded", "fake-transaction-id"),
+        (3, "queued", "fake-transaction-id"),
+        (1, "refused", None),
+    ],
+)
 def test_prod_claim_start_passes_claim_exit_code_through(
-    tmp_path: Path, claim_exit_code: int
+    tmp_path: Path, claim_exit_code: int, outcome: str, transaction_id: str | None
 ) -> None:
     env, _log_file = _prod_env_with_fakes(tmp_path)
     env["FAKE_HEMMA_SERVICES_EXIT"] = str(claim_exit_code)
 
     result = _run_wrapper(PROD_CLAIM_START_SCRIPT, [], env)
     assert result.returncode == claim_exit_code
+    claim = json.loads(result.stdout.strip().splitlines()[-1])
+    assert claim["outcome"] == outcome
+    assert claim["transaction_id"] == transaction_id
 
 
 @pytest.mark.parametrize("extra_args", [["--help"], ["sir_convert_a_lot_prod"]])

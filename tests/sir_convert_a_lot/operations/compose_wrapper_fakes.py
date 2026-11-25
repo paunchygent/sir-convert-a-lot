@@ -325,7 +325,13 @@ exec "{real_python}" "$@"
 
 
 def _write_fake_hemma_services(script_dir: Path) -> None:
-    """Fake the operator `hemma-services` wrapper: log argv, print one JSON line, exit."""
+    """Fake the operator `hemma-services` wrapper: log argv, print one claim result, exit.
+
+    `FAKE_HEMMA_SERVICES_EXIT` selects one result the real command can produce:
+    `0` is `succeeded` and `3` is `queued`, each with a transaction id, and `1`
+    is the claim-lock `refused` result, which precedes a transaction and so has
+    a `null` transaction id.
+    """
     fake_hemma_services = script_dir / "hemma-services"
     fake_hemma_services.write_text(
         """#!/usr/bin/env bash
@@ -334,9 +340,31 @@ set -euo pipefail
 if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
   printf "hemma-services %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
 fi
-printf '{"outcome": "%s", "reason": "%s", "target_identity": "%s", "transaction_id": null}\\n' \\
-  "${FAKE_HEMMA_SERVICES_OUTCOME:-succeeded}" "fake reason" "${2:-}"
-exit "${FAKE_HEMMA_SERVICES_EXIT:-0}"
+exit_code="${FAKE_HEMMA_SERVICES_EXIT:-0}"
+case "${exit_code}" in
+  0)
+    outcome="succeeded"
+    reason=""
+    transaction_id='"fake-transaction-id"'
+    ;;
+  3)
+    outcome="queued"
+    reason="queued position 1 awaiting fake-holder"
+    transaction_id='"fake-transaction-id"'
+    ;;
+  1)
+    outcome="refused"
+    reason="host claim lock is held by another transaction"
+    transaction_id="null"
+    ;;
+  *)
+    printf "unsupported FAKE_HEMMA_SERVICES_EXIT %s\\n" "${exit_code}" >&2
+    exit 64
+    ;;
+esac
+printf '{"outcome": "%s", "reason": "%s", "target_identity": "%s", "transaction_id": %s}\\n' \\
+  "${outcome}" "${reason}" "${2:-}" "${transaction_id}"
+exit "${exit_code}"
 """,
         encoding="utf-8",
     )

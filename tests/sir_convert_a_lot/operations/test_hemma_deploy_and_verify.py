@@ -121,7 +121,7 @@ def test_remote_recreate_service_propagates_refusal_without_transaction_id(
     claim_line = json.dumps(
         {
             "outcome": "refused",
-            "reason": "claim sir-production is suspended",
+            "reason": "host claim lock is held by another transaction",
             "target_identity": "sir-production",
             "transaction_id": None,
         },
@@ -146,7 +146,7 @@ def test_remote_recreate_service_propagates_refusal_without_transaction_id(
         hemma_deploy_and_verify._remote_recreate_service("verified-revision")
 
     assert excinfo.value.outcome == "refused"
-    assert excinfo.value.reason == "claim sir-production is suspended"
+    assert excinfo.value.reason == "host claim lock is held by another transaction"
     assert excinfo.value.exit_code == 1
 
 
@@ -429,7 +429,7 @@ def test_main_settings_failure_writes_only_private_artifacts(
     "outcome,reason,expected_code",
     [
         ("queued", "queued position 1 awaiting huleedu-research", 3),
-        ("refused", "claim sir-production is suspended", 1),
+        ("refused", "host claim lock is held by another transaction", 1),
     ],
 )
 def test_main_prints_claim_reason_and_returns_claim_code(

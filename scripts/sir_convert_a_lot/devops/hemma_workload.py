@@ -20,8 +20,6 @@ Relationships:
 from __future__ import annotations
 
 import json
-import os
-import pwd
 import subprocess
 import time
 from pathlib import Path
@@ -57,7 +55,6 @@ from scripts.sir_convert_a_lot.devops.hemma_workload_constants import (
     PRODUCTION_RESTART_POLICY,
     PRODUCTION_WORKLOAD_ID,
     SIDECAR_READINESS_INTERVAL_SECONDS,
-    SIDECAR_READINESS_TIMEOUT_SECONDS,
     SIDECAR_RESTART_POLICY,
     STT_CONTAINER,
     STT_WORKLOAD_ID,
@@ -87,7 +84,6 @@ __all__ = [
     "PRODUCTION_RESTART_POLICY",
     "PRODUCTION_WORKLOAD_ID",
     "SIDECAR_READINESS_INTERVAL_SECONDS",
-    "SIDECAR_READINESS_TIMEOUT_SECONDS",
     "SIDECAR_RESTART_POLICY",
     "STT_CONTAINER",
     "STT_WORKLOAD_ID",
@@ -101,73 +97,20 @@ __all__ = [
 ]
 
 
-def _operator_account() -> pwd.struct_passwd | None:
-    sudo_user = os.environ.get("SUDO_USER")
-    if sudo_user:
-        try:
-            return pwd.getpwnam(sudo_user)
-        except KeyError:
-            return None
-    sudo_uid = os.environ.get("SUDO_UID")
-    if sudo_uid:
-        try:
-            return pwd.getpwuid(int(sudo_uid))
-        except (KeyError, ValueError):
-            return None
-    return None
-
-
-def _operator_command(argv: tuple[str, ...]) -> tuple[str, ...] | None:
-    """Wrap one argv so it executes as the invoking operator account.
-
-    The root worker that `hemma-services` launches runs the production adapter,
-    but the bounded production paths must read the operator's agent-secrets
-    store, so under effective UID 0 the command re-enters the invoking sudo
-    user's account with a PATH that can resolve that user's installed tools.
-    """
-    if os.geteuid() != 0:
-        return argv
-    account = _operator_account()
-    if account is None:
-        return None
-    operator_path = f"{account.pw_dir}/.local/bin:{os.environ.get('PATH', '')}"
-    return (
-        "sudo",
-        "-n",
-        "-u",
-        account.pw_name,
-        "env",
-        f"PATH={operator_path}",
-        *argv,
-    )
-
-
-def _operator_pdm_command(*arguments: str) -> tuple[str, ...] | None:
-    """Build one `pdm run` command that executes as the operator account."""
-    return _operator_command(("pdm", "run", *arguments))
-
-
-def _missing_operator_account_result() -> AdapterResult:
-    return AdapterResult(
-        PRODUCTION_WORKLOAD_ID,
-        TerminalOutcome.FAILED,
-        "production commands require the invoking operator account",
-    )
-
-
 class ProductionWorkloadAdapter:
-    """Treat the production API and GPU worker as one exact workload."""
+    """Treat the production API and GPU worker as one exact workload.
+
+    The skill-repository product worker runs these commands as the operator
+    account in this checkout, so they run directly without account switching.
+    """
 
     def __init__(self, runner: CommandExecutor, project_root: Path) -> None:
         self._runner = runner
         self._project_root = project_root
 
     def start(self) -> AdapterResult:
-        command = _operator_pdm_command("prod-workload-start")
-        if command is None:
-            return _missing_operator_account_result()
         try:
-            result = self._runner.run(command)
+            result = self._runner.run(("pdm", "run", "prod-workload-start"))
             outcome = _terminal_outcome(result.stdout)
         except subprocess.TimeoutExpired as error:
             return AdapterResult(PRODUCTION_WORKLOAD_ID, TerminalOutcome.TIMED_OUT, str(error))
@@ -221,13 +164,10 @@ class ProductionWorkloadAdapter:
         )
 
     def stop(self) -> AdapterResult:
-        command = _operator_pdm_command("prod-stop", GPU_WORKER_CONTAINER, API_CONTAINER)
-        if command is None:
-            return _missing_operator_account_result()
         return _command_result(
             PRODUCTION_WORKLOAD_ID,
             self._runner,
-            command,
+            ("pdm", "run", "prod-stop", GPU_WORKER_CONTAINER, API_CONTAINER),
             "bounded production stop failed",
         )
 

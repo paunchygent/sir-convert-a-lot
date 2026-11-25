@@ -6,8 +6,8 @@ Purpose:
     policies, and privileged Docker prefix shared by the Sir workload binding.
 
 Relationships:
-    - Imported by `hemma_workload.py`, which re-exports the constants as the
-      public surface for the tests.
+    - Imported by `hemma_workload.py`, which re-exports most of the constants
+      as the public surface for the tests.
     - Imported by `hemma_workload_container_adapter.py` for container names
       and commands.
 """
