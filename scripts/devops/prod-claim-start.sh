@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 #
 # Purpose:
-#   Start Sir Convert-a-Lot production through the owner's Hemma workload
+#   Start Sir Convert-a-Lot production through the shared `hemma-services`
 #   claim so every operator start honors the shared GPU claim queue.
 #
 # Relationships:
 #   - Referenced by the PDM `prod-start` and `prod-start-bounded` scripts in
 #     pyproject.toml.
-#   - Ends with `pdm run hemma-workload start sir-production <transaction-id>`;
-#     the claim's exit code is the result (0 succeeded, 3 queued, 1 otherwise).
+#   - Ends with `hemma-services claim sir-production`, which prints one JSON
+#     line with `outcome`, `reason`, `target_identity` and `transaction_id`
+#     (null when the refusal precedes a transaction); the command's exit code
+#     is the result (0 succeeded, 3 queued, 1 otherwise).
 #   - The claim adapter's internal start is the PDM `prod-workload-start`
 #     script, which keeps this command from recursing.
 #
@@ -25,5 +27,4 @@ if [[ "$#" -gt 0 ]]; then
   exit 2
 fi
 
-transaction_id="$(python3 -c 'import uuid; print(uuid.uuid4())')"
-exec pdm run hemma-workload start sir-production "${transaction_id}"
+exec hemma-services claim sir-production

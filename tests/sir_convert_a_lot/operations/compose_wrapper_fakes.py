@@ -12,7 +12,6 @@ Relationships:
 
 from __future__ import annotations
 
-import shutil
 import stat
 import subprocess
 import sys
@@ -325,24 +324,23 @@ exec "{real_python}" "$@"
     fake_python.chmod(fake_python.stat().st_mode | stat.S_IXUSR)
 
 
-def _write_fake_pdm(script_dir: Path) -> None:
-    real_pdm = shutil.which("pdm") or "pdm"
-    fake_pdm = script_dir / "pdm"
-    fake_pdm.write_text(
-        f"""#!/usr/bin/env bash
+def _write_fake_hemma_services(script_dir: Path) -> None:
+    """Fake the operator `hemma-services` wrapper: log argv, print one JSON line, exit."""
+    fake_hemma_services = script_dir / "hemma-services"
+    fake_hemma_services.write_text(
+        """#!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${{1:-}}" == "run" && "${{2:-}}" == "hemma-workload" ]]; then
-  if [[ -n "${{FAKE_DOCKER_LOG:-}}" ]]; then
-    printf "pdm %s\\n" "$*" >>"${{FAKE_DOCKER_LOG}}"
-  fi
-  exit "${{FAKE_PDM_EXIT:-0}}"
+if [[ -n "${FAKE_DOCKER_LOG:-}" ]]; then
+  printf "hemma-services %s\\n" "$*" >>"${FAKE_DOCKER_LOG}"
 fi
-exec "{real_pdm}" "$@"
+printf '{"outcome": "%s", "reason": "%s", "target_identity": "%s", "transaction_id": null}\\n' \\
+  "${FAKE_HEMMA_SERVICES_OUTCOME:-succeeded}" "fake reason" "${2:-}"
+exit "${FAKE_HEMMA_SERVICES_EXIT:-0}"
 """,
         encoding="utf-8",
     )
-    fake_pdm.chmod(fake_pdm.stat().st_mode | stat.S_IXUSR)
+    fake_hemma_services.chmod(fake_hemma_services.stat().st_mode | stat.S_IXUSR)
 
 
 def _run_wrapper(
