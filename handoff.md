@@ -79,9 +79,11 @@
   No Hemma switching or production mutation ran; the task remains
   `in_progress` pending separately authorized live acceptance.
   Current state (TASK-SIRCON-REP-0043): Sir's static registry controller,
-  inventory and CLI are deleted. Claims go through `hemma-services claim|redeploy|release sir-production` in skill-repository; Sir keeps the
-  workload declarations and adapters. The retired public edge container must be
-  stopped before Sir production is activated (service-operations runbook).
+  inventory and CLI are deleted. Claims go through
+  `hemma-services claim|redeploy|release sir-production` in skill-repository;
+  Sir keeps the workload declarations and adapters. The retired public edge
+  container must be stopped before Sir production is activated
+  (service-operations runbook).
 
 - Root quality has six Git-derived scopes: `service`, `conversion`, `speech`,
   `operations`, `research`, and `repository`. Select the owning scope;

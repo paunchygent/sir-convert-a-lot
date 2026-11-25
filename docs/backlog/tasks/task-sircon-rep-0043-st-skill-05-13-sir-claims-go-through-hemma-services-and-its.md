@@ -7,10 +7,14 @@ owners:
   - kind: service
     id: sir-convert-a-lot
 created: '2026-11-24'
-status: in_progress
+status: done
 closeout_review:
   record: inline
-  status: not_started
+  status: approved
+  reviewer: agent-orchestrator
+  decided_at: '2026-11-25T00:52:56+00:00'
+  approval_protocol: agent-overseer:approved-review-closeout
+  approval_evidence: 'Whole-task review changes_requested with four medium findings (F1 retired-edge precondition, F2 dead root-worker path, F3 oversized adapter tests, F4 fake claim pairings) repaired in a796499 with focused tests passing. D-level dependency met: skill-repository runtime 0.11.466 ships hemma-services claim and redeploy. Live Sir production activation stays a separate operator step.'
 task_kind: repository
 acceptance_criteria:
   - Sir's production start and redeploy claim through hemma-services with the same 0, 3 and 1 exit handling, and Sir no longer contains a claim controller or GPU inventory; the workload declarations and adapters stay.
@@ -61,6 +65,8 @@ performance concern. Sir is hibernated; no live run is required.
   (`tests/sir_convert_a_lot/operations/test_prod_claim_start.py`,
   `test_hemma_deploy_and_verify.py`, the declarations and adapter tests);
   `bash -n` on changed scripts; ruff and mypy on changed Python.
+
+The whole-task review returned changes_requested with four medium findings: F1 retired-edge precondition, F2 dead root-worker path, F3 oversized adapter tests and F4 fake claim pairings. Commit a796499 repaired all four, and the focused tests pass. The dependency in D02 is met: skill-repository runtime 0.11.466 ships `hemma-services claim` and `redeploy`. Live Sir production activation stays a separate operator step.
 
 ## Stop Conditions
 
